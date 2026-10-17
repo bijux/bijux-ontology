@@ -46,9 +46,6 @@ def check_occurrences(
             Issue("emission.null_forbidden", "Selected source property is null", where)
         )
     selected = tuple(occurrences)
-    if selected:
-        depth = min(item.depth for item in selected)
-        selected = tuple(item for item in selected if item.depth == depth)
     if present is True and not selected and not requirement.allow_empty:
         issues.append(
             Issue(
@@ -142,12 +139,36 @@ def check_occurrences(
                     kind="unverified",
                 )
             )
-    if not any(
-        issue.code == "emission.cardinality_unverified" for issue in issues
-    ) and (
+    issues.extend(
+        check_output_counts(
+            requirement,
+            distinct_values=None
+            if any(issue.code == "emission.cardinality_unverified" for issue in issues)
+            else len(values),
+            list_lengths=tuple(lists.values()),
+            non_list=any(item.container != "list" for item in selected),
+            where=where,
+            budget=budget,
+        )
+    )
+    return tuple(issues)
+
+
+def check_output_counts(
+    requirement: OutputRequirement,
+    *,
+    distinct_values: int | None,
+    list_lengths: Sequence[int | None],
+    non_list: bool,
+    where: str,
+    budget: Budget,
+) -> tuple[Issue, ...]:
+    """Apply output count bounds to established RDF identities and list lengths."""
+    issues = []
+    if distinct_values is not None and (
         requirement.minimum_values is not None or requirement.maximum_values is not None
     ):
-        count = len(values)
+        count = distinct_values
         if (
             count < (requirement.minimum_values or 0)
             or requirement.maximum_values is not None
@@ -169,7 +190,7 @@ def check_occurrences(
         requirement.minimum_list_members is not None
         or requirement.maximum_list_members is not None
     ):
-        if not lists or any(item.container != "list" for item in selected):
+        if not list_lengths or non_list:
             issues.append(
                 Issue(
                     "emission.list_required",
@@ -177,11 +198,22 @@ def check_occurrences(
                     where,
                 )
             )
-        for index, count in enumerate(lists.values()):
+        for index, length in enumerate(list_lengths):
+            budget.consume("work")
+            if length is None:
+                issues.append(
+                    Issue(
+                        "emission.cardinality_unverified",
+                        "Actual RDF list length is unavailable",
+                        f"{where}/lists/{index}",
+                        kind="unverified",
+                    )
+                )
+                continue
             if (
-                count < (requirement.minimum_list_members or 0)
+                length < (requirement.minimum_list_members or 0)
                 or requirement.maximum_list_members is not None
-                and count > requirement.maximum_list_members
+                and length > requirement.maximum_list_members
             ):
                 issues.append(
                     Issue(
@@ -192,7 +224,7 @@ def check_occurrences(
                             f"{requirement.minimum_list_members or 0}.."
                             f"{requirement.maximum_list_members}"
                         ),
-                        actual=str(count),
+                        actual=str(length),
                     )
                 )
     return tuple(issues)

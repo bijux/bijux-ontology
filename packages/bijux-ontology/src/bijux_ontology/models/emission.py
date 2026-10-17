@@ -47,6 +47,8 @@ from .bindings import (
 )
 from .occurrences import check_occurrences
 from .registry import index_models
+from .value_matching import identity_matches as _identity_matches
+from .value_matching import matches_value
 
 
 @dataclass(frozen=True)
@@ -97,55 +99,26 @@ class ModelUsage:
                 raise InputError("Reference and expected subject identities conflict")
 
 
-def _identity_matches(contract: SubjectIdentity, traits: ValueTraits) -> bool:
-    if contract.expected_iri is not None and traits.identifier != contract.expected_iri:
-        return False
-    return contract.allow_blank or traits.identifier_kind == "iri"
-
-
 def _matches(
     value: ValueDeclaration,
     occurrence: ObservedOccurrence,
     registry: dict[str, ModelDeclaration],
     inventory: EntityInventory | None = None,
 ) -> bool | None:
-    if value.kind == "unknown" or value.container not in (None, "@set", "@list"):
-        return None
-    container = "list" if value.container == "@list" else "unordered"
-    if occurrence.container != container:
-        return False
-    if occurrence.empty:
-        return True if container == "list" else None
+    """Resolve actual joined descriptions before shared scalar contract matching."""
     traits = occurrence.traits
-    if value.kind == "literal":
-        if traits.kind != "literal":
-            return False
-        if value.datatype is not None and value.datatype != traits.datatype:
-            return False
-        return not (
-            value.language is not None
-            and value.language.lower() != (traits.language or "").lower()
-        )
-    if value.kind == "iri" and traits.kind != "iri":
-        return False
-    if value.kind == "object" and traits.kind not in {"node", "iri", "blank"}:
-        return False
-    if inventory is not None:
+    if (
+        inventory is not None
+        and value.kind in {"iri", "object"}
+        and traits.kind in {"iri", "blank", "node"}
+    ):
         key = object_key(occurrence)
         description = inventory.get(key) if key is not None else None
         if description is not None and description.described:
             traits = replace(traits, types=description.types)
-    required = set(value.types)
-    if value.model is not None:
-        if value.model not in registry:
-            return None
-        model = registry[value.model]
-        if not _identity_matches(model.subject, traits):
-            return False
-        required.update(model.types)
-    if required - set(traits.types):
-        return None if traits.kind in {"iri", "blank"} and not traits.types else False
-    return True
+    return matches_value(
+        value, traits, registry, container=occurrence.container, empty=occurrence.empty
+    )
 
 
 def _literal_result(
@@ -798,7 +771,11 @@ def check_emission(
                 issues.extend(
                     check_occurrences(
                         field.output,
-                        observed.occurrences,
+                        tuple(
+                            item
+                            for item in observed.occurrences
+                            if item.depth == minimum_depth
+                        ),
                         where=location(path),
                         budget=budget,
                         native_literals=native_literals,

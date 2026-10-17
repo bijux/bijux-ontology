@@ -165,3 +165,32 @@ def test_legacy_optional_is_an_optional_emission_alias_and_counts_roundtrip() ->
         raw["fields"][0]["output"]["minimum_values"] = value
         with pytest.raises(InputError):
             models_from_data([raw])
+
+
+@pytest.mark.parametrize("listed", [False, True])
+def test_joined_entity_counts_include_deeper_descriptions_without_widening_source(
+    listed: bool,
+) -> None:
+    requirement = (
+        OutputRequirement(maximum_list_members=1)
+        if listed
+        else OutputRequirement(maximum_values=1)
+    )
+    expected = model(requirement, listed=listed)
+    value = {"@list": [1]} if listed else [1]
+    deeper = {"@list": [1, 2]} if listed else [2]
+    data = {
+        **document(value),
+        "@id": EX + "record",
+        "related": {"@id": EX + "record", "values": deeper},
+    }
+    assert check_emission(data, [expected], [ModelUsage("record")]).verified
+    entity = check_emission(
+        data,
+        [expected],
+        [ModelUsage("record", reference=EX + "record", graph=None)],
+    )
+    code = (
+        "emission.list_length_mismatch" if listed else "emission.value_count_mismatch"
+    )
+    assert any(issue.code == code and issue.actual == "2" for issue in entity.issues)
