@@ -1,0 +1,35 @@
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix profile: <https://catalogue.example/profile/> .
+
+# Consumer-owned finite declaration inventory and requirements, not full DCAT-AP.
+dcat:Dataset a owl:Class .
+dcat:Distribution a owl:Class .
+dct:PeriodOfTime a owl:Class .
+dct:title a rdf:Property .
+dcat:distribution a owl:ObjectProperty .
+dct:temporal a owl:ObjectProperty .
+dcat:downloadURL a owl:ObjectProperty .
+dcat:startDate a owl:DatatypeProperty .
+dcat:endDate a owl:DatatypeProperty .
+
+profile:Dataset a sh:NodeShape ;
+    sh:targetClass dcat:Dataset ;
+    sh:property [ sh:path dct:title ; sh:minCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path dcat:distribution ; sh:minCount 1 ;
+        sh:class dcat:Distribution ; sh:node profile:Distribution ] ;
+    sh:property [ sh:path dct:temporal ; sh:minCount 1 ;
+        sh:class dct:PeriodOfTime ; sh:node profile:Temporal ] .
+
+profile:Distribution a sh:NodeShape ;
+    sh:targetClass dcat:Distribution ;
+    sh:property [ sh:path dcat:downloadURL ; sh:minCount 1 ; sh:nodeKind sh:IRI ] .
+
+profile:Temporal a sh:NodeShape ;
+    sh:targetClass dct:PeriodOfTime ;
+    sh:property [ sh:path dcat:startDate ; sh:minCount 1 ; sh:datatype xsd:date ] ;
+    sh:property [ sh:path dcat:endDate ; sh:minCount 1 ; sh:datatype xsd:date ] .
