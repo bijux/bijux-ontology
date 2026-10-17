@@ -34,6 +34,11 @@ requires completed root target evaluations when passed as `coverage=` to
 `validate_shapes`. Inspect `result.coverage` separately from `conforms` and
 `conformance_report`; a targetless shape can conform while required coverage fails.
 Nested conditional constraint execution is not inferred from root coverage.
+Use `required_constraints=(ShaclConstraintRequirement(shape_iri, parameter_iri),)`
+for explicit supported parameter/component bindings and inspect `result.constraints`
+for execution coverage. A required nested-only constraint remains unverified.
+Trusted SPARQL queries with unavailable function calls are rejected before validation;
+`trusted_sparql=True` alone does not enable function implementations.
 
 Use `check_contract` for required consumer acceptance. Name each `ContractObligation`,
 provide its check callback and set `minimum_checked` or explicit

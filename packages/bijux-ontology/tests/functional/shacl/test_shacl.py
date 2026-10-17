@@ -7,6 +7,7 @@ from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.shacl import validate_shapes
+from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
 
 EX = Namespace("https://example.org/")
@@ -182,6 +183,187 @@ def test_selected_parent_preserves_nested_constraints_and_excludes_other_roots()
     assert selected.conforms is False
     assert selected.findings[0].constraint_component == SH.MinCountConstraintComponent
     assert frozenset(shapes) == before
+
+
+@pytest.mark.parametrize("prefix_mode", ("iri", "query", "declarations"))
+def test_unavailable_functions_cannot_hide_violations_in_trusted_filters(
+    prefix_mode: str,
+) -> None:
+    import pyshacl
+
+    shapes = Graph().parse(
+        data="""
+@prefix ex: <https://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+ex:double a sh:SPARQLFunction ;
+    sh:parameter [ sh:path ex:x ; sh:datatype xsd:integer ] ;
+    sh:select "SELECT ($x * 2 AS ?result) WHERE {}" .
+ex:Shape a sh:NodeShape ; sh:targetNode ex:item ; sh:sparql ex:Constraint .
+ex:Safe a sh:NodeShape ; sh:targetNode ex:item ; sh:nodeKind sh:IRI .
+ex:Prefixes sh:declare [ sh:prefix "ex" ;
+    sh:namespace "https://example.org/"^^xsd:anyURI ] .
+""",
+        format="turtle",
+    )
+    function = "<https://example.org/double>" if prefix_mode == "iri" else "ex:double"
+    prefix = "PREFIX ex: <https://example.org/> " if prefix_mode == "query" else ""
+    shapes.add(
+        (
+            EX.Constraint,
+            SH.select,
+            Literal(
+                prefix + "SELECT $this WHERE { $this <https://example.org/value> ?v . "
+                f"FILTER({function}(?v) != 4) }}"
+            ),
+        )
+    )
+    if prefix_mode == "declarations":
+        shapes.add((EX.Constraint, SH.prefixes, EX.Prefixes))
+    for value in (2, 3):
+        data = Graph().add((EX.item, EX.value, Literal(value)))
+        result = validate_shapes(data, shapes, trusted_sparql=True)
+        assert result.conforms is None and not result.report.verified
+        assert any(
+            issue.code == "shacl.function_unavailable"
+            and issue.location == str(EX.double)
+            for issue in result.report.issues
+        )
+        conforms, _, _ = pyshacl.validate(
+            data, shacl_graph=shapes, advanced=True, js=False, inference="none"
+        )
+        assert conforms is (value == 2)
+        assert validate_shapes(data, shapes, use_shapes=(str(EX.Safe),)).report.verified
+    shapes.set(
+        (
+            EX.double,
+            SH.select,
+            Literal("SELECT (<https://example.org/missing>($x) AS ?result) WHERE {}"),
+        )
+    )
+    transitive = validate_shapes(data, shapes, trusted_sparql=True)
+    assert {
+        issue.location
+        for issue in transitive.report.issues
+        if issue.code == "shacl.function_unavailable"
+    } == {str(EX.double), str(EX.missing)}
+
+
+def test_function_syntax_in_literals_and_supported_casts_remains_ordinary_sparql() -> (
+    None
+):
+    shapes = Graph().add((EX.Shape, RDF.type, SH.NodeShape))
+    shapes.add((EX.Shape, SH.targetNode, EX.record))
+    shapes.add((EX.Shape, SH.sparql, EX.Constraint))
+    shapes.add(
+        (
+            EX.Constraint,
+            SH.select,
+            Literal(
+                "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> "
+                'SELECT $this WHERE { BIND("ex:double(<https://example.org/f>)" '
+                "AS ?text) "
+                "FILTER(xsd:integer(2) != 2 || CONTAINS(?text, 'never')) }"
+            ),
+        )
+    )
+    assert validate_shapes(Graph(), shapes, trusted_sparql=True).report.verified
+
+
+def test_required_custom_ask_component_binding_execution_and_ambiguity() -> None:
+    shapes = Graph().parse(
+        data="""
+@prefix ex: <https://example.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+ex:EqualComponent a sh:ConstraintComponent ; sh:parameter [ sh:path ex:mustEqual ] ;
+    sh:validator ex:Validator .
+ex:Validator a sh:SPARQLAskValidator ; sh:ask "ASK { FILTER($value = $mustEqual) }" .
+ex:ValueShape a sh:PropertyShape ; sh:targetNode ex:record ; sh:path ex:value ;
+    sh:minCount 1 ; ex:mustEqual 2 ; ex:description "ordinary metadata" .
+""",
+        format="turtle",
+    )
+    required = (
+        ShaclConstraintRequirement(
+            str(EX.ValueShape), str(EX.mustEqual), str(EX.EqualComponent)
+        ),
+        ShaclConstraintRequirement(
+            str(EX.ValueShape), str(SH.minCount), str(SH.MinCountConstraintComponent)
+        ),
+    )
+    for value in (2, 3):
+        data = Graph().add((EX.record, EX.value, Literal(value)))
+        result = validate_shapes(
+            data, shapes, trusted_sparql=True, required_constraints=required
+        )
+        assert result.conforms is (value == 2)
+        assert result.constraints is not None and result.constraints.verified
+        assert result.report.verified is (value == 2)
+    unknown = validate_shapes(
+        data,
+        shapes,
+        trusted_sparql=True,
+        required_constraints=(
+            ShaclConstraintRequirement(str(EX.ValueShape), str(EX.description)),
+        ),
+    )
+    assert unknown.conforms is None and unknown.report.outcome == "unverified"
+    assert unknown.report.issues[0].code == "shacl.constraint_unavailable"
+    shapes.remove((EX.ValueShape, SH.targetNode, None))
+    targetless = validate_shapes(
+        data, shapes, trusted_sparql=True, required_constraints=required
+    )
+    assert targetless.conforms is True and not targetless.report.verified
+    assert targetless.constraints is not None
+    assert targetless.constraints.issues[0].code == "shacl.constraint_not_evaluated"
+    shapes.add((EX.ValueShape, SH.targetNode, EX.record))
+    shapes.add((EX.ValueShape, SH.deactivated, Literal(True)))
+    inactive = validate_shapes(
+        data, shapes, trusted_sparql=True, required_constraints=required
+    )
+    assert inactive.conforms is True and inactive.constraints is not None
+    assert "deactivated" in inactive.constraints.issues[0].message
+    shapes.remove((EX.ValueShape, SH.deactivated, None))
+    shapes.add((EX.EqualComponent, SH.validator, EX.OtherValidator))
+    shapes.add((EX.OtherValidator, SH.ask, Literal("ASK { FILTER(true) }")))
+    shadowed = validate_shapes(
+        data, shapes, trusted_sparql=True, required_constraints=required
+    )
+    assert shadowed.conforms is None
+    assert "shadowed" in shadowed.report.issues[0].message
+    shapes.remove((EX.EqualComponent, SH.validator, EX.OtherValidator))
+    shapes.remove((EX.ValueShape, EX.mustEqual, None))
+    unbound = validate_shapes(
+        data, shapes, trusted_sparql=True, required_constraints=required
+    )
+    assert unbound.conforms is None and "unbound" in unbound.report.issues[0].message
+    shapes.add((EX.ValueShape, EX.mustEqual, Literal(2)))
+    parameter = shapes.value(EX.EqualComponent, SH.parameter)
+    shapes.remove((parameter, SH.path, None))
+    malformed = validate_shapes(
+        data, shapes, trusted_sparql=True, required_constraints=required
+    )
+    assert malformed.conforms is None
+    assert malformed.report.issues[0].code == "shacl.constraint_malformed"
+
+
+def test_deactivated_required_query_cannot_borrow_its_shapes_target_coverage() -> None:
+    shapes = Graph().add((EX.Shape, RDF.type, SH.NodeShape))
+    shapes.add((EX.Shape, SH.targetNode, EX.record))
+    shapes.add((EX.Shape, SH.sparql, EX.Query))
+    shapes.add((EX.Query, SH.select, Literal("SELECT $this WHERE {}")))
+    shapes.add((EX.Query, SH.deactivated, Literal(True)))
+    assert validate_shapes(Graph(), shapes, trusted_sparql=True).report.verified
+    required = validate_shapes(
+        Graph(),
+        shapes,
+        trusted_sparql=True,
+        required_constraints=(
+            ShaclConstraintRequirement(str(EX.Shape), str(SH.sparql)),
+        ),
+    )
+    assert not required.report.verified
+    assert "deactivated" in required.report.issues[0].message
 
 
 def test_supporting_ontology_and_imports_have_explicit_resource_roles() -> None:

@@ -96,6 +96,8 @@ _CODES = {
     ),
     "shacl": frozenset(
         "backend_warning execution_incomplete feature_unverified "
+        "function_unavailable function_malformed capability_unavailable "
+        "constraint_unavailable constraint_malformed constraint_not_evaluated "
         "coverage_minimum coverage_missing coverage_pair_missing coverage_incomplete "
         "shapes_invalid unavailable "
         "failure input_error exhausted "
