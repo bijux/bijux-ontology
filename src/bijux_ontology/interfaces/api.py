@@ -64,6 +64,11 @@ from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.results import TermInfo
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
+from bijux_ontology.workflows.upgrades.assessment import (
+    UpgradeAssessment,
+    assess_upgrade,
+)
+from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
     "ABSENT",
@@ -98,11 +103,14 @@ __all__ = [
     "TermDeclaration",
     "TermInfo",
     "Transformation",
+    "UpgradeAssessment",
+    "UseIndex",
     "ValueDeclaration",
     "ValueTraits",
     "Vocabulary",
     "VocabularyChanges",
     "VocabularyView",
+    "assess_upgrade",
     "check_context",
     "check_data_usage",
     "check_emission",
@@ -121,6 +129,7 @@ __all__ = [
     "expectations_from_data",
     "export_rdf",
     "extract_neighbourhood",
+    "index_uses",
     "inspect_vocabulary",
     "load_vocabulary",
     "merge_sources",
