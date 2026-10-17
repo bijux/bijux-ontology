@@ -26,6 +26,7 @@ from bijux_ontology.rdf.terms import literal_term
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
+from .bindings import same_contribution, source_node_traits
 from .registry import index_models
 
 
@@ -215,6 +216,25 @@ def check_emission(
             budget=budget,
         )
         bindings = tuple(usages)
+        bound_traits: dict[SourcePath, tuple[ValueTraits, ...]] = {}
+
+        def traits_for(path: SourcePath) -> tuple[ValueTraits, ...]:
+            """Reuse established own-node traits for explicit source bindings."""
+            if path not in bound_traits:
+                try:
+                    value = at_path(snapshot, path)
+                except (KeyError, IndexError) as error:
+                    raise InputError(
+                        "No supplied model usage", location=location(path)
+                    ) from error
+                if not isinstance(value, dict):
+                    raise InputError(
+                        "Model bindings select compact node objects",
+                        location=location(path),
+                    )
+                bound_traits[path] = source_node_traits(value, path, prepared, budget)
+            return bound_traits[path]
+
         for binding in bindings:
             budget.consume("work")
             if not isinstance(binding, ModelUsage):
@@ -247,24 +267,7 @@ def check_emission(
                     location=location(binding.path),
                 )
             checked += 1
-            node_traits: tuple[ValueTraits, ...]
-            if not binding.path:
-                node_traits = prepared.root_nodes
-            else:
-                observed = prepared.observe(binding.path)
-                if observed.limitation:
-                    issues.append(
-                        Issue(
-                            "emission.node_unverified",
-                            observed.limitation,
-                            location(binding.path),
-                            kind="unverified",
-                        )
-                    )
-                depth = min((item.depth for item in observed.occurrences), default=0)
-                node_traits = tuple(
-                    item.traits for item in observed.occurrences if item.depth == depth
-                )
+            node_traits = traits_for(binding.path)
             if len(node_traits) != 1:
                 issues.append(
                     Issue(
@@ -376,36 +379,55 @@ def check_emission(
                                 actual=occurrence.traits.kind,
                             )
                         )
-                targets = {
-                    value.model for value in field.values if value.model is not None
-                }
-                if targets:
-                    raw = cast(dict[str, object], node)[str(path[-1])]
-                    child_paths = (
-                        [
-                            path + (index,)
-                            for index, item in enumerate(raw)
-                            if isinstance(item, dict)
-                        ]
-                        if isinstance(raw, list)
-                        else [path]
-                        if isinstance(raw, dict)
-                        else []
-                    )
-                    for child_path in child_paths:
-                        if not any(
-                            item.path == child_path and item.model in targets
-                            for item in bindings
+                covered: set[SourcePath] = set()
+                for occurrence in observed.occurrences:
+                    budget.consume("work")
+                    if occurrence.depth != minimum_depth or occurrence.empty:
+                        continue
+                    budget.consume("work", len(field.values))
+                    targets = {
+                        value.model
+                        for value in field.values
+                        if value.model is not None
+                        and _matches(value, occurrence, registry) is not False
+                    }
+                    if not targets:
+                        continue
+                    matched = False
+                    for child in bindings:
+                        budget.consume("work")
+                        if (
+                            child.model not in targets
+                            or child.path in covered
+                            or child.path[: len(path)] != path
                         ):
-                            issues.append(
-                                Issue(
-                                    "emission.nested_scope_unverified",
-                                    "Nested model output needs an explicit "
-                                    "model usage binding",
-                                    location(child_path),
-                                    kind="unverified",
-                                )
+                            continue
+                        traits = traits_for(child.path)
+                        if len(traits) != 1 or traits[0].kind not in {
+                            "node",
+                            "iri",
+                            "blank",
+                        }:
+                            continue
+                        usage = prepared.observe(child.path)
+                        budget.consume("work", len(usage.occurrences))
+                        if not usage.limitation and any(
+                            same_contribution(occurrence, item)
+                            for item in usage.occurrences
+                        ):
+                            covered.add(child.path)
+                            matched = True
+                            break
+                    if not matched:
+                        issues.append(
+                            Issue(
+                                "emission.nested_scope_unverified",
+                                "Nested model output needs an established "
+                                "source-node binding",
+                                location(path),
+                                kind="unverified",
                             )
+                        )
         mapping = prepared.check(expectations, allow_empty=True)
         checked += mapping.checked
         issues.extend(mapping.issues)

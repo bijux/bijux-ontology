@@ -1,5 +1,6 @@
 """Actual serialisation is checked separately from hypothetical field types."""
 
+from copy import deepcopy
 from typing import Annotated
 
 import pytest
@@ -11,6 +12,7 @@ from bijux_ontology.declarations import ModelDeclaration as Model
 from bijux_ontology.declarations import ValueDeclaration as Value
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
+from bijux_ontology.jsonld.observations import SourcePath, at_path
 from bijux_ontology.limits import Limits
 from bijux_ontology.models import ModelUsage, check_emission
 
@@ -246,3 +248,142 @@ def test_list_literal_validation_is_per_observation_across_alternative_branches(
         ("literal.lexical_invalid", "/values[1]")
     ]
     assert report.checked == 5
+
+
+@pytest.mark.parametrize("container", ["@list", "@set"])
+@pytest.mark.parametrize("explicit", [False, True])
+@pytest.mark.parametrize("aliases", [False, True])
+def test_actual_child_bindings_cross_containers_without_binding_the_wrapper(
+    container: str, explicit: bool, aliases: bool
+) -> None:
+    parent = Model(
+        "parent",
+        (EX + "Parent",),
+        (
+            Field(
+                "children",
+                EX + "children",
+                (Value("object", model="child", container=container),),
+            ),
+        ),
+    )
+    child = Model(
+        "child",
+        (EX + "Child",),
+        (Field("label", EX + "label", (Value("literal"),), emission="guaranteed"),),
+    )
+    keyword = "entries" if aliases else container
+    context: dict[str, object] = {
+        "@vocab": EX,
+        "kind": "@type",
+        "identifier": "@id",
+        "entries": container,
+    }
+    if not explicit:
+        context["children"] = {"@id": EX + "children", "@container": container}
+    child_node = {
+        "identifier" if aliases else "@id": EX + "child",
+        "kind" if aliases else "@type": "Child",
+        "label": "Child",
+    }
+    document = {
+        "@context": context,
+        "@type": "Parent",
+        "children": {keyword: [child_node]} if explicit else [child_node],
+    }
+    child_path = ("children", keyword, 0) if explicit else ("children", 0)
+    bindings = [ModelUsage("parent"), ModelUsage("child", child_path)]
+    original = deepcopy(document)
+    assert check_emission(document, [parent, child], bindings).verified
+    assert document == original
+    omitted = check_emission(document, [parent, child], bindings[:1])
+    assert "emission.nested_scope_unverified" in {
+        issue.code for issue in omitted.issues
+    }
+    if explicit:
+        wrapper = check_emission(
+            document,
+            [parent, child],
+            [ModelUsage("parent"), ModelUsage("child", ("children",))],
+        )
+        assert not wrapper.verified
+    del child_node["label"]
+    missing = check_emission(document, [parent, child], bindings)
+    assert any(
+        issue.code == "emission.required_occurrence_missing"
+        and issue.location == "/" + "/".join(map(str, (*child_path, "label")))
+        for issue in missing.issues
+    )
+
+
+@pytest.mark.parametrize("placement", ["root", "graph", "included", "array"])
+def test_selected_subject_uses_its_own_types_instead_of_child_value_types(
+    placement: str,
+) -> None:
+    parent = {
+        "@id": EX + "parent",
+        "kind": "Parent",
+        "child": {"@id": EX + "child", "kind": "Child"},
+    }
+    context = {"@vocab": EX, "kind": "@type"}
+    document: object
+    path: SourcePath
+    if placement == "root":
+        document, path = {"@context": context, **parent}, ()
+    elif placement == "graph":
+        document, path = {"@context": context, "@graph": [parent]}, ("@graph", 0)
+    elif placement == "included":
+        document, path = (
+            {"@context": context, "@id": EX + "other", "@included": [parent]},
+            ("@included", 0),
+        )
+    else:
+        document, path = [{"@context": context, **parent}], (0,)
+    model = Model(
+        "parent",
+        (EX + "Parent",),
+        (Field("child", EX + "child", (Value("object", types=(EX + "Child",)),)),),
+    )
+    result = check_emission(document, [model], [ModelUsage("parent", path)])
+    assert result.verified, result.to_dict()
+    selected = at_path(document, path)
+    assert isinstance(selected, dict)
+    selected["kind"] = "Child"
+    incorrect = check_emission(document, [model], [ModelUsage("parent", path)])
+    assert any(
+        issue.code == "emission.types_mismatch" and issue.actual == EX + "Child"
+        for issue in incorrect.issues
+    )
+
+
+def test_nested_model_choices_require_actual_selected_bindings() -> None:
+    document = {
+        "@context": {"@vocab": EX},
+        "@type": "Parent",
+        "child": {"@type": "Child"},
+    }
+    models = [
+        Model(
+            "parent",
+            (EX + "Parent",),
+            (
+                Field(
+                    "child",
+                    EX + "child",
+                    (Value("object", model="first"), Value("object", model="second")),
+                ),
+            ),
+        ),
+        Model("first", (EX + "Child",)),
+        Model("second", (EX + "Child",)),
+    ]
+    missing = check_emission(document, models, [ModelUsage("parent")])
+    assert missing.outcome == "unverified"
+    assert check_emission(
+        document, models, [ModelUsage("parent"), ModelUsage("second", ("child",))]
+    ).verified
+    document["other"] = {"@type": "Child"}
+    wrong_scope = check_emission(
+        document, models, [ModelUsage("parent"), ModelUsage("second", ("other",))]
+    )
+    assert wrong_scope.outcome == "unverified"
