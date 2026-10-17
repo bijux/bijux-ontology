@@ -11,6 +11,7 @@ from bijux_ontology import prepare_source
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.canonical import canonicalize_rdf
+from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 
 EX = Namespace("https://canonical.example/")
@@ -98,7 +99,14 @@ def test_empty_graph_inventory_requires_a_visible_explicit_quad_only_scope() -> 
     assert excluded.content == absent.content == b""
     assert excluded.report.verified and absent.report.verified
     assert excluded.report.exclusions == ("empty-named-graphs",)
-    unknown = prepare_source(f"<{EX.empty}> {{}}", format="trig")
+    unknown = PreparedSource(
+        Dataset(),
+        is_dataset=True,
+        document_iri=None,
+        effective_url=None,
+        literal_fidelity="source_terms",
+        graph_fidelity="nonempty-only",
+    )
     uncertain = canonicalize_rdf(unknown)
     assert uncertain.content is None and uncertain.report.outcome == "unverified"
     assert any(

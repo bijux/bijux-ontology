@@ -1,15 +1,18 @@
 """Maintained RDF syntax parsing with bounded lexical-preserving conversion."""
 
+from dataclasses import dataclass
 from typing import Literal as TypingLiteral
 from typing import cast
 
 import pyoxigraph as ox
 from rdflib import BNode, Dataset, URIRef
+from rdflib.graph import DATASET_DEFAULT_GRAPH_ID
 
 from bijux_ontology.limits import Budget
 
 from ..errors import InputError, LimitExceeded, ResourceError
 from .terms import oxigraph_term
+from .trig import retain_trig_inventory
 
 RdfFormat = TypingLiteral["turtle", "nt", "xml", "trig", "nquads", "json-ld"]
 
@@ -23,6 +26,14 @@ RDF_FORMATS = {
 }
 
 
+@dataclass(frozen=True)
+class ParsedDataset:
+    """Owned primary terms with explicitly established graph-inventory fidelity."""
+
+    dataset: Dataset
+    graph_fidelity: TypingLiteral["complete", "nonempty-only"] = "complete"
+
+
 def parse_dataset(
     payload: bytes,
     *,
@@ -31,7 +42,7 @@ def parse_dataset(
     budget: Budget,
     max_triples: int,
     preserve_literals: bool,
-) -> Dataset:
+) -> ParsedDataset:
     """Parse bounded RDF syntax while retaining shared blank-node relations."""
     dataset = Dataset()
     if syntax == "xml":
@@ -48,6 +59,12 @@ def parse_dataset(
             budget.consume("triples")
             if count > max_triples:
                 raise LimitExceeded("RDF document exceeds max_triples")
+            if isinstance(
+                quad.graph_name, ox.NamedNode
+            ) and quad.graph_name.value == str(DATASET_DEFAULT_GRAPH_ID):
+                raise InputError(
+                    "Named graph uses the reserved default graph identifier"
+                )
             target = (
                 dataset.default_graph
                 if isinstance(quad.graph_name, ox.DefaultGraph)
@@ -71,4 +88,13 @@ def parse_dataset(
         if isinstance(error, InputError):
             raise
         raise ResourceError(f"Cannot parse {syntax} RDF source: {error}") from error
-    return dataset
+    if syntax == "trig":
+        # RDFLib requires an initial base even for a document's first absolute
+        # @base. The primary parser's final base is an authored fallback only
+        # when no caller base exists; earlier relative IRIs were already rejected.
+        complete = retain_trig_inventory(
+            payload, dataset, nodes, base=base or parser.base_iri, budget=budget
+        )
+        if not complete:
+            return ParsedDataset(dataset, "nonempty-only")
+    return ParsedDataset(dataset)

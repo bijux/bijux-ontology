@@ -11,6 +11,7 @@ from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource, bind_namespaces
+from bijux_ontology.rdf.trig import serialize_trig
 
 from ..errors import InputError, LimitExceeded, ResourceError
 from ..reports import Issue, Report, combine_reports
@@ -43,8 +44,8 @@ def export_rdf(
     """Serialize with RDFLib, then reparse and compare the explicit RDF scope.
 
     A dataset needs graph selection or explicit union for a graph-only format.
-    Maintained serializers currently omit empty named graphs. Such exports fail
-    preservation unless preserve_graphs=False explicitly excludes empty graphs.
+    TriG retains empty named graphs explicitly. Other serializers may omit them;
+    those exports require preserve_graphs=False to exclude that inventory.
     Unknown source empty-graph fidelity cannot become a verified full-dataset
     claim. Namespace prefixes aid readability; exact IRIs define identity.
     """
@@ -81,7 +82,7 @@ def export_rdf(
                         kind="unverified",
                     )
                 )
-            if empty and preserve_graphs:
+            if empty and preserve_graphs and format != "trig":
                 issues.append(
                     Issue(
                         "rdf.export_empty_graph_loss",
@@ -123,7 +124,13 @@ def export_rdf(
                 serializable.default_graph.add(triple)
             bind_namespaces(serializable, selected)
         try:
-            content = serializable.serialize(format=format, encoding="utf-8")
+            content = (
+                serialize_trig(serializable, budget=operation)
+                if format == "trig" and isinstance(serializable, Dataset)
+                else serializable.serialize(format=format, encoding="utf-8")
+            )
+        except LimitExceeded:
+            raise
         except ValueError as error:
             issues.append(
                 Issue(
@@ -161,10 +168,6 @@ def export_rdf(
             reparsed,
             budget=operation,
             timeout_seconds=timeout_seconds,
-            # The preflight above either establishes no selected empty graphs or
-            # records their explicit exclusion. The TriG parser independently
-            # exposes only nonempty graphs; it cannot establish their absence.
-            ignore_empty_graphs=format == "trig",
         )
         scope = Report(
             "rdf.export_scope",
