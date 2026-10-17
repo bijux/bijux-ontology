@@ -110,3 +110,20 @@ def test_unavailable_usage_and_missing_children_remain_explicit() -> None:
     )
     assert limited.report.outcome == "exhausted"
     assert [use.iri for use in limited.entries] == [EX + "A"]
+
+
+def test_observed_uses_retain_anonymous_versus_default_graph_scope() -> None:
+    for keyword, anonymous in (("@graph", True), (EX + "nodes", False)):
+        document = {
+            "@context": {"@vocab": EX, "nodes": keyword},
+            "items": {"nodes": {"@id": EX + "record", "p": "value"}},
+        }
+        usage = prepare_usages(document).observe(("items", "nodes", "p"))
+        result = index_uses(observed_usages=[usage])
+        assert result.report.verified
+        assert result.entries
+        assert all(use.graph is None for use in result.entries)
+        assert all(use.anonymous_graph is anonymous for use in result.entries)
+        assert all(
+            (use.graph_identity is not None) is anonymous for use in result.entries
+        )
