@@ -77,6 +77,7 @@ from bijux_ontology.reports import (
     combine_reports,
 )
 from bijux_ontology.skos.checking import check_skos
+from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.comparison import (
     Change,
@@ -147,6 +148,7 @@ __all__ = [
     "ObservedUsage",
     "OfflineDocumentLoader",
     "OntologyObligation",
+    "OntologyVersion",
     "PreparedChecks",
     "PreparedSource",
     "PreparedUsages",
@@ -199,6 +201,7 @@ __all__ = [
     "index_uses",
     "inspect_vocabulary",
     "load_project",
+    "load_catalog",
     "load_vocabulary",
     "merge_sources",
     "models_from_data",

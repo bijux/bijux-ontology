@@ -150,3 +150,11 @@ finite registry and explicit `RdfField` metadata: dataclasses use the `rdf`
 field metadata key, while TypedDict fields use `Annotated`. Serializer sidecars
 can describe output aliases and contracts; conflicting metadata remains visible.
 Python field types, defaults and required keys do not imply RDF emission.
+
+`load_catalog(Path("catalog.xml"), versions=[OntologyVersion(ontology, version)])`
+provides immutable offline imports for `load_vocabulary`. The supported OASIS
+subset is `catalog`, nested `group` and exact `uri` entries with inherited
+`xml:base`. Targets are local files; rewrites, chaining, DTDs, duplicate names
+and conflicting versions fail. Logical entry/version IRIs supply RDF bases.
+Use `formats={iri: "xml"}` for ambiguous `.owl` targets and explicitly select
+dataset graphs through the returned `RdfSource` values.
