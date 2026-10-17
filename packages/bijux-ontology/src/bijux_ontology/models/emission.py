@@ -45,6 +45,7 @@ from .bindings import (
     source_entity,
     source_node_traits,
 )
+from .occurrences import check_occurrences
 from .registry import index_models
 
 
@@ -578,6 +579,16 @@ def check_emission(
                             )
                         )
 
+                issues.extend(
+                    check_occurrences(
+                        field.output,
+                        facts,
+                        where=field_where,
+                        budget=budget,
+                        native_literals=native_literals,
+                    )
+                )
+
         for binding in bindings:
             budget.consume("work")
             if not isinstance(binding, ModelUsage):
@@ -650,6 +661,16 @@ def check_emission(
                 path = binding.path + (field.key or field.name,)
                 checked += 1
                 if path[-1] not in node:
+                    issues.extend(
+                        check_occurrences(
+                            field.output,
+                            (),
+                            where=location(path),
+                            budget=budget,
+                            native_literals=native_literals,
+                            present=False,
+                        )
+                    )
                     if field.emission == "guaranteed":
                         issues.append(
                             Issue(
@@ -675,6 +696,17 @@ def check_emission(
                     )
                     continue
                 if not observed.occurrences:
+                    issues.extend(
+                        check_occurrences(
+                            field.output,
+                            (),
+                            where=location(path),
+                            budget=budget,
+                            native_literals=native_literals,
+                            present=True,
+                            raw=node[path[-1]],
+                        )
+                    )
                     if field.emission == "guaranteed":
                         issues.append(
                             Issue(
@@ -683,6 +715,12 @@ def check_emission(
                                 location(path),
                             )
                         )
+                    elif (
+                        field.output is not None
+                        and field.output.allow_empty
+                        and (node[path[-1]] is not None or field.output.allow_null)
+                    ):
+                        expectations.pop()
                     else:
                         issues.append(
                             Issue(
@@ -728,6 +766,17 @@ def check_emission(
                                 actual=occurrence.traits.kind,
                             )
                         )
+                issues.extend(
+                    check_occurrences(
+                        field.output,
+                        observed.occurrences,
+                        where=location(path),
+                        budget=budget,
+                        native_literals=native_literals,
+                        present=True,
+                        raw=node[path[-1]],
+                    )
+                )
                 covered: set[SourcePath] = set()
                 for occurrence in observed.occurrences:
                     budget.consume("work")

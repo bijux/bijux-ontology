@@ -165,3 +165,11 @@ arrays and list/set wrappers; named references follow descriptions in their
 exact graph. Explicit bindings remain available and conflicting model choices
 fail. Ambiguous anonymous correspondence or model alternatives stay unverified;
 removing an anonymous node’s only identifying evidence can cross that boundary.
+
+`FieldDeclaration(output=OutputRequirement(...))` separates required source
+properties, null/empty permission, distinct RDF value bounds and per-list member
+bounds. Repeated unordered values count once; repeated list positions count
+separately, and an empty list contributes `rdf:nil` with zero members. These
+are application output requirements, independent of Python constructor fields
+and OWL cardinalities. Legacy `optional=True` aliases optional emission and
+rejects conflicting required output; its default `False` adds no guarantee.

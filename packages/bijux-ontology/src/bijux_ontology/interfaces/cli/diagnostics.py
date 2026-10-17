@@ -55,6 +55,8 @@ _CODES = {
     "data": frozenset("type_unverified".split()),
     "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
+        "cardinality_unverified empty_forbidden list_length_mismatch list_required "
+        "null_forbidden source_presence_unverified value_count_mismatch "
         "binding_conflict nested_scope_unverified node_kind_mismatch node_unverified "
         "subject_mismatch graph_mismatch graph_unverified "
         "reference_unverified reference_missing required_entity_fact_missing "

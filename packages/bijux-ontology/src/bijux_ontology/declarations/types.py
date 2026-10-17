@@ -99,6 +99,39 @@ class ValueDeclaration:
 
 
 @dataclass(frozen=True)
+class OutputRequirement:
+    """Application output requirements, independent of Python and OWL cardinality.
+
+    Value counts use distinct RDF objects, counting each nonempty list head and
+    RDF nil for an empty list. Member bounds apply separately to each actual RDF
+    list, preserving repeated positions. Omission/null tests concern source JSON.
+    """
+
+    require_property: bool = False
+    allow_null: bool = False
+    allow_empty: bool = False
+    minimum_values: int | None = None
+    maximum_values: int | None = None
+    minimum_list_members: int | None = None
+    maximum_list_members: int | None = None
+
+    def __post_init__(self) -> None:
+        for name in ("require_property", "allow_null", "allow_empty"):
+            if type(getattr(self, name)) is not bool:
+                raise InputError(f"{name} must be a boolean")
+        for lower, upper in (
+            ("minimum_values", "maximum_values"),
+            ("minimum_list_members", "maximum_list_members"),
+        ):
+            minimum, maximum = getattr(self, lower), getattr(self, upper)
+            for name, value in ((lower, minimum), (upper, maximum)):
+                if value is not None and (type(value) is not int or value < 0):
+                    raise InputError(f"{name} must be a nonnegative integer or null")
+            if minimum is not None and maximum is not None and minimum > maximum:
+                raise InputError("Output minimum exceeds maximum", location=lower)
+
+
+@dataclass(frozen=True)
 class FieldDeclaration:
     """A predicate and alternative values emitted when a field is present."""
 
@@ -111,6 +144,7 @@ class FieldDeclaration:
     reverse: bool = False
     _: KW_ONLY
     emission: Emission = "unknown"
+    output: OutputRequirement | None = None
 
     def __post_init__(self) -> None:
         _text(self.name, "name")
@@ -128,6 +162,20 @@ class FieldDeclaration:
             "guaranteed",
         }:
             raise InputError(f"Unknown emission guarantee: {self.emission}")
+        if self.output is not None and not isinstance(self.output, OutputRequirement):
+            raise InputError("Expected an explicit OutputRequirement")
+        if self.optional:
+            if (
+                self.emission == "guaranteed"
+                or self.output is not None
+                and (
+                    self.output.require_property
+                    or (self.output.minimum_values or 0) > 0
+                )
+            ):
+                raise InputError("Legacy optional conflicts with required output")
+            if self.emission == "unknown":
+                object.__setattr__(self, "emission", "optional")
         values = _sequence(self.values, "values")
         if not values or any(
             not isinstance(value, ValueDeclaration) for value in values

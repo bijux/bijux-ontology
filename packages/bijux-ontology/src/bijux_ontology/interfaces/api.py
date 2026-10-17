@@ -10,6 +10,7 @@ from bijux_ontology.declarations.codecs import (
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
+    OutputRequirement,
     SubjectIdentity,
     TermDeclaration,
     ValueDeclaration,
@@ -142,6 +143,7 @@ __all__ = [
     "Location",
     "ModelAssessment",
     "ModelDeclaration",
+    "OutputRequirement",
     "ModelUsage",
     "ObligationResult",
     "ObservedOccurrence",
