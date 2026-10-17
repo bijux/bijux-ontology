@@ -19,6 +19,9 @@ from bijux_ontology.jsonld.entities import (
     EntityKey,
     object_key,
 )
+from bijux_ontology.jsonld.entities import (
+    source_entity as source_record,
+)
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
@@ -36,7 +39,12 @@ from bijux_ontology.rdf.terms import literal_term
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
-from .bindings import same_contribution, source_entity, source_node_traits
+from .bindings import (
+    candidate_paths,
+    same_contribution,
+    source_entity,
+    source_node_traits,
+)
 from .registry import index_models
 
 
@@ -231,7 +239,9 @@ def check_emission(
     """Check selected actual outputs, without claiming all hypothetical instances.
 
     Each occurrence must match one alternative branch. Nested model nodes need
-    explicit source or graph-qualified entity bindings. Unsupplied descriptions
+    established source or graph-qualified entity bindings. Supported unambiguous
+    children are discovered automatically; explicit bindings can constrain them.
+    Unsupplied descriptions
     stay unknown unless their reference binding explicitly requires closed coverage.
     Predicates, reversal, collection membership and literal traits come from the
     shared standards-processed usage snapshot, never a second expansion engine.
@@ -270,7 +280,7 @@ def check_emission(
             limits=selected,
             budget=budget,
         )
-        bindings = tuple(usages)
+        bindings = list(usages)
         bound_traits: dict[SourcePath, tuple[ValueTraits, ...]] = {}
 
         def traits_for(path: SourcePath) -> tuple[ValueTraits, ...]:
@@ -367,6 +377,82 @@ def check_emission(
                 ):
                     return True
             return False
+
+        def bind_reference(key: EntityKey, targets: set[str]) -> bool:
+            """Follow one established named child in its exact selected graph."""
+            if len(targets) != 1 or key.identifier is None or key.anonymous_graph:
+                return False
+            if key.identifier.startswith("_:"):
+                return False
+            description = prepared.entities.get(key)
+            if description is None or not description.described:
+                return False
+            target = next(iter(targets))
+            if target not in registry or set(registry[target].types) - set(
+                description.types
+            ):
+                return False
+            selected = ModelUsage(
+                target, reference=key.identifier, graph=key.graph, entity=True
+            )
+            if selected not in bindings:
+                budget.consume("states")
+                bindings.append(selected)
+            return True
+
+        def bind_source(
+            path: SourcePath, occurrence: ObservedOccurrence, targets: set[str]
+        ) -> SourcePath | None:
+            """Bind one child by its original contribution and graph identity."""
+            if len(targets) != 1:
+                return None
+            target = next(iter(targets))
+            matches = []
+            for candidate in candidate_paths(at_path(snapshot, path), path, budget):
+                traits = traits_for(candidate)
+                if len(traits) != 1 or traits[0].kind not in {"node", "iri", "blank"}:
+                    continue
+                node = at_path(snapshot, candidate)
+                if not isinstance(node, dict):
+                    continue
+                association = source_record(node, candidate, prepared.observe, budget)
+                if association is None or not association.described:
+                    continue
+                usage = prepared.observe(candidate)
+                if association.key == object_key(occurrence) or (
+                    not usage.limitation
+                    and any(
+                        same_contribution(occurrence, item)
+                        for item in usage.occurrences
+                    )
+                ):
+                    matches.append(candidate)
+            if len(matches) != 1:
+                return None
+            selected_path = matches[0]
+            if any(
+                child.reference is None
+                and not child.entity
+                and child.path == selected_path
+                and child.model != target
+                for child in bindings
+            ):
+                issues.append(
+                    Issue(
+                        "emission.binding_conflict",
+                        "Explicit child binding conflicts with the "
+                        "established model relationship",
+                        location(selected_path),
+                        kind="input_error",
+                        expected=target,
+                    )
+                )
+                return None
+            selected = ModelUsage(target, selected_path)
+            if selected not in bindings:
+                budget.consume("states")
+                bindings.append(selected)
+            return selected_path
 
         def check_entity(binding: ModelUsage, model: ModelDeclaration) -> None:
             """Check joined entity facts separately from source-object guarantees."""
@@ -481,6 +567,7 @@ def check_emission(
                         targets
                         and child_key is not None
                         and not reference_binding(child_key, targets)
+                        and not bind_reference(child_key, targets)
                     ):
                         issues.append(
                             Issue(
@@ -688,6 +775,13 @@ def check_emission(
                             covered.add(child.path)
                             matched = True
                             break
+                    if not matched:
+                        discovered = bind_source(path, occurrence, targets)
+                        if discovered is not None and discovered not in covered:
+                            covered.add(discovered)
+                            matched = True
+                        elif child_key is not None:
+                            matched = bind_reference(child_key, targets)
                     if not matched:
                         issues.append(
                             Issue(

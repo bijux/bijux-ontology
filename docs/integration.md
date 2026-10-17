@@ -158,3 +158,10 @@ subset is `catalog`, nested `group` and exact `uri` entries with inherited
 and conflicting versions fail. Logical entry/version IRIs supply RDF bases.
 Use `formats={iri: "xml"}` for ambiguous `.owl` targets and explicitly select
 dataset graphs through the returned `RdfSource` values.
+
+A root `ModelUsage` also checks unambiguous nested models declared by its value
+branches. Actual processor-established contributions identify children through
+arrays and list/set wrappers; named references follow descriptions in their
+exact graph. Explicit bindings remain available and conflicting model choices
+fail. Ambiguous anonymous correspondence or model alternatives stay unverified;
+removing an anonymous node’s only identifying evidence can cross that boundary.

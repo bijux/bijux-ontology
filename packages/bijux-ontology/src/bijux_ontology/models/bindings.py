@@ -26,7 +26,20 @@ def source_node_traits(
         return prepared.root_nodes
     observed = prepared.observe(path)
     if observed.limitation:
-        return ()
+        # An implicit anonymous node can still have a unique original subject
+        # established by an independently selected own field. Such a node has
+        # no explicit ID through which another source description could join it.
+        association = establish_source_entity(node, path, prepared.observe, budget)
+        if (
+            association is None
+            or association.key.identifier is not None
+            or "@type" not in node
+        ):
+            return ()
+        description = prepared.entities.get(association.key)
+        if description is None or not association.described:
+            return ()
+        return (ValueTraits("node", identifier_kind="blank", types=description.types),)
     if "@value" in node:
         return tuple(item.traits for item in observed.occurrences)
     identifier = None
@@ -126,3 +139,33 @@ def source_entity(
     """Associate a selected source object using the shared JSON-LD boundary."""
     source = establish_source_entity(node, path, prepared.observe, budget)
     return source.key if source is not None else None
+
+
+def candidate_paths(
+    value: object, path: SourcePath, budget: Budget
+) -> tuple[SourcePath, ...]:
+    """Locate candidates only; maintained usage evidence must prove node ownership.
+
+    Raw structure supplies locations, never RDF node or graph identity. Value
+    objects are opaque, and context definitions never contain application nodes.
+    """
+    pending = [(value, path)]
+    found = []
+    while pending:
+        item, selected = pending.pop()
+        budget.consume("work")
+        budget.consume("states")
+        if isinstance(item, dict):
+            if "@value" in item:
+                continue
+            found.append(selected)
+            pending.extend(
+                (child, (*selected, key))
+                for key, child in item.items()
+                if key != "@context" and isinstance(child, (dict, list))
+            )
+        elif isinstance(item, list):
+            pending.extend(
+                (child, (*selected, index)) for index, child in enumerate(item)
+            )
+    return tuple(found)
