@@ -21,3 +21,4 @@ These targets use pinned `bijux-std` implementations. Generated output stays und
 - Finite model relationships, literal and representative-emission checks, plus optional Pydantic/LinkML extraction.
 - SKOS integrity, application data rules and isolated optional SHACL validation with preserved backend evidence.
 - Index actual application uses and assess vocabulary upgrades against selected before/after contracts.
+- Complete curated Python API, bounded CLI execution, protected output and declarative project workflows.
