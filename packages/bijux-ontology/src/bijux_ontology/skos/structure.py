@@ -74,18 +74,21 @@ def structure(graph: Graph, budget: Budget) -> SkosStructure:
         if predicate == SKOS.member:
             roles.setdefault(subject, set()).add(SKOS.Collection)
             members.setdefault(subject, set()).add(value)
-        if predicate in _RELATIONS or predicate in (
-            SKOS.hasTopConcept,
-            SKOS.topConceptOf,
-            SKOS.inScheme,
-            SKOS.member,
-            SKOS.memberList,
-        ):
-            if not isinstance(value, URIRef | BNode):
-                invalid.append((subject, URIRef(str(predicate)), value))
-                if predicate in _RELATIONS:
-                    roles.setdefault(subject, set()).add(SKOS.Concept)
-                continue
+        if (
+            predicate in _RELATIONS
+            or predicate
+            in (
+                SKOS.hasTopConcept,
+                SKOS.topConceptOf,
+                SKOS.inScheme,
+                SKOS.member,
+                SKOS.memberList,
+            )
+        ) and not isinstance(value, URIRef | BNode):
+            invalid.append((subject, URIRef(str(predicate)), value))
+            if predicate in _RELATIONS:
+                roles.setdefault(subject, set()).add(SKOS.Concept)
+            continue
         if predicate in _RELATIONS:
             roles.setdefault(subject, set()).add(SKOS.Concept)
             roles.setdefault(value, set()).add(SKOS.Concept)

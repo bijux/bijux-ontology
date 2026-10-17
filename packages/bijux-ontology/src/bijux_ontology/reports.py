@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import KW_ONLY, dataclass, replace
-from typing import Literal
+from typing import Literal, cast
 
 from .errors import InputError
 
@@ -33,7 +33,9 @@ class Location:
     branch: int | None = None
 
     def __post_init__(self) -> None:
-        if not isinstance(self.source, str) or isinstance(self.path, (str, bytes)):
+        if not isinstance(self.source, str) or isinstance(
+            cast(object, self.path), (str, bytes)
+        ):
             raise InputError("A location requires a source string and path sequence")
         path = tuple(self.path)
         if any(
@@ -194,12 +196,12 @@ class Report:
             raise InputError("Report completion and optional scope must be booleans")
         if not isinstance(self.regime, str) or not self.regime.strip():
             raise InputError("A report requires an explicit semantic regime")
-        if isinstance(self.families, (str, bytes)) or any(
+        if isinstance(cast(object, self.families), (str, bytes)) or any(
             not isinstance(family, str) or not family.strip()
             for family in self.families
         ):
             raise InputError("Check families must be nonempty strings")
-        if isinstance(self.exclusions, (str, bytes)) or any(
+        if isinstance(cast(object, self.exclusions), (str, bytes)) or any(
             not isinstance(item, str) or not item.strip() for item in self.exclusions
         ):
             raise InputError("Excluded scopes must be nonempty strings")

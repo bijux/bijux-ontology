@@ -22,6 +22,7 @@ dev = [
   "twine>=6,<7",
   "pytest-cov>=6,<8",
   "pytest>=8.4,<10",
+  "pytest-timeout>=2.3,<3",
   "ruff>=0.6,<1",
   "mypy>=1.11,<3",
   "deptry>=0.23,<1",
@@ -30,11 +31,3 @@ dev = [
   "codespell>=2.4,<3",
   "radon>=6,<7",
 ]
-
-[tool.pytest.ini_options]
-testpaths = ["packages/bijux-ontology/tests", "packages/bijux-ontology-dev/tests"]
-cache_dir = "artifacts/root/pytest-cache"
-addopts = "--import-mode=importlib"
-
-[tool.codespell]
-ignore-words-list = "disjointness"

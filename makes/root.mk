@@ -12,7 +12,7 @@ include $(ROOT_MAKEFILE_DIR)/bijux-py/root/package-dispatch.mk
 include $(ROOT_MAKEFILE_DIR)/bijux-std.mk
 include $(ROOT_MAKEFILE_DIR)/standards.mk
 MAKE_LAYOUT_REQUIRED_FILES := env.mk packages.mk publish.mk root.mk standards.mk
-CONFIG_LAYOUT_REQUIRED_FILES := coveragerc.ini mypy.ini ruff.toml
+CONFIG_LAYOUT_REQUIRED_FILES := codespell.ini coveragerc.ini deptry.toml interrogate.toml mypy.ini pytest.ini ruff.toml vulture.toml
 include $(ROOT_MAKEFILE_DIR)/bijux-py/repository/make-layout.mk
 include $(ROOT_MAKEFILE_DIR)/bijux-py/repository/config-layout.mk
 include $(ROOT_MAKEFILE_DIR)/bijux-py/ci/help.mk

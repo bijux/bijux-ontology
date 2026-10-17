@@ -1,6 +1,7 @@
 """Stable diagnostic explanations scoped to the checks this package implements."""
 
 from dataclasses import dataclass
+from typing import cast
 
 
 @dataclass(frozen=True)
@@ -356,7 +357,7 @@ def explain_code(code: str) -> DiagnosticExplanation | None:
     Contextual model diagnostics retain the underlying registered meaning.
     Unknown codes do not acquire fabricated explanations.
     """
-    if not isinstance(code, str):
+    if not isinstance(cast(object, code), str):
         return None
     family, separator, suffix = code.partition(".")
     if not separator:

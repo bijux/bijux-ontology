@@ -409,8 +409,8 @@ def check_resources(
                 for node in (subject, *values)
             }
             | {node for values in members.values() for node in values}
-            | {node for node in graph.subjects(SKOS.topConceptOf)}
-            | {node for node in graph.objects(None, SKOS.hasTopConcept)}
+            | set(graph.subjects(SKOS.topConceptOf))
+            | set(graph.objects(None, SKOS.hasTopConcept))
         )
         for node in active & resources:
             budget.consume("work")

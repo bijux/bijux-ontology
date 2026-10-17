@@ -23,9 +23,12 @@ def _preserve_local_changes(root: Path, source: Path, mappings: dict[str, str]) 
     )
     for destination, original in mappings.items():
         target = root / destination
-        if target.exists() and destination not in tracked:
-            if target.read_bytes() != (source / original).read_bytes():
-                raise SystemExit(f"Preserve untracked tooling file: {destination}")
+        if (
+            target.exists()
+            and destination not in tracked
+            and target.read_bytes() != (source / original).read_bytes()
+        ):
+            raise SystemExit(f"Preserve untracked tooling file: {destination}")
 
 
 def main() -> None:

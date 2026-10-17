@@ -1,5 +1,6 @@
 """A real owned subprocess deadline for expensive console checks."""
 
+import contextlib
 import json
 import math
 import os
@@ -22,20 +23,16 @@ from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 def _stop(process: subprocess.Popen[bytes]) -> None:
     if os.name == "posix":
-        try:
+        with contextlib.suppress(ProcessLookupError):
             os.killpg(process.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
     elif process.poll() is None:
         process.terminate()
     try:
         process.wait(timeout=0.2)
     except subprocess.TimeoutExpired:
         if os.name == "posix":
-            try:
+            with contextlib.suppress(ProcessLookupError):
                 os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
         else:
             process.kill()
         process.wait()

@@ -18,13 +18,3 @@ packages = ["src/bijux_ontology_dev"]
 [tool.hatch.build.targets.sdist]
 core-metadata-version = "2.4"
 include = ["src", "tests", "pyproject.toml", "README.md", "LICENSE"]
-
-[tool.interrogate]
-fail-under = 100
-ignore-init-method = true
-ignore-magic = true
-ignore-private = true
-ignore-semiprivate = true
-
-[tool.deptry]
-exclude = ['(^|.*/)tests(/|$)']

@@ -1,0 +1,6 @@
+[tool.interrogate]
+fail-under = 100
+ignore-init-method = true
+ignore-magic = true
+ignore-private = true
+ignore-semiprivate = true

@@ -1,0 +1,3 @@
+[tool.vulture]
+min_confidence = 80
+exclude = ["*/artifacts/*", "*/.venv/*", "*/.tox/*"]

@@ -40,7 +40,7 @@ class ModelUsage:
         if not isinstance(self.model, str) or not self.model.strip():
             raise InputError("Model usage requires a model identifier")
         path = tuple(self.path)
-        if isinstance(self.path, (str, bytes)) or any(
+        if isinstance(cast(object, self.path), (str, bytes)) or any(
             type(part) not in (str, int) or isinstance(part, int) and part < 0
             for part in path
         ):
@@ -66,12 +66,10 @@ def _matches(
             return False
         if value.datatype is not None and value.datatype != traits.datatype:
             return False
-        if (
+        return not (
             value.language is not None
             and value.language.lower() != (traits.language or "").lower()
-        ):
-            return False
-        return True
+        )
     if value.kind == "iri" and traits.kind != "iri":
         return False
     if value.kind == "object" and traits.kind not in {"node", "iri", "blank"}:

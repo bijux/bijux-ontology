@@ -47,20 +47,3 @@ include = ["src", "tests", "pyproject.toml", "README.md", "LICENSE"]
 testpaths = ["tests"]
 cache_dir = "artifacts/pytest-cache"
 addopts = "--import-mode=importlib"
-
-[tool.interrogate]
-fail-under = 100
-ignore-init-method = true
-ignore-magic = true
-ignore-private = true
-ignore-semiprivate = true
-
-[tool.deptry]
-exclude = ['(^|.*/)artifacts(/|$)', '(^|.*/)\.bijux(/|$)', '(^|.*/)tests(/|$)', '(^|.*/)examples(/|$)']
-known_first_party = ["bijux_ontology"]
-
-[tool.deptry.package_module_name_map]
-pyld = "pyld"
-
-[tool.codespell]
-ignore-words-list = "disjointness"

@@ -78,7 +78,7 @@ class ProjectResources:
         key = (name, lookup, graph_name, union)
         if key not in self._vocabularies:
             config = self.configuration
-            missing = set((name, *lookup)) - set(config.rdf)
+            missing = {name, *lookup} - set(config.rdf)
             if missing:
                 raise InputError(f"Unknown RDF resources: {', '.join(sorted(missing))}")
             if len(self._vocabularies) >= config.limits.max_resources:

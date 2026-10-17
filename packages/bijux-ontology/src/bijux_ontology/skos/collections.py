@@ -34,16 +34,16 @@ def collection_memberships(
         budget.consume("work")
         values = set(explicit.get(collection, ()))
         heads = tuple(graph.objects(collection, SKOS.memberList))
-        if (collection, RDF.type, SKOS.OrderedCollection) in graph or heads:
-            if len(heads) != 1:
-                issues.append(
-                    Issue(
-                        "skos.policy.member_list_ambiguous",
-                        "Complete ordered membership needs one supplied member list",
-                        str(collection),
-                        kind="unverified",
-                    )
+        ordered = (collection, RDF.type, SKOS.OrderedCollection) in graph
+        if (ordered or heads) and len(heads) != 1:
+            issues.append(
+                Issue(
+                    "skos.policy.member_list_ambiguous",
+                    "Complete ordered membership needs one supplied member list",
+                    str(collection),
+                    kind="unverified",
                 )
+            )
         for head in heads:
             budget.consume("work")
             if head not in cached:
