@@ -47,6 +47,12 @@ property paths in `result.findings` and each generic issue’s `evidence`.
 Supply `ShaclSource(prepared_usages, paths, source=...)` through `source_usages=`
 to correlate actual JSON-LD selections. Multiple or unsupported locations remain
 explicit; the full RDF report stays available through `report_graph()`.
+`validate_shapes(..., focus_nodes=(rdf_term,), use_shapes=(authored_shape,),
+mode="pairs")` accepts literal focus values and owned blank focus/shape terms.
+Obtain blank terms from the corresponding `PreparedSource.graph()` export;
+equal labels from other snapshots are rejected. Transport keeps independent
+role scopes separate and preserves blank node kinds. Literal and blank focus
+selection requires explicit pair mode; findings retain report-local identities.
 
 For supplied SHACL shapes, `ShaclCoverageContract(minimum_focus=1,
 focus_nodes=record_iris, pairs=shape_focus_pairs)` from `bijux_ontology.shacl`

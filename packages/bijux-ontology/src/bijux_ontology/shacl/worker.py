@@ -13,6 +13,7 @@ from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.shacl.bindings import read_bindings
 from bijux_ontology.shacl.coverage import TARGET
 from bijux_ontology.shacl.functions import register_functions
 
@@ -96,8 +97,12 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
     dataset = prepare_rdf(
         request["graphs"],
         format="trig",
-        limits=replace(limits, max_triples=limits.max_triples * 2),
+        limits=replace(
+            limits,
+            max_triples=limits.max_triples * 2 + request.get("binding_count", 0),
+        ),
     ).dataset()
+    focus_terms, roots = read_bindings(dataset)
     data = dataset.graph("urn:bijux:shacl:data")
     shapes = dataset.graph("urn:bijux:shacl:shapes")
     authored = dataset.graph("urn:bijux:shacl:authored-shapes")
@@ -119,7 +124,6 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
                     for subject, predicate in authored.subject_predicates()
                     if predicate in parameters
                 )
-                roots = tuple(URIRef(iri) for iri in request["selected_shapes"])
                 for root in roots:
                     if root not in discovered:
                         return {
@@ -139,6 +143,9 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
                         else SH.NodeShape
                     )
                     shapes.add((root, RDF.type, kind))
+                    if request.get("pair_mode"):
+                        for node in focus_terms:
+                            shapes.add((root, SH.targetNode, node))
             if request["preflight"]:
                 pyshacl.validate(
                     Graph(),

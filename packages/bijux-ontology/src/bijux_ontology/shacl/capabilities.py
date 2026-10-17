@@ -42,10 +42,10 @@ class ShaclConstraintRequirement:
 
 
 def _selected(
-    graph: Graph, discovered: dict[Node, "Shape"], roots: Sequence[str], budget: Budget
+    graph: Graph, discovered: dict[Node, "Shape"], roots: Sequence[Node], budget: Budget
 ) -> dict[Node, "Shape"]:
     """Retain selected roots and all statically referenced constraint shapes."""
-    pending: list[Node] = [URIRef(iri) for iri in roots] if roots else list(discovered)
+    pending: list[Node] = list(roots) if roots else list(discovered)
     result = {}
     while pending:
         node = pending.pop()
@@ -130,7 +130,7 @@ class CapabilityPlan:
 
 def prepare_capabilities(
     graph: Graph,
-    roots: Sequence[str],
+    roots: Sequence[Node],
     requirements: Sequence[ShaclConstraintRequirement],
     *,
     trusted_sparql: bool,
