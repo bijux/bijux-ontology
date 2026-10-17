@@ -45,7 +45,7 @@ def load_vocabulary(
         preserve_literals=preserve_literals,
         document_loader=resources,
     )
-    local = prepared.graph(graph_name, union=union)
+    local = prepared._read(graph_name, union=union, budget=budget)
     imported = required_imports(
         prepared,
         local,
@@ -56,12 +56,12 @@ def load_vocabulary(
     )
     lookups = [
         prepare_source(
-            item.graph() if isinstance(item, PreparedSource) else item,
+            item._read() if isinstance(item, PreparedSource) else item,
             limits=selected,
             budget=budget,
             preserve_literals=preserve_literals,
             document_loader=resources,
-        ).graph()
+        )._read(budget=budget)
         for item in lookup
     ]
-    return Vocabulary(local, imported, lookups, limits=selected)
+    return Vocabulary._from_owned(local, imported, tuple(lookups), selected)

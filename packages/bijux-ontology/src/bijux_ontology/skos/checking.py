@@ -84,18 +84,26 @@ def check_skos(
         absolute_iri(iri)
     for tag in (*languages, *language_fallback):
         language_tag(tag)
-    view = (
-        vocabulary
-        if isinstance(vocabulary, VocabularyView)
-        else inspect_vocabulary(vocabulary, scopes=scopes, limits=limits)
+    selected_limits = (
+        limits
+        if limits is not None
+        else vocabulary.limits
+        if isinstance(vocabulary, (Vocabulary, VocabularyView))
+        else None
     )
-    selected_limits = limits if limits is not None else view.limits
     budget = Budget(selected_limits)
     issues = IssueCollector(budget)
     checked = 0
     complete = True
     try:
-        graph = view.graph()
+        view = (
+            vocabulary
+            if isinstance(vocabulary, VocabularyView)
+            else inspect_vocabulary(
+                vocabulary, scopes=scopes, limits=limits, budget=budget
+            )
+        )
+        graph = view._read()
         facts = structure(graph, budget)
         resources: set[Node] = (
             {URIRef(iri) for iri in concepts}

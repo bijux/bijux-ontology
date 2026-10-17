@@ -57,15 +57,15 @@ def check_models(
         if isinstance(vocabulary, Vocabulary)
         else load_vocabulary(vocabulary)
     )
-    graph = sources.graph()
     budget = Budget(limits)
-    contracts = ModelContracts(graph, regime, budget)
-    classes = ClassContracts(graph, budget)
     registry: dict[str, ModelDeclaration] = {}
     issues = IssueCollector(budget)
     checked = 0
     complete = True
     try:
+        graph = sources._read(budget=budget).graph
+        contracts = ModelContracts(graph, regime, budget)
+        classes = ClassContracts(graph, budget)
         budget.consume("triples", len(graph))
         registry = index_models(models, budget, issues)
         for model in registry.values():
@@ -338,5 +338,5 @@ def assess_models(
     report = check_models(
         models, sources, allow_empty=allow_empty, regime=regime, limits=limits
     )
-    answers = prove_obligations(sources.graph(), obligations, limits=limits)
+    answers = prove_obligations(sources._read().graph, obligations, limits=limits)
     return ModelAssessment(report, answers)

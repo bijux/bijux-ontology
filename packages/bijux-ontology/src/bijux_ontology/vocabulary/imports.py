@@ -82,7 +82,7 @@ def required_imports(
                 preserve_literals=preserve_literals,
                 document_loader=document_loader,
             )
-            candidate = _Binding(resource.graph())
+            candidate = _Binding(resource._read(budget=budget))
             names = {
                 value
                 for value in (iri, resource.document_iri, resource.effective_url)

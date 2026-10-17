@@ -23,7 +23,7 @@ from bijux_ontology.vocabulary.builtins import (
     kind_matches,
     validate_regime,
 )
-from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.checking import _lint_issues
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
@@ -191,37 +191,22 @@ def check_ontology(
         if isinstance(vocabulary, Vocabulary)
         else load_vocabulary(vocabulary, limits=limits)
     )
-    scopes = [("local", sources.local)]
-    if include_imports:
-        scopes.extend(
-            (f"import[{index}]", graph) for index, graph in enumerate(sources.imports)
-        )
-    if include_lookup:
-        scopes.extend(
-            (f"lookup[{index}]", graph) for index, graph in enumerate(sources.lookup)
-        )
     budget = Budget(limits if limits is not None else sources.limits)
     count = 0
     issues = IssueCollector(budget)
     complete = True
     try:
+        roles = (
+            "local",
+            *(("imports",) if include_imports else ()),
+            *(("lookup",) if include_lookup else ()),
+        )
+        scopes = sources._read(roles, budget=budget).scopes
         if "declarations" in selected:
             count += check_declarations(scopes, regime, budget, issues)
         for source, graph in scopes:
             if "reserved" in selected:
-                budget.consume("work", 3 * len(graph))
-                report = check_vocabulary(
-                    Vocabulary(graph, limits=limits),
-                    (),
-                    lint=True,
-                    allow_empty=True,
-                    regime="rdf",
-                    limits=budget.limits,
-                )
-                count += report.checked
-                complete = complete and report.complete
-                for finding in report.issues:
-                    issues.append(finding)
+                count += _lint_issues(graph, "rdf", budget=budget, issues=issues)
             operations: dict[str, Callable[[], int]] = {
                 "references": partial(
                     _reference_checks, graph, source, scopes, regime, budget, issues
@@ -245,7 +230,7 @@ def check_ontology(
             absolute_iri(predicate)
         for tag in languages:
             language_tag(tag)
-        local = sources.local
+        local = sources._read(("local",), budget=budget).graph
         if "metadata" in selected:
             terms = (
                 tuple(dict.fromkeys(URIRef(iri) for iri in metadata_terms))
@@ -291,6 +276,7 @@ def check_ontology(
                     *(("lookup",) if include_lookup else ()),
                 ),
                 limits=budget.limits,
+                budget=budget,
             )
             count += check_deprecated_terms(
                 view, used_terms, replacement_predicates, regime, budget, issues

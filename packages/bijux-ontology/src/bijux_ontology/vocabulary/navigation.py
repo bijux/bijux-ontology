@@ -397,7 +397,7 @@ def collection_members(
             )
             complete = False
         else:
-            graph = view.graph()
+            graph = view._read()
             edge = selected.items[0]
             members = read_rdf_list(graph, edge.object, max_items=view.limits.max_work)
             for member in members:

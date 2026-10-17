@@ -2,16 +2,15 @@
 
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import Literal as Direction
-from typing import TypeVar, cast
+from typing import TypeVar
 
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
-from rdflib.term import Node
 
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.constructs import unsupported_constructs
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.rdf.snapshots import bind_namespaces, copy_graph
+from bijux_ontology.rdf.snapshots import copy_graph
 from bijux_ontology.vocabulary.identifiers import expand_curie
 
 from ..errors import InputError, LimitExceeded
@@ -43,83 +42,21 @@ class VocabularyView:
         *,
         scopes: Sequence[str] = ("local", "imports"),
         limits: Limits | None = None,
+        budget: Budget | None = None,
     ) -> None:
         source = (
             vocabulary
             if isinstance(vocabulary, Vocabulary)
             else load_vocabulary(vocabulary, limits=limits)
         )
-        if (
-            isinstance(scopes, (str, bytes))
-            or not scopes
-            or set(scopes) - {"local", "imports", "lookup"}
-        ):
-            raise InputError("Select local/imports/lookup source roles explicitly")
         self.limits = limits if limits is not None else source.limits
-        selected: list[tuple[str, Graph]] = []
-        if "local" in scopes:
-            selected.append(("local", source.local))
-        if "imports" in scopes:
-            selected.extend(
-                (f"import[{index}]", graph)
-                for index, graph in enumerate(source.imports)
-            )
-        if "lookup" in scopes:
-            selected.extend(
-                (f"lookup[{index}]", graph) for index, graph in enumerate(source.lookup)
-            )
-        self._scopes = tuple(selected)
-        budget = Budget(self.limits)
-        for _, graph in selected:
-            budget.consume("resources")
-            budget.consume("triples", len(graph))
-        self._edges = tuple(
-            sorted(
-                (
-                    Edge(subject, cast(URIRef, predicate), value, scope)
-                    for scope, graph in selected
-                    for subject, predicate, value in graph
-                ),
-                key=lambda edge: (
-                    str(edge.subject),
-                    str(edge.predicate),
-                    edge.object.n3(),
-                    edge.scope,
-                ),
-            )
-        )
-        outgoing: dict[Node, list[Edge]] = {}
-        incoming: dict[Node, list[Edge]] = {}
-        for edge in self._edges:
-            outgoing.setdefault(edge.subject, []).append(edge)
-            incoming.setdefault(edge.object, []).append(edge)
-        self._outgoing = {node: tuple(edges) for node, edges in outgoing.items()}
-        self._incoming = {node: tuple(edges) for node, edges in incoming.items()}
-        kinds: dict[str, set[str]] = {}
-        locations: dict[str, set[str]] = {}
-        declared_locations: dict[str, set[str]] = {}
-        for edge in self._edges:
-            for node in (edge.subject, edge.predicate, edge.object):
-                if isinstance(node, URIRef):
-                    locations.setdefault(str(node), set()).add(edge.scope)
-                if isinstance(node, Literal) and node.datatype is not None:
-                    locations.setdefault(str(node.datatype), set()).add(edge.scope)
-            if (
-                edge.predicate == RDF.type
-                and isinstance(edge.subject, URIRef)
-                and isinstance(edge.object, URIRef)
-            ):
-                kinds.setdefault(str(edge.subject), set()).add(str(edge.object))
-                declared_locations.setdefault(str(edge.subject), set()).add(edge.scope)
-        self._terms = {
-            iri: TermInfo(
-                iri,
-                "declared" if iri in kinds else "referenced",
-                tuple(sorted(kinds.get(iri, ()))),
-                tuple(sorted(declared_locations.get(iri, locations[iri]))),
-            )
-            for iri in locations
-        }
+        self._reader = source._read(scopes, limits=self.limits, budget=budget)
+        index = source._inspect(self._reader, budget)
+        self._scopes = self._reader.scopes
+        self._edges = index.edges
+        self._outgoing = index.outgoing
+        self._incoming = index.incoming
+        self._terms = index.terms
 
     def _select(
         self, values: Iterable[T | None], family: str, *, budget: Budget | None = None
@@ -278,7 +215,7 @@ class VocabularyView:
             tuple(edge for edge in selected.items if isinstance(edge.object, URIRef)),
             tuple(edge for edge in selected.items if isinstance(edge.object, BNode)),
             tuple(str(kind) for kind in characteristics if str(kind) in kinds),
-            unsupported_constructs(self.graph(), URIRef(iri)),
+            unsupported_constructs(self._read(), URIRef(iri)),
             selected.report,
         )
 
@@ -556,13 +493,15 @@ class VocabularyView:
 
     def graph(self) -> Graph:
         """Export an independent explicit union of this already-selected graph scope."""
-        graph = Graph(bind_namespaces="none")
-        for edge in self._edges:
-            graph.add((edge.subject, edge.predicate, edge.object))
-        bind_namespaces(graph, *(source for _, source in self._scopes))
         return copy_graph(
-            graph, max_triples=self.limits.max_triples, standardize_apart=False
+            self._reader.graph,
+            max_triples=self.limits.max_triples,
+            standardize_apart=False,
         )
+
+    def _read(self) -> Graph:
+        """Read the existing selected snapshot without creating an export."""
+        return self._reader.graph
 
     def describe(
         self, iri: str, *, replacement_predicates: Sequence[str] = ()
@@ -605,6 +544,7 @@ def inspect_vocabulary(
     *,
     scopes: Sequence[str] = ("local", "imports"),
     limits: Limits | None = None,
+    budget: Budget | None = None,
 ) -> VocabularyView:
     """Prepare one owned view for many term queries without reparsing sources."""
-    return VocabularyView(vocabulary, scopes=scopes, limits=limits)
+    return VocabularyView(vocabulary, scopes=scopes, limits=limits, budget=budget)

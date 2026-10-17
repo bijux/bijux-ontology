@@ -240,7 +240,7 @@ def prepare_native(preparation: SourcePreparation) -> PreparedSource:
         )
         is_dataset = syntax in {"trig", "nquads"}
         fidelity = "source_terms" if preserve_literals else "normalisation_allowed"
-    return PreparedSource(
+    return PreparedSource._from_owned(
         dataset,
         is_dataset=is_dataset,
         document_iri=document,
