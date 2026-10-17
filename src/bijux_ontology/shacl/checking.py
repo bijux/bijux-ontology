@@ -236,6 +236,7 @@ def validate_shapes(
     or selected shapes. ``mode='pairs'`` deliberately applies supplied shapes to
     supplied focus nodes, bypassing targets. Root selection changes only owned
     Core target declarations; referenced nested shapes remain active.
+    Every selected root must be a shape in the authored graph before targeting.
     Zero discovered shapes are an empty required scope by default. Explicit
     allow_empty=True makes it not applicable, never verified. Raw backend
     conformance and its RDF report remain available either way.
@@ -292,7 +293,8 @@ def validate_shapes(
         )
     )
     for iri in selected_shapes:
-        if next(sg.triples((URIRef(iri), None, None)), None) is None:
+        node = URIRef(iri)
+        if (node, None, None) not in sg and (None, None, node) not in sg:
             raise InputError("Selected shape is absent", location=iri)
     features = _features(sg, trusted_sparql=trusted_sparql)
     if selected_shapes and any(
@@ -339,7 +341,7 @@ def validate_shapes(
             "limits": asdict(selected),
             "max_depth": selected.max_depth,
             "focus_nodes": focus if mode == "targets" else (),
-            "use_shapes": (),
+            "selected_shapes": selected_shapes,
             "preflight": preflight,
         }
     ).encode()

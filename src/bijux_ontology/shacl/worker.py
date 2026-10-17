@@ -6,7 +6,8 @@ import warnings
 from dataclasses import replace
 from typing import Any
 
-from rdflib import Graph
+from rdflib import Graph, URIRef
+from rdflib.namespace import RDF, SH
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
@@ -18,6 +19,7 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
     """Execute only supplied graph objects, never URLs or backend file loaders."""
     try:
         import pyshacl
+        from pyshacl.constraints import ALL_CONSTRAINT_PARAMETERS
         from pyshacl.errors import (
             ConstraintLoadError,
             ConstraintLoadWarning,
@@ -45,6 +47,36 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
     try:
         with warnings.catch_warnings(record=True) as observed:
             warnings.simplefilter("always")
+            if request["selected_shapes"]:
+                # Check authored identity before rewritten targets can promote
+                # an arbitrary metadata resource to a vacuously valid shape.
+                discovered = {shape.node for shape in ShapesGraph(authored).shapes}
+                parameters = set(ALL_CONSTRAINT_PARAMETERS)
+                discovered.update(
+                    subject
+                    for subject, predicate in authored.subject_predicates()
+                    if predicate in parameters
+                )
+                roots = tuple(URIRef(iri) for iri in request["selected_shapes"])
+                for root in roots:
+                    if root not in discovered:
+                        return {
+                            "status": "input_error",
+                            "message": (
+                                "Selected resource is not an authored SHACL shape: "
+                                f"{root}"
+                            ),
+                            "backend": backend,
+                        }
+                # Untyped roots must survive removal of their original targets,
+                # including targetless shapes declared only through parameters.
+                for root in roots:
+                    kind = (
+                        SH.PropertyShape
+                        if (root, SH.path, None) in authored
+                        else SH.NodeShape
+                    )
+                    shapes.add((root, RDF.type, kind))
             if request["preflight"]:
                 pyshacl.validate(
                     Graph(),
@@ -71,7 +103,7 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
                 sparql_mode=False,
                 max_validation_depth=request["max_depth"],
                 focus_nodes=request["focus_nodes"] or None,
-                use_shapes=request["use_shapes"] or None,
+                use_shapes=None,
                 meta_shacl=False,
             )
         # Use the maintained backend discovery, including implicit property shapes.

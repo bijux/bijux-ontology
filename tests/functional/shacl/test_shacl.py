@@ -214,3 +214,57 @@ def test_empty_or_swapped_shapes_do_not_verify_an_unperformed_required_scope() -
     implicit.add((EX.Property, SH.minCount, Literal(1)))
     untyped = validate_shapes(data, implicit)
     assert untyped.shapes_count == 2 and untyped.report.verified
+
+
+@pytest.mark.parametrize("mode", ["targets", "pairs"])
+def test_selected_metadata_cannot_verify_even_alongside_a_valid_shape(
+    mode: str,
+) -> None:
+    from rdflib.namespace import OWL, RDFS
+
+    data = Graph().add((EX.record, RDF.type, EX.Record))
+    data.add((EX.record, EX["count"], Literal(1)))
+    shapes = shapes_graph().add((EX.Metadata, RDF.type, OWL.Ontology))
+    shapes.add((EX.Metadata, RDFS.label, Literal("Shapes catalogue")))
+    before = frozenset(shapes)
+    result = validate_shapes(
+        data,
+        shapes,
+        use_shapes=(str(EX.Shape), str(EX.Metadata)),
+        focus_nodes=(str(EX.record),) if mode == "pairs" else (),
+        mode=mode,
+    )
+    assert result.conforms is None
+    assert result.report.outcome == "input_error"
+    assert not result.report.complete and not result.report.verified
+    assert str(EX.Metadata) in result.report.issues[0].message
+    assert frozenset(shapes) == before
+
+
+def test_selected_implicit_and_empty_referenced_shapes_keep_their_constraints() -> None:
+    data = Graph().add((EX.record, EX.name, Literal("Record")))
+    shapes = Graph().add((EX.Shape, SH.nodeKind, SH.Literal))
+    before = frozenset(shapes)
+    targetless = validate_shapes(data, shapes, use_shapes=(str(EX.Shape),))
+    assert targetless.report.verified and targetless.shapes_count == 1
+    forced = validate_shapes(
+        data,
+        shapes,
+        use_shapes=(str(EX.Shape),),
+        focus_nodes=(str(EX.record),),
+        mode="pairs",
+    )
+    assert forced.conforms is False
+    assert forced.findings[0].constraint_component == SH.NodeKindConstraintComponent
+    assert frozenset(shapes) == before
+    shapes.add((EX.Shape, SH.targetNode, EX.record))
+    assert validate_shapes(data, shapes, use_shapes=(str(EX.Shape),)).conforms is False
+    shapes.add((EX.Shape, SH.node, EX.Empty))
+    empty = validate_shapes(
+        data,
+        shapes,
+        use_shapes=(str(EX.Empty),),
+        focus_nodes=(str(EX.record),),
+        mode="pairs",
+    )
+    assert empty.conforms is True and empty.report.verified
