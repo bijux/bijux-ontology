@@ -30,6 +30,108 @@ def test_structural_references_separate_malformed_missing_and_anonymous() -> Non
     assert not report.verified
 
 
+@pytest.mark.parametrize("regime", ["rdf", "owl-dl"])
+@pytest.mark.parametrize("include_imports", [False, True])
+@pytest.mark.parametrize("include_lookup", [False, True])
+def test_reference_resolution_uses_only_selected_sources(
+    regime: Regime, include_imports: bool, include_lookup: bool
+) -> None:
+    local = Graph().add((EX.A, RDF.type, OWL.Class))
+    for target in (EX.Imported, EX.Lookup, EX.Punned, OWL.Thing):
+        local.add((EX.A, RDFS.subClassOf, target))
+    local.add((EX.Punned, RDF.type, OWL.DatatypeProperty))
+    local.add((EX.value, RDF.type, OWL.DatatypeProperty))
+    local.add((EX.value, RDFS.range, XSD.string))
+    imported = Graph().add((EX.Imported, RDF.type, OWL.Class))
+    imported.add((EX.Imported, RDFS.subClassOf, EX.A))
+    imported.add((EX.Punned, RDF.type, OWL.Class))
+    lookup = Graph().add((EX.Lookup, RDF.type, OWL.Class))
+    lookup.add((EX.Lookup, RDFS.subClassOf, EX.A))
+    vocabulary = Vocabulary(local, imports=(imported,), lookup=(lookup,))
+
+    report = check_ontology(
+        vocabulary,
+        regime=regime,
+        families=("references",),
+        include_imports=include_imports,
+        include_lookup=include_lookup,
+    )
+
+    expected = set()
+    if not include_imports:
+        expected.update(
+            {
+                ("ontology.reference_missing", str(EX.Imported)),
+                ("ontology.reference_kind", str(EX.Punned)),
+            }
+        )
+    if not include_lookup:
+        expected.add(("ontology.reference_missing", str(EX.Lookup)))
+    assert {(issue.code, issue.actual) for issue in report.issues} == expected
+    assert report.complete
+    assert report.verified == (include_imports and include_lookup)
+
+
+@pytest.mark.parametrize("role", ["imports", "lookup"])
+def test_excluded_sources_cannot_change_datatype_definition_roles(role: str) -> None:
+    local = Graph().add((EX.A, RDF.type, OWL.Class))
+    local.add((EX.B, RDF.type, OWL.Class))
+    local.add((EX.A, OWL.equivalentClass, EX.B))
+    external = Graph().add((EX.B, RDF.type, RDFS.Datatype))
+    vocabulary = Vocabulary(
+        local,
+        imports=(external,) if role == "imports" else (),
+        lookup=(external,) if role == "lookup" else (),
+    )
+
+    excluded = check_ontology(
+        vocabulary,
+        regime="owl-dl",
+        families=("references",),
+        include_imports=False,
+        include_lookup=False,
+    )
+    assert excluded.verified
+    included = check_ontology(
+        vocabulary,
+        regime="owl-dl",
+        families=("references",),
+        include_imports=role == "imports",
+        include_lookup=role == "lookup",
+    )
+    assert [issue.code for issue in included.issues] == ["ontology.reference_kind"]
+    assert included.issues[0].actual == str(EX.A)
+
+
+@pytest.mark.parametrize("role", ["imports", "lookup"])
+def test_excluded_sources_cannot_exempt_annotation_domain_references(role: str) -> None:
+    local = Graph().add((EX.note, RDF.type, RDF.Property))
+    local.add((EX.note, RDFS.domain, EX.Missing))
+    external = Graph().add((EX.note, RDF.type, OWL.AnnotationProperty))
+    vocabulary = Vocabulary(
+        local,
+        imports=(external,) if role == "imports" else (),
+        lookup=(external,) if role == "lookup" else (),
+    )
+
+    excluded = check_ontology(
+        vocabulary,
+        regime="owl-dl",
+        families=("references",),
+        include_imports=False,
+        include_lookup=False,
+    )
+    assert [issue.code for issue in excluded.issues] == ["ontology.reference_missing"]
+    assert excluded.issues[0].actual == str(EX.Missing)
+    assert check_ontology(
+        vocabulary,
+        regime="owl-dl",
+        families=("references",),
+        include_imports=role == "imports",
+        include_lookup=role == "lookup",
+    ).verified
+
+
 def test_documentation_and_deprecation_are_opt_in_and_never_rewrite() -> None:
     graph = Graph().add((EX.A, RDF.type, OWL.Class))
     graph.add((EX.A, RDFS.label, Literal("A", lang="EN")))
