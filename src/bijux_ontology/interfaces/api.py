@@ -48,12 +48,24 @@ from bijux_ontology.reports import (
     Report,
     combine_reports,
 )
+from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.comparison import (
+    Change,
+    VocabularyChanges,
+    compare_vocabularies,
+)
+from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
+from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.results import TermInfo
+from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.workflows.ontology.checking import check_ontology
 
 __all__ = [
     "ABSENT",
     "Absent",
     "AcceptancePolicy",
     "Budget",
+    "Change",
     "CheckError",
     "ContextExpectation",
     "ContextInputError",
@@ -77,20 +89,29 @@ __all__ = [
     "Report",
     "ResourceError",
     "TermDeclaration",
+    "TermInfo",
     "Transformation",
     "ValueDeclaration",
     "ValueTraits",
+    "Vocabulary",
+    "VocabularyChanges",
+    "VocabularyView",
     "check_context",
+    "check_ontology",
+    "check_vocabulary",
     "combine_reports",
     "compare_context_usages",
     "compare_rdf",
     "compare_serializations",
+    "compare_vocabularies",
     "context_document_loader",
     "convert_to_rdf",
     "expand_document",
     "expectations_from_data",
     "export_rdf",
     "extract_neighbourhood",
+    "inspect_vocabulary",
+    "load_vocabulary",
     "merge_sources",
     "models_from_data",
     "prepare_jsonld",
