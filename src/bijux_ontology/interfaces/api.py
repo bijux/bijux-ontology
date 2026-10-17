@@ -3,7 +3,10 @@
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.data.rules import DataView, run_rules
 from bijux_ontology.data.usage import check_data_usage
-from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
+from bijux_ontology.declarations.codecs import (
+    models_from_data,
+    terms_from_data,
+)
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
@@ -64,6 +67,8 @@ from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.results import TermInfo
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
+from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
+from bijux_ontology.workflows.projects.configuration import ProjectConfig, load_project
 from bijux_ontology.workflows.upgrades.assessment import (
     UpgradeAssessment,
     assess_upgrade,
@@ -93,8 +98,10 @@ __all__ = [
     "ObservedOccurrence",
     "ObservedUsage",
     "OfflineDocumentLoader",
+    "PreparedChecks",
     "PreparedSource",
     "PreparedUsages",
+    "ProjectConfig",
     "RDFConversion",
     "RDFExport",
     "RdfSource",
@@ -116,6 +123,7 @@ __all__ = [
     "check_emission",
     "check_models",
     "check_ontology",
+    "check_project",
     "check_skos",
     "check_vocabulary",
     "combine_reports",
@@ -131,6 +139,7 @@ __all__ = [
     "extract_neighbourhood",
     "index_uses",
     "inspect_vocabulary",
+    "load_project",
     "load_vocabulary",
     "merge_sources",
     "models_from_data",
