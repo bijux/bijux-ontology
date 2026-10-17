@@ -66,6 +66,7 @@ from bijux_ontology.owl.obligations import (
     prove_obligations,
 )
 from bijux_ontology.rdf.comparison import compare_rdf
+from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.transforms import (
@@ -168,6 +169,8 @@ __all__ = [
     "PreparedUsages",
     "ProjectConfig",
     "Property",
+    "QueryResult",
+    "QueryScope",
     "RDFConversion",
     "RDFExport",
     "RdfModelUsage",
@@ -225,6 +228,7 @@ __all__ = [
     "prepare_jsonld",
     "prepare_source",
     "prepare_usages",
+    "query_rdf",
     "prove_obligations",
     "recheck_transformation",
     "remap_iris",

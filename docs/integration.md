@@ -18,6 +18,8 @@ Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
 SHACL inputs retain that selection. `prepared.dataset()` still exports every
 original graph; conflicting graph overrides fail explicitly.
 
+Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
