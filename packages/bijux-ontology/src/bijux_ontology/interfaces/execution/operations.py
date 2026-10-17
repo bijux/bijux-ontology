@@ -2,10 +2,8 @@
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import cast
 
 from bijux_ontology._json import (
-    array_value,
     boolean_value,
     known_keys,
     object_value,
@@ -20,7 +18,8 @@ from bijux_ontology.jsonld.comparison import compare_serializations
 from bijux_ontology.jsonld.flattening import flatten_document
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Limits
-from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.codecs import usages_from_data
+from bijux_ontology.models.emission import check_emission
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
@@ -118,27 +117,10 @@ def execute_operation(
             common | {"models", "usages"},
             location="worker request",
         )
-        usages = []
-        for item in array_value(parameters.get("usages")):
-            usage = object_value(
-                item,
-                location="worker request",
-            )
-            known_keys(
-                usage,
-                {"model", "path"},
-                location="worker request",
-            )
-            usages.append(
-                ModelUsage(
-                    string_value(usage.get("model")),
-                    tuple(cast(list[str | int], array_value(usage.get("path", [])))),
-                )
-            )
         return check_emission(
             document,
             models_from_data(parameters.get("models")),
-            usages,
+            usages_from_data(parameters.get("usages")),
             base=base,
             document_loader=loader,
             limits=limits,

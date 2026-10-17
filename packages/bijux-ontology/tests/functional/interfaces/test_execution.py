@@ -186,3 +186,58 @@ def test_missing_runtime_and_explicit_memory_request_are_non_successful(
         "context", {}
     )
     assert not memory.report.verified
+
+
+def test_isolated_entity_bindings_survive_reordering_and_reject_identity_mutations(
+    tmp_path: Path,
+) -> None:
+    models = [
+        {
+            "identifier": "record",
+            "types": ["urn:Record"],
+            "fields": [
+                {
+                    "name": "name",
+                    "predicate": "urn:name",
+                    "values": [{"kind": "literal"}],
+                    "emission": "guaranteed",
+                }
+            ],
+        }
+    ]
+    usages = [
+        {
+            "model": "record",
+            "reference": "urn:record",
+            "graph": None,
+            "subject": {"expected_iri": "urn:record", "allow_blank": False},
+        }
+    ]
+    records = [
+        {"@id": "urn:other", "@type": "urn:Other"},
+        {"@id": "urn:record", "@type": "urn:Record", "urn:name": "Text"},
+    ]
+    executor = WorkerExecutor(artifacts=tmp_path)
+    for _ in range(2):
+        result = executor.run(
+            "emission",
+            {"document": {"@graph": records}, "models": models, "usages": usages},
+        )
+        assert result.report.verified
+        records.reverse()
+    records[1]["@id"] = "urn:sibling"
+    absent = executor.run(
+        "emission",
+        {"document": {"@graph": records}, "models": models, "usages": usages},
+    )
+    assert absent.report.outcome == "unverified"
+    assert absent.report.issues[0].code == "emission.reference_unverified"
+    malformed = executor.run(
+        "emission",
+        {
+            "document": {},
+            "models": models,
+            "usages": [{"model": "record", "reference": "urn:record"}],
+        },
+    )
+    assert malformed.report.outcome == "input_error"
