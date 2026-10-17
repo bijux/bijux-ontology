@@ -1,6 +1,7 @@
 """Snapshot-scoped RDF term selection and role-preserving worker transport."""
 
 from collections.abc import Mapping, Sequence
+from types import MappingProxyType
 from typing import cast
 
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
@@ -53,6 +54,8 @@ def transport_roles(
     focus: Sequence[URIRef | BNode | Literal],
     shapes: Sequence[URIRef | BNode | Literal],
     limits: Limits,
+    *,
+    anchors: Mapping[URIRef, tuple[str, BNode]] | None = None,
 ) -> Dataset:
     """Standardize independent role blanks apart and carry exact bound endpoints.
 
@@ -108,6 +111,13 @@ def transport_roles(
         for subject, predicate, value in graph:
             budget.consume("work")
             destination.add((own(role, subject), predicate, own(role, value)))
+    if anchors:
+        anchored = dataset.graph(URIRef("urn:bijux:shacl:anchors"))
+        for anchor, (role, node) in anchors.items():
+            budget.consume("work")
+            if role not in graphs or not isinstance(node, BNode):
+                raise InputError("Static blank anchors require an owned role endpoint")
+            anchored.add((anchor, ANCHOR["term"], own(role, node)))
     bindings = dataset.graph(URIRef("urn:bijux:shacl:bindings"))
     for predicate, nodes, role in (
         (SELECTION.focus, focus, "data"),
@@ -129,3 +139,42 @@ def read_bindings(dataset: Dataset) -> tuple[tuple[Node, ...], tuple[Node, ...]]
             for predicate in (SELECTION.focus, SELECTION.shape)
         ),
     )
+
+
+ANCHOR = Namespace("urn:bijux:shacl:anchor:")
+
+
+class StaticBindings:
+    """Retain exact original blank witnesses while a fixed worker plan is alive."""
+
+    def __init__(self, graphs: Mapping[str, Graph], limits: Limits) -> None:
+        self._nodes: dict[int, tuple[BNode, URIRef]] = {}
+        self._limits = limits
+        self._anchors: dict[URIRef, tuple[str, BNode]] = {}
+        budget = Budget(limits)
+        for role, graph in graphs.items():
+            for triple in graph:
+                budget.consume("work")
+                for node in triple:
+                    if isinstance(node, BNode) and id(node) not in self._nodes:
+                        budget.consume("states")
+                        anchor = URIRef(f"urn:bijux:shacl:anchor:{len(self._nodes)}")
+                        self._nodes[id(node)] = (node, anchor)
+                        self._anchors[anchor] = (role, node)
+
+    @property
+    def anchors(self) -> Mapping[URIRef, tuple[str, BNode]]:
+        """Anchor each blank within its own role before emitting transport triples."""
+        return MappingProxyType(self._anchors)
+
+    def references(self, graph: Graph) -> Graph:
+        """Bind only exact shared objects, retaining witnesses against id reuse."""
+        result = Graph()
+        budget = Budget(self._limits)
+        for triple in graph:
+            budget.consume("work")
+            for node in triple:
+                previous = self._nodes.get(id(node))
+                if previous is not None and previous[0] is node:
+                    result.add((previous[1], ANCHOR["term"], node))
+        return result

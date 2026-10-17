@@ -112,6 +112,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "dataset_scope_unverified "
         "backend_warning execution_incomplete feature_unverified "
         "path_unverified finding_unverified "
         "function_unavailable function_malformed function_untrusted "
@@ -350,6 +351,11 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
         "The supplied shapes could not establish a valid supported SHACL scope.",
         "Repair the shapes document; this is distinct from data nonconformance.",
         "validate_shapes(data, corrected_shapes)",
+    ),
+    "shacl.dataset_scope_unverified": (
+        "Record-local validation cannot establish conformance of a wider dataset.",
+        "Retain the local result and validate the complete dataset for global claims.",
+        'session.validate(complete_data, scope="dataset")',
     ),
     "shacl.unavailable": (
         "The optional SHACL capability or required resource is unavailable.",
