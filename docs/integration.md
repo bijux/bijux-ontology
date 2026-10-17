@@ -112,3 +112,11 @@ retaining established, contradicted or unknown status and compact witnesses.
 selected answer in its aggregate `report`. A proved named ancestor never removes
 an unresolved class restriction; disjointness does not contradict subsumption
 because the class may be empty. Global consistency remains a separate question.
+
+`check_instance(instance, serializer, models, usages, vocabulary=vocabulary,
+options={"mode": "json", "by_alias": True, "exclude_none": True}, context=context)`
+calls an ordinary serializer once with the chosen keyword options. It returns
+owned `output`, the contextual `document`, and combined declaration/output checks.
+Pass an adapter’s `declaration_report` to retain extraction limitations. This is
+sampled evidence; it does not prove every possible serializer output. Callbacks
+execute in-process.

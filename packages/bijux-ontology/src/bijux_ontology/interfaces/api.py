@@ -43,6 +43,7 @@ from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
 from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.serialization import InstanceCheck, check_instance
 from bijux_ontology.owl.obligations import (
     ObligationResult,
     OntologyObligation,
@@ -109,6 +110,7 @@ __all__ = [
     "FlatNode",
     "FlattenedDocument",
     "InputError",
+    "InstanceCheck",
     "Issue",
     "IssueSelection",
     "JSONLDPreparation",
@@ -150,6 +152,7 @@ __all__ = [
     "check_contract",
     "check_data_usage",
     "check_emission",
+    "check_instance",
     "check_models",
     "check_ontology",
     "check_project",
