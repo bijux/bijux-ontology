@@ -3,6 +3,7 @@
 import argparse
 from collections.abc import Callable
 from pathlib import Path
+from tempfile import mkdtemp
 from typing import cast
 
 from bijux_ontology._json import object_value
@@ -32,13 +33,26 @@ from bijux_ontology.vocabulary.builtins import Regime
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
+from bijux_ontology.workflows.projects.bundles import load_bundle
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig, load_project
 
 
 def project(options: argparse.Namespace) -> ProjectConfig:
     """Apply only explicit command overrides to a configuration-owned project."""
-    config = load_project(options.configuration)
+    if getattr(options, "bundle", False):
+        bundle = load_bundle(options.configuration, limits=command_limits(options))
+        if options.configuration.is_dir():
+            protect_inputs(
+                options,
+                tuple(options.configuration / name for name in bundle.resource_paths),
+            )
+        root = Path.cwd() / "artifacts" / "ontology-bundles"
+        root.mkdir(parents=True, exist_ok=True)
+        destination = Path(mkdtemp(prefix="resources-", dir=root)) / "resources"
+        config = bundle.materialize(destination)
+    else:
+        config = load_project(options.configuration)
     data = config.to_dict()
     overrides = {
         key: value

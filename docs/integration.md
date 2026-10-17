@@ -91,3 +91,11 @@ extras. No environment installation occurs. `memory_bytes=` requests the platfor
 address-space limit and fails explicitly when unavailable; cancellation accepts a
 `threading.Event`. Worker crashes, protocol failures and limits never verify.
 Synchronous calls keep their existing execution behavior.
+
+Use `load_bundle` from `bijux_ontology.workflows.projects.bundles` for a directory,
+packaged resource or ZIP containing `project.json` and its declared files. Logical
+IRIs and graph selections survive moving the bundle. `bundle.vocabulary(name)`
+and `bundle.document_loader` reuse owned offline resources; `materialize(new_path)`
+returns a project configuration. The CLI accepts `project BUNDLE --bundle`.
+Completeness covers the selected RDF closure and exercised context positions;
+it does not establish semantic acceptance or coverage of future scoped contexts.

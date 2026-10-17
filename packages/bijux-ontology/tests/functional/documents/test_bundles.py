@@ -1,0 +1,232 @@
+"""Portable supplied resources retain their logical bases and selected closure."""
+
+import json
+import socket
+import stat
+from importlib.resources.abc import Traversable
+from pathlib import Path
+from typing import cast
+from zipfile import Path as ZipPath
+from zipfile import ZipFile, ZipInfo
+
+import pytest
+from rdflib import Namespace
+
+from bijux_ontology.declarations import TermDeclaration
+from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.jsonld.expansion import expand_document
+from bijux_ontology.limits import Limits
+from bijux_ontology.vocabulary import check_vocabulary
+from bijux_ontology.workflows.projects.bundles import load_bundle
+from bijux_ontology.workflows.projects.checking import check_project
+
+EX = Namespace("https://example.org/")
+
+
+def bundle_directory(root: Path) -> Path:
+    """Create small real ontology/context/shapes inputs with relative identifiers."""
+    root.mkdir()
+    files = {
+        "ontology.trig": """
+@prefix owl:<http://www.w3.org/2002/07/owl#>.
+@prefix rdfs:<http://www.w3.org/2000/01/rdf-schema#>.
+<https://example.org/ontology> {
+  <> owl:imports <https://example.org/import>.
+  <#Record> a owl:Class; rdfs:subClassOf <https://example.org/import#Parent>.
+}
+<https://example.org/application> { <urn:poison> owl:imports <urn:unavailable>. }
+""",
+        "import.ttl": "<#Parent> a <http://www.w3.org/2002/07/owl#Class>.",
+        "shapes.trig": """
+@prefix sh:<http://www.w3.org/ns/shacl#>.
+<https://example.org/shapes> {
+  <#Shape> a sh:NodeShape; sh:targetNode <https://example.org/data#record>;
+    sh:property [ sh:path <https://example.org/name>; sh:minCount 1 ].
+}
+<https://example.org/unselected> { <#Shape> sh:rule <urn:unsupported>. }
+""",
+        "data.ttl": '<#record> <https://example.org/name> "Record".',
+        "context.json": json.dumps({"@context": {"@import": "base-context"}}),
+        "base-context.json": json.dumps({"@context": {"name": str(EX.name)}}),
+        "document.json": json.dumps({"@context": str(EX.context), "name": "Record"}),
+        "expectations.json": json.dumps(
+            [{"path": ["name"], "predicate": str(EX.name)}]
+        ),
+        "inventory.json": json.dumps(
+            [str(EX["ontology#Record"]), str(EX["import#Parent"])]
+        ),
+    }
+    manifest = {
+        "version": 1,
+        "rdf": {
+            "ontology": {
+                "path": "ontology.trig",
+                "iri": str(EX.ontology),
+                "graph_name": str(EX.ontology),
+            },
+            "import": {"path": "import.ttl", "iri": str(EX["import"])},
+            "shapes": {
+                "path": "shapes.trig",
+                "iri": str(EX.shapes),
+                "graph_name": str(EX.shapes),
+            },
+            "data": {"path": "data.ttl", "iri": str(EX.data)},
+        },
+        "contexts": {
+            str(EX.context): "context.json",
+            str(EX["base-context"]): "base-context.json",
+        },
+        "checks": [
+            {
+                "name": "terms",
+                "kind": "vocabulary",
+                "source": "ontology",
+                "inventory": "inventory.json",
+                "references": True,
+            },
+            {
+                "name": "jsonld",
+                "kind": "context",
+                "document": "document.json",
+                "expectations": "expectations.json",
+            },
+            {
+                "name": "constraints",
+                "kind": "shacl",
+                "document": "data",
+                "shapes": "shapes",
+            },
+        ],
+    }
+    files["project.json"] = json.dumps(manifest)
+    for name, payload in files.items():
+        (root / name).write_text(payload)
+    return root
+
+
+def test_bundle_directory_archive_and_packaged_resources_work_offline_after_moving(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = bundle_directory(tmp_path / "source")
+
+    def offline(*args: object, **kwargs: object) -> None:
+        """Fail if supplied-resource processing attempts any socket access."""
+        raise AssertionError("Network access is unavailable")
+
+    monkeypatch.setattr(socket, "socket", offline)
+    original = load_bundle(source)
+    assert original.rdf_scope == ("ontology", "import", "shapes", "data")
+    assert original.context_scope == (str(EX.context), str(EX["base-context"]))
+    assert original.context_documents == ("document.json",)
+    assert check_vocabulary(
+        original.vocabulary("ontology"), [TermDeclaration(str(EX["import#Parent"]))]
+    ).verified
+    archive = tmp_path / "resources.zip"
+    original.write_archive(archive)
+    moved = tmp_path / "moved"
+    original.materialize(moved)
+    source.rename(tmp_path / "unavailable")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    for index, artifact in enumerate((moved, archive)):
+        prepared = load_bundle(artifact)
+        result = check_project(prepared.materialize(tmp_path / f"execution-{index}"))
+        assert result.verified, result.to_dict()
+        expanded = expand_document(
+            {"@context": str(EX.context), "name": "Record"},
+            document_loader=prepared.document_loader,
+        )
+        assert expanded == [{str(EX.name): [{"@value": "Record"}]}]
+    with ZipFile(archive) as handle:
+        packaged = cast(Traversable, ZipPath(handle))
+        prepared = load_bundle(packaged)
+        assert check_project(prepared.materialize(tmp_path / "packaged")).verified
+    (moved / "import.ttl").unlink()
+    assert check_vocabulary(
+        original.vocabulary("ontology"), [TermDeclaration(str(EX["import#Parent"]))]
+    ).verified
+    with pytest.raises(InputError, match="new directory"):
+        original.materialize(moved)
+
+
+@pytest.mark.parametrize("missing", ["import.ttl", "base-context.json"])
+def test_missing_transitive_resource_fails_preparation(
+    tmp_path: Path, missing: str
+) -> None:
+    source = bundle_directory(tmp_path / "bundle")
+    manifest = json.loads((source / "project.json").read_text())
+    if missing == "import.ttl":
+        del manifest["rdf"]["import"]
+    else:
+        del manifest["contexts"][str(EX["base-context"])]
+    (source / "project.json").write_text(json.dumps(manifest))
+    with pytest.raises(InputError, match="supplied|JSON-LD"):
+        load_bundle(source)
+
+
+def test_conflicting_logical_bindings_and_unstable_bases_are_rejected(
+    tmp_path: Path,
+) -> None:
+    source = bundle_directory(tmp_path / "bundle")
+    original = json.loads((source / "project.json").read_text())
+    conflict = json.loads(json.dumps(original))
+    conflict["rdf"]["import"]["effective_url"] = str(EX.ontology)
+    (source / "project.json").write_text(json.dumps(conflict))
+    with pytest.raises(InputError, match="Conflicting bundle logical binding"):
+        load_bundle(source)
+    del original["rdf"]["data"]["iri"]
+    (source / "project.json").write_text(json.dumps(original))
+    with pytest.raises(InputError, match="logical iri"):
+        load_bundle(source)
+
+
+@pytest.mark.parametrize(
+    "name", ["../escape", "/escape", "C:/escape", "a/../../escape", "a\\escape"]
+)
+def test_archive_paths_cannot_escape_any_destination(tmp_path: Path, name: str) -> None:
+    archive = tmp_path / "unsafe.zip"
+    with ZipFile(archive, "w") as handle:
+        handle.writestr(name, "untrusted")
+    with pytest.raises(InputError, match="portable relative paths"):
+        load_bundle(archive)
+    assert not (tmp_path / "escape").exists()
+
+
+def test_archive_links_duplicates_and_oversized_content_are_rejected(
+    tmp_path: Path,
+) -> None:
+    archive = tmp_path / "unsafe.zip"
+    link = ZipInfo("link")
+    link.external_attr = (stat.S_IFLNK | 0o777) << 16
+    with ZipFile(archive, "w") as handle:
+        handle.writestr(link, "../escape")
+    with pytest.raises(InputError, match="links"):
+        load_bundle(archive)
+    with ZipFile(archive, "w") as handle:
+        handle.writestr("same", "first")
+        with pytest.warns(UserWarning):
+            handle.writestr("same", "second")
+    with pytest.raises(InputError, match="Duplicate"):
+        load_bundle(archive)
+    with ZipFile(archive, "w") as handle:
+        handle.writestr("large", "x" * 100)
+    with pytest.raises(LimitExceeded, match="max_bytes"):
+        load_bundle(archive, limits=Limits(max_bytes=16))
+
+
+def test_directory_symlinks_and_manifest_path_escape_fail_without_copying(
+    tmp_path: Path,
+) -> None:
+    source = bundle_directory(tmp_path / "bundle")
+    outside = tmp_path / "outside.ttl"
+    outside.write_text("<urn:a> <urn:p> <urn:b>.")
+    (source / "import.ttl").unlink()
+    (source / "import.ttl").symlink_to(outside)
+    with pytest.raises(InputError, match="escapes|symlinks"):
+        load_bundle(source)
+    manifest = json.loads((source / "project.json").read_text())
+    manifest["rdf"]["import"]["path"] = "../outside.ttl"
+    (source / "project.json").write_text(json.dumps(manifest))
+    with pytest.raises(InputError, match="portable"):
+        load_bundle(source)
