@@ -11,6 +11,7 @@ from .entities import EntityInventory
 from .expansion import _drop_issues, _validate_allowed_drops, expand_document
 from .expectations import ContextExpectation, compare_usage
 from .observations import ObservedUsage, SourcePath, location
+from .omissions import project_omissions
 from .resources import (
     ContextInputError,
     DocumentLoader,
@@ -36,10 +37,13 @@ class PreparedUsages:
         base: str | None = None,
         document_loader: DocumentLoader | None = None,
         allowed_drops: frozenset[str] = frozenset(),
+        allowed_omissions: tuple[SourcePath, ...] = (),
         limits: Limits | None = None,
         budget: Budget | None = None,
     ) -> None:
         _validate_allowed_drops(allowed_drops)
+        if not isinstance(allowed_omissions, tuple):
+            raise InputError("allowed_omissions requires a tuple of concrete paths")
         self._allowed_drops = allowed_drops
         self._loader = context_resources(document_loader, limits=limits, budget=budget)
         self._budget = self._loader.budget
@@ -56,6 +60,34 @@ class PreparedUsages:
             document_loader=self._loader,
             on_property_dropped=dropped.append,
         )
+        self._omissions: tuple[SourcePath, ...] = ()
+        self._omission_issues: tuple[Issue, ...] = ()
+        if allowed_omissions:
+            original = UsageIndex(
+                self._document,
+                self._expand,
+                expanded,
+                unscoped_resources=self._loader.unscoped,
+                budget=self._budget,
+            )
+            projection = project_omissions(
+                self._document,
+                allowed_omissions,
+                self._expand,
+                original.select,
+                self._budget,
+            )
+            self._omission_issues = projection.issues
+            self._omissions = projection.paths
+            if self._omissions:
+                self._document = projection.document
+                dropped.clear()
+                expanded = expand_document(
+                    self._document,
+                    base=base,
+                    document_loader=self._loader,
+                    on_property_dropped=dropped.append,
+                )
         self._dropped = tuple(dropped)
         self._root_nodes = tuple(value_traits(node, "") for node in expanded)
         self._entities = EntityInventory(expanded, self._budget)
@@ -79,8 +111,13 @@ class PreparedUsages:
 
     @property
     def allowed_drops(self) -> frozenset[str]:
-        """Exact observed terms outside preservation scope; omissions remain visible."""
+        """Broad spelling exclusions covering every matching observed term."""
         return self._allowed_drops
+
+    @property
+    def allowed_omissions(self) -> tuple[SourcePath, ...]:
+        """Applied whole-property exclusions, located in the actual original source."""
+        return self._omissions
 
     def _expand(self, document: object) -> list[dict[str, object]]:
         return expand_document(document, base=self._base, document_loader=self._loader)
@@ -118,13 +155,26 @@ class PreparedUsages:
         *,
         allow_empty: bool = False,
     ) -> Report:
-        """Compare every selected occurrence without dropping unknown members."""
+        """Check retained occurrences; exclusions never prove retained coverage.
+
+        Each applied path excludes only its whole source property. Excluded
+        expectations do not satisfy the required minimum retained scope.
+        """
         issues = IssueCollector(self._budget)
         checked = 0
+        requested = len(expectations)
+        excluded = 0
         try:
+            issues.extend(self._omission_issues)
             issues.extend(_drop_issues(self._dropped, self._allowed_drops))
             for expectation in expectations:
                 self._budget.consume("work")
+                if any(
+                    expectation.path[: len(path)] == path for path in self._omissions
+                ):
+                    excluded += 1
+                    requested -= 1
+                    continue
                 where = location(expectation.path)
                 if expectation.predicate.startswith(
                     "@"
@@ -177,19 +227,34 @@ class PreparedUsages:
                     )
                     continue
                 issues.extend(compare_usage(expectation, usage, budget=self._budget))
+            if excluded and not requested and not allow_empty:
+                checked += 1
+                requested += 1
+                issues.append(
+                    Issue(
+                        "context.required_scope_excluded",
+                        "Required checking coverage contains no retained usage",
+                        expected="at least one retained usage",
+                        actual="0",
+                    )
+                )
         except LimitExceeded as error:
             issues.exhausted(str(error))
         return Report(
             "contexts",
             checked,
             tuple(dict.fromkeys(issues)),
-            requested=len(expectations),
+            requested=requested,
             allow_empty=allow_empty,
             complete=not any(issue.kind == "exhausted" for issue in issues),
             regime="jsonld",
             families=("usage_mapping", "value_traits"),
             exclusions=tuple(
                 f"omitted observed term: {term}" for term in sorted(self._allowed_drops)
+            )
+            + tuple(
+                f"excluded source property: {location(path)}"
+                for path in self._omissions
             ),
         )
 
@@ -200,6 +265,7 @@ def prepare_usages(
     base: str | None = None,
     document_loader: DocumentLoader | None = None,
     allowed_drops: frozenset[str] = frozenset(),
+    allowed_omissions: tuple[SourcePath, ...] = (),
     limits: Limits | None = None,
     budget: Budget | None = None,
 ) -> PreparedUsages:
@@ -209,6 +275,7 @@ def prepare_usages(
         base=base,
         document_loader=document_loader,
         allowed_drops=allowed_drops,
+        allowed_omissions=allowed_omissions,
         limits=limits,
         budget=budget,
     )
@@ -221,6 +288,7 @@ def check_context(
     base: str | None = None,
     document_loader: DocumentLoader | None = None,
     allowed_drops: frozenset[str] = frozenset(),
+    allowed_omissions: tuple[SourcePath, ...] = (),
     limits: Limits | None = None,
     budget: Budget | None = None,
 ) -> Report:
@@ -231,6 +299,7 @@ def check_context(
             base=base,
             document_loader=document_loader,
             allowed_drops=allowed_drops,
+            allowed_omissions=allowed_omissions,
             limits=limits,
             budget=budget,
         )

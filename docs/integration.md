@@ -137,3 +137,9 @@ path. Inspect baseline, candidate, selected usages, RDF preservation and exercis
 coverage separately; unchanged failures stay visible, and candidate success
 cannot establish a missing baseline. `compatible` is true only for verified
 scoped preservation, false for a demonstrated counterexample, otherwise unknown.
+
+Use `allowed_omissions=(("records", 0, "label"),)` for exact whole-property
+exclusions before checking retained usages. Excluded paths are reported and do
+not satisfy required coverage. Invalid, overlapping or ambiguous paths apply no
+exclusions; context definitions, keyword aliases and opaque value interiors
+remain protected. `allowed_drops` still applies to every matching term spelling.

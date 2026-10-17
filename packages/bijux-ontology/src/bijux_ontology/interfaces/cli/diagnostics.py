@@ -44,6 +44,7 @@ _CODES = {
         "flatten_correspondence_unverified flatten_input_error "
         "direction_mismatch identifier_kind_mismatch identifier_mismatch "
         "input_error invalid_path language_mismatch mapping_mismatch "
+        "omission_invalid omission_unverified required_scope_excluded "
         "order_mismatch order_unverified property_dropped property_omitted "
         "rdf_direction_loss rdf_empty_graph_loss rdf_identifier_loss "
         "rdf_interoperability_unverified rdf_language_invalid rdf_literal_loss "
