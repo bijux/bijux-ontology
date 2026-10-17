@@ -7,6 +7,7 @@ from rdflib.namespace import OWL, RDF, RDFS, XSD
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.vocabulary import Vocabulary
+from bijux_ontology.vocabulary.builtins import Regime
 from bijux_ontology.workflows.ontology.checking import check_ontology
 
 EX = Namespace("https://example.org/")
@@ -78,3 +79,31 @@ def test_reserved_checks_do_not_reinterpret_import_metadata_or_skip_datatypes() 
         "vocabulary.unknown_reserved_term"
     ]
     assert report.issues[0].actual == str(URIRef(str(XSD) + "typoDatatype"))
+
+
+@pytest.mark.parametrize("regime", ["rdf", "owl-dl"])
+@pytest.mark.parametrize("anonymous", [False, True])
+def test_datatype_definitions_keep_data_roles_and_unsupported_expression_scope(
+    regime: Regime, anonymous: bool
+) -> None:
+    graph = Graph().add((EX.Code, RDF.type, RDFS.Datatype))
+    target = BNode() if anonymous else XSD.string
+    graph.add((EX.Code, OWL.equivalentClass, target))
+    if anonymous:
+        graph.add((target, RDF.type, RDFS.Datatype))
+        graph.add((target, OWL.datatypeComplementOf, XSD.integer))
+    before = frozenset(graph)
+    report = check_ontology(
+        graph, regime=regime, families=("references", "expressions")
+    )
+    if anonymous:
+        assert report.outcome == "unverified"
+        assert {issue.code for issue in report.issues} == {
+            "ontology.expression_unverified"
+        }
+    else:
+        assert report.verified
+    assert frozenset(graph) == before
+    graph.set((EX.Code, RDF.type, OWL.Class))
+    mismatch = check_ontology(graph, regime="owl-dl", families=("references",))
+    assert any(issue.code == "ontology.reference_kind" for issue in mismatch.issues)

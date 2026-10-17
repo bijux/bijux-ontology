@@ -63,7 +63,25 @@ def _reference_checks(
         ):
             count += 1
             budget.consume("work")
-            for node, expected in zip((subject, target), roles, strict=True):
+            # OWL datatype definitions share equivalentClass with class axioms.
+            # In OWL DL both endpoints must retain the same declaration category.
+            data_definition = (
+                regime == "owl-dl"
+                and predicate == OWL.equivalentClass
+                and any(
+                    str(RDFS.Datatype)
+                    in declared_kinds(vocabulary, str(node), regime=regime)
+                    if isinstance(node, URIRef)
+                    else (node, RDF.type, RDFS.Datatype) in graph
+                    for node in (subject, target)
+                )
+            )
+            selected_roles = (
+                ((str(RDFS.Datatype),), (str(RDFS.Datatype),))
+                if data_definition
+                else roles
+            )
+            for node, expected in zip((subject, target), selected_roles, strict=True):
                 location = _location(subject, source)
                 if isinstance(node, Literal):
                     issues.append(
