@@ -25,6 +25,11 @@ from bijux_ontology.jsonld.comparison import (
 from bijux_ontology.jsonld.conversion import RDFConversion, convert_to_rdf
 from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.flattening import (
+    FlatNode,
+    FlattenedDocument,
+    flatten_document,
+)
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.preparation import JSONLDPreparation, prepare_jsonld
 from bijux_ontology.jsonld.resources import (
@@ -93,6 +98,8 @@ __all__ = [
     "ContractResult",
     "DataView",
     "FieldDeclaration",
+    "FlatNode",
+    "FlattenedDocument",
     "InputError",
     "Issue",
     "IssueSelection",
@@ -145,6 +152,7 @@ __all__ = [
     "expectations_from_data",
     "export_rdf",
     "extract_neighbourhood",
+    "flatten_document",
     "index_uses",
     "inspect_vocabulary",
     "load_project",

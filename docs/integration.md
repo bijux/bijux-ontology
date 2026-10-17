@@ -15,6 +15,17 @@ Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[
 
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
 
+Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.
+Its report checks RDF preservation, including named empty graphs; its owned
+`document` and graph-qualified `nodes` support `node = result.bind(record_iri,
+graph=graph_iri)` without array-order assumptions. Check `node.value` with
+`check_emission(node.value, models, [ModelUsage(model_id)])`.
+
+With `correspondence=True`, inspect `correspondence_report` separately. Named
+descriptions expose `expanded_paths` into expanded input, not compact source
+pointers. Blank-node or anonymous-graph correspondence remains unverified without
+an identity witness. RDF preservation does not promise original JSON shape.
+
 Keep findings and unsupported comparisons visible. Apply narrow code/location exceptions through `AcceptancePolicy`; they do not change verification truth. Retain application validation, reference checks and any existing reasoning gate. Supplied-shapes validation is an optional additional operation, not general OWL consistency checking.
 
 Use `check_contract` for required consumer acceptance. Name each `ContractObligation`,

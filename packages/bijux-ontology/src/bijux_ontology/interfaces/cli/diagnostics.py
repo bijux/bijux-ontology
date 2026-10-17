@@ -37,6 +37,7 @@ _CODES = {
     "context": frozenset(
         "change_unverified before_input_error after_input_error "
         "container_mismatch datatype_mismatch "
+        "flatten_correspondence_unverified flatten_input_error "
         "direction_mismatch identifier_kind_mismatch identifier_mismatch "
         "input_error invalid_path language_mismatch mapping_mismatch "
         "order_mismatch order_unverified property_dropped property_omitted "

@@ -30,6 +30,11 @@ def test_installed_api_and_independent_example(
             "required = bijux_ontology.check_contract(["
             "bijux_ontology.ContractObligation('vocabulary', lambda: r)]); "
             "assert required.accepted and required.require_verified().verified; "
+            "flat = bijux_ontology.flatten_document({'@id':'urn:record', "
+            "'urn:name':'Text'}, correspondence=True); "
+            "assert flat.report.verified and flat.correspondence_report.verified; "
+            "assert flat.bind('urn:record').value['urn:name'] "
+            "== [{'@value':'Text'}]; "
             "assert Path(bijux_ontology.__file__).is_relative_to("
             "Path('env').resolve()); "
             "print(json.dumps(r.to_dict()))",
