@@ -1,5 +1,6 @@
 """Real framework aliases and explicit serializer knowledge."""
 
+from dataclasses import dataclass
 from typing import Annotated
 
 import pytest
@@ -125,3 +126,101 @@ def test_extraction_limits_retain_prior_models_and_completed_findings() -> None:
     ]
     bounded = model_declarations({First: ()}, limits=Limits(max_work=1))
     assert not bounded.declarations and bounded.report.exit_code() == 2
+
+
+@dataclass(frozen=True)
+class MappingHint:
+    """Application-owned public metadata interpreted only by its resolver."""
+
+    predicate: str
+    reverse: bool = False
+    container: str | None = None
+
+
+def test_foreign_metadata_and_sidecars_preserve_explicit_aliases_and_rdf_traits() -> (
+    None
+):
+    hint = MappingHint(str(EX.related), reverse=True, container="@set")
+
+    class Record(BaseModel):
+        related: Annotated[list[str], hint] = Field(serialization_alias="parents")
+        title: str
+
+    def resolve(value: object) -> RdfField | None:
+        """Declare the chosen output contract without reading Python types."""
+        assert isinstance(value, MappingHint)
+        return RdfField(
+            value.predicate,
+            (Value("iri", container=value.container),),
+            reverse=value.reverse,
+            output_contract=True,
+        )
+
+    result = model_declarations(
+        {Record: (str(EX.Record),)},
+        metadata_resolvers={MappingHint: resolve},
+        field_contracts={
+            (Record, "title"): RdfField(
+                str(EX.title), (Value("literal"),), output_contract=True
+            )
+        },
+    )
+    assert result.report.verified
+    related, title = result.declarations[0].fields
+    assert related.key == "parents" and related.reverse
+    assert related.values == (Value("iri", container="@set"),)
+    assert title.predicate == str(EX.title)
+    assert related.emission == title.emission == "unknown"
+    assert Record.model_fields["related"].metadata == [hint]
+
+
+def test_sidecars_retain_mapping_conflicts_and_unknown_serializer_output() -> None:
+    intended = RdfField(str(EX.title), (Value("literal"),))
+
+    class Record(BaseModel):
+        title: Annotated[str, intended, MappingHint(str(EX.other))]
+
+        @field_serializer("title")
+        def title_as_number(self, value: str) -> int:
+            return len(value)
+
+    def resolve(value: object) -> RdfField | None:
+        """Leave serializer knowledge unknown unless supplied explicitly."""
+        assert isinstance(value, MappingHint)
+        return RdfField(value.predicate, (Value("literal"),))
+
+    unknown = model_declarations(
+        {Record: ()}, metadata_resolvers={MappingHint: resolve}
+    )
+    field = unknown.declarations[0].fields[0]
+    assert field.predicate == str(EX.title)
+    assert field.values == (Value(),) and field.emission == "unknown"
+    assert {issue.code for issue in unknown.report.issues} == {
+        "adapter.mapping_conflict",
+        "adapter.output_unverified",
+    }
+    described = RdfField(
+        str(EX.title),
+        (Value("literal"),),
+        output_contract=True,
+        emission="optional",
+    )
+    accepted = model_declarations(
+        {Record: ()}, field_contracts={(Record, "title"): described}
+    )
+    assert accepted.report.verified
+    assert accepted.declarations[0].fields[0].emission == "optional"
+    conflicting = model_declarations(
+        {Record: ()},
+        field_contracts={
+            (Record, "title"): RdfField(
+                str(EX.sidecar), (Value("iri"),), output_contract=True
+            )
+        },
+    )
+    assert conflicting.report.outcome == "disagreement"
+    assert conflicting.declarations[0].fields[0].predicate == str(EX.sidecar)
+    with pytest.raises(InputError, match="declared fields"):
+        model_declarations(
+            {Record: ()}, field_contracts={(Record, "missing"): described}
+        )

@@ -1,6 +1,6 @@
 """Pydantic field ownership and aliases without inferring RDF from Python types."""
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
 
 from bijux_ontology.declarations.types import (
@@ -17,21 +17,76 @@ if TYPE_CHECKING:
     from pydantic import BaseModel
 
 
+def _field_contract(
+    metadata: list[object],
+    sidecar: RdfField | None,
+    resolvers: Mapping[type[object], Callable[[object], RdfField | None]],
+    location: str,
+    budget: Budget,
+    issues: IssueCollector,
+) -> RdfField | None:
+    """Apply explicit precedence while retaining contradictory mapping evidence."""
+    annotated = [item for item in metadata if isinstance(item, RdfField)]
+    if len(annotated) > 1:
+        raise InputError("Field has multiple RDF contracts", location=location)
+    candidates = ([sidecar] if sidecar is not None else []) + annotated
+    for item in metadata:
+        if isinstance(item, RdfField):
+            continue
+        for kind, resolver in resolvers.items():
+            budget.consume("work")
+            if not isinstance(item, kind):
+                continue
+            resolved = resolver(item)
+            if resolved is not None:
+                if not isinstance(resolved, RdfField):
+                    raise InputError(
+                        "Metadata resolver must return RdfField or None",
+                        location=location,
+                    )
+                candidates.append(resolved)
+    if not candidates:
+        return None
+    selected = candidates[0]
+    identity = (selected.predicate, selected.reverse, selected.values)
+    for candidate in candidates[1:]:
+        budget.consume("work")
+        other = (candidate.predicate, candidate.reverse, candidate.values)
+        if identity != other:
+            issues.append(
+                Issue(
+                    "adapter.mapping_conflict",
+                    "Explicit field mappings disagree under the selected precedence",
+                    location,
+                    expected=repr(identity),
+                    actual=repr(other),
+                )
+            )
+    return selected
+
+
 def model_declarations(
     models: Mapping[type["BaseModel"], tuple[str, ...]],
     *,
     identifiers: Mapping[type["BaseModel"], str] | None = None,
+    metadata_resolvers: Mapping[type[object], Callable[[object], RdfField | None]]
+    | None = None,
+    field_contracts: Mapping[tuple[type["BaseModel"], str], RdfField] | None = None,
     by_alias: bool = True,
     exclude_none: bool = False,
     exclude_defaults: bool = False,
     exclude_unset: bool = False,
     limits: Limits | None = None,
 ) -> ModelExtraction:
-    """Extract explicit ``Annotated[..., RdfField(...)]`` output contracts.
+    """Extract explicit annotations, metadata resolvers and sidecar contracts.
 
     Caller registries own RDF classes and nested model identifiers. Unmapped or
     computed output remains unverified. Known output contracts may deliberately
     describe custom serializers; no private framework schema is inspected.
+    Sidecars keyed by (model, declared field name) precede annotated RdfField
+    metadata, then metadata/resolver registration order. Contradictory mapping
+    traits are reported even when a higher-priority contract is retained. Only
+    the selected contract's explicit output/emission guarantees are used.
     """
     try:
         from pydantic import BaseModel
@@ -48,6 +103,26 @@ def model_declarations(
     checked = 0
     complete = True
     try:
+        resolvers = metadata_resolvers or {}
+        sidecars = field_contracts or {}
+        for kind, resolver in resolvers.items():
+            budget.consume("work")
+            if not isinstance(kind, type) or not callable(resolver):
+                raise InputError("Metadata resolvers require a type and callable")
+        for binding, sidecar_contract in sidecars.items():
+            budget.consume("work")
+            if (
+                not isinstance(binding, tuple)
+                or len(binding) != 2
+                or not isinstance(binding[0], type)
+                or not issubclass(binding[0], BaseModel)
+                or binding[0] not in models
+                or binding[1] not in binding[0].model_fields
+                or not isinstance(sidecar_contract, RdfField)
+            ):
+                raise InputError(
+                    "Sidecars require registered models and declared fields"
+                )
         for cls, types in models.items():
             budget.consume("work")
             if not isinstance(cls, type) or not issubclass(cls, BaseModel):
@@ -67,15 +142,16 @@ def model_declarations(
                     else name
                 )
                 location = f"{identifier}.{name}"
-                metadata = [
-                    item for item in field.metadata if isinstance(item, RdfField)
-                ]
-                if len(metadata) > 1:
-                    raise InputError(
-                        "Field has multiple RDF contracts", location=location
-                    )
+                contract = _field_contract(
+                    field.metadata,
+                    sidecars.get((cls, name)),
+                    resolvers,
+                    location,
+                    budget,
+                    issues,
+                )
                 if field.exclude is True:
-                    if metadata and metadata[0].emission == "guaranteed":
+                    if contract is not None and contract.emission == "guaranteed":
                         issues.append(
                             Issue(
                                 "adapter.excluded_emission_conflict",
@@ -87,7 +163,7 @@ def model_declarations(
                 if key in keys:
                     raise InputError("Duplicate serialization alias", location=location)
                 keys.add(key)
-                if not metadata:
+                if contract is None:
                     issues.append(
                         Issue(
                             "adapter.mapping_unverified",
@@ -97,7 +173,6 @@ def model_declarations(
                         )
                     )
                     continue
-                contract = metadata[0]
                 values = (
                     contract.values
                     if contract.output_contract
