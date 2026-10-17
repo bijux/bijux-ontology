@@ -43,15 +43,41 @@ def _signature(item: ObservedOccurrence) -> tuple[object, ...]:
     )
 
 
-def _group(items: tuple[ObservedOccurrence, ...]) -> dict[str, set[tuple[object, ...]]]:
-    result: dict[str, set[tuple[object, ...]]] = defaultdict(set)
+def _group(items: tuple[ObservedOccurrence, ...]) -> dict[str, tuple[object, ...]]:
+    unordered: dict[str, set[tuple[object, ...]]] = defaultdict(set)
+    lists: dict[str, dict[int | None, list[tuple[object, ...]]]] = defaultdict(dict)
     for item in items:
-        result[item.location].add(_signature(item))
-    return dict(result)
+        signature = _signature(item)
+        if item.empty:
+            # Empty lists share rdf:nil; duplicate edges do not create new heads.
+            unordered[item.location].add(
+                ("list", ((item.list_position, item.list_length, signature),))
+            )
+        elif item.container == "list":
+            lists[item.location].setdefault(item.list_id, []).append(
+                (item.list_position, item.list_length, signature)
+            )
+        else:
+            unordered[item.location].add(("unordered", signature))
+    return {
+        where: tuple(
+            sorted(
+                [
+                    *unordered.get(where, ()),
+                    *(
+                        ("list", tuple(members))
+                        for members in lists.get(where, {}).values()
+                    ),
+                ],
+                key=repr,
+            )
+        )
+        for where in unordered.keys() | lists.keys()
+    }
 
 
-def _display(values: set[tuple[object, ...]]) -> str:
-    return json.dumps(sorted(values, key=repr), ensure_ascii=False)
+def _display(values: tuple[object, ...]) -> str:
+    return json.dumps(values, ensure_ascii=False)
 
 
 def compare_context_usages(
@@ -167,8 +193,8 @@ def compare_context_usages(
                 for where in sorted(previous_groups.keys() | current_groups.keys()):
                     operation.consume("work")
                     old, new = (
-                        previous_groups.get(where, set()),
-                        current_groups.get(where, set()),
+                        previous_groups.get(where, ()),
+                        current_groups.get(where, ()),
                     )
                     if old != new:
                         issues.append(

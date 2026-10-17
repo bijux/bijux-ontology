@@ -445,3 +445,38 @@ def test_equal_alias_values_keep_independent_language_and_location() -> None:
     )
     assert [issue.location for issue in wrong.issues] == ["/french"]
     assert [issue.actual for issue in wrong.issues] == ["fr"]
+
+
+@pytest.mark.parametrize("lists", [[["A"], ["B"]], [[], ["A"]]])
+def test_order_expectations_do_not_concatenate_separate_lists(
+    lists: list[list[str]],
+) -> None:
+    document = {
+        "@context": {"p": EX + "p"},
+        "p": [{"@list": values} for values in lists],
+    }
+    before = deepcopy(document)
+    prepared = prepare_usages(document)
+    report = prepared.check(
+        [
+            ContextExpectation(
+                ("p",),
+                EX + "p",
+                ordered_values=tuple(
+                    {"@value": value} for values in lists for value in values
+                ),
+            )
+        ]
+    )
+    assert report.outcome == "unverified"
+    assert [issue.code for issue in report.issues] == ["context.order_unverified"]
+    assert prepared.check(
+        [
+            ContextExpectation(
+                ("p", 0),
+                EX + "p",
+                ordered_values=tuple({"@value": value} for value in lists[0]),
+            )
+        ]
+    ).verified
+    assert document == before

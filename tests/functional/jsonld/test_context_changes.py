@@ -161,3 +161,32 @@ def test_prepared_context_comparison_keeps_the_established_resource_snapshot() -
     assert compare_context_usages(before, after, (("label",),)).verified
     overridden = compare_context_usages(before, after, (("label",),), after_base=EX)
     assert overridden.outcome == "input_error" and not overridden.verified
+
+
+@pytest.mark.parametrize("lists", [[["A"], ["B"]], [[], ["A"]]])
+def test_usage_comparison_preserves_list_boundaries_without_array_order_claims(
+    lists: list[list[str]],
+) -> None:
+    before = {"@context": {"p": EX + "p"}, "p": [{"@list": values} for values in lists]}
+    reordered = {
+        "@context": {"p": EX + "p"},
+        "p": [{"@list": values} for values in reversed(lists)],
+    }
+    assert compare_context_usages(before, reordered, [("p",)]).verified
+    merged = {
+        "@context": {"p": EX + "p"},
+        "p": {"@list": [value for values in lists for value in values]},
+    }
+    report = compare_context_usages(before, merged, [("p",)])
+    assert report.outcome == "disagreement"
+    assert [issue.code for issue in report.issues] == ["context.usage_meaning_changed"]
+
+
+def test_rdf_nil_is_shared_while_nonempty_list_heads_remain_distinct() -> None:
+    for members, expected in (([], "agreement"), (["A"], "disagreement")):
+        single = {EX + "p": {"@list": members}}
+        repeated = {EX + "p": [{"@list": members}, {"@list": members}]}
+        assert compare_serializations(single, repeated).outcome == expected
+        assert (
+            compare_context_usages(single, repeated, [(EX + "p",)]).outcome == expected
+        )
