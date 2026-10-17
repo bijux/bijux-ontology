@@ -1,7 +1,7 @@
 """Associate selected source usages with owned expanded semantic contributions."""
 
 import json
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import replace
@@ -41,6 +41,11 @@ class UsageIndex:
         self._original = occurrences(expanded)
         self._cache: dict[SourcePath, ObservedUsage] = {}
         self._counts = Counter(item.identity for item in self._original)
+        lists: dict[int, list[tuple[str, int | None]]] = defaultdict(list)
+        for item in self._original:
+            if item.list_id is not None:
+                lists[item.list_id].append((item.value_json, item.list_position))
+        self._lists = {key: tuple(members) for key, members in lists.items()}
         self._unscoped_resources = unscoped_resources
         self._flat_context = (
             context_is_unscoped(document.get("@context", {}))
@@ -144,7 +149,13 @@ class UsageIndex:
         for identity, count in counts.items():
             if 0 < count < self._counts[identity]:
                 contributions = {
-                    (item.value_json, item.list_position)
+                    (
+                        item.value_json,
+                        item.list_position,
+                        self._lists.get(item.list_id)
+                        if item.list_id is not None
+                        else None,
+                    )
                     for item in self._original
                     if item.identity == identity
                 }

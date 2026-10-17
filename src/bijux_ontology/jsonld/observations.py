@@ -39,7 +39,9 @@ class ObservedOccurrence:
 
     Value bytes are immutable. The value property returns an independent JSON
     copy. Location identifies the established selection, never a guessed parser
-    offset or a fabricated source location for a processor callback.
+    offset or a fabricated source location for a processor callback. List IDs
+    group members within one expansion only; they are not RDF identifiers or
+    stable correspondence keys across independent expansions.
     """
 
     predicate: str
@@ -52,6 +54,8 @@ class ObservedOccurrence:
     depth: int = 0
     location: str = ""
     empty: bool = False
+    list_id: int | None = None
+    list_length: int | None = None
 
     @property
     def value(self) -> object:
@@ -109,6 +113,7 @@ def _nodes(value: object) -> list[object]:
 def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
     """Collect expanded contributions while assigning reversal to each edge."""
     result: list[ObservedOccurrence] = []
+    list_count = 0
 
     def walk(value: object, graph: str | None, depth: int) -> None:
         """Retain node and graph scope without inheriting an ancestor's reversal."""
@@ -154,11 +159,15 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
         reverse: bool,
     ) -> None:
         """Emit every member while preserving list sequence separately."""
+        nonlocal list_count
         for value in _nodes(values):
             listed = isinstance(value, dict) and "@list" in value
             members = (
                 _nodes(cast(dict[str, object], value)["@list"]) if listed else [value]
             )
+            list_id = list_count if listed else None
+            if listed:
+                list_count += 1
             if listed and not members:
                 result.append(
                     ObservedOccurrence(
@@ -170,6 +179,8 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                         "list",
                         depth=depth,
                         empty=True,
+                        list_id=list_id,
+                        list_length=0,
                     )
                 )
             for index, member in enumerate(members):
@@ -183,6 +194,8 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                         "list" if listed else "unordered",
                         index if listed else None,
                         depth,
+                        list_id=list_id,
+                        list_length=len(members) if listed else None,
                     )
                 )
                 walk(member, graph, depth + 1)
