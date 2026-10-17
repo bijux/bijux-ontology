@@ -1,8 +1,8 @@
 """Real optional backend conformance, explicit feature boundaries and isolation."""
 
 import pytest
-from rdflib import BNode, Graph, Literal, Namespace
-from rdflib.namespace import RDF, SH, XSD
+from rdflib import BNode, Graph, Literal, Namespace, URIRef
+from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.shacl import validate_shapes
@@ -78,6 +78,15 @@ def test_bad_shapes_unsupported_features_and_deadlines_are_not_nonconformance() 
     unsupported = validate_shapes(data, shapes)
     assert unsupported.conforms is None and not unsupported.report.complete
     assert unsupported.report.issues[0].kind == "unverified"
+    meta_targets = shapes_graph().add((SH.NodeShape, RDFS.subClassOf, RDFS.Class))
+    unsupported_target = validate_shapes(
+        data, meta_targets, use_shapes=(str(EX.Shape),)
+    )
+    assert unsupported_target.conforms is None
+    assert not unsupported_target.report.complete
+    assert (
+        unsupported_target.report.issues[0].code == "shacl.implicit_target_unverified"
+    )
     bounded = validate_shapes(data, shapes_graph(), timeout=0.000001)
     assert bounded.conforms is None and not bounded.report.complete
     assert bounded.report.issues[0].kind == "exhausted"
@@ -268,3 +277,55 @@ def test_selected_implicit_and_empty_referenced_shapes_keep_their_constraints() 
         mode="pairs",
     )
     assert empty.conforms is True and empty.report.verified
+
+
+@pytest.mark.parametrize("class_kind", (RDFS.Class, OWL.Class, EX.ShapeClass))
+def test_implicit_class_targets_respect_roots_pairs_and_nested_constraints(
+    class_kind: URIRef,
+) -> None:
+    data = Graph().add((EX.a, RDF.type, EX.A))
+    data.add((EX.a, EX.name, Literal("A")))
+    data.add((EX.b, RDF.type, EX.B))
+    shapes = Graph()
+    shapes.add((EX.ShapeClass, RDFS.subClassOf, RDFS.Class))
+    for shape in (EX.A, EX.B):
+        shapes.add((shape, RDF.type, SH.NodeShape))
+        shapes.add((shape, RDF.type, class_kind))
+    shapes.add((EX.A, SH.node, EX.B))
+    shapes.add((EX.B, SH.property, EX.RequiredName))
+    shapes.add((EX.RequiredName, SH.path, EX.name))
+    shapes.add((EX.RequiredName, SH.minCount, Literal(1)))
+    before = frozenset(shapes)
+    for selected in ((), (str(EX.B),)):
+        invalid = validate_shapes(data, shapes, use_shapes=selected)
+        assert invalid.conforms is False and invalid.report.complete
+        assert {finding.focus_node for finding in invalid.findings} == {EX.b}
+    selected_a = validate_shapes(data, shapes, use_shapes=(str(EX.A),))
+    assert selected_a.conforms is True and selected_a.report.verified
+    data.add((EX.other_a, RDF.type, EX.A))
+    paired = validate_shapes(
+        data,
+        shapes,
+        use_shapes=(str(EX.A),),
+        focus_nodes=(str(EX.a),),
+        mode="pairs",
+    )
+    assert paired.conforms is True and paired.report.verified
+    data.remove((EX.a, EX.name, None))
+    for mode in ("targets", "pairs"):
+        missing = validate_shapes(
+            data,
+            shapes,
+            use_shapes=(str(EX.A),),
+            focus_nodes=(str(EX.a),) if mode == "pairs" else (),
+            mode=mode,
+        )
+        assert missing.conforms is False and missing.report.complete
+        assert {finding.focus_node for finding in missing.findings} == (
+            {EX.a} if mode == "pairs" else {EX.a, EX.other_a}
+        )
+        assert any(
+            finding.constraint_component == SH.MinCountConstraintComponent
+            for finding in missing.findings
+        )
+    assert frozenset(shapes) == before

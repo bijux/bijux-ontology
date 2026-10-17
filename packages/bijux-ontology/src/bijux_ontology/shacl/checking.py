@@ -167,7 +167,7 @@ def _role(
 def _select_roots(
     shapes: Graph, selected: tuple[str, ...], focus: tuple[str, ...], mode: str
 ) -> Graph:
-    """Select explicit Core targets without disabling referenced nested shapes.
+    """Select supported Core targets without disabling referenced nested shapes.
 
     The backend's use_shapes filter omits nested PropertyShapes when only their
     parent is selected. Altering only owned Core target declarations preserves
@@ -177,10 +177,15 @@ def _select_roots(
         return shapes
     graph = copy_graph(shapes, standardize_apart=False)
     roots = {URIRef(iri) for iri in selected}
-    # A class shape's implicit target is made explicit before root selection.
-    for shape in tuple(graph.subjects(RDF.type, RDFS.Class)):
-        graph.remove((shape, RDF.type, RDFS.Class))
-        graph.add((shape, SH.targetClass, shape))
+    # Match the maintained backend's finite class-target discovery, including
+    # its built-in OWL class declaration, before narrowing root obligations.
+    class_types = {RDFS.Class, OWL.Class} | set(
+        shapes.subjects(RDFS.subClassOf, RDFS.Class)
+    )
+    for kind in class_types:
+        for shape in tuple(graph.subjects(RDF.type, kind)):
+            graph.remove((shape, RDF.type, kind))
+            graph.add((shape, SH.targetClass, shape))
     for predicate in (
         SH.targetClass,
         SH.targetNode,
@@ -235,7 +240,8 @@ def validate_shapes(
     ``mode='targets'`` retains normal targets, optionally filtering focus nodes
     or selected shapes. ``mode='pairs'`` deliberately applies supplied shapes to
     supplied focus nodes, bypassing targets. Root selection changes only owned
-    Core target declarations; referenced nested shapes remain active.
+    Core targets, including supported implicit class targets; referenced nested
+    shapes remain active.
     Every selected root must be a shape in the authored graph before targeting.
     Zero discovered shapes are an empty required scope by default. Explicit
     allow_empty=True makes it not applicable, never verified. Raw backend
@@ -298,13 +304,14 @@ def validate_shapes(
             raise InputError("Selected shape is absent", location=iri)
     features = _features(sg, trusted_sparql=trusted_sparql)
     if selected_shapes and any(
-        next(sg.subjects(RDF.type, kind), None) is not None
-        for kind in sg.subjects(RDFS.subClassOf, RDFS.Class)
+        (kind, RDFS.subClassOf, RDFS.Class) in sg
+        for kind in (SH.NodeShape, SH.PropertyShape)
     ):
         features += (
             Issue(
                 "shacl.implicit_target_unverified",
-                "Selected shapes with derived implicit class targets are unsupported",
+                "Shape kinds used as implicit target classes are unsupported "
+                "during root selection",
                 kind="unverified",
             ),
         )
