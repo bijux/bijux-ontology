@@ -401,13 +401,20 @@ def check_emission(
                 bindings.append(selected)
             return True
 
+        discovered_sources: dict[
+            tuple[SourcePath, EntityKey | None, str], tuple[SourcePath, ...]
+        ] = {}
+
         def bind_source(
             path: SourcePath, occurrence: ObservedOccurrence, targets: set[str]
-        ) -> SourcePath | None:
-            """Bind one child by its original contribution and graph identity."""
+        ) -> tuple[SourcePath, ...]:
+            """Check proven inline descriptions without joining source guarantees."""
             if len(targets) != 1:
-                return None
+                return ()
             target = next(iter(targets))
+            key = (path, object_key(occurrence), target)
+            if key in discovered_sources:
+                return discovered_sources[key]
             matches = []
             for candidate in candidate_paths(at_path(snapshot, path), path, budget):
                 traits = traits_for(candidate)
@@ -428,32 +435,51 @@ def check_emission(
                     )
                 ):
                     matches.append(candidate)
-            if len(matches) != 1:
-                return None
-            selected_path = matches[0]
-            if any(
-                child.reference is None
-                and not child.entity
-                and child.path == selected_path
-                and child.model != target
-                for child in bindings
-            ):
-                issues.append(
-                    Issue(
-                        "emission.binding_conflict",
-                        "Explicit child binding conflicts with the "
-                        "established model relationship",
-                        location(selected_path),
-                        kind="input_error",
-                        expected=target,
+            for selected_path in matches:
+                if any(
+                    child.reference is None
+                    and not child.entity
+                    and child.path == selected_path
+                    and child.model != target
+                    for child in bindings
+                ):
+                    issues.append(
+                        Issue(
+                            "emission.binding_conflict",
+                            "Explicit child binding conflicts with the "
+                            "established model relationship",
+                            location(selected_path),
+                            kind="input_error",
+                            expected=target,
+                        )
                     )
-                )
-                return None
-            selected = ModelUsage(target, selected_path)
-            if selected not in bindings:
-                budget.consume("states")
-                bindings.append(selected)
-            return selected_path
+                selected = ModelUsage(target, selected_path)
+                if selected not in bindings:
+                    budget.consume("states")
+                    bindings.append(selected)
+            discovered_sources[key] = tuple(matches)
+            return discovered_sources[key]
+
+        def reference_source(path: SourcePath, key: EntityKey) -> bool:
+            """Join descriptions only for actual references, not inline source nodes."""
+            value = at_path(snapshot, path)
+            if (
+                isinstance(value, str)
+                or isinstance(value, list)
+                and all(isinstance(item, str) for item in value)
+            ):
+                return True
+            reference = False
+            for candidate in candidate_paths(value, path, budget):
+                node = at_path(snapshot, candidate)
+                if not isinstance(node, dict):
+                    continue
+                association = source_record(node, candidate, prepared.observe, budget)
+                if association is not None and association.key == key:
+                    if association.described:
+                        return False
+                    reference = True
+            return reference
 
         def check_entity(binding: ModelUsage, model: ModelDeclaration) -> None:
             """Check joined entity facts separately from source-object guarantees."""
@@ -793,8 +819,12 @@ def check_emission(
                     if not targets:
                         continue
                     child_key = object_key(occurrence)
-                    matched = child_key is not None and reference_binding(
-                        child_key, targets
+                    discovered = bind_source(path, occurrence, targets)
+                    covered.update(discovered)
+                    matched = bool(discovered) or (
+                        child_key is not None
+                        and reference_source(path, child_key)
+                        and reference_binding(child_key, targets)
                     )
                     for child in bindings:
                         if matched:
@@ -824,13 +854,12 @@ def check_emission(
                             covered.add(child.path)
                             matched = True
                             break
-                    if not matched:
-                        discovered = bind_source(path, occurrence, targets)
-                        if discovered is not None and discovered not in covered:
-                            covered.add(discovered)
-                            matched = True
-                        elif child_key is not None:
-                            matched = bind_reference(child_key, targets)
+                    if (
+                        not matched
+                        and child_key is not None
+                        and reference_source(path, child_key)
+                    ):
+                        matched = bind_reference(child_key, targets)
                     if not matched:
                         issues.append(
                             Issue(

@@ -738,3 +738,58 @@ def test_one_root_binding_checks_many_children_and_retains_exact_failure(
         [ModelUsage("parent"), ModelUsage("other", ("items", 7))],
     )
     assert "emission.binding_conflict" in {issue.code for issue in conflict.issues}
+
+
+def test_repeated_child_descriptions_keep_each_source_guarantee_and_all_conflicts() -> (
+    None
+):
+    parent = Model(
+        "parent",
+        (EX + "Parent",),
+        (Field("children", EX + "children", (Value("object", model="child"),)),),
+    )
+    child = Model(
+        "child",
+        (EX + "Child",),
+        (Field("label", EX + "label", (Value("literal"),), emission="guaranteed"),),
+    )
+    wrong = Model("other", (EX + "Child",))
+    children = [
+        {"@id": EX + "child", "@type": "Child", "label": "First"},
+        {"@id": EX + "child", "@type": "Child"},
+    ]
+    document = {"@context": {"@vocab": EX}, "@type": "Parent", "children": children}
+    for bindings in (
+        [ModelUsage("parent")],
+        [ModelUsage("parent"), ModelUsage("child", ("children", 0))],
+    ):
+        result = check_emission(document, [parent, child], bindings)
+        assert not result.verified
+        assert "emission.nested_scope_unverified" in {
+            issue.code for issue in result.issues
+        }
+    explicit = check_emission(
+        document,
+        [parent, child],
+        [
+            ModelUsage("parent"),
+            ModelUsage("child", ("children", 0)),
+            ModelUsage("child", ("children", 1)),
+        ],
+    )
+    assert any(
+        issue.code == "emission.required_occurrence_missing"
+        and issue.location == "/children/1/label"
+        for issue in explicit.issues
+    )
+    one = {**document, "children": children[:1]}
+    result = check_emission(
+        one,
+        [parent, child, wrong],
+        [
+            ModelUsage("parent"),
+            ModelUsage("other", ("children", 0)),
+            ModelUsage("child", ("children", 0)),
+        ],
+    )
+    assert "emission.binding_conflict" in {issue.code for issue in result.issues}
