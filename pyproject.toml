@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bijux-ontology"
+version = "0.1.0"
+description = "Bounded RDF preparation and explicit declaration contracts"
+readme = "README.md"
+requires-python = ">=3.11,<4"
+license = "MIT"
+authors = [{name = "Bijan Mousavi", email = "bijan@bijux.io"}]
+dependencies = [
+    "rdflib>=7.6,<8",
+    "pyoxigraph>=0.5.11,<0.6",
+]
+
+[dependency-groups]
+dev = [
+  "build>=1.2,<2",
+  "hatchling>=1.27,<2",
+  "twine>=6,<7",
+  "pytest-cov>=6,<8",
+  "pytest>=8.4,<10",
+  "ruff>=0.6,<1",
+  "mypy>=1.11,<3",
+  "deptry>=0.23,<1",
+  "interrogate>=1.7,<2",
+  "vulture>=2.13,<3",
+  "codespell>=2.4,<3",
+  "radon>=6,<7",
+]
+
+[tool.hatch.build.targets.wheel]
+core-metadata-version = "2.4"
+packages = ["src/bijux_ontology"]
+
+[tool.hatch.build.targets.sdist]
+core-metadata-version = "2.4"
+include = ["src", "tests", "examples", "docs", "configs", "makes", "Makefile", "pyproject.toml", "uv.lock", "README.md", "LICENSE", ".bijux", ".github"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+cache_dir = "artifacts/pytest-cache"
+addopts = "--import-mode=importlib"
+
+[tool.interrogate]
+fail-under = 100
+ignore-init-method = true
+ignore-magic = true
+ignore-private = true
+ignore-semiprivate = true
+
+[tool.deptry]
+exclude = ['(^|.*/)artifacts(/|$)', '(^|.*/)\.bijux(/|$)', '(^|.*/)tests(/|$)', '(^|.*/)examples(/|$)']
+known_first_party = ["bijux_ontology"]
+
+[tool.deptry.package_module_name_map]
+pyld = "pyld"
+
+[tool.codespell]
+ignore-words-list = "disjointness"

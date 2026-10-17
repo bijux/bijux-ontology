@@ -1,0 +1,67 @@
+# SSOT NOTICE: Synced consumer copies are generated from bijux-std/shared/bijux-gh/workflows/codecov.yml.
+# Do not edit consumer workflow copies directly; update bijux-std and run standards sync refresh.
+
+name: codecov
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  policy_gate:
+    name: policy-prerequisites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Observe policy and standards prerequisites once
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/check_workflow_prerequisites.py
+
+  upload:
+    name: codecov
+    needs: policy_gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Collect coverage report paths
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(
+            find . -type f \
+              \( -name "lcov.info" -o -name "coverage.xml" -o -name "*.lcov" \) \
+              -not -path "./.git/*" \
+              -not -path "./.venv/*" \
+              -not -path "./node_modules/*" \
+              -not -path "./target/*" \
+              | LC_ALL=C sort
+          )
+          if (( ${#files[@]} == 0 )); then
+            echo "found=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          printf 'files=%s\n' "$(IFS=,; echo "${files[*]}")" >> "${GITHUB_OUTPUT}"
+          echo "found=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload coverage to Codecov
+        if: ${{ steps.collect.outputs.found == 'true' }}
+        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
+        with:
+          files: ${{ steps.collect.outputs.files }}
+          fail_ci_if_error: false
+          codecov_yml_path: .github/codecov.yml

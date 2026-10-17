@@ -1,0 +1,206 @@
+"""Public JSON-shaped declaration ingestion shared by API and console callers."""
+
+from typing import cast
+
+from rdflib import Literal as RDFLiteral
+
+from bijux_ontology._json import (
+    array_value,
+    at_input_location,
+    boolean_value,
+    input_location,
+    known_keys,
+    object_value,
+    optional_string_value,
+    string_value,
+    string_values,
+)
+from bijux_ontology.declarations.types import (
+    Emission,
+    FieldDeclaration,
+    ModelDeclaration,
+    TermDeclaration,
+    ValueDeclaration,
+    ValueKind,
+)
+from bijux_ontology.errors import InputError
+from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
+
+
+def terms_from_data(value: object, *, source: str = "") -> tuple[TermDeclaration, ...]:
+    """Ingest explicit term inventories through the validated public constructors."""
+    result = []
+    for index, item in enumerate(array_value(value, source=source)):
+        with at_input_location(source, (index,)):
+            if isinstance(item, str):
+                result.append(
+                    TermDeclaration(item, location=input_location(source, (index,)))
+                )
+                continue
+            term = object_value(
+                item, location="", message="Expected a JSON object with string keys"
+            )
+            known_keys(
+                term,
+                {"iri", "kinds", "location"},
+                location="",
+                message="Unknown declaration keys",
+            )
+            result.append(
+                TermDeclaration(
+                    string_value(term.get("iri")),
+                    string_values(term.get("kinds", [])),
+                    string_value(
+                        term.get("location", input_location(source, (index,)))
+                    ),
+                )
+            )
+    return tuple(result)
+
+
+def _value(value: object) -> ValueDeclaration:
+    data = object_value(
+        value, location="", message="Expected a JSON object with string keys"
+    )
+    known_keys(
+        data,
+        {"kind", "datatype", "language", "types", "model", "container", "samples"},
+        location="",
+        message="Unknown declaration keys",
+    )
+    kind = string_value(data.get("kind", "unknown"))
+    if kind not in {"literal", "iri", "object", "unknown"}:
+        raise InputError(f"Unknown value kind: {kind}")
+    return ValueDeclaration(
+        kind=cast(ValueKind, kind),
+        datatype=optional_string_value(data.get("datatype")),
+        language=optional_string_value(data.get("language")),
+        types=string_values(data.get("types", [])),
+        model=optional_string_value(data.get("model")),
+        container=optional_string_value(data.get("container")),
+        samples=tuple(
+            _sample(sample) for sample in array_value(data.get("samples", []))
+        ),
+    )
+
+
+def _branch(
+    value: object, source: str, path: tuple[str | int, ...]
+) -> ValueDeclaration:
+    with at_input_location(source, path):
+        return _value(value)
+
+
+def models_from_data(
+    value: object, *, source: str = ""
+) -> tuple[ModelDeclaration, ...]:
+    """Ingest model contracts using the same invariants as direct Python callers."""
+    result = []
+    for index, item in enumerate(array_value(value, source=source)):
+        with at_input_location(source, (index,)):
+            model = object_value(
+                item, location="", message="Expected a JSON object with string keys"
+            )
+            known_keys(
+                model,
+                {"identifier", "types", "fields", "location"},
+                location="",
+                message="Unknown declaration keys",
+            )
+            fields = []
+            for field_index, raw_field in enumerate(
+                array_value(model.get("fields", []))
+            ):
+                with at_input_location(source, (index, "fields", field_index)):
+                    field = object_value(
+                        raw_field,
+                        location="",
+                        message="Expected a JSON object with string keys",
+                    )
+                    known_keys(
+                        field,
+                        {
+                            "name",
+                            "predicate",
+                            "values",
+                            "key",
+                            "optional",
+                            "location",
+                            "reverse",
+                            "emission",
+                        },
+                        location="",
+                        message="Unknown declaration keys",
+                    )
+                    fields.append(
+                        FieldDeclaration(
+                            name=string_value(field.get("name")),
+                            predicate=string_value(field.get("predicate")),
+                            values=tuple(
+                                _branch(
+                                    branch,
+                                    source,
+                                    (
+                                        index,
+                                        "fields",
+                                        field_index,
+                                        "values",
+                                        branch_index,
+                                    ),
+                                )
+                                for branch_index, branch in enumerate(
+                                    array_value(field.get("values"))
+                                )
+                            ),
+                            key=optional_string_value(field.get("key")),
+                            optional=boolean_value(field.get("optional", False)),
+                            location=string_value(
+                                field.get(
+                                    "location",
+                                    input_location(
+                                        source, (index, "fields", field_index)
+                                    ),
+                                )
+                            ),
+                            reverse=boolean_value(field.get("reverse", False)),
+                            emission=cast(
+                                Emission, string_value(field.get("emission", "unknown"))
+                            ),
+                        )
+                    )
+            result.append(
+                ModelDeclaration(
+                    string_value(model.get("identifier")),
+                    string_values(model.get("types")),
+                    tuple(fields),
+                    string_value(
+                        model.get("location", input_location(source, (index,)))
+                    ),
+                )
+            )
+    return tuple(result)
+
+
+def _sample(value: object) -> "RDFLiteral":
+    data = object_value(
+        value, location="", message="Expected a JSON object with string keys"
+    )
+    known_keys(
+        data,
+        {"lexical", "datatype", "language"},
+        location="",
+        message="Unknown declaration keys",
+    )
+    lexical = string_value(data.get("lexical"))
+    datatype = optional_string_value(data.get("datatype"))
+    language = optional_string_value(data.get("language"))
+    if datatype is not None and language is not None:
+        raise InputError("Literal samples use a datatype or language, not both")
+    if datatype is not None:
+        absolute_iri(datatype)
+    if language is not None:
+        language_tag(language)
+    sample = RDFLiteral(lexical, datatype=datatype, lang=language, normalize=False)
+    if str(sample) != lexical:
+        raise InputError("RDFLib cannot preserve the supplied sample lexical form")
+    return sample
