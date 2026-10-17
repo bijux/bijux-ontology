@@ -227,6 +227,7 @@ def _branch_issues(
                     for iri in value.types
                 ],
                 regime="owl-dl" if regime == "owl-dl" else "rdf",
+                budget=budget,
             ).issues
         )
     literal = value.kind == "literal"
@@ -259,6 +260,7 @@ def _branch_issues(
                     vocabulary,
                     [TermDeclaration(datatype, (str(RDFS.Datatype),), location)],
                     regime="owl-dl" if regime == "owl-dl" else "rdf",
+                    budget=budget,
                 ).issues
             )
         issues.extend(
@@ -300,6 +302,7 @@ def _field_issues(
                 vocabulary,
                 [TermDeclaration(field.predicate, (str(RDF.Property),), location)],
                 regime="owl-dl" if regime == "owl-dl" else "rdf",
+                budget=contracts.budget,
             ).issues
         )
         contract = contracts.property(field)
