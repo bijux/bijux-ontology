@@ -46,6 +46,7 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset("type_unverified".split()),
+    "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
         "nested_scope_unverified node_kind_mismatch node_unverified "
         "required_occurrence_missing types_mismatch value_mismatch "
@@ -132,6 +133,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "contract": (
+        "named required consumer obligations",
+        "Required comparison or binding coverage is missing, or a selected "
+        "check could not execute.",
+        "Supply the required bindings and resources, run every obligation, "
+        "and retain incomplete evidence instead of accepting a permissive exit.",
+        'ContractObligation("mapping", check, bindings=count, minimum_bindings=1)',
+    ),
     "adapter": (
         "application declarations",
         "An adapter could not prove the declared application mapping or emission.",
