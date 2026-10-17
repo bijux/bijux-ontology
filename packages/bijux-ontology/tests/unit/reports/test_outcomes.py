@@ -22,6 +22,37 @@ def test_unverified_child_remains_unverified_when_policy_allows_it() -> None:
     assert report.issues == child.issues
 
 
+def test_public_report_construction_preserves_descendant_truth_without_recounting() -> (
+    None
+):
+    from bijux_ontology.interfaces.cli.protocol import report_from_data
+
+    failure = Issue("emission.missing", "Missing value", "/label")
+    leaf = Report("emission", 1, (failure,))
+    parent = Report("document", 1, children=(leaf,))
+    root = Report("consumer", 1, children=(parent,))
+    for report in (root, report_from_data(json.loads(json.dumps(root.to_dict())))):
+        assert report.outcome == "disagreement" and not report.verified
+        assert report.exit_code(strict=True) == 1
+        assert report.checked == 1 and report.issues == (failure,)
+    combined = combine_reports("combined", root)
+    assert combined.checked == 1 and combined.issues == (failure,)
+    agreeing = Report("consumer", 1, children=(Report("document", 1),))
+    assert agreeing.verified and agreeing.exit_code(strict=True) == 0
+
+
+def test_child_input_and_exhaustion_cannot_be_hidden_by_optional_empty_scope() -> None:
+    for kind in ("input_error", "exhausted"):
+        child = Report(
+            "child",
+            0,
+            (Issue("execution.failed", "Unavailable", kind=kind),),
+            allow_empty=True,
+        )
+        parent = Report("parent", 1, children=(child,))
+        assert parent.exit_code() == 2 and not parent.complete
+
+
 def test_incomplete_input_takes_precedence_without_losing_findings() -> None:
     missing = Issue("vocabulary.term_missing", "Missing term", "field")
     unavailable = Issue("input.source_missing", "Missing source", kind="input_error")

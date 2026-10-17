@@ -32,6 +32,7 @@ def _retain_report(
                     ),
                 ),
                 complete=False,
+                children=(),
             )
         )
         return 0, False
@@ -39,23 +40,33 @@ def _retain_report(
     return remaining - len(report.issues), True
 
 
+def _replace_issue(report: Report, before: Issue, after: Issue) -> Report:
+    """Keep aggregate and descendant evidence consistent when adding context."""
+    return replace(
+        report,
+        issues=tuple(after if issue == before else issue for issue in report.issues),
+        children=tuple(
+            _replace_issue(child, before, after) for child in report.children
+        ),
+    )
+
+
 def _aggregate(scope: str, reports: list[Report], pending: tuple[str, ...]) -> Report:
     result = combine_reports(scope, *reports)
     if not pending:
         return result
-    issues = list(result.issues)
-    for index in range(len(issues) - 1, -1, -1):
-        if issues[index].kind == "exhausted":
-            issues[index] = replace(
-                issues[index],
-                message=issues[index].message
+    for issue in reversed(result.issues):
+        if issue.kind == "exhausted":
+            described = replace(
+                issue,
+                message=issue.message
                 + f"; {len(pending)} required scopes were not started",
                 expected=", ".join(pending),
             )
+            result = _replace_issue(result, issue, described)
             break
     return replace(
         result,
-        issues=tuple(issues),
         requested=(result.requested or 0) + len(pending),
         complete=False,
     )
