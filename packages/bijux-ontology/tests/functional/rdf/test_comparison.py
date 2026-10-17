@@ -1,5 +1,6 @@
 """RDF identity preserves blank-node structure, lexical values and graph scope."""
 
+import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import XSD
@@ -91,10 +92,45 @@ def test_record_encoding_preserves_ambiguous_topology_and_term_roles() -> None:
 
 
 def test_comparison_worker_deadline_is_an_incomplete_result() -> None:
-    left = Graph().add((EX.A, EX.p, EX.B))
+    left = Graph().add((EX.A, EX.p, BNode()))
     report = compare_rdf(left, left, timeout_seconds=0.000001)
     assert report.outcome == "exhausted" and not report.complete
     assert report.issues[-1].kind == "exhausted"
+
+
+def test_ground_datasets_compare_without_starting_a_correspondence_worker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unexpected_worker(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Ground comparison must not start a worker")
+
+    monkeypatch.setattr(
+        "bijux_ontology.rdf.comparison.subprocess.Popen", unexpected_worker
+    )
+    left = Dataset()
+    right = Dataset()
+    for index in range(1000):
+        triple = (EX[f"s{index}"], EX.p, Literal(index))
+        left.default_graph.add(triple)
+        right.default_graph.add(triple)
+    assert compare_rdf(left, right).verified
+    right.default_graph.set((EX.s999, EX.p, Literal(-1)))
+    assert compare_rdf(left, right).outcome == "disagreement"
+    right.default_graph.set((EX.s999, EX.p, Literal(999)))
+    right.graph(EX.empty)
+    assert compare_rdf(left, right).outcome == "disagreement"
+    left.graph(EX.empty)
+    assert compare_rdf(left, right).verified
+
+
+def test_blank_graph_names_retain_correspondence_and_distinct_graph_scope() -> None:
+    left = Dataset()
+    right = Dataset()
+    left.graph(BNode("left")).add((EX.A, EX.p, EX.B))
+    right.graph(BNode("right")).add((EX.A, EX.p, EX.B))
+    assert compare_rdf(left, right).verified
+    right.graph(BNode("other"))
+    assert compare_rdf(left, right).outcome == "disagreement"
 
 
 def test_incomplete_empty_graph_scope_needs_an_explicit_comparison_exclusion() -> None:

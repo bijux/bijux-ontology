@@ -14,37 +14,39 @@ from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
 
+_Record = tuple[str, tuple[tuple[str | None, ...], ...]]
+
 
 def _records(
     source: Graph | PreparedSource, budget: Budget, ignore_empty_graphs: bool
-) -> list[object]:
+) -> list[_Record]:
     prepared = prepare_rdf(
         source.dataset() if isinstance(source, PreparedSource) else source,
         budget=budget,
     )
     dataset = prepared.dataset()
-    records: list[object] = []
+    records: list[_Record] = []
     for graph in dataset.graphs():
         budget.consume("work")
         if graph.identifier != dataset.default_graph.identifier and (
             not ignore_empty_graphs or len(graph)
         ):
-            records.append(["graph", [list(term_key(graph.identifier))]])
+            records.append(("graph", (term_key(graph.identifier),)))
     for subject, predicate, value, name in dataset.quads():
         budget.consume("work")
         records.append(
-            [
+            (
                 "quad",
-                [
-                    list(term_key(node))
+                tuple(
+                    term_key(node)
                     for node in (
                         subject,
                         predicate,
                         value,
                         None if name == dataset.default_graph.identifier else name,
                     )
-                ],
-            ]
+                ),
+            )
         )
     return records
 
@@ -88,7 +90,8 @@ def compare_rdf(
 ) -> Report:
     """Compare exact RDF structure, dataset membership and blank-node identity.
 
-    RDFLib's maintained isomorphism implementation runs in a disposable worker.
+    Ground records compare directly; blank-node correspondence uses RDFLib's
+    maintained isomorphism implementation in a disposable worker.
     Input and preparation work have explicit budgets; the comparator has a real
     wall-clock deadline because RDFLib exposes no internal work/state allowance.
     The worker inherits the caller's process group for enclosing CLI deadlines.
@@ -138,7 +141,17 @@ def compare_rdf(
             [left, right], ensure_ascii=False, separators=(",", ":")
         ).encode("utf-8")
         operation.consume("bytes", len(payload))
-        equal = _isomorphic(payload, timeout_seconds)
+        if len(left) != len(right):
+            equal = False
+        elif not any(
+            node[0] == "blank"
+            for records in (left, right)
+            for _, nodes in records
+            for node in nodes
+        ):
+            equal = set(left) == set(right)
+        else:
+            equal = _isomorphic(payload, timeout_seconds)
         checked = 1
         if not equal:
             issues.append(
