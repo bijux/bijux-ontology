@@ -6,13 +6,73 @@ import warnings
 from dataclasses import replace
 from typing import Any
 
-from rdflib import Graph, URIRef
+from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import RDF, SH
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.shacl.coverage import TARGET
+
+
+def target_coverage(
+    data: Graph,
+    shapes: Graph,
+    ontology: Graph | None,
+    focus_nodes: list[str],
+    limits: Limits,
+    *,
+    validation_complete: bool,
+) -> dict[str, object]:
+    """Enumerate the completed backend run's root targets on its effective graph."""
+    from pyshacl import Validator
+    from pyshacl.graph_abstraction import DataGraph
+
+    validator = Validator(
+        DataGraph.from_rdflib(data),
+        shacl_graph=shapes,
+        ont_graph=ontology,
+        options={"inference": "none", "advanced": False, "use_js": False},
+    )
+    effective = validator.data_graph
+    if ontology is not None:
+        effective = validator.mix_in_ontology()  # type: ignore[no-untyped-call]
+    focus = {URIRef(iri) for iri in focus_nodes}
+    graph = Graph()
+    budget = Budget(limits)
+    complete = validation_complete
+    exhausted = False
+    message = "" if complete else "Backend warnings prevent completed target coverage"
+    try:
+        for shape in sorted(
+            validator.shacl_graph.shapes, key=lambda item: item.node.n3()
+        ):
+            budget.consume("work")
+            if shape.deactivated:
+                budget.consume("triples")
+                graph.add((TARGET.scope, TARGET.deactivated, shape.node))
+                continue
+            nodes = shape.focus_nodes(effective)
+            for node in sorted(nodes, key=lambda item: item.n3()):
+                budget.consume("work")
+                if focus and node not in focus:
+                    continue
+                budget.consume("states")
+                budget.consume("triples", 2)
+                record = BNode()
+                graph.add((record, TARGET.shape, shape.node))
+                graph.add((record, TARGET.focus, node))
+    except LimitExceeded as error:
+        complete = False
+        exhausted = True
+        message = str(error)
+    return {
+        "graph": graph.serialize(format="nt"),
+        "complete": complete,
+        "exhausted": exhausted,
+        "message": message,
+    }
 
 
 def execute(request: dict[str, Any]) -> dict[str, Any]:
@@ -119,7 +179,7 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
                 "backend": backend,
                 "conforms": bool(conforms),
             }
-        return {
+        result = {
             "status": "result",
             "backend": backend,
             "conforms": bool(conforms),
@@ -131,6 +191,16 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
                 if isinstance(item.message, (ValidationWarning, ConstraintLoadWarning))
             ],
         }
+        if request.get("coverage"):
+            result["coverage"] = target_coverage(
+                data,
+                shapes,
+                ontology,
+                request["focus_nodes"],
+                limits,
+                validation_complete=not result["warnings"],
+            )
+        return result
     except (ShapeLoadError, ConstraintLoadError) as error:
         return {"status": "shapes_invalid", "message": str(error), "backend": backend}
     except ReportableRuntimeError as error:

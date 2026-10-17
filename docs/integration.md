@@ -28,6 +28,13 @@ an identity witness. RDF preservation does not promise original JSON shape.
 
 Keep findings and unsupported comparisons visible. Apply narrow code/location exceptions through `AcceptancePolicy`; they do not change verification truth. Retain application validation, reference checks and any existing reasoning gate. Supplied-shapes validation is an optional additional operation, not general OWL consistency checking.
 
+For supplied SHACL shapes, `ShaclCoverageContract(minimum_focus=1,
+focus_nodes=record_iris, pairs=shape_focus_pairs)` from `bijux_ontology.shacl`
+requires completed root target evaluations when passed as `coverage=` to
+`validate_shapes`. Inspect `result.coverage` separately from `conforms` and
+`conformance_report`; a targetless shape can conform while required coverage fails.
+Nested conditional constraint execution is not inferred from root coverage.
+
 Use `check_contract` for required consumer acceptance. Name each `ContractObligation`,
 provide its check callback and set `minimum_checked` or explicit
 `bindings`/`minimum_bindings` for extraction coverage. For example:

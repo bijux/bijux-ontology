@@ -96,6 +96,7 @@ _CODES = {
     ),
     "shacl": frozenset(
         "backend_warning execution_incomplete feature_unverified "
+        "coverage_minimum coverage_missing coverage_pair_missing coverage_incomplete "
         "shapes_invalid unavailable "
         "failure input_error exhausted "
         "implicit_target_unverified nonconformance sparql_unverified".split()
