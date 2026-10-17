@@ -17,8 +17,13 @@ from bijux_ontology.owl.checking import (
 from bijux_ontology.owl.expressions import check_expression_shapes
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.builtins import Regime, kind_matches, validate_regime
-from bijux_ontology.vocabulary.checking import check_vocabulary, declared_kinds
+from bijux_ontology.vocabulary.builtins import (
+    Regime,
+    builtin_kinds,
+    kind_matches,
+    validate_regime,
+)
+from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
@@ -50,11 +55,20 @@ def _location(node: Node, source: str) -> str:
 def _reference_checks(
     graph: Graph,
     source: str,
-    vocabulary: Vocabulary,
+    scopes: Sequence[tuple[str, Graph]],
     regime: Regime,
     budget: Budget,
     issues: IssueCollector,
 ) -> int:
+    def declared(node: URIRef) -> frozenset[str]:
+        # Declaration roles and exemptions must use the same sources as the checks.
+        return frozenset(
+            str(kind)
+            for _, selected_graph in scopes
+            for kind in selected_graph.objects(node, RDF.type)
+            if isinstance(kind, URIRef)
+        ) | builtin_kinds(str(node), regime)
+
     count = 0
     for predicate, roles in _REFERENCES.items():
         for subject, target in sorted(
@@ -69,8 +83,7 @@ def _reference_checks(
                 regime == "owl-dl"
                 and predicate == OWL.equivalentClass
                 and any(
-                    str(RDFS.Datatype)
-                    in declared_kinds(vocabulary, str(node), regime=regime)
+                    str(RDFS.Datatype) in declared(node)
                     if isinstance(node, URIRef)
                     else (node, RDF.type, RDFS.Datatype) in graph
                     for node in (subject, target)
@@ -108,11 +121,11 @@ def _reference_checks(
                         regime == "owl-dl"
                         and predicate in (RDFS.domain, RDFS.range)
                         and node == target
-                        and str(OWL.AnnotationProperty)
-                        in declared_kinds(vocabulary, str(subject), regime=regime)
+                        and isinstance(subject, URIRef)
+                        and str(OWL.AnnotationProperty) in declared(subject)
                     ):
                         continue
-                    kinds = declared_kinds(vocabulary, str(node), regime=regime)
+                    kinds = declared(node)
                     if not kind_matches(kinds, expected, regime):
                         issues.append(
                             Issue(
@@ -151,7 +164,8 @@ def check_ontology(
 ) -> Report:
     """Check selected supplied ontology structures without an application inventory.
 
-    Lookup sources participate only when explicitly selected. Publication metadata
+    Reference resolution and checking both use the selected sources. Lookup
+    sources participate only when explicitly selected. Publication metadata
     requirements are opt-in. A structurally checked expression remains unverified
     when its logical consequences are outside the supported named fragment.
     """
@@ -210,7 +224,7 @@ def check_ontology(
                     issues.append(finding)
             operations: dict[str, Callable[[], int]] = {
                 "references": partial(
-                    _reference_checks, graph, source, sources, regime, budget, issues
+                    _reference_checks, graph, source, scopes, regime, budget, issues
                 ),
                 "expressions": partial(
                     check_expression_shapes, graph, source, budget, issues
