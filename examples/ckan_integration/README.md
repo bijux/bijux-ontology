@@ -11,7 +11,7 @@ mkdir -p artifacts/consumers artifacts/tmp artifacts/pip-cache
 export TMPDIR="$PWD/artifacts/tmp" PIP_CACHE_DIR="$PWD/artifacts/pip-cache"
 python3.12 -m venv artifacts/consumers/ckan-env
 artifacts/consumers/ckan-env/bin/python -m pip install 'ckan[requirements]==2.11.6' 'ckanext-dcat==2.4.4' './packages/bijux-ontology[jsonld,shacl]'
-curl -fsSL https://raw.githubusercontent.com/ckan/ckan/a22d24505d1a5f75820d43cc3b0656c2c6b925a2/ckan/test-core.ini -o artifacts/consumers/ckan-test.ini
+curl -fsSL https://raw.githubusercontent.com/ckan/ckan/a22d24505d1a5f75820d43cc3b0656c2c6b925a2/test-core.ini -o artifacts/consumers/ckan-test.ini
 artifacts/consumers/ckan-env/bin/python -I -B examples/ckan_integration/consumer.py --ckan-ini artifacts/consumers/ckan-test.ini --output artifacts/ckan-integration
 ```
 
