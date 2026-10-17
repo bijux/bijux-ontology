@@ -151,6 +151,16 @@ mappings and requirements. Unresolved/custom output shapes remain unverified;
 absent optional fields are explicit sample exclusions. Preparation and checking
 share one operation budget. Success qualifies this output and these options.
 
+For LinkML, `interfaces.adapters.linkml.model_declarations(view,
+serializer="rdflib")` qualifies the maintained schema-driven RDFLib dumper.
+The view must be import-free or contain a fully resolved local import closure.
+Identifier slots define subjects and enum meanings can emit IRIs. Use
+`interfaces.adapters.linkml_rdf.check_instance(instance, view=view,
+vocabulary=ontology, options={}, class_name="Catalogue")` to retain the exact
+checked `source` and combined `report`. `RdfSerializer(view, options={})` reuses
+owned schema preparation for repeated `.check(...)` calls. Unsupported serializer
+features remain unverified; the adapter retrieves no missing imports.
+
 Resolve finite selectors through `prepared.select(...)`. `SourceSelector` composes
 `Property`, `ArrayItems` and `KeyedItems`; each step’s bounds apply to every selected
 parent, independently of aggregate bounds. Check the returned concrete `paths`
