@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO
 
-from rdflib import Graph
+from rdflib import BNode, Graph
 
 from bijux_ontology.errors import InputError
 
@@ -20,18 +20,33 @@ class RdfSource:
     A string is RDF content, never a filename or URL. Use ``Path`` for files.
     Caller streams remain open. ``document_iri`` identifies the document, while
     ``effective_url`` supplies the retrieval base after an intentional alias.
+    Dataset resources select an IRI graph, ``@default``, or an explicit union.
+    Blank graph names are usable only on their owned prepared snapshot.
     """
 
     content: Payload
     format: str | None = None
     document_iri: str | None = None
     effective_url: str | None = None
+    graph_name: str | None = None
+    union: bool = False
 
     def __post_init__(self) -> None:
         if self.format is not None and (
             not isinstance(self.format, str) or not self.format.strip()
         ):
             raise InputError("RDF format must be a nonempty string")
+        if type(self.union) is not bool:
+            raise InputError("union must be a boolean")
+        if self.graph_name is not None:
+            if isinstance(self.graph_name, BNode):
+                raise InputError(
+                    "Blank graph names require selection on an owned snapshot"
+                )
+            if self.union:
+                raise InputError("Choose a graph name or union, not both")
+            if self.graph_name != "@default":
+                absolute_iri(self.graph_name, location="graph_name")
         for name in ("document_iri", "effective_url"):
             value = getattr(self, name)
             if value is not None:

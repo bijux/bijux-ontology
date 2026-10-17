@@ -127,9 +127,24 @@ class PreparedSource:
         literal_fidelity: str,
         max_triples: int = 1_000_000,
         graph_fidelity: TypingLiteral["complete", "nonempty-only"] = "complete",
+        graph_name: str | None = None,
+        union: bool = False,
     ) -> None:
         if graph_fidelity not in ("complete", "nonempty-only"):
             raise InputError("Unknown RDF graph-scope fidelity")
+        if type(union) is not bool:
+            raise InputError("union must be a boolean")
+        if graph_name is not None:
+            if isinstance(graph_name, BNode):
+                raise InputError(
+                    "Blank graph names require selection on an owned snapshot"
+                )
+            if union:
+                raise InputError("Choose a graph name or union, not both")
+            if graph_name != "@default":
+                absolute_iri(graph_name, location="graph_name")
+        self.graph_name = graph_name
+        self.union = union
         self.graph_fidelity = graph_fidelity
         self._dataset = copy_dataset(dataset, max_triples)
         self._max_triples = max_triples
@@ -149,7 +164,18 @@ class PreparedSource:
 
         Select ``'@default'`` for the default graph, a named graph IRI/blank node,
         or explicitly request ``union=True``. A graph source needs no selection.
+        A declared resource selection is retained and conflicting overrides fail.
         """
+        if type(union) is not bool:
+            raise InputError("union must be a boolean")
+        if self.graph_name is not None or self.union:
+            if (graph_name is not None or union) and (
+                graph_name != self.graph_name or union != self.union
+            ):
+                raise InputError(
+                    "Graph selection conflicts with the resource declaration"
+                )
+            graph_name, union = self.graph_name, self.union
         if graph_name is not None and union:
             raise InputError("Choose a graph name or union, not both")
         if self.is_dataset and graph_name is None and not union:

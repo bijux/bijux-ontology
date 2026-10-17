@@ -11,6 +11,11 @@ owned_namespaces=("http://bia/",))` for local membership; add
 `require_coverage=True` and `coverage_terms=selected_owned_iris` for reverse coverage.
 Ownership and accepted RDF kinds are explicit caller contracts.
 
+Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
+`graph_name="@default"`, or `union=True`. Imports, lookup resources and prepared
+SHACL inputs retain that selection. `prepared.dataset()` still exports every
+original graph; conflicting graph overrides fail explicitly.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.

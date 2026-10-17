@@ -82,7 +82,9 @@ class ProjectConfig:
             text_value(name, location=where)
             entry = object_value(item, location=where)
             known_keys(
-                entry, {"path", "format", "iri", "effective_url"}, location=where
+                entry,
+                {"path", "format", "iri", "effective_url", "graph_name", "union"},
+                location=where,
             )
             for key in ("iri", "effective_url"):
                 if entry.get(key) is not None:
@@ -103,6 +105,8 @@ class ProjectConfig:
                 format=syntax,
                 document_iri=cast(str | None, entry.get("iri")),
                 effective_url=cast(str | None, entry.get("effective_url")),
+                graph_name=cast(str | None, entry.get("graph_name")),
+                union=cast(bool, entry.get("union", False)),
             )
         self.rdf: Mapping[str, RdfSource] = MappingProxyType(rdf)
         contexts = object_value(
@@ -169,6 +173,8 @@ class ProjectConfig:
                     "format": item.format,
                     "iri": item.document_iri,
                     "effective_url": item.effective_url,
+                    "graph_name": item.graph_name,
+                    "union": item.union,
                 }
                 for name, item in self.rdf.items()
             },
