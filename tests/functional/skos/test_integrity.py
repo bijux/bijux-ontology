@@ -276,3 +276,17 @@ def test_scheme_boundaries_are_opt_in_and_do_not_redefine_valid_skos() -> None:
     assert [(issue.code, issue.location) for issue in missing.issues] == [
         ("skos.policy.scheme_missing", str(EX.B))
     ]
+
+
+def test_collection_policy_retains_direct_literal_members_and_exact_selection() -> None:
+    graph = Graph().add((EX.Group, SKOS.member, Literal("not a resource")))
+    graph.add((EX.Valid, SKOS.member, EX.A))
+    graph.add((EX.Valid, SKOS.member, BNode()))
+    before = frozenset(graph)
+    report = check_skos(graph, rules=("collections",))
+    assert report.outcome == "disagreement"
+    assert [(issue.code, issue.location) for issue in report.issues] == [
+        ("skos.policy.collection_member_shape", str(EX.Group))
+    ]
+    assert check_skos(graph, rules=("collections",), concepts=(str(EX.Valid),)).verified
+    assert frozenset(graph) == before

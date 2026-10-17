@@ -69,6 +69,11 @@ def structure(graph: Graph, budget: Budget) -> SkosStructure:
             roles.setdefault(subject, set()).add(URIRef(str(value)))
             if value == SKOS.OrderedCollection:
                 roles[subject].add(SKOS.Collection)
+        # Retain malformed members for the opt-in collection policy; their
+        # rejection as relation endpoints must not erase the authored evidence.
+        if predicate == SKOS.member:
+            roles.setdefault(subject, set()).add(SKOS.Collection)
+            members.setdefault(subject, set()).add(value)
         if predicate in _RELATIONS or predicate in (
             SKOS.hasTopConcept,
             SKOS.topConceptOf,
@@ -93,9 +98,6 @@ def structure(graph: Graph, budget: Budget) -> SkosStructure:
             schemes.setdefault(value, set()).add(subject)
             roles.setdefault(subject, set()).add(SKOS.ConceptScheme)
             roles.setdefault(value, set()).add(SKOS.Concept)
-        elif predicate == SKOS.member:
-            roles.setdefault(subject, set()).add(SKOS.Collection)
-            members.setdefault(subject, set()).add(value)
         elif predicate == SKOS.memberList:
             roles.setdefault(subject, set()).update(
                 (SKOS.OrderedCollection, SKOS.Collection)
