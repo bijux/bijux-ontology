@@ -9,7 +9,7 @@ from bijux_ontology.limits import Budget, IssueCollector
 from ..errors import LimitExceeded
 from ..reports import Issue
 from .collections import collection_memberships
-from .selection import RuleSelection, SkosScope
+from .selection import RuleSelection, SkosScope, collection_scope
 from .xl import ROLES, XL, describe_xl_label, xl_labels
 
 _LABELS = (SKOS.prefLabel, SKOS.altLabel, SKOS.hiddenLabel)
@@ -49,42 +49,33 @@ def check_resources(
     languages, language_fallback = policy.languages, policy.language_fallback
     definition_predicates = policy.definition_predicates
     checked = 0
-    members = (
-        collection_memberships(
-            graph,
-            facts.members,
-            required=policy.notation_collections,
-            budget=budget,
-            issues=issues,
-        )
-        if set(rules) & {"collections", "deprecated-active"}
-        or set(rules) & {"notation-required", "notation-unique"}
-        and policy.notation_collections
-        else {}
+    collections = collection_scope(scope, policy)
+    members = collection_memberships(
+        graph,
+        facts.members,
+        scope=collections,
+        budget=budget,
+        issues=issues,
     )
+    notation_groups = {
+        collection: scope.select(members.get(collection, ()))
+        for collection in collections.notation
+    }
     notation_nodes = (
-        {
-            node
-            for iri in policy.notation_collections
-            for node in members.get(URIRef(iri), ())
-        }
+        {node for values in notation_groups.values() for node in values}
         if policy.notation_collections
         else set(resources)
     )
-    if policy.notation_collections and set(rules) & {
-        "notation-required",
-        "notation-unique",
-    }:
-        for iri in policy.notation_collections:
-            if SKOS.Collection not in facts.roles.get(URIRef(iri), ()):
-                issues.append(
-                    Issue(
-                        "skos.policy.notation_scope_unavailable",
-                        "Requested collection lacks supplied membership evidence",
-                        iri,
-                        kind="unverified",
-                    )
+    for collection in sorted(collections.notation, key=lambda node: node.n3()):
+        if SKOS.Collection not in facts.roles.get(collection, ()):
+            issues.append(
+                Issue(
+                    "skos.policy.notation_scope_unavailable",
+                    "Requested collection lacks supplied membership evidence",
+                    str(collection),
+                    kind="unverified",
                 )
+            )
     labels = {
         node: {predicate: set(graph.objects(node, predicate)) for predicate in _LABELS}
         for node in resources
@@ -358,12 +349,10 @@ def check_resources(
         codes: dict[tuple[Node, tuple[str, str, str]], set[Node]] = {}
         groups: dict[Node, set[Node]] = {}
         if policy.notation_collections:
-            for iri in policy.notation_collections:
-                collection = URIRef(iri)
-                for node in members.get(collection, ()):
+            for collection, selected_members in notation_groups.items():
+                for node in selected_members:
                     budget.consume("work")
-                    if not scope.narrowed or node in resources:
-                        groups.setdefault(node, set()).add(collection)
+                    groups.setdefault(node, set()).add(collection)
         else:
             groups = {node: set(facts.schemes.get(node, ())) for node in resources}
         for node, notation_scopes in groups.items():
