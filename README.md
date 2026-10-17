@@ -19,3 +19,4 @@ These targets use pinned `bijux-std` implementations. Generated output stays und
 - JSON-LD context checks, controlled resources, representative usages, RDF conversion and verified document export.
 - Scoped vocabulary loading and inspection, coverage, graph navigation, comparisons and finite OWL encoding checks.
 - Finite model relationships, literal and representative-emission checks, plus optional Pydantic/LinkML extraction.
+- SKOS integrity, application data rules and isolated optional SHACL validation with preserved backend evidence.

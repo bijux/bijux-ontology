@@ -1,6 +1,8 @@
 """Supported structural checks for RDF vocabularies and application declarations."""
 
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.data.rules import DataView, run_rules
+from bijux_ontology.data.usage import check_data_usage
 from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
@@ -50,6 +52,7 @@ from bijux_ontology.reports import (
     Report,
     combine_reports,
 )
+from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.comparison import (
     Change,
@@ -71,6 +74,7 @@ __all__ = [
     "CheckError",
     "ContextExpectation",
     "ContextInputError",
+    "DataView",
     "FieldDeclaration",
     "InputError",
     "Issue",
@@ -100,9 +104,11 @@ __all__ = [
     "VocabularyChanges",
     "VocabularyView",
     "check_context",
+    "check_data_usage",
     "check_emission",
     "check_models",
     "check_ontology",
+    "check_skos",
     "check_vocabulary",
     "combine_reports",
     "compare_context_usages",
@@ -124,6 +130,7 @@ __all__ = [
     "prepare_usages",
     "recheck_transformation",
     "remap_iris",
+    "run_rules",
     "terms_from_data",
     "write_export",
 ]
