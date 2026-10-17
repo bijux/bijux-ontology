@@ -173,3 +173,9 @@ separately, and an empty list contributes `rdf:nil` with zero members. These
 are application output requirements, independent of Python constructor fields
 and OWL cardinalities. Legacy `optional=True` aliases optional emission and
 rejects conflicting required output; its default `False` adds no guarantee.
+
+`PreparedUsages.observe_many(paths)` shares maintained processing for supported
+primitive fields on uniquely named subjects. Scoped contexts, anonymous subjects,
+lists and ambiguous correspondences retain conservative individual observation.
+The same owned preparation can serve repeated checks within its cumulative
+budget. Worker calls still start separate processes; this API adds no session.
