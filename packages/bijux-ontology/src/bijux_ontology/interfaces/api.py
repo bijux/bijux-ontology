@@ -65,6 +65,7 @@ from bijux_ontology.owl.obligations import (
     OntologyObligation,
     prove_obligations,
 )
+from bijux_ontology.rdf.canonical.export import CanonicalRDF, canonicalize_rdf
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
@@ -124,6 +125,7 @@ __all__ = [
     "AcceptancePolicy",
     "ArrayItems",
     "Budget",
+    "CanonicalRDF",
     "Change",
     "CheckError",
     "ContextCorpusDocument",
@@ -194,6 +196,7 @@ __all__ = [
     "assess_context_corpus",
     "assess_models",
     "assess_upgrade",
+    "canonicalize_rdf",
     "check_context",
     "check_contract",
     "check_data_usage",

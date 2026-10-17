@@ -33,6 +33,8 @@ equality, inequality or classification.
 
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
 
+Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
+
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.

@@ -108,6 +108,9 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "canonicalization_literal_scope_unverified "
+        "canonicalization_graph_scope_unverified canonicalization_empty_graph_loss "
+        "canonicalization_unavailable canonicalization_input_invalid "
         "export_empty_graph_exclusion export_empty_graph_loss "
         "export_graph_scope_unverified export_representation_unverified "
         "extraction_scope graph_scope_unverified merge_scope remap_collision "
@@ -296,6 +299,16 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "rdf.canonicalization_empty_graph_loss": (
+        "Canonical N-Quads cannot retain the selected empty named-graph inventory.",
+        "Keep the dataset, or explicitly exclude empty graphs from the quad claim.",
+        "canonicalize_rdf(source, ignore_empty_graphs=True)",
+    ),
+    "rdf.canonicalization_unavailable": (
+        "The requested canonicalization backend or execution bound is unavailable.",
+        "Use a supported runtime or platform; retain any required memory bound.",
+        "canonicalize_rdf(source, memory_bytes=required_address_space)",
+    ),
     "emission.source_field_undeclared": (
         "A selected source key has no declaration or proven coverage permission.",
         "Declare the actual field or its alias; allow only intentional extensions.",
