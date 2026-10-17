@@ -14,6 +14,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.shacl.coverage import TARGET
+from bijux_ontology.shacl.functions import register_functions
 
 
 def target_coverage(
@@ -104,6 +105,7 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
         dataset.graph("urn:bijux:shacl:ontology") if request["has_ontology"] else None
     )
     backend = f"pyshacl {pyshacl.__version__}"
+    function_calls: dict[str, int] = {}
     try:
         with warnings.catch_warnings(record=True) as observed:
             warnings.simplefilter("always")
@@ -147,25 +149,31 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
                     do_owl_imports=False,
                     meta_shacl=True,
                 )
-            conforms, report, _ = pyshacl.validate(
+            with register_functions(
+                dataset.graph("urn:bijux:shacl:functions"),
+                request.get("functions", ()),
                 data,
-                shacl_graph=shapes,
-                ont_graph=ontology,
-                inference="none",
-                advanced=False,
-                js=False,
-                iterate_rules=False,
-                inplace=False,
-                abort_on_first=False,
-                allow_infos=False,
-                allow_warnings=False,
-                do_owl_imports=False,
-                sparql_mode=False,
-                max_validation_depth=request["max_depth"],
-                focus_nodes=request["focus_nodes"] or None,
-                use_shapes=None,
-                meta_shacl=False,
-            )
+                limits,
+            ) as function_calls:
+                conforms, report, _ = pyshacl.validate(
+                    data,
+                    shacl_graph=shapes,
+                    ont_graph=ontology,
+                    inference="none",
+                    advanced=False,
+                    js=False,
+                    iterate_rules=False,
+                    inplace=False,
+                    abort_on_first=False,
+                    allow_infos=False,
+                    allow_warnings=False,
+                    do_owl_imports=False,
+                    sparql_mode=False,
+                    max_validation_depth=request["max_depth"],
+                    focus_nodes=request["focus_nodes"] or None,
+                    use_shapes=None,
+                    meta_shacl=False,
+                )
         # Use the maintained backend discovery, including implicit property shapes.
         shapes_count = len(ShapesGraph(shapes).shapes)
         if isinstance(report, ValidationFailure):
@@ -185,6 +193,7 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
             "conforms": bool(conforms),
             "shapes_count": shapes_count,
             "report": report.serialize(format="nt"),
+            "functions": {"registered": list(function_calls), "calls": function_calls},
             "warnings": [
                 str(item.message)
                 for item in observed
@@ -201,6 +210,13 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
                 validation_complete=not result["warnings"],
             )
         return result
+    except LimitExceeded as error:
+        return {
+            "status": "exhausted",
+            "message": str(error),
+            "backend": backend,
+            "functions": {"registered": list(function_calls), "calls": function_calls},
+        }
     except (ShapeLoadError, ConstraintLoadError) as error:
         return {"status": "shapes_invalid", "message": str(error), "backend": backend}
     except ReportableRuntimeError as error:

@@ -8,6 +8,11 @@ from bijux_ontology.shacl.coverage import (
     ShaclTarget,
 )
 from bijux_ontology.shacl.findings import ShaclSource
+from bijux_ontology.shacl.functions import (
+    ShaclFunctionCatalog,
+    ShaclFunctionParameter,
+    ShaclSparqlFunction,
+)
 from bijux_ontology.shacl.paths import ShaclPath
 
 __all__ = [
@@ -15,8 +20,11 @@ __all__ = [
     "ShaclCoverage",
     "ShaclCoverageContract",
     "ShaclFinding",
+    "ShaclFunctionCatalog",
+    "ShaclFunctionParameter",
     "ShaclResult",
     "ShaclSource",
+    "ShaclSparqlFunction",
     "ShaclPath",
     "ShaclTarget",
     "validate_shapes",
