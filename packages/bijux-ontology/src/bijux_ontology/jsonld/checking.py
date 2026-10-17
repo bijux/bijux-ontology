@@ -7,6 +7,7 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
+from .entities import EntityInventory
 from .expansion import _drop_issues, _validate_allowed_drops, expand_document
 from .expectations import ContextExpectation, compare_usage
 from .observations import ObservedUsage, SourcePath, location
@@ -56,6 +57,7 @@ class PreparedUsages:
         )
         self._dropped = tuple(dropped)
         self._root_nodes = tuple(value_traits(node, "") for node in expanded)
+        self._entities = EntityInventory(expanded, self._budget)
         self._index = UsageIndex(
             self._document,
             self._expand,
@@ -63,6 +65,11 @@ class PreparedUsages:
             unscoped_resources=self._loader.unscoped,
             budget=self._budget,
         )
+
+    @property
+    def entities(self) -> EntityInventory:
+        """Read graph-qualified asserted facts from this same owned expansion."""
+        return self._entities
 
     @property
     def root_nodes(self) -> tuple[ValueTraits, ...]:

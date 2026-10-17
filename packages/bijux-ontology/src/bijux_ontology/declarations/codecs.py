@@ -19,6 +19,7 @@ from bijux_ontology.declarations.types import (
     Emission,
     FieldDeclaration,
     ModelDeclaration,
+    SubjectIdentity,
     TermDeclaration,
     ValueDeclaration,
     ValueKind,
@@ -103,7 +104,7 @@ def models_from_data(
             )
             known_keys(
                 model,
-                {"identifier", "types", "fields", "location"},
+                {"identifier", "types", "fields", "location", "subject"},
                 location="",
                 message="Unknown declaration keys",
             )
@@ -176,6 +177,7 @@ def models_from_data(
                     string_value(
                         model.get("location", input_location(source, (index,)))
                     ),
+                    subject=_subject(model.get("subject", {})),
                 )
             )
     return tuple(result)
@@ -204,3 +206,19 @@ def _sample(value: object) -> "RDFLiteral":
     if str(sample) != lexical:
         raise InputError("RDFLib cannot preserve the supplied sample lexical form")
     return sample
+
+
+def _subject(value: object) -> SubjectIdentity:
+    data = object_value(
+        value, location="", message="Expected a subject identity object"
+    )
+    known_keys(
+        data,
+        {"expected_iri", "allow_blank"},
+        location="",
+        message="Unknown subject identity keys",
+    )
+    return SubjectIdentity(
+        expected_iri=optional_string_value(data.get("expected_iri")),
+        allow_blank=boolean_value(data.get("allow_blank", True)),
+    )

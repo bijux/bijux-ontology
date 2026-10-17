@@ -18,6 +18,15 @@ original graph; conflicting graph overrides fail explicitly.
 
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
+Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
+or individual `ModelUsage` to check effective subjects after base resolution.
+`ModelUsage(model_id, reference=record_iri, graph=None)` joins local descriptions
+for that named entity in the default graph; pass an exact graph IRI for a named
+graph. Ordinary path bindings keep per-source-object required fields; `entity=True`
+explicitly joins their facts. Unsupplied references remain unknown unless
+`closed=True` requires a local description. Identity checks perform no OWL
+equality, inequality or classification.
+
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
 
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.

@@ -1,14 +1,24 @@
 """Explicit representative JSON-LD output compared with model declarations."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass, replace
 from typing import cast
 
 from rdflib import Literal
 
 from bijux_ontology._json import own_json
-from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
+from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.declarations.types import (
+    ModelDeclaration,
+    SubjectIdentity,
+    ValueDeclaration,
+)
 from bijux_ontology.jsonld.checking import prepare_usages
+from bijux_ontology.jsonld.entities import (
+    EntityInventory,
+    EntityKey,
+    object_key,
+)
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
@@ -26,16 +36,30 @@ from bijux_ontology.rdf.terms import literal_term
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
-from .bindings import same_contribution, source_node_traits
+from .bindings import same_contribution, source_entity, source_node_traits
 from .registry import index_models
 
 
 @dataclass(frozen=True)
 class ModelUsage:
-    """Associate a compact document node with one explicit model identity."""
+    """Bind a source object or an explicitly graph-qualified named reference.
+
+    ``subject`` constrains the source object's effective identity. ``reference``
+    selects an entity directly; its path is only an application diagnostic anchor.
+    ``graph=ABSENT`` follows a source binding, None requires the default graph.
+    Named references require an explicit graph. ``entity`` joins descriptions in
+    that graph; ordinary source bindings retain each object's field guarantees.
+    ``closed`` makes an absent referenced description a finding instead of unknown.
+    """
 
     model: str
     path: SourcePath = ()
+    _: KW_ONLY
+    subject: SubjectIdentity | None = None
+    reference: str | None = None
+    graph: str | Absent | None = ABSENT
+    entity: bool = False
+    closed: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.model, str) or not self.model.strip():
@@ -47,12 +71,34 @@ class ModelUsage:
         ):
             raise InputError("Model usage requires a key/index path")
         object.__setattr__(self, "path", path)
+        if self.subject is not None and not isinstance(self.subject, SubjectIdentity):
+            raise InputError("Expected a typed subject identity contract")
+        if self.graph is not None and self.graph is not ABSENT:
+            absolute_iri(self.graph, location="graph")
+        if type(self.entity) is not bool or type(self.closed) is not bool:
+            raise InputError("entity and closed must be booleans")
+        if self.reference is not None:
+            absolute_iri(self.reference, location="reference")
+            if self.graph is ABSENT:
+                raise InputError("Named reference bindings require an explicit graph")
+            if self.subject is not None and self.subject.expected_iri not in (
+                None,
+                self.reference,
+            ):
+                raise InputError("Reference and expected subject identities conflict")
+
+
+def _identity_matches(contract: SubjectIdentity, traits: ValueTraits) -> bool:
+    if contract.expected_iri is not None and traits.identifier != contract.expected_iri:
+        return False
+    return contract.allow_blank or traits.identifier_kind == "iri"
 
 
 def _matches(
     value: ValueDeclaration,
     occurrence: ObservedOccurrence,
     registry: dict[str, ModelDeclaration],
+    inventory: EntityInventory | None = None,
 ) -> bool | None:
     if value.kind == "unknown" or value.container not in (None, "@set", "@list"):
         return None
@@ -75,11 +121,19 @@ def _matches(
         return False
     if value.kind == "object" and traits.kind not in {"node", "iri", "blank"}:
         return False
+    if inventory is not None:
+        key = object_key(occurrence)
+        description = inventory.get(key) if key is not None else None
+        if description is not None and description.described:
+            traits = replace(traits, types=description.types)
     required = set(value.types)
     if value.model is not None:
         if value.model not in registry:
             return None
-        required.update(registry[value.model].types)
+        model = registry[value.model]
+        if not _identity_matches(model.subject, traits):
+            return False
+        required.update(model.types)
     if required - set(traits.types):
         return None if traits.kind in {"iri", "blank"} and not traits.types else False
     return True
@@ -177,7 +231,8 @@ def check_emission(
     """Check selected actual outputs, without claiming all hypothetical instances.
 
     Each occurrence must match one alternative branch. Nested model nodes need
-    explicit compact-path bindings; external reference typing stays unverified.
+    explicit source or graph-qualified entity bindings. Unsupplied descriptions
+    stay unknown unless their reference binding explicitly requires closed coverage.
     Predicates, reversal, collection membership and literal traits come from the
     shared standards-processed usage snapshot, never a second expansion engine.
     Type checks compare explicit emitted types, without ontology entailment.
@@ -235,6 +290,207 @@ def check_emission(
                 bound_traits[path] = source_node_traits(value, path, prepared, budget)
             return bound_traits[path]
 
+        bound_entities: dict[ModelUsage, EntityKey | None] = {}
+
+        def entity_for(binding: ModelUsage) -> EntityKey | None:
+            """Resolve each explicit source or entity binding within its owned graph."""
+            if binding not in bound_entities:
+                if binding.reference is not None:
+                    bound_entities[binding] = EntityKey(
+                        binding.reference, graph=cast(str | None, binding.graph)
+                    )
+                else:
+                    try:
+                        node = at_path(snapshot, binding.path)
+                    except (KeyError, IndexError) as error:
+                        raise InputError(
+                            "No supplied model usage", location=location(binding.path)
+                        ) from error
+                    bound_entities[binding] = (
+                        source_entity(node, binding.path, prepared, budget)
+                        if isinstance(node, dict)
+                        else None
+                    )
+            return bound_entities[binding]
+
+        def identity_issues(
+            binding: ModelUsage,
+            model: ModelDeclaration,
+            traits: ValueTraits,
+            where: str,
+        ) -> None:
+            """Require all selected subject contracts without overriding model truth."""
+            contracts = (
+                (model.subject,)
+                if binding.subject is None
+                else (model.subject, binding.subject)
+            )
+            for contract in contracts:
+                if not _identity_matches(contract, traits):
+                    issues.append(
+                        Issue(
+                            "emission.subject_mismatch",
+                            "Subject violates the explicit RDF identity contract",
+                            where,
+                            expected=contract.expected_iri or "an IRI subject",
+                            actual=traits.identifier or "anonymous subject",
+                        )
+                    )
+                    break
+            key = entity_for(binding) if binding.graph is not ABSENT else None
+            if binding.graph is not ABSENT and (
+                key is None or key.anonymous_graph or key.graph != binding.graph
+            ):
+                issues.append(
+                    Issue(
+                        "emission.graph_unverified"
+                        if key is None
+                        else "emission.graph_mismatch",
+                        "The required effective graph could not be established"
+                        if key is None
+                        else "Selected subject is outside the required effective graph",
+                        where,
+                        kind="unverified" if key is None else "finding",
+                        expected=str(binding.graph),
+                        actual=str(key.graph) if key is not None else "unestablished",
+                    )
+                )
+
+        def reference_binding(key: EntityKey, targets: set[str]) -> bool:
+            """Require the referenced model identity in this exact effective graph."""
+            for child in bindings:
+                budget.consume("work")
+                if (
+                    child.model in targets
+                    and (child.reference is not None or child.entity)
+                    and entity_for(child) == key
+                ):
+                    return True
+            return False
+
+        def check_entity(binding: ModelUsage, model: ModelDeclaration) -> None:
+            """Check joined entity facts separately from source-object guarantees."""
+            nonlocal checked
+            key = entity_for(binding)
+            where = (
+                f"entity[{binding.reference}]"
+                if binding.reference is not None
+                else location(binding.path)
+            )
+            description = prepared.entities.get(key) if key is not None else None
+            traits = ValueTraits(
+                "node",
+                identifier=key.identifier if key is not None else None,
+                identifier_kind=(
+                    "iri"
+                    if key is not None
+                    and key.identifier is not None
+                    and not key.identifier.startswith("_:")
+                    else "blank"
+                ),
+                types=description.types if description is not None else (),
+            )
+            checked += 1
+            if key is None:
+                issues.append(
+                    Issue(
+                        "emission.node_unverified",
+                        "Selected source subject identity could not be established",
+                        where,
+                        kind="unverified",
+                    )
+                )
+                return
+            identity_issues(binding, model, traits, where)
+            if description is None or not description.described:
+                issues.append(
+                    Issue(
+                        "emission.reference_missing"
+                        if binding.closed
+                        else "emission.reference_unverified",
+                        "No local description was supplied in this effective graph",
+                        where,
+                        kind="finding" if binding.closed else "unverified",
+                        actual=key.identifier,
+                    )
+                )
+                return
+            if set(model.types) - set(description.types):
+                issues.append(
+                    Issue(
+                        "emission.types_mismatch",
+                        "Entity lacks required asserted types in this graph",
+                        where,
+                        expected=", ".join(model.types),
+                        actual=", ".join(description.types),
+                    )
+                )
+            for field in model.fields:
+                budget.consume("work")
+                checked += 1
+                facts = []
+                for item in description.facts:
+                    budget.consume("work")
+                    if (
+                        item.predicate == field.predicate
+                        and item.reverse == field.reverse
+                    ):
+                        facts.append(item)
+                field_where = f"{where}.{field.name}"
+                if not facts and field.emission == "guaranteed":
+                    issues.append(
+                        Issue(
+                            "emission.required_entity_fact_missing",
+                            "Required predicate is absent from the selected graph",
+                            field_where,
+                        )
+                    )
+                for fact in facts:
+                    budget.consume("work", 1 + len(field.values))
+                    matches = tuple(
+                        _matches(value, fact, registry, prepared.entities)
+                        for value in field.values
+                    )
+                    if True not in matches:
+                        issues.append(
+                            Issue(
+                                "emission.value_unverified"
+                                if None in matches
+                                else "emission.value_mismatch",
+                                "Entity value does not establish a declared branch",
+                                field_where,
+                                kind="unverified" if None in matches else "finding",
+                            )
+                        )
+                    if fact.traits.kind == "literal":
+                        result = _literal_result(
+                            fact, field_where, budget, native_literals
+                        )
+                        checked += result.checked
+                        issues.extend(result.issues)
+                    budget.consume("work", len(field.values))
+                    targets = {
+                        value.model
+                        for value in field.values
+                        if value.model is not None
+                        and _matches(value, fact, registry, prepared.entities)
+                        is not False
+                    }
+                    child_key = object_key(fact)
+                    if (
+                        targets
+                        and child_key is not None
+                        and not reference_binding(child_key, targets)
+                    ):
+                        issues.append(
+                            Issue(
+                                "emission.nested_scope_unverified",
+                                "Linked model entity requires a binding in this graph",
+                                field_where,
+                                kind="unverified",
+                            )
+                        )
+
         for binding in bindings:
             budget.consume("work")
             if not isinstance(binding, ModelUsage):
@@ -254,6 +510,9 @@ def check_emission(
             budget.consume("work")
             model = registry.get(binding.model)
             if model is None:
+                continue
+            if binding.reference is not None or binding.entity:
+                check_entity(binding, model)
                 continue
             try:
                 node = at_path(snapshot, binding.path)
@@ -297,6 +556,8 @@ def check_emission(
                         actual=", ".join(node_traits[0].types),
                     )
                 )
+            if len(node_traits) == 1:
+                identity_issues(binding, model, node_traits[0], location(binding.path))
             for field in model.fields:
                 budget.consume("work")
                 path = binding.path + (field.key or field.name,)
@@ -361,7 +622,8 @@ def check_emission(
                         checked += result.checked
                         issues.extend(result.issues)
                     matches = tuple(
-                        _matches(value, occurrence, registry) for value in field.values
+                        _matches(value, occurrence, registry, prepared.entities)
+                        for value in field.values
                     )
                     if True not in matches:
                         issues.append(
@@ -389,15 +651,23 @@ def check_emission(
                         value.model
                         for value in field.values
                         if value.model is not None
-                        and _matches(value, occurrence, registry) is not False
+                        and _matches(value, occurrence, registry, prepared.entities)
+                        is not False
                     }
                     if not targets:
                         continue
-                    matched = False
+                    child_key = object_key(occurrence)
+                    matched = child_key is not None and reference_binding(
+                        child_key, targets
+                    )
                     for child in bindings:
+                        if matched:
+                            break
                         budget.consume("work")
                         if (
-                            child.model not in targets
+                            child.reference is not None
+                            or child.entity
+                            or child.model not in targets
                             or child.path in covered
                             or child.path[: len(path)] != path
                         ):

@@ -10,6 +10,7 @@ from bijux_ontology.declarations.codecs import (
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
+    SubjectIdentity,
     TermDeclaration,
     ValueDeclaration,
 )
@@ -123,6 +124,7 @@ __all__ = [
     "RdfSource",
     "Report",
     "ResourceError",
+    "SubjectIdentity",
     "TermDeclaration",
     "TermInfo",
     "Transformation",
