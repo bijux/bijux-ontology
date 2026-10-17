@@ -69,6 +69,11 @@ from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig, load_project
+from bijux_ontology.workflows.projects.contracts import (
+    ContractObligation,
+    ContractResult,
+    check_contract,
+)
 from bijux_ontology.workflows.upgrades.assessment import (
     UpgradeAssessment,
     assess_upgrade,
@@ -84,6 +89,8 @@ __all__ = [
     "CheckError",
     "ContextExpectation",
     "ContextInputError",
+    "ContractObligation",
+    "ContractResult",
     "DataView",
     "FieldDeclaration",
     "InputError",
@@ -119,6 +126,7 @@ __all__ = [
     "VocabularyView",
     "assess_upgrade",
     "check_context",
+    "check_contract",
     "check_data_usage",
     "check_emission",
     "check_models",

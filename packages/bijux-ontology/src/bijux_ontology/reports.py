@@ -122,6 +122,8 @@ class IssueSelection:
 
     code: str
     location: str
+    _: KW_ONLY
+    issue: Issue | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -131,10 +133,31 @@ class IssueSelection:
             or not self.location
         ):
             raise InputError("An exception requires an exact code and location")
+        if self.issue is not None and (
+            not isinstance(self.issue, Issue)
+            or (self.issue.code, self.issue.location) != (self.code, self.location)
+        ):
+            raise InputError("An exact exception must identify its original issue")
+
+    @classmethod
+    def for_issue(cls, issue: Issue) -> IssueSelection:
+        """Bind an approval to all retained diagnostic fields, not a broad location."""
+        return cls(issue.code, issue.location, issue=issue)
 
     def matches(self, issue: Issue) -> bool:
         """Select this diagnostic identity without wildcard or substring matching."""
-        return issue.code == self.code and issue.location == self.location
+        return (
+            issue.code == self.code
+            and issue.location == self.location
+            and (self.issue is None or issue == self.issue)
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Preserve the exact approved evidence when an exception is serialized."""
+        result: dict[str, object] = {"code": self.code, "location": self.location}
+        if self.issue is not None:
+            result["issue"] = self.issue.to_dict()
+        return result
 
 
 @dataclass(frozen=True)
@@ -214,10 +237,7 @@ class Report:
         # Aggregators already retain child diagnostics. Direct construction must
         # preserve the same truth without adding their comparison counts again.
         issues += tuple(
-            issue
-            for child in children
-            for issue in child.issues
-            if issue not in issues
+            issue for child in children for issue in child.issues if issue not in issues
         )
         if (
             not self.checked
@@ -374,10 +394,7 @@ class Report:
             "policy": {
                 "minimum_severity": selected.minimum_severity,
                 "strict": strict or selected.strict,
-                "exceptions": [
-                    {"code": item.code, "location": item.location}
-                    for item in selected.exceptions
-                ],
+                "exceptions": [item.to_dict() for item in selected.exceptions],
                 "permitted": [
                     {"code": issue.code, "location": issue.location}
                     for issue in issues

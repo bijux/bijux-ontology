@@ -27,6 +27,9 @@ def test_installed_api_and_independent_example(
             "g = Graph().parse('ontology.ttl', format='turtle'); "
             "r = bijux_ontology.check_vocabulary(g, "
             "[bijux_ontology.TermDeclaration('https://example.org/Image')]); "
+            "required = bijux_ontology.check_contract(["
+            "bijux_ontology.ContractObligation('vocabulary', lambda: r)]); "
+            "assert required.accepted and required.require_verified().verified; "
             "assert Path(bijux_ontology.__file__).is_relative_to("
             "Path('env').resolve()); "
             "print(json.dumps(r.to_dict()))",
