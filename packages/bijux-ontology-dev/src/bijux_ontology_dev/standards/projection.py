@@ -6,21 +6,21 @@ import re
 import runpy
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-
 
 def main() -> None:
     """Refresh or verify canonical verifier inputs and Python Make modules."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--refresh", action="store_true")
+    parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     args = parser.parse_args()
-    pin = ROOT / ".github/standards/bijux-std.sha"
+    root = args.repo_root.resolve()
+    pin = root / ".github/standards/bijux-std.sha"
     sha = pin.read_text(encoding="utf-8").strip()
     if re.fullmatch(r"[0-9a-f]{40}", sha) is None:
         raise SystemExit("Standard source pin must be a full lowercase commit SHA")
-    helper = ROOT / ".bijux/shared/bijux-makes-py/repository/governance_projection.py"
+    helper = root / ".bijux/shared/bijux-makes-py/repository/governance_projection.py"
     accepted_source = runpy.run_path(str(helper))["accepted_source"]
-    source = Path(accepted_source(ROOT, sha))
+    source = Path(accepted_source(root, sha))
     mappings = {
         path: path
         for path in (
@@ -40,7 +40,7 @@ def main() -> None:
             mappings[f"makes/bijux-py/{relative}"] = path.relative_to(source).as_posix()
     failures = []
     for destination, original in sorted(mappings.items()):
-        target = ROOT / destination
+        target = root / destination
         expected = (source / original).read_bytes()
         if target.is_symlink():
             raise SystemExit(
@@ -53,7 +53,7 @@ def main() -> None:
             failures.append(destination)
     if failures:
         raise SystemExit("Standard projection differs: " + ", ".join(failures))
-    checksum = ROOT / ".github/bijux-std-shared.sha256"
+    checksum = root / ".github/bijux-std-shared.sha256"
     if args.refresh:
         paths = {
             line.split(maxsplit=1)[1] for line in checksum.read_text().splitlines()
@@ -61,7 +61,7 @@ def main() -> None:
         paths.update(mappings)
         checksum.write_text(
             "".join(
-                f"{hashlib.sha256((ROOT / path).read_bytes()).hexdigest()}  {path}\n"
+                f"{hashlib.sha256((root / path).read_bytes()).hexdigest()}  {path}\n"
                 for path in sorted(paths)
             ),
             encoding="utf-8",

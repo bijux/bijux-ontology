@@ -2,7 +2,7 @@
 bijux-std-checks: bijux-std-projection
 
 bijux-std-projection: ## Verify accepted verifier inputs and Python Make projections
-	@$(PYTHON) $(MONOREPO_ROOT)/scripts/standards/projection.py
+	@PYTHONPATH="$(MONOREPO_ROOT)/packages/bijux-ontology-dev/src" $(PYTHON) -m bijux_ontology_dev.standards.projection --repo-root "$(MONOREPO_ROOT)"
 
 standards-refresh: bijux-std-update ## Refresh verifier inputs after selecting an accepted standard pin
-	@$(PYTHON) $(MONOREPO_ROOT)/scripts/standards/projection.py --refresh
+	@PYTHONPATH="$(MONOREPO_ROOT)/packages/bijux-ontology-dev/src" $(PYTHON) -m bijux_ontology_dev.standards.projection --repo-root "$(MONOREPO_ROOT)" --refresh

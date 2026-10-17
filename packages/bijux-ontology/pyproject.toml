@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bijux-ontology"
+version = "0.1.0"
+description = "Explicit vocabulary, JSON-LD and structural declaration checks"
+readme = "README.md"
+requires-python = ">=3.11,<4"
+license = "MIT"
+authors = [{name = "Bijan Mousavi", email = "bijan@bijux.io"}]
+dependencies = [
+    "rdflib>=7.6,<8",
+    "pyld>=3.3,<4",
+    "pyoxigraph>=0.5.11,<0.6",
+]
+
+[project.scripts]
+bijux-ontology = "bijux_ontology.interfaces.cli:main"
+
+[project.optional-dependencies]
+shacl = [
+    "pyparsing>=3.2,<4",
+    "pyshacl>=0.40.1,<0.41",
+]
+pydantic = [
+    "pydantic>=2.11,<3",
+]
+linkml = [
+    "linkml-runtime>=1.12.1,<2",
+]
+
+[tool.hatch.build.targets.wheel]
+core-metadata-version = "2.4"
+packages = ["src/bijux_ontology"]
+
+[tool.hatch.build.targets.sdist]
+core-metadata-version = "2.4"
+include = ["src", "tests", "pyproject.toml", "README.md", "LICENSE"]
+
+[tool.hatch.build.targets.sdist.force-include]
+"../../docs" = "docs"
+"../../examples" = "examples"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+cache_dir = "artifacts/pytest-cache"
+addopts = "--import-mode=importlib"
+
+[tool.interrogate]
+fail-under = 100
+ignore-init-method = true
+ignore-magic = true
+ignore-private = true
+ignore-semiprivate = true
+
+[tool.deptry]
+exclude = ['(^|.*/)artifacts(/|$)', '(^|.*/)\.bijux(/|$)', '(^|.*/)tests(/|$)', '(^|.*/)examples(/|$)']
+known_first_party = ["bijux_ontology"]
+
+[tool.deptry.package_module_name_map]
+pyld = "pyld"
+
+[tool.codespell]
+ignore-words-list = "disjointness"

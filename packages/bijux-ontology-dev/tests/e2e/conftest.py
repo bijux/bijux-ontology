@@ -14,7 +14,10 @@ import pytest
 def distribution(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> tuple[Path, Path, dict[str, str]]:
-    root = Path(__file__).resolve().parents[2]
+    root = Path(__file__).resolve().parents[4]
+    assert (root / "packages/bijux-ontology/LICENSE").read_bytes() == (
+        root / "LICENSE"
+    ).read_bytes()
     work = tmp_path_factory.mktemp("installed-package")
     env = dict(os.environ)
     env.pop("PYTHONPATH", None)
@@ -35,11 +38,14 @@ def distribution(
             "--no-isolation",
             "--outdir",
             str(work / "dist"),
-        ]
+        ],
+        cwd=root / "packages/bijux-ontology",
     )
     archive = next((work / "dist").glob("*.tar.gz"))
     source = work / "source"
     with tarfile.open(archive) as bundle:
+        names = bundle.getnames()
+        assert len(names) == len(set(names)), "Source archive contains duplicate paths"
         bundle.extractall(source, filter="data")
     unpacked = next(source.iterdir())
     for target in re.findall(
@@ -82,13 +88,16 @@ def _install_distribution(
             "export",
             "--frozen",
             "--no-dev",
-            "--no-emit-project",
+            "--package",
+            "bijux-ontology",
+            "--no-emit-workspace",
             *(["--all-extras"] if extras else []),
             "--format",
             "requirements-txt",
             "--output-file",
             str(constraints),
-        ]
+        ],
+        cwd=Path(__file__).resolve().parents[4],
     )
     run(["uv", "venv", "--python", sys.executable, str(work / "env")])
     scripts = work / "env" / ("Scripts" if os.name == "nt" else "bin")
