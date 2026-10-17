@@ -23,6 +23,7 @@ class ContextExpectation:
 
     Paths name a field value, including array indexes where needed. Containers
     describe expanded list versus unordered values, not raw context spelling.
+    ordered_values describes one complete list, never concatenated collections.
     """
 
     path: SourcePath
@@ -113,12 +114,20 @@ def compare_usage(
     the budget; orchestration and report completeness remain the caller's concern.
     """
     where = location(expectation.path)
-    if expectation.ordered_values is not None and any(
-        item.container != "list" for item in usage.occurrences
-    ):
+    groups = {item.list_id for item in usage.occurrences}
+    selected_length = sum(not item.empty for item in usage.occurrences)
+    complete_list = (
+        len(groups) == 1
+        and None not in groups
+        and all(
+            item.container == "list" and item.list_length == selected_length
+            for item in usage.occurrences
+        )
+    )
+    if expectation.ordered_values is not None and not complete_list:
         yield Issue(
             "context.order_unverified",
-            "Unordered values have no semantic list order to compare",
+            "Ordering requires one complete selected list",
             where,
             kind="unverified",
         )
