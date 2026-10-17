@@ -56,6 +56,7 @@ from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
 from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
 from bijux_ontology.models.serialization import InstanceCheck, check_instance
 from bijux_ontology.owl.obligations import (
@@ -160,6 +161,7 @@ __all__ = [
     "OntologyObligation",
     "OntologyVersion",
     "PreparedChecks",
+    "PreparedModels",
     "PreparedSource",
     "PreparedUsages",
     "ProjectConfig",
