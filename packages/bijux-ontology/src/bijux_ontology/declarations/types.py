@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from dataclasses import KW_ONLY, dataclass
 from typing import Literal, TypeVar
 
-from rdflib import RDF
+from rdflib import RDF, URIRef
 from rdflib import Literal as RDFLiteral
 
 from bijux_ontology.errors import InputError
@@ -198,6 +198,100 @@ class SubjectIdentity:
             raise InputError("allow_blank must be a boolean")
 
 
+def _field_names(values: tuple[str, ...], location: str) -> tuple[str, ...]:
+    names = tuple(_text(name, location) for name in _sequence(values, location))
+    if len(names) != len(set(names)):
+        raise InputError("Field references must be unique", location=location)
+    return names
+
+
+@dataclass(frozen=True)
+class EmissionCondition:
+    """Select a scenario by one exact emitted IRI or literal discriminator.
+
+    Missing, multiple or unavailable discriminator terms do not establish a
+    condition. Blank labels cannot serve as cross-output discriminator identity.
+    """
+
+    field: str
+    equals: URIRef | RDFLiteral
+
+    def __post_init__(self) -> None:
+        _text(self.field, "condition.field")
+        if not isinstance(self.equals, URIRef | RDFLiteral):
+            raise InputError("Conditions require an exact RDF IRI or literal")
+        if isinstance(self.equals, URIRef):
+            absolute_iri(str(self.equals), location="condition.equals")
+
+
+@dataclass(frozen=True)
+class EmissionScenario:
+    """One exact emitted field set within its group's finite field inventory."""
+
+    identifier: str
+    present: tuple[str, ...]
+    condition: EmissionCondition | None = None
+
+    def __post_init__(self) -> None:
+        _text(self.identifier, "scenario.identifier")
+        object.__setattr__(self, "present", _field_names(self.present, self.identifier))
+        if self.condition is not None and not isinstance(
+            self.condition, EmissionCondition
+        ):
+            raise InputError("Expected a typed emission condition")
+
+
+@dataclass(frozen=True)
+class EmissionGroup:
+    """Finite co-emission bounds and optional caller-authored allowed scenarios.
+
+    Bounds always apply. Without scenarios they define the allowed field sets.
+    With scenarios, closed=True excludes unlisted cases; otherwise uncovered
+    cases remain unverified. Source null/presence remains a separate contract.
+    """
+
+    identifier: str
+    fields: tuple[str, ...]
+    minimum: int = 0
+    maximum: int | None = None
+    scenarios: tuple[EmissionScenario, ...] = ()
+    closed: bool = False
+
+    def __post_init__(self) -> None:
+        _text(self.identifier, "group.identifier")
+        names = _field_names(self.fields, self.identifier)
+        if not names:
+            raise InputError("Emission groups require a finite field inventory")
+        if type(self.minimum) is not int or self.minimum < 0:
+            raise InputError("Group minimum requires a nonnegative integer")
+        if self.maximum is not None and (
+            type(self.maximum) is not int or self.maximum < self.minimum
+        ):
+            raise InputError("Group maximum must be an integer at least its minimum")
+        if self.minimum > len(names) or (
+            self.maximum is not None and self.maximum > len(names)
+        ):
+            raise InputError("Group bounds exceed its field inventory")
+        if type(self.closed) is not bool:
+            raise InputError("Group closed must be a boolean")
+        scenarios = _sequence(self.scenarios, self.identifier)
+        identifiers = set()
+        for scenario in scenarios:
+            if not isinstance(scenario, EmissionScenario):
+                raise InputError("Expected typed emission scenarios")
+            if scenario.identifier in identifiers:
+                raise InputError("Scenario identifiers must be unique")
+            identifiers.add(scenario.identifier)
+            if set(scenario.present) - set(names):
+                raise InputError("Scenario references fields outside its group")
+            if len(scenario.present) < self.minimum or (
+                self.maximum is not None and len(scenario.present) > self.maximum
+            ):
+                raise InputError("Scenario contradicts its group's emission bounds")
+        object.__setattr__(self, "fields", names)
+        object.__setattr__(self, "scenarios", scenarios)
+
+
 @dataclass(frozen=True)
 class ModelDeclaration:
     """A stable model identity, simultaneous RDF types and serialised fields."""
@@ -208,6 +302,7 @@ class ModelDeclaration:
     location: str = ""
     _: KW_ONLY
     subject: SubjectIdentity = SubjectIdentity()
+    emission_groups: tuple[EmissionGroup, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.subject, SubjectIdentity):
@@ -234,3 +329,20 @@ class ModelDeclaration:
                     )
                 seen[identity] = field
         object.__setattr__(self, "fields", tuple(by_name.values()))
+        groups = _sequence(self.emission_groups, self.identifier)
+        group_names = set()
+        for group in groups:
+            if not isinstance(group, EmissionGroup):
+                raise InputError("Expected typed emission groups")
+            if group.identifier in group_names:
+                raise InputError("Emission group identifiers must be unique")
+            group_names.add(group.identifier)
+            referenced = set(group.fields)
+            referenced.update(
+                scenario.condition.field
+                for scenario in group.scenarios
+                if scenario.condition is not None
+            )
+            if referenced - by_name.keys():
+                raise InputError("Emission group references unknown model fields")
+        object.__setattr__(self, "emission_groups", groups)

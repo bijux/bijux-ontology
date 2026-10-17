@@ -19,6 +19,7 @@ from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
 
+from .emission_groups import TermKey, check_groups
 from .occurrences import check_output_counts
 from .registry import index_models
 from .value_matching import identity_matches, matches_value
@@ -230,6 +231,8 @@ def check_rdf_emission(
                         actual=", ".join(traits.types),
                     )
                 )
+            group_states: dict[str, bool | None] = {}
+            group_terms: dict[str, tuple[TermKey, ...] | None] = {}
             for field in model.fields:
                 budget.consume("work")
                 checked += 1
@@ -249,6 +252,21 @@ def check_rdf_emission(
                         graph.subjects(predicate, subject)
                         if field.reverse
                         else graph.objects(subject, predicate)
+                    )
+                if model.emission_groups:
+                    group_states[field.name] = bool(endpoints)
+                    group_terms[field.name] = (
+                        None
+                        if any(
+                            isinstance(value, BNode)
+                            or isinstance(value, Literal)
+                            and source.literal_fidelity
+                            not in {"source_terms", "supplied_terms"}
+                            for value in endpoints
+                        )
+                        else tuple(
+                            dict.fromkeys(term_key(value) for value in endpoints)
+                        )
                     )
                 if not endpoints and field.emission == "guaranteed":
                     issues.append(
@@ -417,6 +435,13 @@ def check_rdf_emission(
                             budget=budget,
                         )
                     )
+            if model.emission_groups:
+                checked += len(model.emission_groups)
+                issues.extend(
+                    check_groups(
+                        model, group_states, group_terms, where=where, budget=budget
+                    )
+                )
     except LimitExceeded as error:
         issues.exhausted(str(error), location="rdf-emission")
         complete = False

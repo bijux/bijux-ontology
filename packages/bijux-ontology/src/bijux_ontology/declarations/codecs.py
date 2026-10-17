@@ -3,6 +3,7 @@
 from typing import cast
 
 from rdflib import Literal as RDFLiteral
+from rdflib import URIRef
 
 from bijux_ontology._json import (
     array_value,
@@ -17,6 +18,9 @@ from bijux_ontology._json import (
 )
 from bijux_ontology.declarations.types import (
     Emission,
+    EmissionCondition,
+    EmissionGroup,
+    EmissionScenario,
     FieldDeclaration,
     ModelDeclaration,
     OutputRequirement,
@@ -105,7 +109,14 @@ def models_from_data(
             )
             known_keys(
                 model,
-                {"identifier", "types", "fields", "location", "subject"},
+                {
+                    "identifier",
+                    "types",
+                    "fields",
+                    "location",
+                    "subject",
+                    "emission_groups",
+                },
                 location="",
                 message="Unknown declaration keys",
             )
@@ -181,6 +192,10 @@ def models_from_data(
                         model.get("location", input_location(source, (index,)))
                     ),
                     subject=_subject(model.get("subject", {})),
+                    emission_groups=tuple(
+                        _group(group)
+                        for group in array_value(model.get("emission_groups", []))
+                    ),
                 )
             )
     return tuple(result)
@@ -263,4 +278,52 @@ def _output(value: object) -> OutputRequirement | None:
         maximum_values=counts["maximum_values"],
         minimum_list_members=counts["minimum_list_members"],
         maximum_list_members=counts["maximum_list_members"],
+    )
+
+
+def _condition(value: object) -> EmissionCondition | None:
+    if value is None:
+        return None
+    data = object_value(value, location="condition")
+    known_keys(data, {"field", "equals"}, location="condition")
+    expected = object_value(data.get("equals"), location="condition.equals")
+    term: URIRef | RDFLiteral
+    if "iri" in expected:
+        known_keys(expected, {"iri"}, location="condition.equals")
+        term = URIRef(absolute_iri(string_value(expected["iri"])))
+    else:
+        term = _sample(expected)
+    return EmissionCondition(string_value(data.get("field")), term)
+
+
+def _group(value: object) -> EmissionGroup:
+    data = object_value(value, location="emission_groups")
+    known_keys(
+        data,
+        {"identifier", "fields", "minimum", "maximum", "scenarios", "closed"},
+        location="emission_groups",
+    )
+    minimum, maximum = data.get("minimum", 0), data.get("maximum")
+    if type(minimum) is not int or (maximum is not None and type(maximum) is not int):
+        raise InputError("Emission bounds require integers or null maximum")
+    scenarios = []
+    for value in array_value(data.get("scenarios", [])):
+        scenario = object_value(value, location="scenario")
+        known_keys(
+            scenario, {"identifier", "present", "condition"}, location="scenario"
+        )
+        scenarios.append(
+            EmissionScenario(
+                string_value(scenario.get("identifier")),
+                string_values(scenario.get("present")),
+                _condition(scenario.get("condition")),
+            )
+        )
+    return EmissionGroup(
+        string_value(data.get("identifier")),
+        string_values(data.get("fields")),
+        minimum=minimum,
+        maximum=maximum,
+        scenarios=tuple(scenarios),
+        closed=boolean_value(data.get("closed", False)),
     )

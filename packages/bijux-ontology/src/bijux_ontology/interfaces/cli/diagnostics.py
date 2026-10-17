@@ -55,6 +55,8 @@ _CODES = {
     "data": frozenset("type_unverified".split()),
     "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
+        "group_unverified group_count_mismatch scenario_unverified "
+        "scenario_mismatch "
         "cardinality_unverified empty_forbidden list_length_mismatch list_required "
         "null_forbidden source_presence_unverified value_count_mismatch "
         "binding_conflict nested_scope_unverified node_kind_mismatch node_unverified "
@@ -76,6 +78,9 @@ _CODES = {
         "datatype_unverified lexical_invalid lexical_unverified".split()
     ),
     "models": frozenset(
+        "emission_group_conflict emission_group_unverified "
+        "scenario_coverage_unverified emission_scenario_conflict "
+        "scenario_condition_conflict scenario_condition_unverified "
         "bottom_property_conflict conditional_emission_unverified "
         "container_unverified datatype_conflict datatype_unverified "
         "disjoint_conflict disjoint_group_unverified expression_unverified "

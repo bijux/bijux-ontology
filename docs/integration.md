@@ -225,3 +225,13 @@ primitive fields on uniquely named subjects. Scoped contexts, anonymous subjects
 lists and ambiguous correspondences retain conservative individual observation.
 The same owned preparation can serve repeated checks within its cumulative
 budget. Worker calls still start separate processes; this API adds no session.
+
+
+`ModelDeclaration(..., emission_groups=(EmissionGroup("name", ("a", "b"),
+minimum=1, maximum=1),))` declares an exactly-one group over emitted RDF
+predicates. Explicit `EmissionScenario` cases describe whole field combinations;
+`closed=True` excludes unlisted cases, while open uncovered cases remain
+unverified. `EmissionCondition(field, equals=literal_or_iri)` compares one exact
+RDF discriminator. Missing, multiple or unresolved terms remain unknown.
+Source presence/null requirements remain separate. Declaration compatibility and
+actual source/entity/native RDF checking preserve their respective scopes.

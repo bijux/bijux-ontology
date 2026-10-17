@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from dataclasses import KW_ONLY, dataclass, replace
 from typing import cast
 
-from rdflib import Literal
+from rdflib import RDF, Literal, URIRef
 
 from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
@@ -18,6 +18,7 @@ from bijux_ontology.jsonld.entities import (
     EntityInventory,
     EntityKey,
     object_key,
+    subject_key,
 )
 from bijux_ontology.jsonld.entities import (
     source_entity as source_record,
@@ -35,7 +36,7 @@ from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.terms import literal_term
+from bijux_ontology.rdf.terms import literal_term, term_key
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
@@ -45,6 +46,7 @@ from .bindings import (
     source_entity,
     source_node_traits,
 )
+from .emission_groups import TermKey, check_groups
 from .occurrences import check_occurrences
 from .registry import index_models
 from .value_matching import identity_matches as _identity_matches
@@ -198,6 +200,44 @@ def _literal_result(
             ),
         )
     return check_literal(term, location=where)
+
+
+def _group_terms(
+    items: Sequence[ObservedOccurrence], native: dict[str, Literal], budget: Budget
+) -> tuple[TermKey, ...] | None:
+    """Read exact discriminator terms; keep list heads separate from members."""
+    keys = []
+    for item in items:
+        budget.consume("work")
+        if item.container == "list":
+            if item.empty:
+                keys.append(term_key(RDF.nil))
+                continue
+            return None
+        traits = item.traits
+        if traits.identifier_kind == "iri" and traits.identifier is not None:
+            keys.append(term_key(URIRef(traits.identifier)))
+        elif traits.kind == "literal":
+            raw = item.value
+            if not isinstance(raw, dict) or "@value" not in raw:
+                return None
+            if isinstance(raw["@value"], str):
+                term = literal_term(
+                    raw["@value"], datatype=traits.datatype, language=traits.language
+                )
+            else:
+                if item.value_json not in native:
+                    result = _literal_result(item, "", budget, native)
+                    if not result.verified:
+                        return None
+                cached = native.get(item.value_json)
+                if cached is None:
+                    return None
+                term = cached
+            keys.append(term_key(term))
+        else:
+            return None
+    return tuple(dict.fromkeys(keys))
 
 
 def check_emission(
@@ -850,6 +890,169 @@ def check_emission(
                                 kind="unverified",
                             )
                         )
+        for binding in bindings:
+            model = registry.get(binding.model)
+            if model is None or not model.emission_groups:
+                continue
+            states: dict[str, bool | None] = {}
+            terms: dict[str, tuple[TermKey, ...] | None] = {}
+            needed = {name for group in model.emission_groups for name in group.fields}
+            needed.update(
+                case.condition.field
+                for group in model.emission_groups
+                for case in group.scenarios
+                if case.condition is not None
+            )
+            entity = binding.reference is not None or binding.entity
+            key = entity_for(binding) if entity else None
+            description = prepared.entities.get(key) if key is not None else None
+            node = None if entity else at_path(snapshot, binding.path)
+            established = (
+                description is not None and description.described
+                if entity
+                else len(traits_for(binding.path)) == 1
+            )
+            source_facts: tuple[ObservedOccurrence, ...] | None = None
+            source_complete = True
+            if established and not entity and isinstance(node, dict):
+                owner = entity_for(binding)
+                needed_predicates = {
+                    field.predicate for field in model.fields if field.name in needed
+                }
+                gathered: list[ObservedOccurrence] = []
+                if owner is not None:
+                    for raw_key in node:
+                        if raw_key in {"@context", "@included", "@graph"}:
+                            continue
+                        if (
+                            raw_key in {"@id", "@type"}
+                            and raw_key not in needed_predicates
+                        ):
+                            continue
+                        usage = prepared.observe((*binding.path, raw_key))
+                        if usage.limitation:
+                            source_complete = False
+                            continue
+                        gathered.extend(
+                            item
+                            for item in usage.occurrences
+                            if subject_key(item) == owner
+                            or item.predicate == "@id"
+                            and item.traits.identifier == owner.identifier
+                        )
+                    source_facts = tuple(dict.fromkeys(gathered))
+            for field in model.fields:
+                if field.name not in needed:
+                    continue
+                budget.consume("work")
+                selected_facts: tuple[ObservedOccurrence, ...] | None = None
+                if established and entity and description is not None:
+                    selected_facts = tuple(
+                        item
+                        for item in description.facts
+                        if item.predicate == field.predicate
+                        and item.reverse == field.reverse
+                    )
+                elif source_facts is not None:
+                    selected_facts = tuple(
+                        item
+                        for item in source_facts
+                        if item.predicate == field.predicate
+                        and item.reverse == field.reverse
+                    )
+                if not entity and selected_facts is not None and isinstance(node, dict):
+                    source_key = field.key or field.name
+                    declared_facts = (
+                        prepared.observe((*binding.path, source_key)).occurrences
+                        if source_key in node
+                        else ()
+                    )
+                    for fact in selected_facts:
+                        if fact in declared_facts:
+                            continue
+                        budget.consume("work", 1 + len(field.values))
+                        field_where = f"{location(binding.path)}.{field.name}"
+                        matches = tuple(
+                            _matches(value, fact, registry, prepared.entities)
+                            for value in field.values
+                        )
+                        if True not in matches:
+                            issues.append(
+                                Issue(
+                                    "emission.value_unverified"
+                                    if None in matches
+                                    else "emission.value_mismatch",
+                                    "Aliased RDF contribution does not establish "
+                                    "a declared value branch",
+                                    field_where,
+                                    kind="unverified" if None in matches else "finding",
+                                )
+                            )
+                        if fact.traits.kind == "literal":
+                            result = _literal_result(
+                                fact, field_where, budget, native_literals
+                            )
+                            checked += result.checked
+                            issues.extend(result.issues)
+                        targets = {
+                            value.model
+                            for value in field.values
+                            if value.model is not None
+                            and _matches(value, fact, registry, prepared.entities)
+                            is not False
+                        }
+                        matched_child = False
+                        for child in bindings if targets else ():
+                            budget.consume("work")
+                            if (
+                                child.model not in targets
+                                or child.reference is not None
+                                or child.entity
+                                or child.path[: len(binding.path)] != binding.path
+                            ):
+                                continue
+                            child_usage = prepared.observe(child.path)
+                            budget.consume("work", len(child_usage.occurrences))
+                            if not child_usage.limitation and any(
+                                same_contribution(fact, item)
+                                for item in child_usage.occurrences
+                            ):
+                                matched_child = True
+                                break
+                        if targets and not matched_child:
+                            issues.append(
+                                Issue(
+                                    "emission.nested_scope_unverified",
+                                    "Aliased child descriptions require an "
+                                    "established model binding",
+                                    field_where,
+                                    kind="unverified",
+                                )
+                            )
+                states[field.name] = (
+                    None
+                    if selected_facts is None
+                    or not selected_facts
+                    and not source_complete
+                    else bool(selected_facts)
+                )
+                terms[field.name] = (
+                    None
+                    if selected_facts is None or not source_complete
+                    else _group_terms(selected_facts, native_literals, budget)
+                )
+            checked += len(model.emission_groups)
+            issues.extend(
+                check_groups(
+                    model,
+                    states,
+                    terms,
+                    where=f"entity[{binding.reference}]"
+                    if binding.reference is not None
+                    else location(binding.path),
+                    budget=budget,
+                )
+            )
         mapping = prepared.check(expectations, allow_empty=True)
         checked += mapping.checked
         issues.extend(mapping.issues)
