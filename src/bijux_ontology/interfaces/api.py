@@ -8,7 +8,26 @@ from bijux_ontology.declarations.types import (
     TermDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.documents.export import RDFExport, export_rdf, write_export
+from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.jsonld.checking import PreparedUsages, check_context, prepare_usages
+from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.comparison import (
+    compare_context_usages,
+    compare_serializations,
+)
+from bijux_ontology.jsonld.conversion import RDFConversion, convert_to_rdf
+from bijux_ontology.jsonld.expansion import expand_document
+from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
+from bijux_ontology.jsonld.preparation import JSONLDPreparation, prepare_jsonld
+from bijux_ontology.jsonld.resources import (
+    ContextInputError,
+    OfflineDocumentLoader,
+    context_document_loader,
+)
+from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
@@ -36,27 +55,49 @@ __all__ = [
     "AcceptancePolicy",
     "Budget",
     "CheckError",
+    "ContextExpectation",
+    "ContextInputError",
     "FieldDeclaration",
     "InputError",
     "Issue",
     "IssueSelection",
+    "JSONLDPreparation",
     "LimitExceeded",
     "Limits",
     "Location",
     "ModelDeclaration",
+    "ObservedOccurrence",
+    "ObservedUsage",
+    "OfflineDocumentLoader",
     "PreparedSource",
+    "PreparedUsages",
+    "RDFConversion",
+    "RDFExport",
     "RdfSource",
     "Report",
     "ResourceError",
     "TermDeclaration",
     "Transformation",
     "ValueDeclaration",
+    "ValueTraits",
+    "check_context",
     "combine_reports",
+    "compare_context_usages",
     "compare_rdf",
+    "compare_serializations",
+    "context_document_loader",
+    "convert_to_rdf",
+    "expand_document",
+    "expectations_from_data",
+    "export_rdf",
     "extract_neighbourhood",
     "merge_sources",
     "models_from_data",
+    "prepare_jsonld",
+    "prepare_source",
+    "prepare_usages",
     "recheck_transformation",
     "remap_iris",
     "terms_from_data",
+    "write_export",
 ]

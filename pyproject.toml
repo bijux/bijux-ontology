@@ -5,13 +5,14 @@ build-backend = "hatchling.build"
 [project]
 name = "bijux-ontology"
 version = "0.1.0"
-description = "Bounded RDF preparation and explicit declaration contracts"
+description = "Explicit vocabulary, JSON-LD and structural declaration checks"
 readme = "README.md"
 requires-python = ">=3.11,<4"
 license = "MIT"
 authors = [{name = "Bijan Mousavi", email = "bijan@bijux.io"}]
 dependencies = [
     "rdflib>=7.6,<8",
+    "pyld>=3.3,<4",
     "pyoxigraph>=0.5.11,<0.6",
 ]
 
