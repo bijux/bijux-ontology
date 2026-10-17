@@ -4,6 +4,8 @@ Applications supply their own vocabulary snapshots, declarations and representat
 
 Select local, import and lookup scopes deliberately. Use coverage for owned namespaces and membership checks for external terms; lookup documents must not conceal missing local declarations. A required constructor field does not prove RDF emission: declare that guarantee explicitly and check representative serialised output with `check_emission`.
 
+Opt into closed output coverage with `ModelDeclaration(..., coverage=EmissionCoverage(metadata=("@context", "@id", "@type")))`. Additional source keys or directed predicates require declarations or explicit `extensions`/`reverse_extensions`; permitted extensions stay visible as informational findings. `aliases=(("headline", "title"),)` checks alias values, children and combined counts without relaxing required primary-key presence. Native/entity checks cover selected incoming and outgoing predicates while source-key coverage remains unverified. Non-RDF metadata aliases without an established processor witness also remain unverified.
+
 For finite RDFLib namespace classes, `namespace_inventory({"app.BIA": BIA})`
 from `bijux_ontology.interfaces.adapters.namespaces` retains qualified declaration
 names and exact IRIs. Call `inventory.check(vocabulary,

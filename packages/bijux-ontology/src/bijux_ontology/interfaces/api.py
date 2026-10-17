@@ -9,6 +9,7 @@ from bijux_ontology.declarations.codecs import (
 )
 from bijux_ontology.declarations.types import (
     EmissionCondition,
+    EmissionCoverage,
     EmissionGroup,
     EmissionScenario,
     FieldDeclaration,
@@ -136,6 +137,7 @@ __all__ = [
     "EntitySelector",
     "ExecutionResult",
     "EmissionCondition",
+    "EmissionCoverage",
     "EmissionGroup",
     "EmissionScenario",
     "FieldDeclaration",

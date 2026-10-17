@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 from dataclasses import KW_ONLY, dataclass
+from itertools import chain
 from typing import cast
 
 from rdflib import BNode, Graph, Literal, URIRef
@@ -19,6 +20,7 @@ from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
 
+from .coverage import predicate_issues
 from .emission_groups import TermKey, check_groups
 from .occurrences import check_output_counts
 from .registry import index_models
@@ -229,6 +231,37 @@ def check_rdf_emission(
                         where,
                         expected=", ".join(model.types),
                         actual=", ".join(traits.types),
+                    )
+                )
+            if model.coverage is not None:
+                checked += 1
+                issues.append(
+                    Issue(
+                        "emission.source_coverage_unverified",
+                        "Native RDF does not establish original source-key coverage",
+                        where,
+                        kind="unverified",
+                    )
+                )
+                issues.extend(
+                    predicate_issues(
+                        model,
+                        chain(
+                            (
+                                (str(predicate), False)
+                                for _, predicate, _ in graph.triples(
+                                    (subject, None, None)
+                                )
+                            ),
+                            (
+                                (str(predicate), True)
+                                for _, predicate, _ in graph.triples(
+                                    (None, None, subject)
+                                )
+                            ),
+                        ),
+                        where=where,
+                        budget=budget,
                     )
                 )
             group_states: dict[str, bool | None] = {}

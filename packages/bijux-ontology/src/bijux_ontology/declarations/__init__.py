@@ -5,6 +5,7 @@ from bijux_ontology.absence import ABSENT, Absent
 from .types import (
     Emission,
     EmissionCondition,
+    EmissionCoverage,
     EmissionGroup,
     EmissionScenario,
     FieldDeclaration,
@@ -21,6 +22,7 @@ __all__ = [
     "Absent",
     "Emission",
     "EmissionCondition",
+    "EmissionCoverage",
     "EmissionGroup",
     "EmissionScenario",
     "FieldDeclaration",

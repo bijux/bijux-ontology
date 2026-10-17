@@ -46,6 +46,7 @@ from .bindings import (
     source_entity,
     source_node_traits,
 )
+from .coverage import owns, predicate_issues, source_issues, source_properties
 from .emission_groups import TermKey, check_groups
 from .occurrences import check_occurrences
 from .registry import index_models
@@ -698,11 +699,43 @@ def check_emission(
                 )
             if len(node_traits) == 1:
                 identity_issues(binding, model, node_traits[0], location(binding.path))
-            for field in model.fields:
+            selected_fields = [
+                (field, (*binding.path, field.key or field.name))
+                for field in model.fields
+            ]
+            if model.coverage is not None:
+                by_name = {field.name: field for field in model.fields}
+                by_key = {field.key or field.name: field for field in model.fields}
+                by_key.update(
+                    {key: by_name[name] for key, name in model.coverage.aliases}
+                )
+                for prop in source_properties(node, binding.path, budget):
+                    alias_field = by_key.get(prop.key)
+                    if alias_field is not None and prop.path != (
+                        *binding.path,
+                        alias_field.key or alias_field.name,
+                    ):
+                        selected_fields.append((alias_field, prop.path))
+            aggregate_fields = {
+                field.name
+                for field, selected_path in selected_fields
+                if selected_path != (*binding.path, field.key or field.name)
+            }
+            for field, path in selected_fields:
                 budget.consume("work")
-                path = binding.path + (field.key or field.name,)
+                if field.output is not None and field.name in aggregate_fields:
+                    field = replace(
+                        field,
+                        output=replace(
+                            field.output, minimum_values=None, maximum_values=None
+                        ),
+                    )
                 checked += 1
-                if path[-1] not in node:
+                try:
+                    raw_value = at_path(snapshot, path)
+                except KeyError:
+                    raw_value = ABSENT
+                if raw_value is ABSENT:
                     issues.extend(
                         check_occurrences(
                             field.output,
@@ -746,7 +779,7 @@ def check_emission(
                             budget=budget,
                             native_literals=native_literals,
                             present=True,
-                            raw=node[path[-1]],
+                            raw=raw_value,
                         )
                     )
                     if field.emission == "guaranteed":
@@ -760,7 +793,7 @@ def check_emission(
                     elif (
                         field.output is not None
                         and field.output.allow_empty
-                        and (node[path[-1]] is not None or field.output.allow_null)
+                        and (raw_value is not None or field.output.allow_null)
                     ):
                         expectations.pop()
                     else:
@@ -820,7 +853,7 @@ def check_emission(
                         budget=budget,
                         native_literals=native_literals,
                         present=True,
-                        raw=node[path[-1]],
+                        raw=raw_value,
                     )
                 )
                 covered: set[SourcePath] = set()
@@ -890,6 +923,103 @@ def check_emission(
                                 kind="unverified",
                             )
                         )
+        for binding in bindings:
+            model = registry.get(binding.model)
+            if model is None or model.coverage is None:
+                continue
+            budget.consume("work")
+            checked += 1
+            if binding.reference is not None or binding.entity:
+                key = entity_for(binding)
+                description = prepared.entities.get(key) if key is not None else None
+                issues.append(
+                    Issue(
+                        "emission.source_coverage_unverified",
+                        "Entity facts do not establish original source-key coverage",
+                        f"entity[{binding.reference}]"
+                        if binding.reference
+                        else location(binding.path),
+                        kind="unverified",
+                    )
+                )
+                if description is not None:
+                    issues.extend(
+                        predicate_issues(
+                            model,
+                            (
+                                (item.predicate, item.reverse)
+                                for item in description.facts
+                            ),
+                            where=f"entity[{description.key.identifier}]",
+                            budget=budget,
+                        )
+                    )
+                continue
+            node = at_path(snapshot, binding.path)
+            if not isinstance(node, dict):
+                continue
+            owner = entity_for(binding)
+            properties = source_properties(node, binding.path, budget)
+            checked += len(properties)
+            issues.extend(
+                source_issues(
+                    model,
+                    properties,
+                    owner,
+                    prepared.observe,
+                    where=location(binding.path),
+                    budget=budget,
+                )
+            )
+            aliases = dict(model.coverage.aliases)
+            for field in model.fields:
+                if field.output is None:
+                    continue
+                budget.consume("work", len(properties))
+                paths = [
+                    prop.path
+                    for prop in properties
+                    if aliases.get(prop.key) == field.name
+                    or prop.key == (field.key or field.name)
+                ]
+                if not any(
+                    path != (*binding.path, field.key or field.name) for path in paths
+                ):
+                    continue
+                facts: list[ObservedOccurrence] = []
+                resolved = owner is not None
+                for path in paths:
+                    usage = prepared.observe(path)
+                    if usage.limitation:
+                        resolved = False
+                    facts.extend(
+                        item
+                        for item in usage.occurrences
+                        if owner is not None
+                        and owns(item, owner)
+                        and item.predicate == field.predicate
+                        and item.reverse == field.reverse
+                    )
+                if not resolved:
+                    issues.append(
+                        Issue(
+                            "emission.cardinality_unverified",
+                            "Shared alias contributions could not be associated "
+                            "with one source owner",
+                            location(binding.path),
+                            kind="unverified",
+                        )
+                    )
+                    continue
+                issues.extend(
+                    check_occurrences(
+                        replace(field.output, require_property=False),
+                        tuple(dict.fromkeys(facts)),
+                        where=f"{location(binding.path).rstrip('/')}/{field.name}",
+                        budget=budget,
+                        native_literals=native_literals,
+                    )
+                )
         for binding in bindings:
             model = registry.get(binding.model)
             if model is None or not model.emission_groups:
@@ -967,6 +1097,13 @@ def check_emission(
                         if source_key in node
                         else ()
                     )
+                    if model.coverage is not None:
+                        declared_facts += tuple(
+                            item
+                            for prop in source_properties(node, binding.path, budget)
+                            if (prop.key, field.name) in model.coverage.aliases
+                            for item in prepared.observe(prop.path).occurrences
+                        )
                     for fact in selected_facts:
                         if fact in declared_facts:
                             continue

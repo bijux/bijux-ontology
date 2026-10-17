@@ -293,6 +293,49 @@ class EmissionGroup:
 
 
 @dataclass(frozen=True)
+class EmissionCoverage:
+    """Close selected output nodes over declared fields and explicit extensions.
+
+    Extension predicates remain visible without acquiring a value contract.
+    Aliases are (source key, declared field name) pairs; they check actual values
+    and children without relaxing required primary-key presence. Metadata
+    permission never suppresses the existing subject or type checks. Structural
+    keywords cannot be excluded as metadata. Native RDF cannot prove source-key
+    coverage, which remains independently unverified.
+    """
+
+    extensions: tuple[str, ...] = ()
+    reverse_extensions: tuple[str, ...] = ()
+    metadata: tuple[str, ...] = ("@context",)
+    aliases: tuple[tuple[str, str], ...] = ()
+
+    def __post_init__(self) -> None:
+        for name in ("extensions", "reverse_extensions"):
+            values = _iris(getattr(self, name), name)
+            if len(values) != len(set(values)):
+                raise InputError("Coverage extension predicates must be unique")
+            object.__setattr__(self, name, values)
+        metadata = _field_names(self.metadata, "coverage.metadata")
+        if set(metadata) - {"@context", "@id", "@type", "@index"}:
+            raise InputError("Coverage metadata must name supported metadata keywords")
+        object.__setattr__(self, "metadata", metadata)
+        aliases = []
+        keys = set()
+        for pair in _sequence(self.aliases, "coverage.aliases"):
+            values = _sequence(pair, "coverage.aliases")
+            if len(values) != 2:
+                raise InputError("Coverage aliases require source-key/field-name pairs")
+            key, target = values
+            _text(key, "coverage.alias.key")
+            _text(target, "coverage.alias.field")
+            if key.startswith("@") or key in keys:
+                raise InputError("Coverage alias keys must be unique ordinary keys")
+            keys.add(key)
+            aliases.append((key, target))
+        object.__setattr__(self, "aliases", tuple(aliases))
+
+
+@dataclass(frozen=True)
 class ModelDeclaration:
     """A stable model identity, simultaneous RDF types and serialised fields."""
 
@@ -303,6 +346,7 @@ class ModelDeclaration:
     _: KW_ONLY
     subject: SubjectIdentity = SubjectIdentity()
     emission_groups: tuple[EmissionGroup, ...] = ()
+    coverage: EmissionCoverage | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.subject, SubjectIdentity):
@@ -346,3 +390,11 @@ class ModelDeclaration:
             if referenced - by_name.keys():
                 raise InputError("Emission group references unknown model fields")
         object.__setattr__(self, "emission_groups", groups)
+        if self.coverage is not None:
+            if not isinstance(self.coverage, EmissionCoverage):
+                raise InputError("Expected a typed emission coverage contract")
+            for key, target in self.coverage.aliases:
+                if target not in by_name:
+                    raise InputError("Coverage alias references an unknown model field")
+                if key in by_key:
+                    raise InputError("Coverage alias collides with a primary field key")
