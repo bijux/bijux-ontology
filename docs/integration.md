@@ -143,3 +143,10 @@ exclusions before checking retained usages. Excluded paths are reported and do
 not satisfy required coverage. Invalid, overlapping or ambiguous paths apply no
 exclusions; context definitions, keyword aliases and opaque value interiors
 remain protected. `allowed_drops` still applies to every matching term spelling.
+
+Dataclass and TypedDict integrations use the corresponding
+`bijux_ontology.interfaces.adapters` modules’ `model_declarations`. Supply a
+finite registry and explicit `RdfField` metadata: dataclasses use the `rdf`
+field metadata key, while TypedDict fields use `Annotated`. Serializer sidecars
+can describe output aliases and contracts; conflicting metadata remains visible.
+Python field types, defaults and required keys do not imply RDF emission.
