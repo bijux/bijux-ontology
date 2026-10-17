@@ -45,3 +45,4 @@ include .bijux/shared/bijux-makes-py/ci/test.mk
 include .bijux/shared/bijux-makes-py/ci/build.mk
 include .bijux/shared/bijux-makes-py/root/lifecycle.mk
 include makes/bijux-std.mk
+include makes/standards.mk
