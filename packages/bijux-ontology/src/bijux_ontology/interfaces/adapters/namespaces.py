@@ -2,6 +2,7 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from inspect import get_annotations
 
 from rdflib import Graph
 from rdflib.namespace import DefinedNamespace
@@ -118,7 +119,7 @@ def namespace_inventory(
         for base in reversed(cls.__mro__):
             if base is DefinedNamespace or not issubclass(base, DefinedNamespace):
                 continue
-            for name in vars(base).get("__annotations__", {}):
+            for name in get_annotations(base, eval_str=False):
                 if name not in {
                     "_NS",
                     "_warn",
