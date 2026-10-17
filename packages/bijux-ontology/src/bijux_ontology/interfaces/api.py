@@ -39,6 +39,14 @@ from bijux_ontology.jsonld.resources import (
     OfflineDocumentLoader,
     context_document_loader,
 )
+from bijux_ontology.jsonld.selectors import (
+    ArrayItems,
+    EntitySelector,
+    KeyedItems,
+    Property,
+    Selection,
+    SourceSelector,
+)
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
@@ -97,6 +105,7 @@ __all__ = [
     "ABSENT",
     "Absent",
     "AcceptancePolicy",
+    "ArrayItems",
     "Budget",
     "Change",
     "CheckError",
@@ -105,6 +114,7 @@ __all__ = [
     "ContractObligation",
     "ContractResult",
     "DataView",
+    "EntitySelector",
     "ExecutionResult",
     "FieldDeclaration",
     "FlatNode",
@@ -114,6 +124,7 @@ __all__ = [
     "Issue",
     "IssueSelection",
     "JSONLDPreparation",
+    "KeyedItems",
     "LimitExceeded",
     "Limits",
     "Location",
@@ -129,11 +140,14 @@ __all__ = [
     "PreparedSource",
     "PreparedUsages",
     "ProjectConfig",
+    "Property",
     "RDFConversion",
     "RDFExport",
     "RdfSource",
     "Report",
     "ResourceError",
+    "Selection",
+    "SourceSelector",
     "SubjectIdentity",
     "TermDeclaration",
     "TermInfo",

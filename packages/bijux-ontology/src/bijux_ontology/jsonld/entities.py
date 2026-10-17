@@ -4,13 +4,14 @@ Anonymous tokens belong to this preparation only. This inventory joins RDF
 identities; it performs no OWL equality, inequality or type inference.
 """
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
 
-from .observations import ObservedOccurrence, occurrences
+from .observations import ObservedOccurrence, ObservedUsage, SourcePath, occurrences
 
 
 @dataclass(frozen=True)
@@ -111,3 +112,79 @@ class EntityInventory:
     def get(self, key: EntityKey) -> EntityDescription | None:
         """Look up exact RDF identity without graph union or OWL inference."""
         return self._entities.get(key)
+
+
+@dataclass(frozen=True)
+class SourceEntity:
+    """One established source object, distinct from its joined RDF entity."""
+
+    path: SourcePath
+    key: EntityKey
+    described: bool
+
+
+def source_entity(
+    node: dict[str, object],
+    path: SourcePath,
+    observe: Callable[[SourcePath], ObservedUsage],
+    budget: Budget,
+) -> SourceEntity | None:
+    """Establish the object's own subject without treating wrappers as children."""
+    own: set[EntityKey] = set()
+    outgoing: list[ObservedOccurrence] = []
+    incoming = observe(path) if path else None
+    for key, raw in node.items():
+        budget.consume("work")
+        if key == "@context":
+            continue
+        try:
+            usage = observe((*path, key))
+        except LimitExceeded:
+            raise
+        except InputError:
+            continue
+        if usage.limitation or not usage.occurrences:
+            continue
+        depth = min(item.depth for item in usage.occurrences)
+        primitive = (
+            isinstance(raw, str)
+            or isinstance(raw, list)
+            and all(isinstance(value, str) for value in raw)
+        )
+        for item in usage.occurrences:
+            budget.consume("work")
+            if item.depth != depth:
+                continue
+            if item.predicate == "@id" and primitive:
+                own.add(
+                    EntityKey(
+                        item.traits.identifier,
+                        graph=item.graph,
+                        anonymous_graph=item.anonymous_graph,
+                        graph_identity=item.graph_identity,
+                    )
+                )
+            elif item.predicate == "@type" and primitive:
+                own.add(subject_key(item))
+                outgoing.append(item)
+            elif not item.predicate.startswith("@"):
+                outgoing.append(item)
+    if not own and incoming is not None and not incoming.limitation:
+        for item in outgoing:
+            for edge in incoming.occurrences:
+                budget.consume("work")
+                if item.depth > edge.depth and subject_key(item) == object_key(edge):
+                    own.add(subject_key(item))
+    if not own and ("@type" in node or "@id" in node):
+        # Canonical node keywords exclude list/set wrappers even when removing
+        # the whole anonymous node is ambiguous. An independently associated
+        # own field still establishes its original subject token.
+        own.update(
+            subject_key(item) for item in outgoing if not item.predicate.startswith("@")
+        )
+    if len(own) != 1:
+        return None
+    selected_key = next(iter(own))
+    return SourceEntity(
+        path, selected_key, any(subject_key(item) == selected_key for item in outgoing)
+    )

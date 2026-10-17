@@ -120,3 +120,12 @@ owned `output`, the contextual `document`, and combined declaration/output check
 Pass an adapter’s `declaration_report` to retain extraction limitations. This is
 sampled evidence; it does not prove every possible serializer output. Callbacks
 execute in-process.
+
+Resolve finite selectors through `prepared.select(...)`. `SourceSelector` composes
+`Property`, `ArrayItems` and `KeyedItems`; each step’s bounds apply to every selected
+parent, independently of aggregate bounds. Check the returned concrete `paths`
+with existing expectations. Required missing children name their selected parent.
+`EntitySelector(types=(class_iri,), graph=None, coverage_unit="rdf_entity")` selects
+joined asserted entities; `coverage_unit="source_occurrence"` instead retains each
+describing object’s obligations. IDs/types are expanded identities, graph scope
+is explicit, and optional zero matches remain non-applicable.

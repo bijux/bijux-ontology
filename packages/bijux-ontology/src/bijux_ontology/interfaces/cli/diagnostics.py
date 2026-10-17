@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "selector": frozenset(
+        "parent_count_mismatch count_mismatch "
+        "structure_mismatch binding_unverified".split()
+    ),
     "adapter": frozenset(
         "alias_unverified class_mapping_unverified computed_output_unverified "
         "emission_unverified excluded_emission_conflict mapping_conflict "
@@ -144,6 +148,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "selector": (
+        "explicit JSON-LD match coverage",
+        "Selected parents lack required matches or actual bindings are ambiguous.",
+        "Inspect each selected parent, concrete source path and effective graph; "
+        "retain incomplete identity associations and check each parent independently.",
+        'SourceSelector((Property("records"), ArrayItems(), '
+        'Property("title", minimum=1)))',
+    ),
     "contract": (
         "named required consumer obligations",
         "Required comparison or binding coverage is missing, or a selected "

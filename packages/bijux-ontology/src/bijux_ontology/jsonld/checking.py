@@ -17,6 +17,7 @@ from .resources import (
     context_resources,
 )
 from .selection import UsageIndex
+from .selectors import EntitySelector, Selection, SourceSelector, resolve_selection
 from .values import ValueTraits, value_traits
 
 
@@ -104,6 +105,12 @@ class PreparedUsages:
             raise ContextInputError(
                 "No supplied usage", location=location(path)
             ) from error
+
+    def select(self, selector: SourceSelector | EntitySelector) -> Selection:
+        """Resolve typed finite matches with explicit source/entity coverage."""
+        return resolve_selection(
+            selector, self._document, self._entities, self.observe, self._budget
+        )
 
     def check(
         self,
