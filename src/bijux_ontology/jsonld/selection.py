@@ -87,7 +87,15 @@ class UsageIndex:
             selected_counts[item.identity] += 1
             if selected_counts[item.identity] > self._counts[item.identity]:
                 return None
-        if len({(item.predicate, item.reverse, item.graph) for item in selected}) != 1:
+        if (
+            len(
+                {
+                    (item.predicate, item.reverse, item.graph, item.anonymous_graph)
+                    for item in selected
+                }
+            )
+            != 1
+        ):
             return None
         return ObservedUsage(
             path, tuple(replace(item, location=location(path)) for item in selected)
@@ -242,7 +250,12 @@ class UsageIndex:
             elif nonkeywords:
                 selected = nonkeywords
             if (
-                len({(item.predicate, item.reverse, item.graph) for item in selected})
+                len(
+                    {
+                        (item.predicate, item.reverse, item.graph, item.anonymous_graph)
+                        for item in selected
+                    }
+                )
                 != 1
             ):
                 usage = ObservedUsage(

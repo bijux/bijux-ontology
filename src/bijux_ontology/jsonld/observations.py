@@ -41,7 +41,9 @@ class ObservedOccurrence:
     copy. Location identifies the established selection, never a guessed parser
     offset or a fabricated source location for a processor callback. List IDs
     group members within one expansion only; they are not RDF identifiers or
-    stable correspondence keys across independent expansions.
+    stable correspondence keys across independent expansions. anonymous_graph
+    distinguishes an unnamed graph scope from the default graph without
+    fabricating a blank-node identifier.
     """
 
     predicate: str
@@ -56,6 +58,7 @@ class ObservedOccurrence:
     empty: bool = False
     list_id: int | None = None
     list_length: int | None = None
+    anonymous_graph: bool = False
 
     @property
     def value(self) -> object:
@@ -88,6 +91,7 @@ class ObservedOccurrence:
             _json(value),
             self.subject,
             self.graph,
+            self.anonymous_graph,
             self.reverse,
             self.container,
             self.depth,
@@ -115,11 +119,13 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
     result: list[ObservedOccurrence] = []
     list_count = 0
 
-    def walk(value: object, graph: str | None, depth: int) -> None:
+    def walk(
+        value: object, graph: str | None, depth: int, anonymous_graph: bool = False
+    ) -> None:
         """Retain node and graph scope without inheriting an ancestor's reversal."""
         if isinstance(value, list):
             for node in cast(list[object], value):
-                walk(node, graph, depth)
+                walk(node, graph, depth, anonymous_graph)
             return
         if not isinstance(value, dict):
             return
@@ -130,25 +136,40 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
         subject = subject if isinstance(subject, str) else None
         if subject is not None:
             result.append(
-                ObservedOccurrence("@id", _json(subject), None, graph, depth=depth)
+                ObservedOccurrence(
+                    "@id",
+                    _json(subject),
+                    None,
+                    graph,
+                    depth=depth,
+                    anonymous_graph=anonymous_graph,
+                )
             )
         for node_type in _nodes(node.get("@type", [])):
             result.append(
                 ObservedOccurrence(
-                    "@type", _json(node_type), subject, graph, depth=depth
+                    "@type",
+                    _json(node_type),
+                    subject,
+                    graph,
+                    depth=depth,
+                    anonymous_graph=anonymous_graph,
                 )
             )
         if "@graph" in node:
-            walk(node["@graph"], subject or graph, depth)
+            # Public expansion removes the top-level default-graph wrapper.
+            # Each surviving @graph establishes its own named scope, even when
+            # its blank graph name was not explicitly supplied in the document.
+            walk(node["@graph"], subject, depth, subject is None)
         if "@included" in node:
-            walk(node["@included"], graph, depth)
+            walk(node["@included"], graph, depth, anonymous_graph)
         for predicate, values in node.items():
             if not predicate.startswith("@"):
-                edge(predicate, values, subject, graph, depth, False)
+                edge(predicate, values, subject, graph, depth, False, anonymous_graph)
         reverse = node.get("@reverse")
         if isinstance(reverse, dict):
             for predicate, values in cast(dict[str, object], reverse).items():
-                edge(predicate, values, subject, graph, depth, True)
+                edge(predicate, values, subject, graph, depth, True, anonymous_graph)
 
     def edge(
         predicate: str,
@@ -157,6 +178,7 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
         graph: str | None,
         depth: int,
         reverse: bool,
+        anonymous_graph: bool,
     ) -> None:
         """Emit every member while preserving list sequence separately."""
         nonlocal list_count
@@ -181,6 +203,7 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                         empty=True,
                         list_id=list_id,
                         list_length=0,
+                        anonymous_graph=anonymous_graph,
                     )
                 )
             for index, member in enumerate(members):
@@ -196,9 +219,10 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                         depth,
                         list_id=list_id,
                         list_length=len(members) if listed else None,
+                        anonymous_graph=anonymous_graph,
                     )
                 )
-                walk(member, graph, depth + 1)
+                walk(member, graph, depth + 1, anonymous_graph)
 
     walk(expanded, None, 0)
     return tuple(result)

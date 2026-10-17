@@ -30,7 +30,7 @@ def _signature(item: ObservedOccurrence) -> tuple[object, ...]:
         item.reverse,
         item.container,
         _resource(item.subject),
-        _resource(item.graph),
+        "_:" if item.anonymous_graph else _resource(item.graph),
         traits.kind,
         traits.datatype,
         traits.language.lower() if traits.language else None,
