@@ -1,0 +1,277 @@
+"""Selected ontology encoding checks; these are not an OWL consistency proof."""
+
+from collections.abc import Callable, Sequence
+from functools import partial
+
+from rdflib import BNode, Graph, Literal, URIRef
+from rdflib.namespace import OWL, RDF, RDFS
+from rdflib.term import Node
+
+from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.owl.checking import (
+    check_axiom_annotations,
+    check_declarations,
+    check_headers,
+)
+from bijux_ontology.owl.expressions import check_expression_shapes
+from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
+from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.builtins import Regime, kind_matches, validate_regime
+from bijux_ontology.vocabulary.checking import check_vocabulary, declared_kinds
+from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.workflows.ontology.deprecation import check_deprecated_terms
+
+_CLASS = (str(OWL.Class), str(RDFS.Class))
+_PROPERTY = (str(RDF.Property),)
+_REFERENCES = {
+    RDFS.subClassOf: (_CLASS, _CLASS),
+    RDFS.subPropertyOf: (_PROPERTY, _PROPERTY),
+    RDFS.domain: (_PROPERTY, _CLASS),
+    RDFS.range: (_PROPERTY, (*_CLASS, str(RDFS.Datatype))),
+    OWL.equivalentClass: (_CLASS, _CLASS),
+    OWL.disjointWith: (_CLASS, _CLASS),
+    OWL.equivalentProperty: (_PROPERTY, _PROPERTY),
+    OWL.propertyDisjointWith: (_PROPERTY, _PROPERTY),
+    OWL.inverseOf: ((str(OWL.ObjectProperty),), (str(OWL.ObjectProperty),)),
+    OWL.sameAs: ((), ()),
+    OWL.differentFrom: ((), ()),
+}
+
+
+def _location(node: Node, source: str) -> str:
+    return (
+        f"{source}: {node}" if isinstance(node, URIRef) else f"{source}: anonymous node"
+    )
+
+
+def _reference_checks(
+    graph: Graph,
+    source: str,
+    vocabulary: Vocabulary,
+    regime: Regime,
+    budget: Budget,
+    issues: IssueCollector,
+) -> int:
+    count = 0
+    for predicate, roles in _REFERENCES.items():
+        for subject, target in sorted(
+            graph.subject_objects(predicate),
+            key=lambda pair: (pair[0].n3(), pair[1].n3()),
+        ):
+            count += 1
+            budget.consume("work")
+            for node, expected in zip((subject, target), roles, strict=True):
+                location = _location(subject, source)
+                if isinstance(node, Literal):
+                    issues.append(
+                        Issue(
+                            "ontology.reference_shape",
+                            "Structural reference requires a resource, not a literal",
+                            location,
+                            actual=str(node),
+                        ),
+                    )
+                elif isinstance(node, BNode):
+                    if predicate not in (OWL.sameAs, OWL.differentFrom):
+                        issues.append(
+                            Issue(
+                                "ontology.expression_unverified",
+                                "Anonymous expression comparison is unsupported",
+                                location,
+                                kind="unverified",
+                                actual=str(predicate),
+                            ),
+                        )
+                elif isinstance(node, URIRef) and expected:
+                    if (
+                        regime == "owl-dl"
+                        and predicate in (RDFS.domain, RDFS.range)
+                        and node == target
+                        and str(OWL.AnnotationProperty)
+                        in declared_kinds(vocabulary, str(subject), regime=regime)
+                    ):
+                        continue
+                    kinds = declared_kinds(vocabulary, str(node), regime=regime)
+                    if not kind_matches(kinds, expected, regime):
+                        issues.append(
+                            Issue(
+                                "ontology.reference_missing"
+                                if not kinds
+                                else "ontology.reference_kind",
+                                "Named reference lacks the selected declaration role",
+                                location,
+                                expected=", ".join(expected),
+                                actual=str(node),
+                            ),
+                        )
+    return count
+
+
+def check_ontology(
+    vocabulary: Vocabulary | Graph,
+    *,
+    regime: Regime = "rdf",
+    families: Sequence[str] = (
+        "references",
+        "declarations",
+        "headers",
+        "expressions",
+        "annotations",
+        "reserved",
+    ),
+    include_imports: bool = True,
+    include_lookup: bool = False,
+    required_annotations: Sequence[str] = (),
+    metadata_terms: Sequence[str] = (),
+    languages: Sequence[str] = (),
+    used_terms: Sequence[str] = (),
+    replacement_predicates: Sequence[str] = (),
+    limits: Limits | None = None,
+) -> Report:
+    """Check selected supplied ontology structures without an application inventory.
+
+    Lookup sources participate only when explicitly selected. Publication metadata
+    requirements are opt-in. A structurally checked expression remains unverified
+    when its logical consequences are outside the supported named fragment.
+    """
+    validate_regime(regime)
+    if isinstance(families, (str, bytes)):
+        raise InputError("Check families must be a sequence of names")
+    if type(include_imports) is not bool or type(include_lookup) is not bool:
+        raise InputError("Source scope switches must be booleans")
+    selected = tuple(families)
+    if not selected or set(selected) - {
+        "references",
+        "declarations",
+        "headers",
+        "expressions",
+        "annotations",
+        "metadata",
+        "deprecated",
+        "reserved",
+    }:
+        raise InputError("Select supported, nonempty ontology check families")
+    sources = (
+        vocabulary
+        if isinstance(vocabulary, Vocabulary)
+        else load_vocabulary(vocabulary, limits=limits)
+    )
+    scopes = [("local", sources.local)]
+    if include_imports:
+        scopes.extend(
+            (f"import[{index}]", graph) for index, graph in enumerate(sources.imports)
+        )
+    if include_lookup:
+        scopes.extend(
+            (f"lookup[{index}]", graph) for index, graph in enumerate(sources.lookup)
+        )
+    budget = Budget(limits if limits is not None else sources.limits)
+    count = 0
+    issues = IssueCollector(budget)
+    complete = True
+    try:
+        if "declarations" in selected:
+            count += check_declarations(scopes, regime, budget, issues)
+        for source, graph in scopes:
+            if "reserved" in selected:
+                budget.consume("work", 3 * len(graph))
+                report = check_vocabulary(
+                    Vocabulary(graph, limits=limits),
+                    (),
+                    lint=True,
+                    allow_empty=True,
+                    regime="rdf",
+                    limits=budget.limits,
+                )
+                count += report.checked
+                complete = complete and report.complete
+                for finding in report.issues:
+                    issues.append(finding)
+            operations: dict[str, Callable[[], int]] = {
+                "references": partial(
+                    _reference_checks, graph, source, sources, regime, budget, issues
+                ),
+                "expressions": partial(
+                    check_expression_shapes, graph, source, budget, issues
+                ),
+                "headers": partial(check_headers, graph, source, budget, issues),
+                "annotations": partial(
+                    check_axiom_annotations, graph, source, budget, issues
+                ),
+            }
+            for name, operation in operations.items():
+                if name in selected:
+                    count += operation()
+        for predicate in (
+            *required_annotations,
+            *replacement_predicates,
+            *metadata_terms,
+        ):
+            absolute_iri(predicate)
+        for tag in languages:
+            language_tag(tag)
+        local = sources.local
+        if "metadata" in selected:
+            terms = (
+                tuple(dict.fromkeys(URIRef(iri) for iri in metadata_terms))
+                if metadata_terms
+                else tuple(
+                    sorted(
+                        {
+                            node
+                            for node, kind in local.subject_objects(RDF.type)
+                            if isinstance(node, URIRef)
+                            and kind not in (OWL.Ontology, OWL.Axiom, OWL.Annotation)
+                        },
+                        key=str,
+                    )
+                )
+            )
+            for term in terms:
+                budget.consume("work")
+                for predicate in required_annotations:
+                    count += 1
+                    values = tuple(local.objects(term, URIRef(predicate)))
+                    if not values or any(
+                        not isinstance(value, Literal)
+                        or languages
+                        and (value.language or "").lower()
+                        not in {tag.lower() for tag in languages}
+                        for value in values
+                    ):
+                        issues.append(
+                            Issue(
+                                "ontology.metadata_required",
+                                "Term lacks the requested literal annotation/language",
+                                _location(term, "local"),
+                                expected=predicate,
+                            ),
+                        )
+        if "deprecated" in selected:
+            view = inspect_vocabulary(
+                sources,
+                scopes=(
+                    "local",
+                    *(("imports",) if include_imports else ()),
+                    *(("lookup",) if include_lookup else ()),
+                ),
+                limits=budget.limits,
+            )
+            count += check_deprecated_terms(
+                view, used_terms, replacement_predicates, regime, budget, issues
+            )
+    except LimitExceeded as error:
+        issues.exhausted(str(error), location="ontology")
+        complete = False
+    return Report(
+        "ontology",
+        count,
+        tuple(issues),
+        regime=regime,
+        families=selected,
+        complete=complete,
+        requested=count if complete else count + 1,
+    )
