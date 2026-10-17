@@ -59,6 +59,10 @@ def main() -> None:
             line.split(maxsplit=1)[1] for line in checksum.read_text().splitlines()
         }
         paths.update(mappings)
+        paths.update(
+            path.relative_to(root).as_posix()
+            for path in (root / ".github/workflows").glob("*.yml")
+        )
         checksum.write_text(
             "".join(
                 f"{hashlib.sha256((root / path).read_bytes()).hexdigest()}  {path}\n"
