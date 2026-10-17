@@ -4,7 +4,28 @@ import argparse
 import hashlib
 import re
 import runpy
+import subprocess
 from pathlib import Path
+
+
+def _preserve_local_changes(root: Path, source: Path, mappings: dict[str, str]) -> None:
+    """Reject staged, unstaged or conflicting untracked tooling before any write."""
+    for arguments in (("diff", "--quiet"), ("diff", "--cached", "--quiet")):
+        result = subprocess.run(
+            ["git", "-C", str(root), *arguments, "--", *mappings], check=False
+        )
+        if result.returncode:
+            raise SystemExit("Preserve local canonical tooling changes before refresh")
+    tracked = set(
+        subprocess.check_output(
+            ["git", "-C", str(root), "ls-files", "--", *mappings], text=True
+        ).splitlines()
+    )
+    for destination, original in mappings.items():
+        target = root / destination
+        if target.exists() and destination not in tracked:
+            if target.read_bytes() != (source / original).read_bytes():
+                raise SystemExit(f"Preserve untracked tooling file: {destination}")
 
 
 def main() -> None:
@@ -14,6 +35,11 @@ def main() -> None:
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     args = parser.parse_args()
     root = args.repo_root.resolve()
+    checkout = subprocess.check_output(
+        ["git", "-C", str(root), "rev-parse", "--show-toplevel"], text=True
+    ).strip()
+    if Path(checkout).resolve() != root:
+        raise SystemExit("Projection target must be an explicit repository root")
     pin = root / ".github/standards/bijux-std.sha"
     sha = pin.read_text(encoding="utf-8").strip()
     if re.fullmatch(r"[0-9a-f]{40}", sha) is None:
@@ -38,6 +64,8 @@ def main() -> None:
         if path.is_file():
             relative = path.relative_to(source / "shared/bijux-makes-py").as_posix()
             mappings[f"makes/bijux-py/{relative}"] = path.relative_to(source).as_posix()
+    if args.refresh:
+        _preserve_local_changes(root, source, mappings)
     failures = []
     for destination, original in sorted(mappings.items()):
         target = root / destination

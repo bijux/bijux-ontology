@@ -1,6 +1,5 @@
 ROOT_PACKAGE_PROFILE_DIR := $(ROOT_MAKEFILE_DIR)/packages
 ROOT_PACKAGE_TARGETS := test test-unit test-e2e lint quality build clean
-ROOT_TARGET_PACKAGES_test-unit := bijux-ontology
 ROOT_TARGET_PACKAGES_test-e2e := bijux-ontology-dev
 ROOT_TARGET_GROUPS_test-unit := test
 ROOT_TARGET_GROUPS_test-e2e := test

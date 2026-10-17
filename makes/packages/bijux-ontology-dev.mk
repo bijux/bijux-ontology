@@ -15,9 +15,9 @@ QUALITY_MYPY_CONFIG = $(MONOREPO_ROOT)/configs/mypy.ini
 DEPTRY_CONFIG = $(PROJECT_DIR)/pyproject.toml
 CODESPELL = $(VENV_PYTHON) -m codespell_lib
 TEST_PATHS := tests
-TEST_PATHS_UNIT :=
+TEST_PATHS_UNIT := tests/unit
 TEST_PATHS_E2E := tests/e2e
-PYTEST_ADDOPTS_EXTRA := --no-cov
+test-e2e: PYTEST_ADDOPTS_EXTRA := --no-cov
 TEST_CI_TARGETS := test
 TEST_E2E_ARGS := --maxfail=1 -q
 PYTEST_CONFIG = $(MONOREPO_ROOT)/pyproject.toml
