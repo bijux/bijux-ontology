@@ -65,7 +65,7 @@ class WorkerExecutor:
         *,
         cancellation: Event | None = None,
     ) -> ExecutionResult:
-        """Execute context/emission/serialization/flatten/vocabulary/project requests.
+        """Execute supported JSON-LD, vocabulary and project contracts.
 
         Parameters are JSON-shaped public inputs; there is no function, module or
         pickle dispatch. Returned reports reconstruct raw truth rather than trust

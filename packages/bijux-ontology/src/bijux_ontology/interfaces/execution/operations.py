@@ -1,6 +1,7 @@
 """Finite public operation dispatch; no executable callbacks cross the protocol."""
 
 from collections.abc import Callable
+from dataclasses import asdict
 from pathlib import Path
 
 from bijux_ontology._json import (
@@ -12,11 +13,12 @@ from bijux_ontology._json import (
 )
 from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
 from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.checking import check_context
+from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.comparison import compare_serializations
 from bijux_ontology.jsonld.flattening import flatten_document
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.selector_codecs import selector_from_data
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.codecs import usages_from_data
 from bijux_ontology.models.emission import check_emission
@@ -28,7 +30,15 @@ from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 OPERATIONS = frozenset(
-    ("context", "emission", "serialization", "flatten", "vocabulary", "project")
+    (
+        "context",
+        "emission",
+        "serialization",
+        "flatten",
+        "vocabulary",
+        "project",
+        "selection",
+    )
 )
 
 
@@ -98,6 +108,18 @@ def execute_operation(
     common = {"document", "base", "resources"}
     base = optional_string_value(parameters.get("base"))
     document = parameters.get("document")
+    if operation == "selection":
+        known_keys(parameters, common | {"selector"}, location="worker request")
+        prepared = prepare_usages(
+            document, base=base, document_loader=loader, limits=limits
+        )
+        matches = prepared.select(selector_from_data(parameters.get("selector")))
+        return matches.report, {
+            "coverage_unit": matches.coverage_unit,
+            "count": matches.count,
+            "paths": [list(path) for path in matches.paths],
+            "entities": [asdict(key) for key in matches.entities],
+        }
     if operation == "context":
         known_keys(
             parameters,

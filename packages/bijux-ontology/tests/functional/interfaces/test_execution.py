@@ -225,6 +225,34 @@ def test_isolated_entity_bindings_survive_reordering_and_reject_identity_mutatio
         )
         assert result.report.verified
         records.reverse()
+    selected = executor.run(
+        "selection",
+        {
+            "document": {"@graph": records},
+            "selector": {"kind": "entity", "types": ["urn:Record"], "graph": None},
+        },
+    )
+    assert selected.report.verified and isinstance(selected.data, dict)
+    assert selected.data["entities"] == [
+        {
+            "identifier": "urn:record",
+            "anonymous": None,
+            "graph": None,
+            "anonymous_graph": False,
+            "graph_identity": None,
+        }
+    ]
+    missing = executor.run(
+        "selection",
+        {
+            "document": {"@graph": records},
+            "selector": {
+                "kind": "source",
+                "steps": [{"kind": "property", "key": "absent", "minimum": 1}],
+            },
+        },
+    )
+    assert missing.report.outcome == "disagreement"
     records[1]["@id"] = "urn:sibling"
     absent = executor.run(
         "emission",
