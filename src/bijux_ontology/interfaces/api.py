@@ -29,6 +29,8 @@ from bijux_ontology.jsonld.resources import (
 )
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.emission import ModelUsage, check_emission
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
@@ -78,6 +80,7 @@ __all__ = [
     "Limits",
     "Location",
     "ModelDeclaration",
+    "ModelUsage",
     "ObservedOccurrence",
     "ObservedUsage",
     "OfflineDocumentLoader",
@@ -97,6 +100,8 @@ __all__ = [
     "VocabularyChanges",
     "VocabularyView",
     "check_context",
+    "check_emission",
+    "check_models",
     "check_ontology",
     "check_vocabulary",
     "combine_reports",

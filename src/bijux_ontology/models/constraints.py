@@ -1,0 +1,418 @@
+"""Finite field and co-emission constraints over declared RDF contracts.
+
+Each model definition and each field occurrence is checked independently. A
+registry index resolves child types without recursively expanding model fields;
+recursive declarations therefore terminate without losing reused-child checks.
+Results describe supported declarations, not general ontology consistency.
+"""
+
+from collections.abc import Sequence
+from dataclasses import replace
+from itertools import chain, combinations
+
+from rdflib import URIRef
+from rdflib.namespace import OWL, RDF, RDFS
+from rdflib.term import Node
+
+from bijux_ontology.declarations.types import (
+    FieldDeclaration,
+    ModelDeclaration,
+    TermDeclaration,
+    ValueDeclaration,
+)
+from bijux_ontology.limits import Budget
+from bijux_ontology.owl.classes import ClassContracts
+from bijux_ontology.owl.properties import PropertyContract
+from bijux_ontology.rdf.literals import Regime, datatype_relation
+from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.view import Vocabulary
+
+from ..reports import Issue
+from .propagation import ModelContracts
+
+
+def _class_comparison(
+    actual: Sequence[str],
+    constraints: Sequence[Node],
+    classes: ClassContracts,
+    location: str,
+    role: str,
+    budget: Budget,
+) -> list[Issue]:
+    issues: list[Issue] = []
+    ancestors, anonymous = classes.ancestors(actual)
+    named = tuple(str(item) for item in constraints if isinstance(item, URIRef))
+    _, required_expression = classes.ancestors(named)
+    anonymous |= required_expression or any(
+        not isinstance(item, URIRef) for item in constraints
+    )
+    for conflict in classes.conflicts((*actual, *named)):
+        issues.append(
+            Issue(
+                "models.disjoint_conflict",
+                f"{role} types imply explicitly disjoint classes",
+                location,
+                actual=conflict,
+            )
+        )
+    for constraint in constraints:
+        budget.consume("work")
+        if isinstance(constraint, URIRef) and (
+            str(constraint) in ancestors or constraint in (OWL.Thing, RDFS.Resource)
+        ):
+            continue
+        issues.append(
+            Issue(
+                "models.relationship_unverified",
+                f"{role} relationship is not established by named-class edges",
+                location,
+                kind="unverified",
+                expected=str(constraint)
+                if isinstance(constraint, URIRef)
+                else "anonymous expression",
+                actual=", ".join(sorted(actual)),
+            )
+        )
+    if anonymous:
+        issues.append(
+            Issue(
+                "models.expression_unverified",
+                "Relevant class uses an anonymous expression",
+                location,
+                kind="unverified",
+            )
+        )
+    return issues
+
+
+def _literal_comparison(
+    value: ValueDeclaration,
+    ranges: Sequence[Node],
+    location: str,
+    classes: ClassContracts,
+    regime: Regime,
+    budget: Budget,
+) -> list[Issue]:
+    datatype = str(RDF.langString) if value.language else value.datatype
+    issues: list[Issue] = []
+    if datatype and datatype_relation(datatype, datatype, regime=regime) == "unknown":
+        issues.append(
+            Issue(
+                "models.datatype_unverified",
+                "Declared datatype semantics are unsupported",
+                location,
+                kind="unverified",
+                actual=datatype,
+            )
+        )
+    for required in ranges:
+        budget.consume("work")
+        if required in (RDFS.Literal, RDFS.Resource):
+            continue
+        expected = (
+            str(required) if isinstance(required, URIRef) else "anonymous expression"
+        )
+        expression = not isinstance(required, URIRef) or bool(
+            classes.ancestors((expected,))[1]
+        )
+        relation = (
+            datatype_relation(datatype, expected, regime=regime)
+            if datatype and not expression
+            else "unknown"
+        )
+        if relation in ("equal", "subset"):
+            continue
+        conflict = relation == "disjoint"
+        issue = Issue(
+            "models.datatype_conflict" if conflict else "models.datatype_unverified",
+            "Literal serialisation conflicts with the declared datatype range"
+            if conflict
+            else "Datatype compatibility is outside the supported comparisons",
+            location,
+            kind="finding" if conflict else "unverified",
+            expected=expected,
+            actual=datatype,
+        )
+        issues.append(issue)
+    return issues
+
+
+def _value_contract_issues(value: ValueDeclaration, location: str) -> list[Issue]:
+    issues: list[Issue] = []
+    if value.kind == "unknown":
+        issues.append(
+            Issue(
+                "models.value_unverified",
+                "Unknown serialisation cannot establish RDF value kind",
+                location,
+                kind="unverified",
+            )
+        )
+    if value.container not in (None, "@set", "@list"):
+        issues.append(
+            Issue(
+                "models.container_unverified",
+                "Container requires a representative JSON-LD usage",
+                location,
+                kind="unverified",
+                actual=value.container,
+            )
+        )
+    return issues
+
+
+def _branch_issues(
+    field: FieldDeclaration,
+    value: ValueDeclaration,
+    registry: dict[str, ModelDeclaration],
+    classes: ClassContracts,
+    location: str,
+    vocabulary: Vocabulary,
+    contract: PropertyContract,
+    regime: Regime,
+    budget: Budget,
+) -> list[Issue]:
+    issues: list[Issue] = []
+    if (
+        value.model is not None
+        and value.model not in registry
+        and value.container != "@list"
+    ):
+        return issues
+    if value.container not in (None, "@set", "@list"):
+        return issues
+    if value.container == "@list":
+        if contract.literal_value:
+            issues.append(
+                Issue(
+                    "models.list_head_kind_conflict",
+                    "An RDF list head is a resource, not a data-property literal",
+                    f"{location}.head",
+                )
+            )
+        issues.extend(
+            _class_comparison(
+                (str(RDF.List),),
+                contract.values,
+                classes,
+                f"{location}.head",
+                "List head",
+                budget,
+            )
+        )
+        issues.extend(
+            _branch_issues(
+                replace(field, reverse=False),
+                replace(value, container=None),
+                registry,
+                classes,
+                f"{location}.items",
+                vocabulary,
+                PropertyContract((), ()),
+                regime,
+                budget,
+            )
+        )
+        return issues
+    if value.kind == "unknown":
+        return issues
+    child = registry.get(value.model) if value.model else None
+    types = tuple(dict.fromkeys((*value.types, *(child.types if child else ()))))
+    if value.types:
+        issues.extend(
+            check_vocabulary(
+                vocabulary,
+                [
+                    TermDeclaration(iri, (str(OWL.Class), str(RDFS.Class)), location)
+                    for iri in value.types
+                ],
+                regime="owl-dl" if regime == "owl-dl" else "rdf",
+            ).issues
+        )
+    literal = value.kind == "literal"
+    if field.reverse and literal:
+        issues.append(
+            Issue(
+                "models.reverse_literal_conflict",
+                "A reversed property cannot use a literal as its subject",
+                location,
+            )
+        )
+        return issues
+    if (literal and contract.object_property) or (
+        not literal and contract.literal_value
+    ):
+        issues.append(
+            Issue(
+                "models.value_kind_conflict",
+                "Serialised value kind conflicts with the property declaration",
+                location,
+                actual=value.kind,
+            )
+        )
+    constraints = contract.values
+    if literal:
+        datatype = str(RDF.langString) if value.language else value.datatype
+        if datatype:
+            issues.extend(
+                check_vocabulary(
+                    vocabulary,
+                    [TermDeclaration(datatype, (str(RDFS.Datatype),), location)],
+                    regime="owl-dl" if regime == "owl-dl" else "rdf",
+                ).issues
+            )
+        issues.extend(
+            _literal_comparison(value, constraints, location, classes, regime, budget)
+        )
+    else:
+        issues.extend(
+            _class_comparison(types, constraints, classes, location, "Value", budget)
+        )
+    return issues
+
+
+def _field_issues(
+    model: ModelDeclaration,
+    registry: dict[str, ModelDeclaration],
+    classes: ClassContracts,
+    vocabulary: Vocabulary,
+    regime: Regime,
+    contracts: ModelContracts,
+) -> tuple[int, list[Issue]]:
+    issues: list[Issue] = []
+    checked = 0
+    for field in model.fields:
+        contracts.budget.consume("work")
+        location = field.location or f"{model.identifier}.{field.name}"
+        checked += 1 + len(field.values)
+        if field.predicate.startswith("@"):
+            issues.append(
+                Issue(
+                    "models.keyword_unverified",
+                    "Keyword semantics require a representative JSON-LD usage",
+                    location,
+                    kind="unverified",
+                )
+            )
+            continue
+        issues.extend(
+            check_vocabulary(
+                vocabulary,
+                [TermDeclaration(field.predicate, (str(RDF.Property),), location)],
+                regime="owl-dl" if regime == "owl-dl" else "rdf",
+            ).issues
+        )
+        contract = contracts.property(field)
+        constraints = contract.parents
+        if contract.unsupported:
+            issues.append(
+                Issue(
+                    "models.property_expression_unverified",
+                    "Relevant property relations require unsupported expressions",
+                    location,
+                    kind="unverified",
+                )
+            )
+        if contract.bottom:
+            issues.append(
+                Issue(
+                    "models.bottom_property_conflict",
+                    "An emitted occurrence cannot use an OWL bottom property",
+                    location,
+                )
+            )
+        if contract.literal_parent:
+            issues.append(
+                Issue(
+                    "models.parent_kind_conflict",
+                    "A resource model cannot be the literal endpoint "
+                    "of a data property",
+                    location,
+                )
+            )
+        issues.extend(
+            _class_comparison(
+                model.types,
+                constraints,
+                classes,
+                location,
+                "Parent",
+                contracts.budget,
+            )
+        )
+        if not field.values:
+            issues.append(
+                Issue(
+                    "models.value_unverified",
+                    "Field has no known serialised value branches",
+                    location,
+                    kind="unverified",
+                )
+            )
+        for index, branch in enumerate(field.values):
+            issues.extend(
+                _branch_issues(
+                    field,
+                    branch,
+                    registry,
+                    classes,
+                    f"{location}[{index}]",
+                    vocabulary,
+                    contract,
+                    regime,
+                    contracts.budget,
+                )
+            )
+    return checked, issues
+
+
+def _emission_issues(
+    model: ModelDeclaration,
+    classes: ClassContracts,
+    contracts: ModelContracts,
+) -> list[Issue]:
+    issues: list[Issue] = []
+    guaranteed = contracts.guaranteed_types(model)
+    budget = contracts.budget
+    base_conflicts = set(classes.conflicts(model.types))
+    for conflict in classes.conflicts(guaranteed):
+        if conflict not in base_conflicts:
+            issues.append(
+                Issue(
+                    "models.guaranteed_emission_conflict",
+                    "Guaranteed emitted fields imply disjoint types "
+                    "on the same resource",
+                    model.location or model.identifier,
+                    actual=conflict,
+                )
+            )
+    conditional = [
+        field
+        for field in model.fields
+        if field.emission != "guaranteed" and not field.predicate.startswith("@")
+    ]
+    for fields in chain(
+        ((field,) for field in conditional), combinations(conditional, 2)
+    ):
+        budget.consume("work")
+        types = set(guaranteed)
+        for field in fields:
+            types.update(
+                str(node)
+                for node in contracts.property(field).parents
+                if isinstance(node, URIRef)
+            )
+        for conflict in set(classes.conflicts(tuple(types))) - set(
+            classes.conflicts(guaranteed)
+        ):
+            names = ", ".join(field.name for field in fields)
+            issues.append(
+                Issue(
+                    "models.conditional_emission_unverified",
+                    f"Disjointness requires co-emission of: {names}",
+                    model.location or model.identifier,
+                    kind="unverified",
+                    actual=conflict,
+                )
+            )
+    return issues

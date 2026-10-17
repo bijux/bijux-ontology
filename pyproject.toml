@@ -16,6 +16,14 @@ dependencies = [
     "pyoxigraph>=0.5.11,<0.6",
 ]
 
+[project.optional-dependencies]
+pydantic = [
+    "pydantic>=2.11,<3",
+]
+linkml = [
+    "linkml-runtime>=1.12.1,<2",
+]
+
 [dependency-groups]
 dev = [
   "build>=1.2,<2",
