@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import cast
 
-from pyld import jsonld  # type: ignore[import-untyped]
 from rdflib import Literal
 
 from bijux_ontology._json import own_json
@@ -18,6 +17,7 @@ from bijux_ontology.jsonld.observations import (
     location,
 )
 from bijux_ontology.jsonld.resources import DocumentLoader, OfflineDocumentLoader
+from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
@@ -122,6 +122,7 @@ def _literal_result(
             if key not in native:
                 budget.consume("states")
                 loader = OfflineDocumentLoader({})
+                jsonld = processor()
                 dataset = jsonld.to_rdf(
                     [{"urn:bijux:observed-literal": [raw]}],
                     {

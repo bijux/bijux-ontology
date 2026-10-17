@@ -9,10 +9,10 @@ import pytest
 
 
 def test_installed_api_and_independent_example(
-    installed: tuple[Path, Path, dict[str, str]],
+    installed_jsonld: tuple[Path, Path, dict[str, str]],
     distribution: tuple[Path, Path, dict[str, str]],
 ) -> None:
-    python, work, env = installed
+    python, work, env = installed_jsonld
     result = subprocess.run(
         [
             str(python),
@@ -95,10 +95,10 @@ def test_installed_cli_vocabulary_outcomes(
 
 @pytest.mark.parametrize("action", ["models", "context"])
 def test_installed_cli_routes_real_model_and_context_checks(
-    installed: tuple[Path, Path, dict[str, str]],
+    installed_jsonld: tuple[Path, Path, dict[str, str]],
     action: str,
 ) -> None:
-    python, work, env = installed
+    python, work, env = installed_jsonld
     if action == "models":
         (work / "declarations.json").write_text(
             json.dumps(

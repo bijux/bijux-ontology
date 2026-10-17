@@ -112,10 +112,10 @@ def test_real_installed_integrations(
 
 
 def test_external_consumer_uses_installed_public_types(
-    installed: tuple[Path, Path, dict[str, str]],
+    installed_jsonld: tuple[Path, Path, dict[str, str]],
     installed_all_extras: tuple[Path, Path, dict[str, str]],
 ) -> None:
-    python, work, env = installed
+    python, work, env = installed_jsonld
     config = work / "mypy.ini"
     config.write_text(
         "[mypy]\npython_version = 3.11\nstrict = True\n", encoding="utf-8"
@@ -263,8 +263,16 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
             model_declarations as linkml_models,
         )
         from bijux_ontology.shacl import validate_shapes
-        for name in ("pyshacl", "pydantic", "linkml_runtime"):
+        from bijux_ontology import expand_document, compare_rdf
+        for name in ("pyld", "pyshacl", "pydantic", "linkml_runtime"):
             assert find_spec(name) is None, name
+        assert compare_rdf(Graph(), Graph()).verified
+        try:
+            expand_document({"urn:p": "value"})
+        except ResourceError as error:
+            assert "[jsonld]" in str(error)
+        else:
+            raise AssertionError("Missing JSON-LD capability falsely succeeded")
         for adapter, extra in (
             (pydantic_models, "pydantic"), (linkml_models, "linkml")
         ):

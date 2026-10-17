@@ -17,10 +17,12 @@ Install the resulting wheel into a consumer environment:
 ```sh
 uv pip install artifacts/bijux-ontology/build/bijux_ontology-0.1.0-py3-none-any.whl
 # Optional real integrations:
-uv pip install 'artifacts/bijux-ontology/build/bijux_ontology-0.1.0-py3-none-any.whl[shacl,pydantic,linkml]'
+uv pip install 'artifacts/bijux-ontology/build/bijux_ontology-0.1.0-py3-none-any.whl[jsonld,shacl,pydantic,linkml]'
 ```
 
 Canonical targets use the pinned `bijux-std` implementations. `make bijux-std-checks` verifies accepted shared components and verifier inputs; `make check-python-baseline` checks Python configuration. This repository is not registered in the upstream standards manifest. Its CI profile verifies alignment locally; formal registration will replace that profile with canonical workflow projection. Owner-authored PRs require the standard `owner-self-signoff` label. Generated files stay under `artifacts/`.
+
+Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 ## Use Python
 
