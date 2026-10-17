@@ -1,0 +1,3 @@
+[tool.deptry]
+extend_exclude = ["artifacts", "docs", "examples", "\\.bijux"]
+package_module_name_map = { "pyld" = "pyld" }

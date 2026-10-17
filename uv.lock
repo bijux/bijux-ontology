@@ -7,6 +7,13 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 
+[manifest]
+members = [
+    "bijux-ontology",
+    "bijux-ontology-dev",
+    "bijux-ontology-workspace",
+]
+
 [[package]]
 name = "annotated-types"
 version = "0.8.0"
@@ -177,7 +184,7 @@ wheels = [
 [[package]]
 name = "bijux-ontology"
 version = "0.1.0"
-source = { editable = "." }
+source = { editable = "packages/bijux-ontology" }
 dependencies = [
     { name = "pyld" },
     { name = "pyoxigraph" },
@@ -196,22 +203,6 @@ shacl = [
     { name = "pyshacl" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "build" },
-    { name = "codespell" },
-    { name = "deptry" },
-    { name = "hatchling" },
-    { name = "interrogate" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "radon" },
-    { name = "ruff" },
-    { name = "twine" },
-    { name = "vulture" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "linkml-runtime", marker = "extra == 'linkml'", specifier = ">=1.12.1,<2" },
@@ -224,8 +215,41 @@ requires-dist = [
 ]
 provides-extras = ["shacl", "pydantic", "linkml"]
 
+[[package]]
+name = "bijux-ontology-dev"
+version = "0.1.0"
+source = { editable = "packages/bijux-ontology-dev" }
+
+[[package]]
+name = "bijux-ontology-workspace"
+version = "0.0.0"
+source = { virtual = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "bijux-ontology", extra = ["linkml", "pydantic", "shacl"] },
+    { name = "bijux-ontology-dev" },
+    { name = "build" },
+    { name = "codespell" },
+    { name = "deptry" },
+    { name = "hatchling" },
+    { name = "interrogate" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-timeout" },
+    { name = "radon" },
+    { name = "ruff" },
+    { name = "twine" },
+    { name = "vulture" },
+]
+
+[package.metadata]
+
 [package.metadata.requires-dev]
 dev = [
+    { name = "bijux-ontology", extras = ["shacl", "pydantic", "linkml"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
     { name = "build", specifier = ">=1.2,<2" },
     { name = "codespell", specifier = ">=2.4,<3" },
     { name = "deptry", specifier = ">=0.23,<1" },
@@ -234,6 +258,7 @@ dev = [
     { name = "mypy", specifier = ">=1.11,<3" },
     { name = "pytest", specifier = ">=8.4,<10" },
     { name = "pytest-cov", specifier = ">=6,<8" },
+    { name = "pytest-timeout", specifier = ">=2.3,<3" },
     { name = "radon", specifier = ">=6,<7" },
     { name = "ruff", specifier = ">=0.6,<1" },
     { name = "twine", specifier = ">=6,<7" },
@@ -1775,6 +1800,18 @@ dependencies = [
     { name = "pytest" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/dc/1e/fb11174c9eaebcec27d36e9e994b90ffa168bc3226925900b9dbbf16c9da/pytest-logging-2015.11.4.tar.gz", hash = "sha256:cec5c85ecf18aab7b2ead5498a31b9f758680ef5a902b9054ab3f2bdbb77c896", size = 3916, upload-time = "2015-11-04T12:15:54.122Z" }
+
+[[package]]
+name = "pytest-timeout"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ac/82/4c9ecabab13363e72d880f2fb504c5f750433b2b6f16e99f4ec21ada284c/pytest_timeout-2.4.0.tar.gz", hash = "sha256:7e68e90b01f9eff71332b25001f85c75495fc4e3a836701876183c4bcfd0540a", size = 17973, upload-time = "2025-05-05T19:44:34.99Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fa/b6/3127540ecdf1464a00e5a01ee60a1b09175f6913f0644ac748494d9c4b21/pytest_timeout-2.4.0-py3-none-any.whl", hash = "sha256:c42667e5cdadb151aeb5b26d114aff6bdf5a907f176a007a30b940d3d865b5c2", size = 14382, upload-time = "2025-05-05T19:44:33.502Z" },
+]
 
 [[package]]
 name = "pywin32-ctypes"

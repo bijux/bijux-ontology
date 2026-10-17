@@ -1,6 +1,14 @@
 target-version = "py311"
 line-length = 88
-exclude = ["artifacts", ".bijux"]
+respect-gitignore = true
+cache-dir = "../artifacts/root/ruff-cache"
+src = ["../packages/bijux-ontology/src", "../packages/bijux-ontology-dev/src"]
+extend-exclude = ["artifacts", ".bijux"]
 
 [lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["E", "F", "I", "B", "UP", "SIM", "C4", "PIE", "RET", "ISC"]
+# Preserve readable word tables and formatter-wrapped message literals.
+ignore = ["SIM905", "ISC004"]
+
+[lint.isort]
+known-first-party = ["bijux_ontology", "bijux_ontology_dev"]

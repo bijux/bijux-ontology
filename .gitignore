@@ -2,7 +2,15 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-.venv/
+/.venv
+/.tox
+/.hypothesis
+/.benchmarks
+packages/*/artifacts
+packages/*/.venv
+packages/*/.tox
+packages/*/.hypothesis
+packages/*/.benchmarks
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

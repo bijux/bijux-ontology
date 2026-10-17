@@ -1,0 +1,194 @@
+# Repository-owned alignment profile; upstream registration remains separate.
+# Shared checks and policy steps are consumed from the pinned bijux-std source.
+
+"name": "repository verification"
+"on":
+  "pull_request":
+    "branches":
+      - "main"
+    "types":
+      - "opened"
+      - "reopened"
+      - "synchronize"
+      - "ready_for_review"
+  "push":
+    "branches":
+      - "main"
+  "merge_group":
+    "branches":
+      - "main"
+  "workflow_dispatch": null
+"permissions":
+  "contents": "read"
+  "pull-requests": "read"
+"concurrency":
+  "group": "verification-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}"
+  "cancel-in-progress": true
+"env":
+  "PYTHONDONTWRITEBYTECODE": "1"
+  "UV_CACHE_DIR": "${{ github.workspace }}/artifacts/root/uv_cache"
+"jobs":
+  "standard":
+    "name": "std / standard"
+    "runs-on": "ubuntu-latest"
+    "timeout-minutes": 10
+    "steps":
+      - "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+        "with":
+          "fetch-depth": 0
+      - "uses": "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
+        "with":
+          "python-version": "3.11"
+      - "uses": "ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83"
+        "with":
+          "ruby-version": "3.3.12"
+      - "name": "Verify accepted standards and Python baseline"
+        "run": "make bijux-std-checks check-python-baseline check-make-layout check-config-layout PYTHON=python"
+      - "name": "Verify managed checksums and immutable action references"
+        run: |-
+          sha256sum --check .github/bijux-std-shared.sha256
+          python .github/scripts/check_pinned_actions.py --manifest-managed .github/standards/repo-config.manifest.json .github/workflows
+  "policy":
+    "name": "policy / github"
+    "runs-on": "ubuntu-latest"
+    "timeout-minutes": 5
+    "steps":
+      - "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+        "with":
+          "fetch-depth": 0
+      - "name": "Gather changed files"
+        "shell": "bash"
+        "env":
+          "PR_BASE_SHA": "${{ github.event.pull_request.base.sha }}"
+          "PR_HEAD_SHA": "${{ github.event.pull_request.head.sha }}"
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/ci
+          write_single_commit_diff() {
+            git diff-tree --no-commit-id --name-only -r "${GITHUB_SHA}" > artifacts/ci/changed-files.txt
+          }
+          write_range_diff_or_fallback() {
+            local base_sha="$1"
+            local head_sha="$2"
+            if [[ -z "${base_sha}" || -z "${head_sha}" ]]; then
+              write_single_commit_diff
+              return 0
+            fi
+            if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+              write_single_commit_diff
+              return 0
+            fi
+            if ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
+              write_single_commit_diff
+              return 0
+            fi
+            if git merge-base --is-ancestor "${base_sha}" "${head_sha}" 2>/dev/null; then
+              git diff --name-only "${base_sha}...${head_sha}" > artifacts/ci/changed-files.txt
+            else
+              write_single_commit_diff
+            fi
+          }
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            for commit_sha in "${PR_BASE_SHA}" "${PR_HEAD_SHA}"; do
+              if [[ ! "${commit_sha}" =~ ^[0-9a-f]{40}$ ]]; then
+                echo "ERROR: pull request event requires full base and head commit SHAs" >&2
+                exit 1
+              fi
+              if [[ "$(git cat-file -t "${commit_sha}" 2>/dev/null)" != commit ]]; then
+                echo "ERROR: pull request event commit is absent from checkout: ${commit_sha}" >&2
+                exit 1
+              fi
+            done
+            if [[ "$(git rev-parse --is-shallow-repository)" != false ]]; then
+              echo "ERROR: pull request policy requires complete checkout history" >&2
+              exit 1
+            fi
+            if ! git merge-base "${PR_BASE_SHA}" "${PR_HEAD_SHA}" >/dev/null; then
+              echo "ERROR: pull request event commits have no common ancestor" >&2
+              exit 1
+            fi
+            git diff --name-only "${PR_BASE_SHA}...${PR_HEAD_SHA}" > artifacts/ci/changed-files.txt
+          elif [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            base_sha="${{ github.event.merge_group.base_sha }}"
+            head_sha="${{ github.event.merge_group.head_sha }}"
+            if [[ -n "${base_sha}" && "${base_sha}" != "null" && -n "${head_sha}" && "${head_sha}" != "null" ]]; then
+              write_range_diff_or_fallback "${base_sha}" "${head_sha}"
+            else
+              write_single_commit_diff
+            fi
+          else
+            before_sha="${{ github.event.before }}"
+            if [[ -n "${before_sha}" && "${before_sha}" != "0000000000000000000000000000000000000000" ]]; then
+              write_range_diff_or_fallback "${before_sha}" "${GITHUB_SHA}"
+            else
+              write_single_commit_diff
+            fi
+          fi
+      - "name": "Enforce protected .github change policy"
+        "if": "${{ github.event_name == 'pull_request' }}"
+        "shell": "bash"
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/check_protected_github_changes.py --changed-file-list artifacts/ci/changed-files.txt
+  "python":
+    "name": "python / ${{ matrix.python }}"
+    "runs-on": "ubuntu-latest"
+    "timeout-minutes": 20
+    "strategy":
+      "fail-fast": false
+      "matrix":
+        "python":
+          - "3.11"
+          - "3.13"
+    "steps":
+      - "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+        "with":
+          "fetch-depth": 0
+      - "uses": "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
+        "with":
+          "python-version": "${{ matrix.python }}"
+      - "uses": "astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884"
+        "with":
+          "version": "0.11.17"
+          "enable-cache": false
+      - "name": "Verify frozen installation, source, tests and distributions"
+        "run": "make install lint quality test-ci build PYTHON=python"
+      - "name": "Retain verification evidence"
+        "if": "${{ always() }}"
+        "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9"
+        "with":
+          "name": "python-${{ matrix.python }}"
+          path: |-
+            artifacts/bijux-ontology/lint
+            artifacts/bijux-ontology/quality
+            artifacts/bijux-ontology/test
+            artifacts/bijux-ontology/build
+            artifacts/bijux-ontology-dev/lint
+            artifacts/bijux-ontology-dev/quality
+            artifacts/bijux-ontology-dev/test
+            artifacts/bijux-ontology-dev/build
+          "if-no-files-found": "error"
+          "retention-days": 7
+  "report":
+    "name": "std / report"
+    "if": "${{ always() }}"
+    "needs":
+      - "standard"
+      - "policy"
+      - "python"
+    "runs-on": "ubuntu-latest"
+    "timeout-minutes": 2
+    "steps":
+      - "name": "Require every selected verification job to succeed"
+        "env":
+          "RESULTS": "${{ toJSON(needs) }}"
+        run: |-
+          python3 - <<'PY'
+          import json
+          import os
+          results = json.loads(os.environ["RESULTS"])
+          failed = {name: job["result"] for name, job in results.items() if job["result"] != "success"}
+          if failed:
+              raise SystemExit(f"Required verification did not succeed: {failed}")
+          print("Accepted shared standards, repository policy and application checks passed; registration remains separate")
+          PY

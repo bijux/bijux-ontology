@@ -8,19 +8,19 @@ Python 3.11+ and uv are required for development. This version is unpublished.
 
 ```sh
 make install
-make lint quality test-ci build
-artifacts/env/bin/python examples/check_declarations.py
+make check
+artifacts/root/check-venv/bin/python examples/check_declarations.py
 ```
 
 Install the resulting wheel into a consumer environment:
 
 ```sh
-uv pip install artifacts/checks/build/bijux_ontology-0.1.0-py3-none-any.whl
+uv pip install artifacts/bijux-ontology/build/bijux_ontology-0.1.0-py3-none-any.whl
 # Optional real integrations:
-uv pip install 'artifacts/checks/build/bijux_ontology-0.1.0-py3-none-any.whl[shacl,pydantic,linkml]'
+uv pip install 'artifacts/bijux-ontology/build/bijux_ontology-0.1.0-py3-none-any.whl[shacl,pydantic,linkml]'
 ```
 
-Canonical targets use the pinned `bijux-std` implementations. Generated files stay under `artifacts/`. Full `make bijux-std-checks` additionally requires canonical repository registration; it is not currently green for this unregistered repository. No shared gate is replaced or bypassed.
+Canonical targets use the pinned `bijux-std` implementations. `make bijux-std-checks` verifies accepted shared components and verifier inputs; `make check-python-baseline` checks Python configuration. This repository is not registered in the upstream standards manifest. Its CI profile verifies alignment locally; formal registration will replace that profile with canonical workflow projection. Owner-authored PRs require the standard `owner-self-signoff` label. Generated files stay under `artifacts/`.
 
 ## Use Python
 
@@ -68,6 +68,8 @@ Exit **0** means policy accepts the result, **1** means findings or strict unkno
 Supply contexts and imports explicitly. Default loaders never fetch missing resources; custom loaders own their retrieval behaviour. Examples show a shared resource snapshot for checking and conversion. Keep existing submission validation and reasoning gates: these checks do not prove ontology consistency, satisfiability, scientific truth or compatibility for unseen data.
 
 See [migration notes](docs/migration.md) and [consumer integration](docs/integration.md).
+
+The uv workspace contains the public library in `packages/bijux-ontology` and internal tooling and installation tests in `packages/bijux-ontology-dev`. Each package owns its tests.
 
 ## Package ownership
 

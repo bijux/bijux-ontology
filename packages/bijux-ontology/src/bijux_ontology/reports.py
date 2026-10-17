@@ -1,0 +1,434 @@
+"""Truthful outcomes and acceptance policy for finite, explicitly scoped checks."""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+from dataclasses import KW_ONLY, dataclass, replace
+from typing import Literal, cast
+
+from .errors import InputError
+
+IssueKind = Literal["finding", "unverified", "input_error", "exhausted"]
+Severity = Literal["error", "warning", "info"]
+Outcome = Literal[
+    "agreement",
+    "disagreement",
+    "unverified",
+    "input_error",
+    "exhausted",
+    "not_applicable",
+]
+_SEVERITY = {"info": 0, "warning": 1, "error": 2}
+
+
+@dataclass(frozen=True)
+class Location:
+    """An established semantic location; coordinates are never fabricated."""
+
+    source: str = ""
+    path: tuple[str | int, ...] = ()
+    term: str | None = None
+    graph: str | None = None
+    model: str | None = None
+    branch: int | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.source, str) or isinstance(
+            cast(object, self.path), (str, bytes)
+        ):
+            raise InputError("A location requires a source string and path sequence")
+        path = tuple(self.path)
+        if any(
+            type(part) not in (str, int) or isinstance(part, int) and part < 0
+            for part in path
+        ):
+            raise InputError("Location paths contain keys or nonnegative indices")
+        if self.branch is not None and (
+            type(self.branch) is not int or self.branch < 0
+        ):
+            raise InputError("A branch index must be nonnegative")
+        object.__setattr__(self, "path", path)
+
+    def __str__(self) -> str:
+        pointer = "".join(
+            "/" + str(part).replace("~", "~0").replace("/", "~1") for part in self.path
+        )
+        return self.source + pointer or self.model or self.term or self.graph or ""
+
+    def to_dict(self) -> dict[str, object]:
+        """Return established location fields without assuming file coordinates."""
+        return {
+            "source": self.source,
+            "path": list(self.path),
+            "term": self.term,
+            "graph": self.graph,
+            "model": self.model,
+            "branch": self.branch,
+        }
+
+
+@dataclass(frozen=True)
+class Issue:
+    """A retained diagnostic, independent of whether process policy accepts it."""
+
+    code: str
+    message: str
+    location: str = ""
+    kind: IssueKind = "finding"
+    severity: Severity = "error"
+    expected: str | None = None
+    actual: str | None = None
+    _: KW_ONLY
+    details: Location | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.code, str) or not self.code.strip():
+            raise InputError("An issue needs a stable nonempty code")
+        if not isinstance(self.message, str) or not self.message.strip():
+            raise InputError("An issue needs a nonempty message")
+        if self.kind not in ("finding", "unverified", "input_error", "exhausted"):
+            raise InputError("Unknown diagnostic kind")
+        if not isinstance(self.severity, str) or self.severity not in _SEVERITY:
+            raise InputError("Unknown diagnostic severity")
+        if not isinstance(self.location, str):
+            raise InputError("Expected a readable location string")
+        if any(
+            value is not None and not isinstance(value, str)
+            for value in (self.expected, self.actual)
+        ):
+            raise InputError("Diagnostic expected and actual values must be strings")
+        if self.details is not None and not isinstance(self.details, Location):
+            raise InputError("Expected a structured semantic location")
+        if self.details is not None and not self.location:
+            object.__setattr__(self, "location", str(self.details))
+
+    def to_dict(self) -> dict[str, object]:
+        """Return original diagnostic values, including optional semantic location."""
+        return {
+            "code": self.code,
+            "message": self.message,
+            "location": self.location,
+            "kind": self.kind,
+            "severity": self.severity,
+            "expected": self.expected,
+            "actual": self.actual,
+            "details": self.details.to_dict() if self.details else None,
+        }
+
+
+@dataclass(frozen=True)
+class IssueSelection:
+    """An exact code/location exception; neither unavailable inputs nor limits waive."""
+
+    code: str
+    location: str
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.code, str)
+            or not isinstance(self.location, str)
+            or not self.code
+            or not self.location
+        ):
+            raise InputError("An exception requires an exact code and location")
+
+    def matches(self, issue: Issue) -> bool:
+        """Select this diagnostic identity without wildcard or substring matching."""
+        return issue.code == self.code and issue.location == self.location
+
+
+@dataclass(frozen=True)
+class AcceptancePolicy:
+    """Process acceptance changes no raw agreement, conformance or completeness."""
+
+    minimum_severity: Severity = "error"
+    strict: bool = False
+    exceptions: tuple[IssueSelection, ...] = ()
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.minimum_severity, str)
+            or self.minimum_severity not in _SEVERITY
+            or type(self.strict) is not bool
+        ):
+            raise InputError("Invalid acceptance policy")
+        exceptions = tuple(self.exceptions)
+        if any(not isinstance(item, IssueSelection) for item in exceptions):
+            raise InputError("Expected exact issue selections")
+        object.__setattr__(self, "exceptions", exceptions)
+
+    def permits(self, issue: Issue) -> bool:
+        """Return whether an exact exception permits a retained non-input issue."""
+        return issue.kind in ("finding", "unverified") and any(
+            item.matches(issue) for item in self.exceptions
+        )
+
+
+@dataclass(frozen=True)
+class Report:
+    """Requested scope, completed comparisons, retained diagnostics and raw outcome.
+
+    Counts describe operation-defined comparisons, never inferred truth. An
+    optional empty scope is not applicable; required empty work is incomplete.
+    """
+
+    scope: str
+    checked: int = 0
+    issues: tuple[Issue, ...] = ()
+    allow_empty: bool = False
+    _: KW_ONLY
+    requested: int | None = None
+    complete: bool = True
+    regime: str = "asserted"
+    families: tuple[str, ...] = ()
+    children: tuple[Report, ...] = ()
+    exclusions: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.scope, str) or not self.scope.strip():
+            raise InputError("A report needs a nonempty scope")
+        if type(self.checked) is not int or self.checked < 0:
+            raise InputError("checked must be a nonnegative integer")
+        requested = self.checked if self.requested is None else self.requested
+        if type(requested) is not int or requested < self.checked:
+            raise InputError("requested must be an integer at least checked")
+        if type(self.allow_empty) is not bool or type(self.complete) is not bool:
+            raise InputError("Report completion and optional scope must be booleans")
+        if not isinstance(self.regime, str) or not self.regime.strip():
+            raise InputError("A report requires an explicit semantic regime")
+        if isinstance(cast(object, self.families), (str, bytes)) or any(
+            not isinstance(family, str) or not family.strip()
+            for family in self.families
+        ):
+            raise InputError("Check families must be nonempty strings")
+        if isinstance(cast(object, self.exclusions), (str, bytes)) or any(
+            not isinstance(item, str) or not item.strip() for item in self.exclusions
+        ):
+            raise InputError("Excluded scopes must be nonempty strings")
+        issues = tuple(self.issues)
+        children = tuple(self.children)
+        if any(not isinstance(issue, Issue) for issue in issues):
+            raise InputError("A report requires typed issues")
+        if any(not isinstance(child, Report) for child in children):
+            raise InputError("A report requires typed child reports")
+        if (
+            not self.checked
+            and not self.allow_empty
+            and not any(
+                issue.kind in ("input_error", "exhausted", "unverified")
+                for issue in issues
+            )
+        ):
+            issues += (
+                Issue(
+                    "input.empty_scope",
+                    "No comparisons completed in a required scope",
+                    self.scope,
+                    kind="input_error",
+                ),
+            )
+        complete = (
+            self.complete
+            and self.checked == requested
+            and all(
+                child.complete or child.allow_empty and not child.checked
+                for child in children
+            )
+        )
+        if not complete and not any(
+            issue.kind in ("unverified", "input_error", "exhausted") for issue in issues
+        ):
+            issues += (
+                Issue(
+                    "execution.incomplete",
+                    "Not all requested comparisons completed",
+                    self.scope,
+                    kind="unverified",
+                ),
+            )
+        complete = complete and not any(
+            issue.kind in ("unverified", "input_error", "exhausted") for issue in issues
+        )
+        object.__setattr__(self, "requested", requested)
+        object.__setattr__(self, "issues", issues)
+        object.__setattr__(self, "children", children)
+        object.__setattr__(self, "exclusions", tuple(self.exclusions))
+        object.__setattr__(self, "families", tuple(self.families) or (self.scope,))
+        object.__setattr__(self, "complete", complete)
+
+    @property
+    def outcome(self) -> Outcome:
+        """The raw checking outcome, unaffected by severity or exception policy."""
+        for kind in ("input_error", "exhausted"):
+            if any(issue.kind == kind for issue in self.issues):
+                return "input_error" if kind == "input_error" else "exhausted"
+        if any(issue.kind == "finding" for issue in self.issues):
+            return "disagreement"
+        if not self.complete:
+            return "unverified"
+        return "agreement" if self.checked else "not_applicable"
+
+    def exit_code(
+        self, *, strict: bool = False, policy: AcceptancePolicy | None = None
+    ) -> int:
+        """Return 2 for input/exhaustion, 1 for rejected findings, otherwise 0."""
+        if self.outcome in ("input_error", "exhausted"):
+            return 2
+        selected = policy or AcceptancePolicy(strict=strict)
+        for issue in self.issues:
+            if selected.permits(issue):
+                continue
+            if (
+                issue.kind == "finding"
+                and _SEVERITY[issue.severity] >= _SEVERITY[selected.minimum_severity]
+            ):
+                return 1
+            if issue.kind == "unverified" and (strict or selected.strict):
+                return 1
+        return 0
+
+    @property
+    def verified(self) -> bool:
+        """Whether the supported requested scope completed in actual agreement."""
+        return self.complete and self.outcome == "agreement"
+
+    def __iter__(self) -> Iterator[Issue]:
+        return iter(self.issues)
+
+    def with_source(self, source: str) -> Report:
+        """Attach a known input source without fabricating paths or file coordinates."""
+        if not isinstance(source, str) or not source.strip():
+            raise InputError("A diagnostic source must be a nonempty string")
+        issues = []
+        for issue in self.issues:
+            if issue.details is not None and issue.details.source:
+                issues.append(issue)
+                continue
+            details = (
+                replace(issue.details, source=source)
+                if issue.details is not None
+                else Location(source=source)
+            )
+            issues.append(
+                replace(
+                    issue,
+                    details=details,
+                    location=source
+                    + ("#" if issue.location.startswith("/") else ": ")
+                    + issue.location
+                    if issue.location
+                    else source,
+                )
+            )
+        return replace(
+            self,
+            issues=tuple(issues),
+            children=tuple(child.with_source(source) for child in self.children),
+        )
+
+    def select_issues(
+        self,
+        *,
+        code: str | None = None,
+        kind: IssueKind | None = None,
+        severity: Severity | None = None,
+        location: str | None = None,
+    ) -> tuple[Issue, ...]:
+        """Filter presentation without changing the original report's outcome."""
+        return tuple(
+            issue
+            for issue in self.issues
+            if (code is None or issue.code == code)
+            and (kind is None or issue.kind == kind)
+            and (severity is None or issue.severity == severity)
+            and (location is None or issue.location == location)
+        )
+
+    def to_dict(
+        self, *, strict: bool = False, policy: AcceptancePolicy | None = None
+    ) -> dict[str, object]:
+        """Serialise schema-versioned meaning, counts and all original diagnostics."""
+        issues = sorted(
+            self.issues,
+            key=lambda issue: (
+                issue.location,
+                issue.code,
+                issue.kind,
+                issue.expected or "",
+                issue.actual or "",
+                issue.message,
+            ),
+        )
+        selected = policy or AcceptancePolicy(strict=strict)
+        return {
+            "schema_version": 1,
+            "exclusions": list(self.exclusions),
+            "policy": {
+                "minimum_severity": selected.minimum_severity,
+                "strict": strict or selected.strict,
+                "exceptions": [
+                    {"code": item.code, "location": item.location}
+                    for item in selected.exceptions
+                ],
+                "permitted": [
+                    {"code": issue.code, "location": issue.location}
+                    for issue in issues
+                    if selected.permits(issue)
+                ],
+            },
+            "scope": self.scope,
+            "regime": self.regime,
+            "families": list(self.families),
+            "checked": self.checked,
+            "allow_empty": self.allow_empty,
+            "requested": self.requested,
+            "complete": self.complete,
+            "outcome": self.outcome,
+            "verified": self.verified,
+            "exit_code": self.exit_code(strict=strict, policy=policy),
+            "issues": [issue.to_dict() for issue in issues],
+            "scopes": [
+                child.to_dict(strict=strict, policy=policy) for child in self.children
+            ],
+        }
+
+    def raise_for_findings(
+        self, *, strict: bool = False, policy: AcceptancePolicy | None = None
+    ) -> None:
+        """Raise a focused exception retaining the complete, unfiltered report."""
+        if self.exit_code(strict=strict, policy=policy):
+            raise CheckError(self)
+
+
+class CheckError(ValueError):
+    """A failed requested check, retaining its complete structured report."""
+
+    def __init__(self, report: Report) -> None:
+        self.report = report
+        detail = "; ".join(
+            f"{issue.location}: {issue.message}" for issue in report.issues
+        )
+        super().__init__(detail or f"No comparisons completed in {report.scope}")
+
+
+def combine_reports(scope: str, *reports: Report) -> Report:
+    """Compose required scopes without losing optional emptiness or raw outcomes."""
+    return Report(
+        scope,
+        sum(report.checked for report in reports),
+        tuple(issue for report in reports for issue in report.issues),
+        allow_empty=bool(reports) and all(report.allow_empty for report in reports),
+        requested=sum(report.requested or 0 for report in reports),
+        complete=all(
+            report.complete or report.allow_empty and not report.checked
+            for report in reports
+        ),
+        regime="composed",
+        families=tuple(
+            dict.fromkeys(family for report in reports for family in report.families)
+        ),
+        children=reports,
+        exclusions=tuple(
+            dict.fromkeys(item for report in reports for item in report.exclusions)
+        ),
+    )

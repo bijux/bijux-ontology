@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bijux-ontology-dev"
+version = "0.1.0"
+description = "Internal repository tooling and installation checks for bijux-ontology"
+readme = "README.md"
+requires-python = ">=3.11,<4"
+license = "MIT"
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+core-metadata-version = "2.4"
+packages = ["src/bijux_ontology_dev"]
+
+[tool.hatch.build.targets.sdist]
+core-metadata-version = "2.4"
+include = ["src", "tests", "pyproject.toml", "README.md", "LICENSE"]
