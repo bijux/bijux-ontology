@@ -54,7 +54,9 @@ _CODES = {
         "required_occurrence_missing types_mismatch value_mismatch "
         "value_unverified".split()
     ),
-    "execution": frozenset("cancelled deadline incomplete limit_exceeded".split()),
+    "execution": frozenset(
+        "cancelled deadline incomplete limit_exceeded worker_failed".split()
+    ),
     "input": frozenset(
         "coverage_scope_missing empty_coverage empty_scope invalid "
         "literal_declaration_conflict model_identity_conflict "

@@ -68,3 +68,17 @@ so another finding at the same broad location remains rejected. Approval can mak
 `result.accepted` true while `require_verified()` still rejects unverified truth.
 
 Evaluate a fixed wheel in a dependency-consistent environment on the consumer’s supported interpreter. Check installed import origin, run real integration cases and include a deliberate missing-term or incorrect-mapping case. The consumer remains responsible for required input fields, domain decisions and dependency migration.
+
+Use `WorkerExecutor(python=installed_python, timeout=30, limits=Limits(...))`
+for bounded embedding. `run("context", {"document": output, "expectations":
+expectation_data, "resources": contexts, "base": logical_base})` transfers JSON
+resources and returns a raw `report`. Supported operations also include
+`emission`, `serialization`, `flatten`, `vocabulary` and `project`; declarations
+use their existing JSON codecs. `project` takes `configuration` and an absolute
+`directory`, retaining completed scopes on cancellation or deadline.
+
+The trusted worker interpreter must already contain the package and requested
+extras. No environment installation occurs. `memory_bytes=` requests the platform
+address-space limit and fails explicitly when unavailable; cancellation accepts a
+`threading.Event`. Worker crashes, protocol failures and limits never verify.
+Synchronous calls keep their existing execution behavior.
