@@ -121,6 +121,30 @@ Pass an adapter’s `declaration_report` to retain extraction limitations. This 
 sampled evidence; it does not prove every possible serializer output. Callbacks
 execute in-process.
 
+For ordinary nested Pydantic models, an authoritative context can supply the RDF
+mappings without duplicate primitive declarations:
+
+```python
+from bijux_ontology import OutputRequirement
+from bijux_ontology.interfaces.adapters.pydantic import check_instance
+
+checked = check_instance(
+    catalogue,
+    vocabulary=ontology,
+    context=context,
+    options={"mode": "json", "by_alias": True, "exclude_none": True},
+    requirements={(Item, "label"): OutputRequirement(require_property=True)},
+)
+output = checked.output
+```
+
+Actual output must assert model types. The profile observes real serializer
+output, including aliases and annotated serializers, and checks supported nested
+children automatically. An optional independent `inventory` retains its own
+mappings and requirements. Unresolved/custom output shapes remain unverified;
+absent optional fields are explicit sample exclusions. Preparation and checking
+share one operation budget. Success qualifies this output and these options.
+
 Resolve finite selectors through `prepared.select(...)`. `SourceSelector` composes
 `Property`, `ArrayItems` and `KeyedItems`; each step’s bounds apply to every selected
 parent, independently of aggregate bounds. Check the returned concrete `paths`
