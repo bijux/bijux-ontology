@@ -236,6 +236,7 @@ def check_emission(
     document_loader: DocumentLoader | None = None,
     allowed_drops: frozenset[str] = frozenset(),
     limits: Limits | None = None,
+    budget: Budget | None = None,
 ) -> Report:
     """Check selected actual outputs, without claiming all hypothetical instances.
 
@@ -248,8 +249,10 @@ def check_emission(
     shared standards-processed usage snapshot, never a second expansion engine.
     Type checks compare explicit emitted types, without ontology entailment.
     """
-    selected = limits if limits is not None else Limits()
-    budget = Budget(selected)
+    if budget is not None and limits is not None and budget.limits != limits:
+        raise InputError("Explicit limits conflict with the shared operation budget")
+    selected = limits or (budget.limits if budget is not None else Limits())
+    budget = budget if budget is not None else Budget(selected)
     issues = IssueCollector(budget)
     checked = 0
     complete = True

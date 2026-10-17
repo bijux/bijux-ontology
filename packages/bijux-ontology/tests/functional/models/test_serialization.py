@@ -9,9 +9,13 @@ from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology import (
     FieldDeclaration,
+    Limits,
     ModelDeclaration,
     ModelUsage,
     ValueDeclaration,
+    check_emission,
+    check_models,
+    load_vocabulary,
 )
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
@@ -163,3 +167,46 @@ def test_serializer_failure_and_conflicting_context_preserve_incomplete_samples(
     )
     assert conflict.report.outcome == "input_error"
     assert conflict.output == {"@context": {"name": str(EX.name)}}
+
+
+def test_serializer_checks_share_a_cumulative_operation_budget() -> None:
+    model = ModelDeclaration(
+        "record",
+        (str(EX.Record),),
+        (
+            FieldDeclaration(
+                "name",
+                str(EX.name),
+                (ValueDeclaration("literal", str(XSD.string)),),
+                emission="guaranteed",
+            ),
+        ),
+    )
+    document = {"@context": {"@vocab": str(EX)}, "@type": "Record", "name": "Name"}
+    owned = load_vocabulary(vocabulary())
+    usages = [ModelUsage("record")]
+    limits = Limits(max_work=50)
+    assert check_models([model], owned, limits=limits).verified
+    assert check_emission(document, [model], usages, limits=limits).verified
+    exhausted = check_instance(
+        None,
+        lambda value: document,
+        [model],
+        usages,
+        vocabulary=owned,
+        options={},
+        limits=limits,
+    )
+    assert exhausted.report.outcome == "exhausted"
+    assert not exhausted.report.complete
+    assert exhausted.output == document
+    fresh = check_instance(
+        None,
+        lambda value: document,
+        [model],
+        usages,
+        vocabulary=owned,
+        options={},
+        limits=Limits(max_work=100),
+    )
+    assert fresh.report.verified, fresh.report.to_dict()

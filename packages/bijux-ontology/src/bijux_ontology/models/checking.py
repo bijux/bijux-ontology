@@ -43,6 +43,7 @@ def check_models(
     allow_empty: bool = False,
     regime: Regime = "application",
     limits: Limits | None = None,
+    budget: Budget | None = None,
 ) -> Report:
     """Check finite model declarations against explicit supplied RDF statements.
 
@@ -52,12 +53,14 @@ def check_models(
     """
     if regime not in ("application", "rdf", "owl-dl"):
         raise InputError("Unknown semantic regime")
+    if budget is not None and limits is not None and budget.limits != limits:
+        raise InputError("Explicit limits conflict with the shared operation budget")
+    budget = budget if budget is not None else Budget(limits)
     sources = (
         vocabulary
         if isinstance(vocabulary, Vocabulary)
-        else load_vocabulary(vocabulary)
+        else load_vocabulary(vocabulary, budget=budget)
     )
-    budget = Budget(limits)
     registry: dict[str, ModelDeclaration] = {}
     issues = IssueCollector(budget)
     checked = 0
@@ -167,6 +170,7 @@ def check_models(
                         for iri in model.types
                     ],
                     regime="owl-dl" if regime == "owl-dl" else "rdf",
+                    budget=budget,
                 )
                 checked += membership.checked
                 issues.extend(membership.issues)

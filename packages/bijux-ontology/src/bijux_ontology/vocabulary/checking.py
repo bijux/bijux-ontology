@@ -174,6 +174,7 @@ def check_vocabulary(
     lint: bool = False,
     allow_empty: bool = False,
     limits: Limits | None = None,
+    budget: Budget | None = None,
 ) -> Report:
     """Check used terms and optional complete coverage of selected local terms.
 
@@ -183,13 +184,15 @@ def check_vocabulary(
     Reference/lint rules are opt-in; schema.org includes metadata is descriptive.
     """
     validate_regime(regime)
+    if budget is not None and limits is not None and budget.limits != limits:
+        raise InputError("Explicit limits conflict with the shared operation budget")
     sources = (
         vocabulary
         if isinstance(vocabulary, Vocabulary)
-        else load_vocabulary(vocabulary, limits=limits)
+        else load_vocabulary(vocabulary, limits=limits, budget=budget)
     )
-    selected = limits if limits is not None else sources.limits
-    budget = Budget(selected)
+    selected = limits or (budget.limits if budget is not None else sources.limits)
+    budget = budget if budget is not None else Budget(selected)
     if coverage_scope not in ("local", "closure"):
         raise InputError("Coverage scope must be local or closure")
     for iri in (*local_namespaces, *exclude, *coverage_terms, *coverage_kinds):
