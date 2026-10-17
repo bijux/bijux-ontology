@@ -13,6 +13,57 @@ from bijux_ontology.workflows.projects.configuration import ProjectConfig, load_
 EX = "https://example.org/"
 
 
+def test_local_query_rules_use_project_paths_and_preserve_required_scope(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "ontology.ttl").write_text(
+        f"<{EX}Child> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <{EX}Parent> .",
+        encoding="utf-8",
+    )
+    (tmp_path / "labels.rq").write_text(
+        "SELECT ?term WHERE {?term ?p ?o FILTER NOT EXISTS "
+        "{?term <http://www.w3.org/2000/01/rdf-schema#label> ?label}}",
+        encoding="utf-8",
+    )
+    (tmp_path / "rules.json").write_text(
+        json.dumps(
+            [
+                {
+                    "name": "labels",
+                    "query_file": "labels.rq",
+                    "scope": {"kind": "default"},
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    job = {
+        "name": "competency",
+        "kind": "query-rules",
+        "source": "terms",
+        "rules": "rules.json",
+    }
+    data = {"version": 1, "rdf": {"terms": {"path": "ontology.ttl"}}, "checks": [job]}
+    (tmp_path / "project.json").write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.chdir(tmp_path.parent)
+    configuration = load_project(tmp_path / "project.json")
+    assert str(tmp_path / "rules.json") in str(configuration.explain())
+    report = check_project(configuration)
+    assert report.complete and report.outcome == "disagreement"
+    finding = next(
+        issue for issue in report.issues if issue.code == "data.query_violation"
+    )
+    assert finding.details is not None and finding.details.term == EX + "Child"
+    assert finding.details.source == str(tmp_path / "labels.rq")
+    ignored = {**data, "checks": [{**job, "union": True}]}
+    invalid = check_project(ProjectConfig(ignored, directory=tmp_path))
+    assert invalid.outcome == "input_error" and "union" in invalid.issues[0].message
+    (tmp_path / "ontology.ttl").write_text("", encoding="utf-8")
+    empty = check_project(load_project(tmp_path / "project.json"))
+    assert empty.outcome == "input_error" and not empty.verified
+    assert any(issue.code == "data.query_empty_scope" for issue in empty.issues)
+
+
 def test_local_project_reuses_owned_sources_and_retains_independent_failures(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

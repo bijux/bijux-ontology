@@ -158,6 +158,8 @@ class ProjectConfig:
                 *(object_value(member, location="documents") for member in members),
             ]
             for job in jobs:
+                if check["kind"] == "query-rules" and "rules" in job:
+                    job["rules"] = str(self.path(job["rules"]))
                 for key in ("inventory", "declarations", "document", "expectations"):
                     if (
                         check["kind"] in ("vocabulary", "models", "context")

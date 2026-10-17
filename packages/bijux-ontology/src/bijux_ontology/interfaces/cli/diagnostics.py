@@ -52,7 +52,11 @@ _CODES = {
         "term_dropped types_mismatch unsupported_check usage_dropped "
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
-    "data": frozenset("type_unverified".split()),
+    "data": frozenset(
+        "type_unverified query_kind_mismatch query_answer_mismatch "
+        "query_variables_mismatch query_answer_unexpected query_answer_missing "
+        "query_violation query_empty_scope".split()
+    ),
     "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
         "source_field_undeclared predicate_undeclared source_coverage_unverified "
@@ -197,10 +201,10 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         '{"@context":{"label":"https://example.org/label"},"label":"Colour"}',
     ),
     "data": (
-        "supplied RDF data",
-        "The selected data condition cannot be established by this supported check.",
-        "Supply the missing type evidence or use an explicit supported "
-        "data constraint.",
+        "supplied RDF data and asserted query obligations",
+        "The selected data condition disagrees or cannot be established.",
+        "Inspect selected types, actual query bindings and the explicit "
+        "consumer obligation.",
         "<https://example.org/item> a <https://example.org/Image> .",
     ),
     "emission": (
@@ -299,6 +303,21 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "data.query_violation": (
+        "A consumer SELECT rule returned an actual violating RDF binding.",
+        "Inspect the exact bound terms and local query; correct data or the rule.",
+        'QueryRule("missing-label", sparql, QueryScope("default"))',
+    ),
+    "data.query_answer_mismatch": (
+        "A completed asserted ASK answer differs from its declared expectation.",
+        "Inspect the selected graph and expected answer; this is no OWL proof.",
+        'QueryRule("hierarchy", sparql, QueryScope("default"), expected=True)',
+    ),
+    "data.query_empty_scope": (
+        "A required query selection contains no RDF statements.",
+        "Supply the intended data scope or explicitly exclude nonempty coverage.",
+        "run_query_rules(source, rules, allow_empty=True)",
+    ),
     "rdf.canonicalization_empty_graph_loss": (
         "Canonical N-Quads cannot retain the selected empty named-graph inventory.",
         "Keep the dataset, or explicitly exclude empty graphs from the quad claim.",

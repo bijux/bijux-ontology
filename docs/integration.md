@@ -20,6 +20,20 @@ original graph; conflicting graph overrides fail explicitly.
 
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
+`run_query_rules(source, load_query_rules(Path("rules.json")))` checks named
+consumer obligations over asserted RDF. The JSON array contains each rule's
+`name`, either `query` text or a relative `query_file`, and an explicit
+`scope: {"kind": "default"}` (or another `QueryScope` choice). A boolean
+`expected` requires that ASK answer; absent/null `expected` requires zero
+violating SELECT rows. Exact SELECT answer sets use
+`expected: {"variables": ["term"], "rows": [[{"kind": "iri", "value": "urn:item"}]]}`.
+Returned results retain named raw answers alongside diagnostics with failing RDF
+bindings. Blank labels cannot identify expected answers across queries.
+Required empty suites/data selections, query errors, answer disagreements and
+exhaustion remain distinct. `allow_empty=True` explicitly excludes only the
+nonempty-data requirement. Project jobs use `kind: "query-rules"`, a named RDF
+`source` and a `rules` filename; every rule retains its own scope.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
