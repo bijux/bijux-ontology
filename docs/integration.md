@@ -105,3 +105,10 @@ and `bundle.document_loader` reuse owned offline resources; `materialize(new_pat
 returns a project configuration. The CLI accepts `project BUNDLE --bundle`.
 Completeness covers the selected RDF closure and exercised context positions;
 it does not establish semantic acceptance or coverage of future scoped contexts.
+
+`prove_obligations` answers typed `OntologyObligation` questions independently,
+retaining established, contradicted or unknown status and compact witnesses.
+`assess_models(..., obligations=...)` retains raw `model_report` and requires every
+selected answer in its aggregate `report`. A proved named ancestor never removes
+an unresolved class restriction; disjointness does not contradict subsumption
+because the class may be empty. Global consistency remains a separate question.

@@ -6,8 +6,9 @@ recursive declarations therefore terminate without losing reused-child checks.
 Results describe supported declarations, not general ontology consistency.
 """
 
+import json
 from collections.abc import Sequence
-from dataclasses import replace
+from dataclasses import asdict, dataclass, replace
 
 from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
@@ -18,13 +19,18 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.classes import ClassContracts
+from bijux_ontology.owl.obligations import (
+    ObligationResult,
+    OntologyObligation,
+    prove_obligations,
+)
 from bijux_ontology.rdf.literals import Regime, check_literal
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 
 from ..errors import InputError, LimitExceeded
-from ..reports import Issue, Report
+from ..reports import Issue, Report, combine_reports
 from .constraints import _emission_issues, _field_issues, _value_contract_issues
 from .propagation import ModelContracts
 from .registry import index_models
@@ -233,3 +239,104 @@ def check_models(
         regime=regime,
         families=("model-contracts",),
     )
+
+
+@dataclass(frozen=True)
+class ModelAssessment:
+    """Asserted model checks alongside independent selected ontology answers.
+
+    ``model_report`` preserves the existing finite model-checking contract.
+    ``report`` also requires every explicitly selected obligation to be established.
+    Narrow proofs never remove independent model restrictions or establish whole
+    ontology consistency. Each answer retains its exact typed question.
+    """
+
+    model_report: Report
+    obligations: tuple[ObligationResult, ...]
+
+    @property
+    def report(self) -> Report:
+        """Require raw model truth and every explicitly selected proof question."""
+        reports = []
+        for result in self.obligations:
+            question = result.obligation
+            issues: tuple[Issue, ...] = ()
+            if not result.complete or result.status != "established":
+                issues = (
+                    Issue(
+                        "ontology.obligation_exhausted"
+                        if not result.complete
+                        else "ontology.obligation_unknown"
+                        if result.status == "unknown"
+                        else "ontology.obligation_contradicted",
+                        "Selected ontology obligation could not be completed"
+                        if not result.complete
+                        else "Selected ontology obligation remains unknown"
+                        if result.status == "unknown"
+                        else "Selected ontology obligation is contradicted",
+                        question.location or question.kind,
+                        kind="exhausted"
+                        if not result.complete
+                        else "unverified"
+                        if result.status == "unknown"
+                        else "finding",
+                        expected=question.required,
+                        actual=", ".join(question.actual),
+                        evidence_json=json.dumps(
+                            {
+                                "obligation": asdict(question),
+                                "basis": result.basis,
+                                "witness": [
+                                    [node.n3() for node in edge]
+                                    for edge in result.witness
+                                ],
+                            }
+                        ),
+                    ),
+                )
+            reports.append(
+                Report(
+                    f"ontology.{question.kind}",
+                    checked=int(result.complete),
+                    issues=issues,
+                    requested=1,
+                    complete=result.complete,
+                    regime=question.regime,
+                    families=("ontology-obligations",),
+                )
+            )
+        return combine_reports("model_assessment", self.model_report, *reports)
+
+    @property
+    def outstanding(self) -> tuple[Issue, ...]:
+        """Retain every unresolved model obligation, including relevant restrictions."""
+        return tuple(
+            issue for issue in self.model_report.issues if issue.kind == "unverified"
+        )
+
+
+def assess_models(
+    models: Sequence[ModelDeclaration],
+    vocabulary: Vocabulary | Graph,
+    *,
+    obligations: Sequence[OntologyObligation] = (),
+    allow_empty: bool = False,
+    regime: Regime = "application",
+    limits: Limits | None = None,
+) -> ModelAssessment:
+    """Expose narrow proofs without discarding independent model unknowns.
+
+    Each selected question retains its own semantic regime. Request consistency
+    explicitly when needed; the native engine leaves that separate question
+    unknown. A named domain/range proof cannot discharge class restrictions.
+    """
+    sources = (
+        vocabulary
+        if isinstance(vocabulary, Vocabulary)
+        else load_vocabulary(vocabulary, limits=limits)
+    )
+    report = check_models(
+        models, sources, allow_empty=allow_empty, regime=regime, limits=limits
+    )
+    answers = prove_obligations(sources.graph(), obligations, limits=limits)
+    return ModelAssessment(report, answers)

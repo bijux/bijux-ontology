@@ -41,8 +41,13 @@ from bijux_ontology.jsonld.resources import (
 )
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
 from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.owl.obligations import (
+    ObligationResult,
+    OntologyObligation,
+    prove_obligations,
+)
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
@@ -110,11 +115,14 @@ __all__ = [
     "LimitExceeded",
     "Limits",
     "Location",
+    "ModelAssessment",
     "ModelDeclaration",
     "ModelUsage",
+    "ObligationResult",
     "ObservedOccurrence",
     "ObservedUsage",
     "OfflineDocumentLoader",
+    "OntologyObligation",
     "PreparedChecks",
     "PreparedSource",
     "PreparedUsages",
@@ -136,6 +144,7 @@ __all__ = [
     "VocabularyChanges",
     "VocabularyView",
     "WorkerExecutor",
+    "assess_models",
     "assess_upgrade",
     "check_context",
     "check_contract",
@@ -167,6 +176,7 @@ __all__ = [
     "prepare_jsonld",
     "prepare_source",
     "prepare_usages",
+    "prove_obligations",
     "recheck_transformation",
     "remap_iris",
     "run_rules",

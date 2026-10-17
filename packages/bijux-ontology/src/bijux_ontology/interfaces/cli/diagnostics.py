@@ -81,6 +81,7 @@ _CODES = {
     ),
     "ontology": frozenset(
         "annotation_shape annotation_statement_missing cardinality_shape "
+        "obligation_unknown obligation_contradicted obligation_exhausted "
         "characteristic_conflict datatype_restriction_shape "
         "declaration_conflict deprecated_term deprecation_unverified "
         "replacement_absent replacement_ambiguous replacement_shape_unverified "
