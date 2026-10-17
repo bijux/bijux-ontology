@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from dataclasses import KW_ONLY, dataclass, replace
 from typing import Literal, cast
@@ -80,6 +81,7 @@ class Issue:
     actual: str | None = None
     _: KW_ONLY
     details: Location | None = None
+    evidence_json: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.code, str) or not self.code.strip():
@@ -99,8 +101,30 @@ class Issue:
             raise InputError("Diagnostic expected and actual values must be strings")
         if self.details is not None and not isinstance(self.details, Location):
             raise InputError("Expected a structured semantic location")
+        if self.evidence_json is not None:
+            if not isinstance(self.evidence_json, str):
+                raise InputError("Expected JSON object evidence text")
+            try:
+                evidence = json.loads(self.evidence_json)
+                if not isinstance(evidence, dict):
+                    raise TypeError("Evidence must be an object")
+                owned = json.dumps(
+                    evidence, sort_keys=True, separators=(",", ":"), allow_nan=False
+                )
+            except (TypeError, ValueError, RecursionError) as error:
+                raise InputError("Expected finite JSON object evidence") from error
+            object.__setattr__(self, "evidence_json", owned)
         if self.details is not None and not self.location:
             object.__setattr__(self, "location", str(self.details))
+
+    @property
+    def evidence(self) -> dict[str, object] | None:
+        """Return independent structured evidence without exposing mutable ownership."""
+        return (
+            cast(dict[str, object], json.loads(self.evidence_json))
+            if self.evidence_json is not None
+            else None
+        )
 
     def to_dict(self) -> dict[str, object]:
         """Return original diagnostic values, including optional semantic location."""
@@ -113,6 +137,7 @@ class Issue:
             "expected": self.expected,
             "actual": self.actual,
             "details": self.details.to_dict() if self.details else None,
+            "evidence": self.evidence,
         }
 
 
@@ -385,6 +410,7 @@ class Report:
                 issue.expected or "",
                 issue.actual or "",
                 issue.message,
+                issue.evidence_json or "",
             ),
         )
         selected = policy or AcceptancePolicy(strict=strict)

@@ -1,12 +1,12 @@
 """Optional supplied-shapes SHACL validation with isolated backend execution."""
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from math import isfinite
 from typing import Any, cast
 
 from pyparsing import ParseBaseException
-from rdflib import Dataset, Graph, Literal, URIRef
+from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SH
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.parserutils import CompValue
@@ -15,7 +15,7 @@ from rdflib.term import Node
 from bijux_ontology._json import decode_json
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource, copy_graph
 from bijux_ontology.rdf.sources import Payload, RdfSource
@@ -30,6 +30,9 @@ from bijux_ontology.shacl.coverage import (
     ShaclCoverageContract,
     read_coverage,
 )
+from bijux_ontology.shacl.findings import ShaclFinding as ShaclFinding
+from bijux_ontology.shacl.findings import ShaclSource, project_findings
+from bijux_ontology.shacl.paths import decode_path
 from bijux_ontology.shacl.transport import execute_backend
 from bijux_ontology.vocabulary.loading import load_vocabulary
 
@@ -46,19 +49,6 @@ _UNSUPPORTED = frozenset(
 )
 
 
-@dataclass(frozen=True)
-class ShaclFinding:
-    """Original RDF result fields; complex paths remain terms in the report graph."""
-
-    focus_node: Node | None
-    path: Node | None
-    value: Node | None
-    severity: Node | None
-    source_shape: Node | None
-    constraint_component: Node | None
-    messages: tuple[Literal, ...]
-
-
 class ShaclResult:
     """Raw conformance and owned standards-shaped evidence beside generic policy."""
 
@@ -70,6 +60,8 @@ class ShaclResult:
         backend: str = "unavailable",
         graph: Graph | None = None,
         findings: tuple[ShaclFinding, ...] = (),
+        root_findings: tuple[ShaclFinding, ...] = (),
+        findings_complete: bool = True,
         mode: str = "targets",
         focus_nodes: tuple[str, ...] = (),
         shapes: tuple[str, ...] = (),
@@ -83,6 +75,8 @@ class ShaclResult:
         self.conforms = conforms
         self.backend = backend
         self.findings = findings
+        self.root_findings = root_findings
+        self.findings_complete = findings_complete
         self.mode = mode
         self.focus_nodes = focus_nodes
         self.shapes = shapes
@@ -222,22 +216,6 @@ def _select_roots(
     return graph
 
 
-def _finding(graph: Graph, result: Node) -> ShaclFinding:
-    return ShaclFinding(
-        graph.value(result, SH.focusNode),
-        graph.value(result, SH.resultPath),
-        graph.value(result, SH.value),
-        graph.value(result, SH.resultSeverity),
-        graph.value(result, SH.sourceShape),
-        graph.value(result, SH.sourceConstraintComponent),
-        tuple(
-            message
-            for message in graph.objects(result, SH.resultMessage)
-            if isinstance(message, Literal)
-        ),
-    )
-
-
 def validate_shapes(
     data: Graph | PreparedSource,
     shapes: Graph | PreparedSource,
@@ -254,6 +232,7 @@ def validate_shapes(
     allow_empty: bool = False,
     coverage: ShaclCoverageContract | None = None,
     required_constraints: Sequence[ShaclConstraintRequirement] = (),
+    source_usages: Sequence[ShaclSource] = (),
     limits: Limits | None = None,
     timeout: float | None = 30.0,
 ) -> ShaclResult:
@@ -272,11 +251,18 @@ def validate_shapes(
     targets; it changes no raw conformance or targetless-shape semantics.
     ``required_constraints`` also requires supported parameter/component bindings
     and completed root execution; unsupported function dependencies never verify.
+    Optional ``source_usages`` joins actual prepared JSON-LD selections to named
+    RDF edges in this exact graph. String literals and named references support
+    predicate, inverse, sequence and alternative joins; unknown blank, list or
+    quantified correspondence remains explicit. All possible locations survive.
     Supporting ontology axioms are mixed
     into the backend data graph without running an inference engine. Dataset
     union or graph selection is deliberate; returned conformance covers exactly
     that scope. Backend recursion depth and process deadline are separate limits.
     """
+    sources = tuple(source_usages)
+    if any(not isinstance(source, ShaclSource) for source in sources):
+        raise InputError("Expected explicit prepared SHACL source usages")
     selected = limits if limits is not None else Limits()
     families = (
         "shacl-core",
@@ -347,6 +333,20 @@ def validate_shapes(
         _features(sg, trusted_sparql=trusted_sparql, nodes=capabilities.nodes)
         + capabilities.issues
     )
+    path_budget = Budget(selected)
+    for shape, path_node in sg.subject_objects(SH.path):
+        if capabilities.nodes is not None and shape not in capabilities.nodes:
+            continue
+        path = decode_path(sg, path_node, budget=path_budget)
+        if path.limitation is not None:
+            features += (
+                Issue(
+                    "shacl.path_unverified",
+                    path.limitation,
+                    str(shape),
+                    kind="unverified",
+                ),
+            )
     if selected_shapes and any(
         (kind, RDFS.subClassOf, RDFS.Class) in sg
         for kind in (SH.NodeShape, SH.PropertyShape)
@@ -455,9 +455,19 @@ def validate_shapes(
     report_graph = prepare_source(
         str(response["report"]), format="nt", limits=selected
     ).graph()
-    findings = tuple(
-        _finding(report_graph, node)
-        for node in report_graph.subjects(RDF.type, SH.ValidationResult)
+    correlation_graph = graph_name
+    correlation_union = union
+    if isinstance(data, PreparedSource) and (data.graph_name is not None or data.union):
+        correlation_graph, correlation_union = data.graph_name, data.union
+    findings, roots, findings_complete = project_findings(
+        report_graph,
+        dg,
+        sources=sources,
+        graph_name=(
+            None if correlation_graph in (None, "@default") else str(correlation_graph)
+        ),
+        union=correlation_union or isinstance(correlation_graph, BNode),
+        limits=selected,
     )
     issues = []
     severity_names: dict[Node | None, Severity] = {
@@ -476,6 +486,21 @@ def validate_shapes(
                 message,
                 str(finding.focus_node or ""),
                 severity=severity,
+                details=(
+                    finding.locations[0]
+                    if finding.location_status == "matched"
+                    and len(finding.locations) == 1
+                    else None
+                ),
+                evidence_json=finding.evidence_json,
+            )
+        )
+    if not findings_complete:
+        issues.append(
+            Issue(
+                "shacl.finding_unverified",
+                "Result projection is incomplete; inspect the retained raw RDF report",
+                kind="unverified",
             )
         )
     for warning in response.get("warnings", []):
@@ -495,7 +520,9 @@ def validate_shapes(
         tuple(issues),
         requested=int(shapes_count > 0 or not allow_empty),
         allow_empty=allow_empty,
-        complete=not response.get("warnings") and (shapes_count > 0 or allow_empty),
+        complete=not response.get("warnings")
+        and findings_complete
+        and (shapes_count > 0 or allow_empty),
         families=families,
     )
     evaluated_coverage = (
@@ -524,6 +551,8 @@ def validate_shapes(
         backend=backend,
         graph=report_graph,
         findings=findings,
+        root_findings=roots,
+        findings_complete=findings_complete,
         coverage=evaluated_coverage,
         conformance_report=report,
         constraints=constraint_report,

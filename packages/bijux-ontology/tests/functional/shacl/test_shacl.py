@@ -1,11 +1,16 @@
 """Real optional backend conformance, explicit feature boundaries and isolation."""
 
+import json
+from pathlib import Path
+
 import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 
+from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
+from bijux_ontology.reports import AcceptancePolicy
 from bijux_ontology.shacl import validate_shapes
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
@@ -609,3 +614,244 @@ def test_implicit_class_targets_respect_roots_pairs_and_nested_constraints(
             for finding in missing.findings
         )
     assert frozenset(shapes) == before
+
+
+def test_same_focus_message_results_survive_project_and_console_transport(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from bijux_ontology.interfaces.cli import main
+    from bijux_ontology.interfaces.cli.protocol import report_from_data
+    from bijux_ontology.workflows.projects.checking import check_project
+    from bijux_ontology.workflows.projects.configuration import ProjectConfig
+
+    (tmp_path / "data.ttl").write_text("", encoding="utf-8")
+    (tmp_path / "shapes.ttl").write_text(
+        """@prefix sh:<http://www.w3.org/ns/shacl#>.
+@prefix ex:<https://example.org/>.
+ex:Shape a sh:NodeShape; sh:targetNode ex:record;
+ sh:property [sh:path ex:name; sh:minCount 1; sh:message "required"],
+ [sh:path ex:age; sh:minCount 1; sh:message "required"].
+""",
+        encoding="utf-8",
+    )
+    config = {
+        "version": 1,
+        "rdf": {
+            "data": {"path": "data.ttl", "format": "turtle"},
+            "shapes": {"path": "shapes.ttl", "format": "turtle"},
+        },
+        "checks": [
+            {"name": "records", "kind": "shacl", "document": "data", "shapes": "shapes"}
+        ],
+    }
+    report = check_project(ProjectConfig(config, directory=tmp_path))
+    findings = [
+        issue for issue in report.issues if issue.code == "shacl.nonconformance"
+    ]
+    assert len(findings) == 2 and len(set(findings)) == 2
+    evidence = [issue.evidence for issue in findings]
+    assert all(isinstance(item, dict) for item in evidence)
+    assert {
+        json.loads(issue.evidence_json)["path"]["node"]
+        for issue in findings
+        if issue.evidence_json is not None
+    } == {EX.name.n3(), EX.age.n3()}
+    copied = report_from_data(report.to_dict())
+    assert set(copied.issues) == set(report.issues)
+    (tmp_path / "checks.json").write_text(json.dumps(config), encoding="utf-8")
+    assert main(["project", str(tmp_path / "checks.json"), "--json"]) == 1
+    output = json.loads(capsys.readouterr().out)
+    projected = [
+        issue for issue in output["issues"] if issue["code"] == "shacl.nonconformance"
+    ]
+    assert len(projected) == 2
+    assert {issue["evidence"]["path"]["node"] for issue in projected} == {
+        EX.name.n3(),
+        EX.age.n3(),
+    }
+
+
+def test_nested_findings_and_complex_paths_preserve_raw_evidence() -> None:
+    from bijux_ontology.jsonld.checking import prepare_usages
+    from bijux_ontology.shacl.findings import ShaclSource
+
+    shapes = Graph().parse(
+        data="""
+@prefix sh:<http://www.w3.org/ns/shacl#>.
+@prefix ex:<https://example.org/>.
+@prefix xsd:<http://www.w3.org/2001/XMLSchema#>.
+ex:Shape a sh:NodeShape; sh:targetNode ex:record;
+ sh:property [sh:path [sh:alternativePath (ex:name ex:age)]; sh:node ex:Integer].
+ex:Integer a sh:NodeShape; sh:datatype xsd:integer.
+""",
+        format="turtle",
+    )
+    data = Graph().add((EX.record, EX.name, Literal("bad")))
+    source = ShaclSource(
+        prepare_usages(
+            {"@context": {"name": str(EX.name)}, "@id": str(EX.record), "name": "bad"}
+        ),
+        (("name",),),
+        "record.json",
+    )
+    result = validate_shapes(data, shapes, source_usages=(source,))
+    assert result.conforms is False and result.findings_complete
+    root = result.root_findings[0]
+    assert root.path_expression is not None
+    assert root.path_expression.kind == "alternative"
+    assert str(EX.name) in root.path_expression.readable
+    assert (
+        root.details
+        and root.details[0].constraint_component == SH.DatatypeConstraintComponent
+    )
+    assert root.detail_nodes == (root.details[0].result_node,)
+    assert (
+        root.result_node,
+        SH.detail,
+        root.details[0].result_node,
+    ) in result.report_graph()
+    assert root.location_status == "matched" and root.locations[0].path == ("name",)
+    rdf_only = validate_shapes(data, shapes)
+    assert rdf_only.root_findings[0].location_status == "unavailable"
+    assert rdf_only.root_findings[0].path_expression is not None
+    assert (
+        json.loads(root.evidence_json)["details"][0]["result"]
+        == root.details[0].to_dict()["result"]
+    )
+
+
+def test_actual_source_correspondence_keeps_multiple_and_unknown_locations() -> None:
+    from bijux_ontology.jsonld.checking import prepare_usages
+    from bijux_ontology.shacl.findings import ShaclSource
+
+    document = {
+        "@context": {"name": str(EX.name), "alias": str(EX.name)},
+        "@id": str(EX.record),
+        "name": "bad",
+        "alias": "bad",
+    }
+    source = ShaclSource(
+        prepare_usages(document), (("name",), ("alias",)), "record.json"
+    )
+    shapes = Graph().parse(
+        data="""
+@prefix sh:<http://www.w3.org/ns/shacl#>.
+@prefix ex:<https://example.org/>.
+@prefix xsd:<http://www.w3.org/2001/XMLSchema#>.
+ex:Shape a sh:NodeShape; sh:targetNode ex:record;
+ sh:property [sh:path ex:name; sh:datatype xsd:integer; sh:severity sh:Info],
+ [sh:path ex:age; sh:minCount 1].
+""",
+        format="turtle",
+    )
+    result = validate_shapes(
+        Graph().add((EX.record, EX.name, Literal("bad"))),
+        shapes,
+        source_usages=(source,),
+    )
+    by_path = {finding.path: finding for finding in result.findings}
+    assert by_path[EX.name].location_status == "multiple"
+    assert {location.path for location in by_path[EX.name].locations} == {
+        ("name",),
+        ("alias",),
+    }
+    assert (
+        by_path[EX.age].locations == ()
+        and by_path[EX.age].location_status == "unavailable"
+    )
+    raw = frozenset(result.report_graph())
+    result.report.exit_code(policy=AcceptancePolicy(minimum_severity="error"))
+    assert result.conforms is False and frozenset(result.report_graph()) == raw
+    assert len(result.report.issues) == 2
+
+
+def test_sequence_source_join_uses_actual_terminal_subject_and_selected_graph() -> None:
+    from bijux_ontology.jsonld.checking import prepare_usages
+    from bijux_ontology.shacl.findings import ShaclSource
+
+    document = {
+        "@context": {"link": str(EX.link), "name": str(EX.name)},
+        "@id": str(EX.record),
+        "link": {"@id": str(EX.child), "name": "bad"},
+    }
+    source = ShaclSource(prepare_usages(document), (("link", "name"),), "record.json")
+    data = (
+        Graph()
+        .add((EX.record, EX.link, EX.child))
+        .add((EX.child, EX.name, Literal("bad")))
+    )
+    shapes = Graph().parse(
+        data="""
+@prefix sh:<http://www.w3.org/ns/shacl#>.
+@prefix ex:<https://example.org/>.
+@prefix xsd:<http://www.w3.org/2001/XMLSchema#>.
+ex:Shape a sh:NodeShape; sh:targetNode ex:record;
+ sh:property [sh:path (ex:link ex:name); sh:datatype xsd:integer].
+""",
+        format="turtle",
+    )
+    result = validate_shapes(data, shapes, source_usages=(source,))
+    finding = result.findings[0]
+    assert finding.path_expression is not None
+    assert finding.path_expression.kind == "sequence"
+    assert (
+        finding.locations[0].path == ("link", "name")
+        and finding.location_status == "matched"
+    )
+    dataset = Dataset()
+    dataset.graph(EX.graph).parse(data=data.serialize(format="nt"), format="nt")
+    selected = validate_shapes(
+        prepare_source(dataset),
+        shapes,
+        graph_name=str(EX.graph),
+        source_usages=(source,),
+    )
+    assert selected.conforms is False and selected.findings[0].locations == ()
+    from bijux_ontology.rdf.sources import RdfSource
+
+    named = ShaclSource(
+        prepare_usages({"@id": str(EX.graph), "@graph": [document]}),
+        (("@graph", 0, "link", "name"),),
+        "named.json",
+    )
+    inherited = validate_shapes(
+        prepare_source(RdfSource(dataset, graph_name=str(EX.graph))),
+        shapes,
+        source_usages=(named,),
+    )
+    assert inherited.findings[0].location_status == "matched"
+    assert inherited.findings[0].locations[0].graph == str(EX.graph)
+    union = validate_shapes(
+        prepare_source(dataset), shapes, union=True, source_usages=(source,)
+    )
+    assert union.findings[0].location_status == "unverified"
+
+
+def test_cyclic_paths_and_result_details_are_finite_and_truthful() -> None:
+    from bijux_ontology.shacl.findings import project_findings
+    from bijux_ontology.shacl.paths import decode_path
+
+    shapes = shapes_graph()
+    path = BNode()
+    shapes.set((EX.Property, SH.path, path))
+    shapes.add((path, SH.inversePath, path))
+    result = validate_shapes(Graph(), shapes)
+    assert (
+        result.conforms is None
+        and result.report.issues[0].code == "shacl.path_unverified"
+    )
+    assert decode_path(shapes, path).kind == "unsupported"
+    report = Graph().add((EX.result, RDF.type, SH.ValidationResult))
+    report.add((EX.result, SH.detail, EX.result)).add((EX.result, SH.resultPath, path))
+    report += shapes
+    before = frozenset(report)
+    findings, _, complete = project_findings(report, Graph())
+    assert not complete and not findings[0].details_complete
+    assert findings[0].details[0].result_node == EX.result
+    assert findings[0].path_expression is not None
+    assert findings[0].path_expression.kind == "unsupported"
+    assert frozenset(report) == before
+    limited, _, complete = project_findings(
+        report, Graph(), limits=Limits(max_states=1)
+    )
+    assert not complete and limited == ()

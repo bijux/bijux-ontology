@@ -42,6 +42,12 @@ an identity witness. RDF preservation does not promise original JSON shape.
 
 Keep findings and unsupported comparisons visible. Apply narrow code/location exceptions through `AcceptancePolicy`; they do not change verification truth. Retain application validation, reference checks and any existing reasoning gate. Supplied-shapes validation is an optional additional operation, not general OWL consistency checking.
 
+SHACL findings retain report-local identities, nested details and finite typed
+property paths in `result.findings` and each generic issue’s `evidence`.
+Supply `ShaclSource(prepared_usages, paths, source=...)` through `source_usages=`
+to correlate actual JSON-LD selections. Multiple or unsupported locations remain
+explicit; the full RDF report stays available through `report_graph()`.
+
 For supplied SHACL shapes, `ShaclCoverageContract(minimum_focus=1,
 focus_nodes=record_iris, pairs=shape_focus_pairs)` from `bijux_ontology.shacl`
 requires completed root target evaluations when passed as `coverage=` to
