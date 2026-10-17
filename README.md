@@ -1,6 +1,6 @@
 # bijux-ontology
 
-Typed Python contracts, bounded RDF preparation and explicit syntactic transformations. This package reports finite supported checks and comparisons it cannot verify; it does not perform general OWL reasoning. The package has not been released to a package index.
+Typed Python checks for supplied RDF vocabularies, JSON-LD usages and application declarations. This package reports finite supported checks and comparisons it cannot verify; it does not perform general OWL reasoning. The package has not been released to a package index.
 
 ## Development
 
@@ -16,3 +16,4 @@ These targets use pinned `bijux-std` implementations. Generated output stays und
 ## Supported capabilities
 
 - Package configuration, canonical shared checks, bounded JSON/report contracts, native RDF primitives and explicit application declarations.
+- JSON-LD context checks, controlled resources, representative usages, RDF conversion and verified document export.
