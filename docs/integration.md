@@ -129,3 +129,11 @@ with existing expectations. Required missing children name their selected parent
 joined asserted entities; `coverage_unit="source_occurrence"` instead retains each
 describing object’s obligations. IDs/types are expanded identities, graph scope
 is explicit, and optional zero matches remain non-applicable.
+
+For context releases, `assess_context_corpus` compares explicit
+`ContextCorpusDocument` outputs under separate before/after resource loaders.
+Declare required `CorpusBranch` witnesses by document name and concrete usage
+path. Inspect baseline, candidate, selected usages, RDF preservation and exercised
+coverage separately; unchanged failures stay visible, and candidate success
+cannot establish a missing baseline. `compatible` is true only for verified
+scoped preservation, false for a demonstrated counterexample, otherwise unknown.

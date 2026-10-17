@@ -136,6 +136,8 @@ _CODES = {
     ),
     "upgrade": frozenset(
         "child_model_unavailable usage_unavailable deprecation_unverified "
+        "corpus_baseline_missing corpus_candidate_missing "
+        "corpus_comparison_unverified corpus_coverage_missing "
         "newly_deprecated contract_unverified anonymous_impact_unverified "
         "no_contracts contract_persistent contract_resolved contract_introduced".split()
     ),

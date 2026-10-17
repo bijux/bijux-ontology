@@ -99,6 +99,13 @@ from bijux_ontology.workflows.upgrades.assessment import (
     UpgradeAssessment,
     assess_upgrade,
 )
+from bijux_ontology.workflows.upgrades.corpus import (
+    ContextCorpusDocument,
+    ContextCorpusUpgrade,
+    CorpusBranch,
+    CorpusWitness,
+    assess_context_corpus,
+)
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
@@ -109,10 +116,14 @@ __all__ = [
     "Budget",
     "Change",
     "CheckError",
+    "ContextCorpusDocument",
+    "ContextCorpusUpgrade",
     "ContextExpectation",
     "ContextInputError",
     "ContractObligation",
     "ContractResult",
+    "CorpusBranch",
+    "CorpusWitness",
     "DataView",
     "EntitySelector",
     "ExecutionResult",
@@ -160,6 +171,7 @@ __all__ = [
     "VocabularyChanges",
     "VocabularyView",
     "WorkerExecutor",
+    "assess_context_corpus",
     "assess_models",
     "assess_upgrade",
     "check_context",
