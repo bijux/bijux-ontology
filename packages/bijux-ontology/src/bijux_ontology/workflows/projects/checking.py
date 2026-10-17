@@ -1,6 +1,6 @@
 """Reuse explicit local resources while retaining every selected check outcome."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from typing import cast
 
@@ -8,6 +8,7 @@ from bijux_ontology._json import known_keys, object_value
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Issue, IssueKind, Report, combine_reports
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
@@ -75,8 +76,8 @@ def _aggregate(scope: str, reports: list[Report], pending: tuple[str, ...]) -> R
 class PreparedChecks:
     """Own reused vocabulary and context resources for one explicit project.
 
-    No global caches or implicit discovery are used. A cached vocabulary owns
-    its graphs; files changed after first use require a new prepared project.
+    No global caches or implicit discovery are used. Cached inputs own first-use
+    snapshots; explicit replacement returns a new revision with independent budgets.
     """
 
     def __init__(self, configuration: ProjectConfig) -> None:
@@ -99,6 +100,30 @@ class PreparedChecks:
     def source(self, name: str) -> PreparedSource:
         """Reuse one named source owned by this project execution."""
         return self._resources.source(name)
+
+    def replace_resources(
+        self,
+        *,
+        rdf: Mapping[str, RdfSource] | None = None,
+        contexts: Mapping[str, object] | None = None,
+    ) -> "PreparedChecks":
+        """Return a new session with acquired replacements for registered inputs.
+
+        RDF descriptors supply complete syntax, identity and graph selection.
+        Context values are complete JSON documents or Paths. Replacement content
+        is owned before return; later caller/path edits cannot alter the revision.
+        Unchanged already acquired inputs and proven independent views are reused.
+        A changed context conservatively rebuilds every source that used remote
+        contexts and its dependent vocabularies. Models, shapes and results are
+        checked afresh. Unread original paths retain first-use lazy semantics;
+        this operation does not claim to have acquired the entire project.
+        """
+        revised = PreparedChecks(self.configuration)
+        revised._resources = self._resources.replace_resources(
+            rdf={} if rdf is None else rdf,
+            contexts={} if contexts is None else contexts,
+        )
+        return revised
 
     def _context_batch(self, job: dict[str, object]) -> Report:
         members = job.get("documents")
@@ -147,10 +172,11 @@ class PreparedChecks:
 
     def check(self, job: dict[str, object]) -> Report:
         """Validate and run one job, retaining lazy context-batch execution."""
-        kind = check_kind(job)
-        if kind == "context" and "documents" in job:
-            return self._context_batch(job)
-        return run_check(kind, job, self._resources)
+        with self._resources.operation():
+            kind = check_kind(job)
+            if kind == "context" and "documents" in job:
+                return self._context_batch(job)
+            return run_check(kind, job, self._resources)
 
 
 def check_project(

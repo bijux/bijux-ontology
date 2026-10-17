@@ -104,6 +104,12 @@ address-space limit and fails explicitly when unavailable; cancellation accepts 
 `threading.Event`. Worker crashes, protocol failures and limits never verify.
 Synchronous calls keep their existing execution behavior.
 
+`PreparedChecks(config).replace_resources(rdf={name: descriptor},
+contexts={url: document})` returns an independent revision with acquired
+replacements and fresh bounds. Unaffected owned resources are reused; dependent
+preparation is invalidated. The old session retains its snapshots. Unread original
+paths remain lazy, and per-call documents/declarations are checked afresh.
+
 Use `load_bundle` from `bijux_ontology.workflows.projects.bundles` for a directory,
 packaged resource or ZIP containing `project.json` and its declared files. Logical
 IRIs and graph selections survive moving the bundle. `bundle.vocabulary(name)`
