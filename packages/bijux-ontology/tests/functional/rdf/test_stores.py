@@ -4,10 +4,12 @@ from pathlib import Path
 from threading import Event
 
 import pyoxigraph as ox
+import pytest
 from rdflib import BNode, Dataset, Namespace
 from rdflib.namespace import OWL
 
 from bijux_ontology.declarations.types import TermDeclaration
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -18,6 +20,8 @@ from bijux_ontology.rdf.stores import (
     query_snapshot,
     snapshot_rdf,
 )
+from bijux_ontology.rdf.stores.native import DeclarationReader
+from bijux_ontology.rdf.stores.protocol import scope_data
 from bijux_ontology.reports import Issue
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.inspection import VocabularyView
@@ -242,3 +246,35 @@ def test_reserved_named_graph_never_collapses_into_materialized_default(
     assert materialize_snapshot(
         made.snapshot, scope=QueryScope("default"), max_triples=10
     ).report.verified
+
+
+def test_repeated_declaration_reads_share_one_owned_native_handle(
+    tmp_path: Path,
+) -> None:
+    """Stream consumers pay one opening and retain exact selected type statements."""
+    source, _ = _source(tmp_path)
+    result = snapshot_rdf(source, tmp_path / "snapshot", format="nquads")
+    assert result.snapshot is not None
+    snapshot = result.snapshot
+    budget = Budget()
+    with DeclarationReader(
+        snapshot, scope=QueryScope("default"), budget=budget
+    ) as reader:
+        for _ in range(200):
+            graph = reader.graph((str(E.A), str(E.Hidden)))
+            assert len(graph) == 1
+        assert budget.remaining("resources") == budget.limits.max_resources - 1
+    with pytest.raises(InputError):
+        reader.graph((str(E.A),))
+    pin = next(name for name in snapshot.graph_names if isinstance(name, BNode))
+    with (
+        pytest.raises(InputError),
+        DeclarationReader(
+            snapshot, scope=QueryScope("named", BNode(str(pin))), budget=Budget()
+        ),
+    ):
+        pass
+    with pytest.raises(LimitExceeded):
+        scope_data(
+            snapshot, QueryScope("named", "urn:absent"), Budget(Limits(max_work=1))
+        )
