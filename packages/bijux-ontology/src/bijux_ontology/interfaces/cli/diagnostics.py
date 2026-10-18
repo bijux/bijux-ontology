@@ -103,6 +103,7 @@ _CODES = {
         "structure_mismatch binding_unverified".split()
     ),
     "adapter": frozenset(
+        "oak_python_unsupported oak_backend_unavailable oak_unsupported "
         "fhir_backend_unavailable fhir_input_error fhir_unsupported "
         "fhir_membership_unverified fhir_export_error fhir_export_unverified "
         "fhir_valueset_unverified fhir_valueset_input_error fhir_valueset_code_invalid "

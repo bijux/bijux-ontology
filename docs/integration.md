@@ -20,6 +20,16 @@ competing canonical spellings require an explicit `canonical_prefixes` choice.
 The immutable registry separates `.iri(value)` from `.expand_curie(value)` and
 uses the longest namespace in `.compact_iri(value)` without guessing intent.
 
+`interfaces.adapters.oak.as_oak(view, registry=registry, language="en")` exposes
+an owned selected view through the maintained OAK `BasicOntologyInterface`.
+Install `[oak]` on Python <3.15 for OAK 0.7.4. Core imports need no OAK package.
+Labels, aliases, definitions, asserted relationships and obsolescence retain
+their selected source meanings; the original `.view` keeps qualified evidence.
+Subset enumeration requires explicit `closed_subsets=True` for this finite
+selected source. Incomplete metadata, unsupported inference and mutation raise
+`OakOperationError` with the required report. One budget covers each whole batch;
+an explicitly supplied shared `Budget` also spans successive calls.
+
 Install `bijux-ontology[templates]` for `IdentifierTemplate(template, keys)` with
 explicit `TemplateKey` string/integer bindings. `.construct()` uses maintained
 URI escaping; `.construct_many()` rejects exact IRI collisions atomically.
