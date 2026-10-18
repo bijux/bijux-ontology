@@ -58,7 +58,9 @@ def _selected(
         for predicate in (SH["and"], SH["or"], SH.xone):
             for head in graph.objects(node, predicate):
                 pending.extend(
-                    read_rdf_list(graph, head, max_items=budget.limits.max_work)
+                    read_rdf_list(
+                        graph, head, max_items=budget.limits.max_work, budget=budget
+                    )
                 )
     return result
 

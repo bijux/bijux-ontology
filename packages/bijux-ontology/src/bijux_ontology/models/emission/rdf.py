@@ -384,7 +384,10 @@ def check_rdf_emission(
                     if need_list and is_list:
                         try:
                             members = read_rdf_list(
-                                graph, endpoint, max_items=budget.limits.max_work
+                                graph,
+                                endpoint,
+                                max_items=budget.limits.max_work,
+                                budget=budget,
                             )
                             budget.consume("work", len(members))
                             list_lengths.append(len(members))

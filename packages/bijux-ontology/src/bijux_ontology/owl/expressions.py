@@ -97,7 +97,7 @@ def check_expression_shapes(
             for head in heads:
                 try:
                     members = read_rdf_list(
-                        graph, head, max_items=budget.limits.max_work
+                        graph, head, max_items=budget.limits.max_work, budget=budget
                     )
                     budget.consume("work", len(members))
                 except LimitExceeded:

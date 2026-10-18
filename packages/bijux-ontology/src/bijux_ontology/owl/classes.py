@@ -83,7 +83,10 @@ class ClassContracts:
     def _named_members(self, head: Node) -> tuple[str, ...] | None:
         try:
             members = read_rdf_list(
-                self.graph, head, max_items=self.budget.limits.max_work
+                self.graph,
+                head,
+                max_items=self.budget.limits.max_work,
+                budget=self.budget,
             )
             self.budget.consume("work", len(members))
         except LimitExceeded:

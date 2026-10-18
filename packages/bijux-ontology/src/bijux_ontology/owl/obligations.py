@@ -192,7 +192,10 @@ class _NativeProofs:
                 continue
             try:
                 members = read_rdf_list(
-                    self.graph, heads[0], max_items=self.budget.limits.max_work
+                    self.graph,
+                    heads[0],
+                    max_items=self.budget.limits.max_work,
+                    budget=self.budget,
                 )
             except LimitExceeded:
                 raise
