@@ -5,7 +5,15 @@ import tracemalloc
 import pytest
 from rdflib import Dataset, Literal, Namespace, URIRef
 
-from bijux_ontology import InputError, Limits, RdfSource, plan_rdf_patch, prepare_source
+from bijux_ontology import (
+    Budget,
+    InputError,
+    LimitExceeded,
+    Limits,
+    RdfSource,
+    plan_rdf_patch,
+    prepare_source,
+)
 
 E = Namespace("urn:graph-scope:")
 
@@ -48,3 +56,14 @@ def test_prepared_graph_names_exhaust_before_large_temporary_copies() -> None:
     finally:
         if not tracing:
             tracemalloc.stop()
+
+
+def test_warm_pinned_reader_requalifies_effective_graph_metadata() -> None:
+    name = "urn:graph-scope:" + "g" * 100_000
+    dataset = Dataset()
+    dataset.graph(URIRef(name)).add((E.record, E.value, Literal("selected")))
+    source = prepare_source(RdfSource(dataset, graph_name=name))
+    assert len(source._read()) == 1
+    with pytest.raises(LimitExceeded, match="max_bytes"):
+        source._read(budget=Budget(Limits(max_bytes=1000)))
+    assert len(source._read()) == 1
