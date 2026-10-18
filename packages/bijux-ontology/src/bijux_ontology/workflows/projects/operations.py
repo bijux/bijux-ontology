@@ -188,6 +188,7 @@ def run_check(
             **kwargs,
             closed_targets=boolean(job.get("closed_targets", False)),
             limits=config.limits,
+            budget=budget,
         )
     if kind == "models":
         return check_models(

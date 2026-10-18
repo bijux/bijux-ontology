@@ -1,10 +1,12 @@
 """Selected SKOS integrity conditions stay distinct from authoring policy."""
 
+import pytest
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, SKOS, XSD
 
-from bijux_ontology.limits import Limits
+from bijux_ontology.errors import InputError
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.skos.checking import XL, check_skos
 from bijux_ontology.skos.xl import describe_xl_label, xl_labels
 from bijux_ontology.vocabulary import Vocabulary
@@ -391,3 +393,18 @@ def test_selected_deprecated_member_uses_support_without_selecting_other_members
     assert [(issue.code, issue.location) for issue in report.issues] == [
         ("skos.policy.deprecated_active", str(EX.A))
     ]
+
+
+def test_repeated_skos_checks_share_the_supplied_operation_budget() -> None:
+    graph = Graph().add((EX.A, RDF.type, SKOS.Concept))
+    graph.add((EX.A, SKOS.prefLabel, Literal("Name", lang="en")))
+    view = inspect_vocabulary(graph)
+    measured = Budget()
+    assert check_skos(view, budget=measured).verified
+    required_work = measured.limits.max_work - measured.remaining("work")
+    shared = Budget(Limits(max_work=required_work))
+    assert check_skos(view, budget=shared).verified
+    assert check_skos(view, budget=shared).outcome == "exhausted"
+    assert check_skos(view).verified
+    with pytest.raises(InputError, match="matching limits"):
+        check_skos(graph, limits=Limits(max_work=1), budget=Budget())
