@@ -288,6 +288,13 @@ subjects, graphs and predicates retain their distinct scopes.
 
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
 
+`vocabulary.lexical.prepare_lexical_index(view, fields=..., languages=...)`
+reuses the selected vocabulary's lexical inventory for repeated `autocomplete`
+and `suggest` calls. Results retain labels, identifiers, languages, source roles
+and ranking evidence. Suggestions allow one codepoint insertion, deletion or
+substitution; they never replace identifiers or assert semantic mappings.
+Inspect both `.report.complete` and `.truncated` when consuming bounded results.
+
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
 `rdf.skolem.skolemize(source, caller_owned_base)` names blank resources with
