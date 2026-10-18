@@ -19,6 +19,7 @@ from bijux_ontology.vocabulary.relation_paths import (
     RelationSequence,
     RelationStep,
     check_relation_path,
+    find_relation_path,
     relation_enumeration,
 )
 from bijux_ontology.vocabulary.restrictions import project_restrictions
@@ -78,6 +79,9 @@ def test_typed_language_requires_real_existential_and_retains_authored_edges() -
     for source in (EX.Universal, EX.Raw, EX.Other):
         failed = check_relation_path(view, str(source), LANGUAGE, endpoint=goal)
         assert failed.status == "nonmatch" and failed.report.outcome == "disagreement"
+        observed = find_relation_path(view, str(source), LANGUAGE, endpoint=goal)
+        assert observed.status == "nonmatch" and observed.report.verified
+        assert not observed.steps and observed.endpoint is None
     raw = check_relation_path(
         view,
         str(EX.Raw),

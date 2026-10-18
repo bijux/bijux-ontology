@@ -1,6 +1,6 @@
 """Bounded typed relation languages and application membership evidence."""
 
-from .checking import check_relation_path, relation_enumeration
+from .checking import check_relation_path, find_relation_path, relation_enumeration
 from .types import (
     RelationChoice,
     RelationEndpoint,
@@ -22,5 +22,6 @@ __all__ = [
     "RelationStep",
     "RelationWitness",
     "check_relation_path",
+    "find_relation_path",
     "relation_enumeration",
 ]

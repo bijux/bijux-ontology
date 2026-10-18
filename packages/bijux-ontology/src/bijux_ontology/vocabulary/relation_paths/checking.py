@@ -244,6 +244,32 @@ def check_relation_path(
     return _run(view, source, path, endpoint, projections, max_depth, operation, True)
 
 
+def find_relation_path(
+    view: VocabularyView,
+    source: str,
+    path: RelationSpec,
+    *,
+    endpoint: RelationEndpoint,
+    projections: Selection[RestrictionProjection] | None = None,
+    max_depth: int | None = None,
+    budget: Budget | None = None,
+) -> RelationPathResult:
+    """Observe a selected path without requiring a matching endpoint.
+
+    A complete nonmatch verifies search coverage and retains status ``nonmatch``;
+    it does not establish a path. Required contract callers use
+    ``check_relation_path``. Unknown scope and truncation remain incomplete.
+    """
+    if (
+        not isinstance(view, VocabularyView)
+        or budget is not None
+        and not isinstance(budget, Budget)
+    ):
+        raise InputError("Expected VocabularyView and optional shared Budget")
+    operation = budget if budget is not None else Budget(view.limits)
+    return _run(view, source, path, endpoint, projections, max_depth, operation, False)
+
+
 def relation_enumeration(
     view: VocabularyView,
     candidates: Sequence[str],
