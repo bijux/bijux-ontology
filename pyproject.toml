@@ -12,10 +12,12 @@ members = ["packages/*"]
 [tool.uv.sources]
 bijux-ontology = { workspace = true }
 bijux-ontology-dev = { workspace = true }
+bijux-ontology-reasoning = { workspace = true }
 
 [dependency-groups]
 dev = [
   "bijux-ontology-dev",
+  "bijux-ontology-reasoning",
   "bijux-ontology[jsonld,shacl,pydantic,linkml,templates,xsd,patterns,sssom]",
   "build>=1.2,<2",
   "hatchling>=1.27,<2",

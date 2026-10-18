@@ -576,6 +576,14 @@ application policy. Full OWL profile requests require a separate capability and
 remain unverified when unavailable. `classify_statement` retains per-position
 roles: the two occurrences in `C rdf:type C` are individual and class.
 
+Install the optional `bijux-ontology-reasoning` distribution for actual OWL 2
+DL/EL/QL/RL membership. Its `profiles` API requires an explicit Java executable
+and pinned OWLAPI bundle; the package README gives the build commands.
+`check_profile(backend, source, profile="owl2-dl", imports=offline_map)` retains
+native violations and loader metadata. Unparsed triples, guessed declarations or
+missing imports prevent acceptance. This finite POSIX profile accepts one
+physical graph per document; it does not establish consistency or satisfiability.
+
 Use `check_data_compatibility(data, vocabulary)` for finite actual RDF checks
 of named domain/range consequences, explicit disjoint types, property kinds and
 supported literal range membership. Select the data `graph_name` or `union` and

@@ -9,7 +9,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_node
+from bijux_ontology.rdf.terms import bound_node, independent_blank_scopes
 from bijux_ontology.reports import Report
 from bijux_ontology.shacl.checking import ShaclResult
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
@@ -52,25 +52,14 @@ def portable_roles(profile: ShapeProfile, data: PreparedSource, budget: Budget) 
     This tests owned term objects, never coincident blank labels. Anonymous shape
     structure within one role remains portable through ordinary RDF isomorphism.
     """
-    seen: set[int] = set()
-    portable = True
-    for source in (profile.source, profile.ontology, data):
-        if source is None:
-            continue
-        current: set[int] = set()
-        for triple in source._read(budget=budget):
-            budget.consume("work")
-            for node in triple:
-                bound_node(node, budget)
-                if isinstance(node, BNode):
-                    budget.consume("states")
-                    identity = id(node)
-                    if identity in seen:
-                        portable = False
-                    current.add(identity)
-        budget.consume("states", len(current))
-        seen.update(current)
-    return portable
+    return independent_blank_scopes(
+        (
+            source._read(budget=budget)
+            for source in (profile.source, profile.ontology, data)
+            if source is not None
+        ),
+        budget,
+    )
 
 
 def validate_profile(

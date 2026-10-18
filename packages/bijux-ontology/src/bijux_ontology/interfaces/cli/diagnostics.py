@@ -181,7 +181,10 @@ _CODES = {
         "sample_contract_conflict type_unverified value_kind_conflict "
         "value_unverified".split()
     ),
-    "owl": frozenset(("assertion_contradiction", "assertion_unverified")),
+    "owl": frozenset(
+        "assertion_contradiction assertion_unverified backend_unavailable "
+        "loader_unverified profile_unverified profile_violation".split()
+    ),
     "ontology": frozenset(
         "annotation_shape annotation_statement_missing cardinality_shape "
         "obligation_unknown obligation_contradicted obligation_exhausted "
@@ -476,11 +479,10 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         'FieldDeclaration("image", "urn:image", (ValueDeclaration("iri"),))',
     ),
     "owl": (
-        "selected finite OWL assertion witnesses",
-        "Original assertions establish a contradiction or leave required work "
-        "unresolved.",
-        "Inspect retained assertion and identity premises, selected graph and datatype "
-        "map; absence of a finite witness does not establish consistency.",
+        "selected OWL assertions or maintained profile membership",
+        "Assertions or actual profile checking report a finding or required unknown.",
+        "Inspect the selected graph, assertion premises, backend capability and loader "
+        "qualification; profile membership does not establish consistency.",
         "check_assertion_witnesses(source)",
     ),
     "ontology": (
