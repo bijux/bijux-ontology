@@ -342,6 +342,13 @@ Every module supplies nonempty representative `ContextCase` usages and
 pass before `.context` is returned. Protection, nullification and scoped
 contexts use maintained processing; qualification covers the declared cases.
 
+`rdf.query_transforms.transform_sparql(source, SparqlProgram(...), after_checks=...)`
+executes a finite local `CONSTRUCT` or single `UPDATE` on one selected physical
+graph, returning an exact patch and `MigrationCandidate`. Use `SparqlBinding`
+parameters and explicit typed string constants. Retrieval, graph management,
+assignment, aggregation, `VALUES`, subqueries and anonymous WHERE syntax are
+outside this profile. Required after checks and explicit acceptance gate export.
+
 `jsonld.publication.check_context_publication(context, PublicationContract(...))`
 checks selected root protection, vocabulary/base and local version promises.
 Supply retained `ContextCase` usages and actual `ContextOverride` scenarios for
