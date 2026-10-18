@@ -222,6 +222,10 @@ def run_command(
         from bijux_ontology.interfaces.cli.upgrades import upgrade
 
         return upgrade(options)
+    if options.action == "shex":
+        from bijux_ontology.interfaces.cli.shex import check_shex
+
+        return check_shex(options)
     if options.action != "inspect":
         return CommandResult(
             run_check(options, completed=completed, configuration=configuration)

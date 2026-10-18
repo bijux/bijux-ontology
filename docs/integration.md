@@ -1467,3 +1467,14 @@ derivations; explicitly asserted duplicates remain asserted. Only a fully checke
 update publishes a new revision. Failed updates expose no replacement closure.
 Ambiguous anonymous correspondence stays unavailable; rule callbacks remain
 ordinary trusted Python. Close the session when its retained inputs are no longer needed.
+
+Install `[shex]` for `bijux_ontology.shex.validate_shex` with explicit `ShexSchema`
+text and typed `ShexBinding` obligations. The qualified native profile accepts
+ShapeDecl ShExJ, absolute IRIs, supplied local imports and positive structural
+expressions, including OneOf, inverse, CLOSED and EXTRA. Datatype constraints
+support strings and whitespace-free integers of at most eighteen decimal digits.
+Other dialects, scalar domains, actions and unsupported features remain unknown.
+Each obligation retains its actual native result; incomplete work cannot verify.
+The installed command accepts `shex data.ttl schema.json --schema-iri urn:schema
+--binding urn:record urn:shape --schema-import urn:child child.json --json`.
+It uses the same owned native execution and completed-result recovery as Python.

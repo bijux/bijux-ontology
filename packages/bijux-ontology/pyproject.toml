@@ -19,6 +19,9 @@ dependencies = [
 bijux-ontology = "bijux_ontology.interfaces.cli:main"
 
 [project.optional-dependencies]
+shex = [
+    "pyrudof==0.3.20",
+]
 quantities = [
     "pint>=0.25.3,<0.26",
 ]

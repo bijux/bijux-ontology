@@ -28,6 +28,9 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "shex": frozenset(
+        "unsupported input_invalid backend_unavailable not_matched engine_error".split()
+    ),
     "quantity": frozenset(
         "unit_unverified backend_unverified field_missing dimension_mismatch "
         "bound_mismatch unverified".split()
@@ -365,6 +368,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "shex": (
+        "explicit supplied ShEx node-to-shape obligations",
+        "A native ShEx obligation fails or exceeds its qualified capability.",
+        "Install bijux-ontology[shex], supply local ShapeDecl ShExJ and imports, "
+        "and inspect each exact binding and its native diagnostics.",
+        "bijux-ontology shex data.ttl schema.json --schema-iri urn:schema "
+        "--binding urn:record urn:shape --json",
+    ),
     "quantity": (
         "explicit selected-record quantity contracts",
         "A quantity differs from its reference-unit contract "
