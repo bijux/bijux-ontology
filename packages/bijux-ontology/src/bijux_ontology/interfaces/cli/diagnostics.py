@@ -75,6 +75,7 @@ _CODES = {
         "structure_mismatch binding_unverified".split()
     ),
     "adapter": frozenset(
+        "bioregistry_unverified bioregistry_input_error "
         "schema_unverified schema_mismatch "
         "alias_unverified class_mapping_unverified computed_output_unverified "
         "emission_unverified excluded_emission_conflict mapping_conflict "

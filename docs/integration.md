@@ -37,6 +37,15 @@ Unknown namespaces may be explicitly excluded. Missing rules and unsupported
 alternate recognition remain unverified, and valid accessions imply no term
 existence.
 
+`interfaces.adapters.bioregistry.read_bioregistry` imports explicitly selected
+records from supplied bytes with a required SHA256 and revision label. Original
+records remain available; supported namespace aliases feed the existing registry.
+Use `BioregistryOverride` for local namespaces, aliases and `AccessionRule`
+replacements. Source patterns and unsupported provider semantics remain visible;
+local rules do not establish equivalence to them. `read_bioregistry_bundle`
+loads an explicit member through the ordinary offline bundle reader. Neither
+operation creates ontology declarations.
+
 Pass `compression="gzip"` with an explicit RDF `format` for paths, bytes or
 binary streams in `RdfSource` or `prepare_source`. `max_compressed_bytes` bounds
 input bytes; `max_bytes` bounds expanded bytes, and both consume the shared byte
