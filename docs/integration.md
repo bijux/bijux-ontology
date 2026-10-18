@@ -1087,3 +1087,12 @@ The initial profile requires one physical graph and named selected owners with
 distinct orders; unsupported rules, exhausted closure and missing required
 `MigrationCheck` callbacks prevent a verified publication candidate. The result
 uses the ordinary checked migration export and explicit acceptance gate.
+
+`workflows.upgrades.values.compare_controlled_values` checks the same actual
+stored record values against explicit before/after `ValueEnumeration` contracts.
+Reuse `select_concepts` for scheme, subtree and retirement policies. Inspect exact
+source statements and introduced/persistent/resolved/uncertain membership; a new
+break requires known old permission and known new exclusion. Open or incomplete
+membership remains unknown, and unused vocabulary changes do not create data
+breaks. `ValueReplacement` evaluates an advisory proposal without rewriting data
+or approving a migration. Every selected record/field pair requires an occurrence.
