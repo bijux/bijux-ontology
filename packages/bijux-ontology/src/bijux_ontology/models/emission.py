@@ -38,6 +38,7 @@ from bijux_ontology.jsonld.resources import DocumentLoader, OfflineDocumentLoade
 from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.terms import literal_term, term_key
@@ -181,6 +182,7 @@ def _literal_result(
     budget: Budget,
     native: dict[str, Literal],
     direction_check: DirectionCheck | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> Report:
     """Validate actual lexical values, obtaining native spelling from PyLD itself."""
     if direction_check is not None:
@@ -254,11 +256,16 @@ def _literal_result(
                 ),
             ),
         )
-    return check_literal(term, location=where)
+    return check_literal(
+        term, location=where, datatype_registry=datatype_registry, budget=budget
+    )
 
 
 def _group_terms(
-    items: Sequence[ObservedOccurrence], native: dict[str, Literal], budget: Budget
+    items: Sequence[ObservedOccurrence],
+    native: dict[str, Literal],
+    budget: Budget,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> tuple[TermKey, ...] | None:
     """Read exact discriminator terms; keep list heads separate from members."""
     keys = []
@@ -284,7 +291,9 @@ def _group_terms(
                 )
             else:
                 if item.value_json not in native:
-                    result = _literal_result(item, "", budget, native)
+                    result = _literal_result(
+                        item, "", budget, native, datatype_registry=datatype_registry
+                    )
                     if not result.verified:
                         return None
                 cached = native.get(item.value_json)
@@ -309,6 +318,7 @@ def check_emission(
     budget: Budget | None = None,
     rdf_direction: DirectionPolicy | None = None,
     _corpus: _CorpusEvidence | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> Report:
     """Check selected actual outputs, without claiming all hypothetical instances.
 
@@ -321,6 +331,10 @@ def check_emission(
     shared standards-processed usage snapshot, never a second expansion engine.
     Type checks compare explicit emitted types, without ontology entailment.
     """
+    if datatype_registry is not None and not isinstance(
+        datatype_registry, DatatypeRegistry
+    ):
+        raise InputError("Expected an explicit DatatypeRegistry")
     if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
         raise InputError("Unknown RDF direction policy")
     if budget is not None and limits is not None and budget.limits != limits:
@@ -649,7 +663,12 @@ def check_emission(
                     literal_valid = None
                     if fact.traits.kind == "literal":
                         result = _literal_result(
-                            fact, field_where, budget, native_literals, direction_check
+                            fact,
+                            field_where,
+                            budget,
+                            native_literals,
+                            direction_check,
+                            datatype_registry,
                         )
                         checked += result.checked
                         issues.extend(result.issues)
@@ -916,6 +935,7 @@ def check_emission(
                             budget,
                             native_literals,
                             direction_check,
+                            datatype_registry,
                         )
                         checked += result.checked
                         issues.extend(result.issues)
@@ -1247,6 +1267,7 @@ def check_emission(
                                 budget,
                                 native_literals,
                                 direction_check,
+                                datatype_registry,
                             )
                             checked += result.checked
                             issues.extend(result.issues)
@@ -1337,7 +1358,9 @@ def check_emission(
                 terms[field.name] = (
                     None
                     if selected_facts is None or not source_complete
-                    else _group_terms(selected_facts, native_literals, budget)
+                    else _group_terms(
+                        selected_facts, native_literals, budget, datatype_registry
+                    )
                 )
             if _corpus is not None:
                 _corpus.scope(binding, states, terms)

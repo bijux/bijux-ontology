@@ -8,6 +8,7 @@ from rdflib import Graph, URIRef
 from bijux_ontology.declarations.types import FieldDeclaration, ModelDeclaration
 from bijux_ontology.limits import Budget
 from bijux_ontology.owl.properties import PropertyContract, property_contract
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals import Regime
 
 
@@ -23,10 +24,18 @@ class ModelObligation:
 class ModelContracts:
     """Own property caches and finite propagation within one checking operation."""
 
-    def __init__(self, graph: Graph, regime: Regime, budget: Budget) -> None:
+    def __init__(
+        self,
+        graph: Graph,
+        regime: Regime,
+        budget: Budget,
+        *,
+        datatype_registry: DatatypeRegistry | None = None,
+    ) -> None:
         self.graph = graph
         self.regime = regime
         self.budget = budget
+        self.datatype_registry = datatype_registry
         self._properties: dict[tuple[str, bool], PropertyContract] = {}
 
     def property(self, field: FieldDeclaration) -> PropertyContract:

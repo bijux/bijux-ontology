@@ -102,6 +102,11 @@ from bijux_ontology.owl.obligations import (
 )
 from bijux_ontology.rdf.canonical.export import CanonicalRDF, canonicalize_rdf
 from bijux_ontology.rdf.comparison import compare_rdf
+from bijux_ontology.rdf.datatype_evaluators import (
+    DatatypeConversion,
+    DatatypeEvaluator,
+    DatatypeRegistry,
+)
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
@@ -243,6 +248,9 @@ __all__ = [
     "CorpusCheck",
     "CorpusWitness",
     "DataView",
+    "DatatypeConversion",
+    "DatatypeEvaluator",
+    "DatatypeRegistry",
     "DocumentFormCheck",
     "EntitySelector",
     "ExecutionResult",

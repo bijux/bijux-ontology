@@ -25,6 +25,7 @@ from bijux_ontology.owl.obligations import (
     OntologyObligation,
     prove_obligations,
 )
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals import Regime, check_literal
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.loading import load_vocabulary
@@ -49,6 +50,7 @@ def check_models(
     limits: Limits | None = None,
     budget: Budget | None = None,
     rdf_direction: DirectionPolicy | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> Report:
     """Check finite model declarations against explicit supplied RDF statements.
 
@@ -58,6 +60,10 @@ def check_models(
     """
     if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
         raise InputError("Unknown RDF direction policy")
+    if datatype_registry is not None and not isinstance(
+        datatype_registry, DatatypeRegistry
+    ):
+        raise InputError("Expected an explicit DatatypeRegistry")
     if regime not in ("application", "rdf", "owl-dl"):
         raise InputError("Unknown semantic regime")
     if budget is not None and limits is not None and budget.limits != limits:
@@ -75,7 +81,9 @@ def check_models(
     complete = True
     try:
         graph = sources._read(budget=budget).graph
-        contracts = ModelContracts(graph, regime, budget)
+        contracts = ModelContracts(
+            graph, regime, budget, datatype_registry=datatype_registry
+        )
         classes = ClassContracts(graph, budget)
         budget.consume("triples", len(graph))
         registry = index_models(models, budget, issues)
@@ -135,7 +143,12 @@ def check_models(
                                 )
                             continue
                         issues.extend(
-                            check_literal(sample, location=sample_location).issues
+                            check_literal(
+                                sample,
+                                location=sample_location,
+                                datatype_registry=datatype_registry,
+                                budget=budget,
+                            ).issues
                         )
                         expected = (
                             str(RDF.langString)

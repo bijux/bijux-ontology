@@ -26,6 +26,7 @@ from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget
 from bijux_ontology.owl.classes import ClassContracts
 from bijux_ontology.owl.properties import PropertyContract
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals import Regime, check_literal, datatype_relation
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
@@ -99,6 +100,7 @@ def _literal_comparison(
     budget: Budget,
     *,
     encoded: bool = False,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> list[Issue]:
     datatype = (
         str(RDF.langString) if isinstance(value.language, str) else value.datatype
@@ -107,7 +109,14 @@ def _literal_comparison(
     if (
         not encoded
         and datatype
-        and datatype_relation(datatype, datatype, regime=regime) == "unknown"
+        and datatype_relation(
+            datatype,
+            datatype,
+            regime=regime,
+            datatype_registry=datatype_registry,
+            budget=budget,
+        )
+        == "unknown"
     ):
         issues.append(
             Issue(
@@ -129,7 +138,13 @@ def _literal_comparison(
             classes.ancestors((expected,))[1]
         )
         relation = (
-            datatype_relation(datatype, expected, regime=regime)
+            datatype_relation(
+                datatype,
+                expected,
+                regime=regime,
+                datatype_registry=datatype_registry,
+                budget=budget,
+            )
             if datatype and not expression
             else "unknown"
         )
@@ -186,6 +201,7 @@ def _branch_issues(
     budget: Budget,
     *,
     rdf_direction: DirectionPolicy | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> list[Issue]:
     issues: list[Issue] = []
     if (
@@ -227,6 +243,7 @@ def _branch_issues(
                 regime,
                 budget,
                 rdf_direction=rdf_direction,
+                datatype_registry=datatype_registry,
             )
         )
         return issues
@@ -371,6 +388,7 @@ def _branch_issues(
                 regime,
                 budget,
                 encoded=encoded and declared_datatype is None,
+                datatype_registry=datatype_registry,
             )
         )
     else:
@@ -516,6 +534,7 @@ def _field_issues(
                     regime,
                     contracts.budget,
                     rdf_direction=rdf_direction,
+                    datatype_registry=contracts.datatype_registry,
                 )
             )
     return checked, issues
@@ -565,6 +584,8 @@ def _emission_issues(
                         check_literal(
                             term,
                             location=f"{where}/groups/{group.identifier}/{scenario.identifier}",
+                            datatype_registry=contracts.datatype_registry,
+                            budget=contracts.budget,
                         ).issues
                     )
                 traits = (

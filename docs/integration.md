@@ -342,6 +342,15 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
 
+`DatatypeRegistry` owns exact custom-IRI `DatatypeEvaluator` entries. Supply
+conjunctive sample validators, an optional bounded scalar converter and an
+explicit directional datatype relation independently. `convert` returns a
+`DatatypeConversion` retaining the original literal; conversion establishes no
+inclusion relation. Pass `datatype_registry=` to fresh model, data, source/native
+emission or generic serializer checks. Missing capabilities and callback failures
+remain unverified; standard datatypes cannot be replaced. Callbacks execute in
+process with their ordinary state and are evaluated afresh by each operation.
+
 `check_index_maps(prepared_usages, expectations)` checks exact source map keys
 and processor-qualified correspondence using `IndexMapExpectation` and named,
 graph-qualified `IndexBinding` records. Raw key facts survive unresolved origin;

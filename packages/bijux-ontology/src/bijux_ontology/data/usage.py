@@ -6,6 +6,7 @@ from rdflib.namespace import OWL, RDF, RDFS
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -26,6 +27,7 @@ def check_data_usage(
     check_types: bool = True,
     check_literals: bool = True,
     limits: Limits | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> Report:
     """Check vocabulary positions, not ordinary instance identifiers.
 
@@ -33,6 +35,10 @@ def check_data_usage(
     Dataset selection is explicit. Lexical checking examines supplied literals
     only and retains unsupported datatype outcomes without rewriting values.
     """
+    if datatype_registry is not None and not isinstance(
+        datatype_registry, DatatypeRegistry
+    ):
+        raise InputError("Expected an explicit DatatypeRegistry")
     selected = limits if limits is not None else Limits()
     budget = Budget(selected)
     prepared = (
@@ -88,7 +94,12 @@ def check_data_usage(
                 checked += report.checked
                 issues.extend(report.issues)
             if check_literals and isinstance(value, Literal):
-                report = check_literal(value, location=location)
+                report = check_literal(
+                    value,
+                    location=location,
+                    datatype_registry=datatype_registry,
+                    budget=budget,
+                )
                 checked += report.checked
                 issues.extend(report.issues)
     except LimitExceeded as error:

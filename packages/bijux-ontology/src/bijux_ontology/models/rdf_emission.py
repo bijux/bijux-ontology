@@ -14,6 +14,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
@@ -91,6 +92,7 @@ def check_rdf_emission(
     limits: Limits | None = None,
     budget: Budget | None = None,
     rdf_direction: DirectionPolicy | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> Report:
     """Check actual selected RDF using the existing value and occurrence contracts.
 
@@ -103,6 +105,10 @@ def check_rdf_emission(
     """
     if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
         raise InputError("Unknown RDF direction policy")
+    if datatype_registry is not None and not isinstance(
+        datatype_registry, DatatypeRegistry
+    ):
+        raise InputError("Expected an explicit DatatypeRegistry")
     if not isinstance(source, PreparedSource):
         raise InputError("RDF emission checking requires an owned PreparedSource")
     if isinstance(cast(object, usages), (str, bytes)) or not isinstance(
@@ -402,7 +408,12 @@ def check_rdf_emission(
                             literal = (
                                 Report("literal", 1)
                                 if projected is not None
-                                else check_literal(node, location=field_where)
+                                else check_literal(
+                                    node,
+                                    location=field_where,
+                                    datatype_registry=datatype_registry,
+                                    budget=budget,
+                                )
                             )
                             literal_valid = literal.verified
                             checked += literal.checked

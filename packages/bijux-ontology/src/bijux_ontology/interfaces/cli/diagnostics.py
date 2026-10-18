@@ -101,7 +101,8 @@ _CODES = {
         "value_kind_invalid".split()
     ),
     "literal": frozenset(
-        "datatype_unverified lexical_invalid lexical_unverified".split()
+        "conversion_unverified datatype_unverified "
+        "lexical_invalid lexical_unverified".split()
     ),
     "models": frozenset(
         "direction_unverified contextual_direction_unverified "
