@@ -1,8 +1,11 @@
 """Sample real caller-owned serializer output against explicit semantic contracts."""
 
+from __future__ import annotations
+
 import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from rdflib import Graph
 
@@ -17,6 +20,9 @@ from bijux_ontology.vocabulary.view import Vocabulary
 
 from .checking import check_models
 from .emission import ModelUsage, check_emission
+
+if TYPE_CHECKING:
+    from .corpus.types import _CorpusEvidence
 
 
 @dataclass(frozen=True)
@@ -58,6 +64,7 @@ def check_instance(
     document_loader: DocumentLoader | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
+    _corpus: _CorpusEvidence | None = None,
 ) -> InstanceCheck:
     """Call the actual serializer once with exact options and check its output.
 
@@ -94,6 +101,7 @@ def check_instance(
         base=base,
         document_loader=document_loader,
         budget=operation,
+        _corpus=_corpus,
     )
 
 
@@ -131,6 +139,7 @@ def check_serialized(
     document_loader: DocumentLoader | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
+    _corpus: _CorpusEvidence | None = None,
 ) -> InstanceCheck:
     """Check one already serialized output using the shared semantic budget.
 
@@ -178,6 +187,7 @@ def check_serialized(
                 base=base,
                 document_loader=document_loader,
                 budget=operation,
+                _corpus=_corpus,
             )
         )
     except Exception as error:

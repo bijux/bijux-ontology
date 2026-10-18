@@ -1,13 +1,19 @@
 """Finite scoped emission states shared by declaration and output checking."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping
 from dataclasses import dataclass
 from itertools import combinations
+from typing import TYPE_CHECKING
 
 from bijux_ontology.declarations.types import EmissionGroup, ModelDeclaration
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue
+
+if TYPE_CHECKING:
+    from .corpus.types import _CorpusEvidence
 
 TermKey = tuple[str | None, ...]
 
@@ -156,6 +162,7 @@ def check_groups(
     *,
     where: str,
     budget: Budget,
+    _corpus: _CorpusEvidence | None = None,
 ) -> tuple[Issue, ...]:
     """Check actual RDF occurrences in one established source/entity/graph scope."""
     issues = []
@@ -205,20 +212,36 @@ def check_groups(
         if limitation or not group.scenarios or unknown:
             continue
         present = frozenset(name for name in group.fields if states.get(name) is True)
+        collect = _corpus is not None and _corpus.wants_scenarios(
+            model.identifier, group.identifier
+        )
         matched = unresolved = False
+        matched_ids = []
         for case in group.scenarios:
             budget.consume("work")
             if frozenset(case.present) != present:
                 continue
             if case.condition is None:
                 matched = True
-                break
+                if not collect:
+                    break
+                matched_ids.append(case.identifier)
+                continue
             terms = values.get(case.condition.field)
             if terms is None or len(terms) != 1:
                 unresolved = True
             elif terms[0] == term_key(case.condition.equals):
                 matched = True
-                break
+                if not collect:
+                    break
+                matched_ids.append(case.identifier)
+        if collect and _corpus is not None:
+            _corpus.scenarios(
+                model.identifier,
+                group.identifier,
+                tuple(matched_ids),
+                unresolved=unresolved,
+            )
         if not matched:
             issues.append(
                 Issue(

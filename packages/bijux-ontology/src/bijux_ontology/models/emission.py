@@ -1,8 +1,10 @@
 """Explicit representative JSON-LD output compared with model declarations."""
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from dataclasses import KW_ONLY, dataclass, replace
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from rdflib import RDF, Literal, URIRef
 
@@ -52,6 +54,9 @@ from .occurrences import check_occurrences
 from .registry import index_models
 from .value_matching import identity_matches as _identity_matches
 from .value_matching import matches_value
+
+if TYPE_CHECKING:
+    from .corpus.types import _CorpusEvidence
 
 
 @dataclass(frozen=True)
@@ -251,6 +256,7 @@ def check_emission(
     allowed_drops: frozenset[str] = frozenset(),
     limits: Limits | None = None,
     budget: Budget | None = None,
+    _corpus: _CorpusEvidence | None = None,
 ) -> Report:
     """Check selected actual outputs, without claiming all hypothetical instances.
 
@@ -581,6 +587,14 @@ def check_emission(
                         _matches(value, fact, registry, prepared.entities)
                         for value in field.values
                     )
+                    if _corpus is not None:
+                        _corpus.branch(
+                            binding,
+                            model.identifier,
+                            field.name,
+                            matches,
+                            empty=fact.empty,
+                        )
                     if True not in matches:
                         issues.append(
                             Issue(
@@ -825,6 +839,14 @@ def check_emission(
                         _matches(value, occurrence, registry, prepared.entities)
                         for value in field.values
                     )
+                    if _corpus is not None:
+                        _corpus.branch(
+                            binding,
+                            model.identifier,
+                            field.name,
+                            matches,
+                            empty=occurrence.empty,
+                        )
                     if True not in matches:
                         issues.append(
                             Issue(
@@ -1022,7 +1044,11 @@ def check_emission(
                 )
         for binding in bindings:
             model = registry.get(binding.model)
-            if model is None or not model.emission_groups:
+            if model is None or not (
+                model.emission_groups
+                or _corpus is not None
+                and _corpus.fields(model.identifier)
+            ):
                 continue
             states: dict[str, bool | None] = {}
             terms: dict[str, tuple[TermKey, ...] | None] = {}
@@ -1033,6 +1059,8 @@ def check_emission(
                 for case in group.scenarios
                 if case.condition is not None
             )
+            if _corpus is not None:
+                needed.update(_corpus.fields(model.identifier))
             entity = binding.reference is not None or binding.entity
             key = entity_for(binding) if entity else None
             description = prepared.entities.get(key) if key is not None else None
@@ -1113,6 +1141,14 @@ def check_emission(
                             _matches(value, fact, registry, prepared.entities)
                             for value in field.values
                         )
+                        if _corpus is not None:
+                            _corpus.branch(
+                                binding,
+                                model.identifier,
+                                field.name,
+                                matches,
+                                empty=fact.empty,
+                            )
                         if True not in matches:
                             issues.append(
                                 Issue(
@@ -1178,12 +1214,15 @@ def check_emission(
                     if selected_facts is None or not source_complete
                     else _group_terms(selected_facts, native_literals, budget)
                 )
+            if _corpus is not None:
+                _corpus.scope(binding, states, terms)
             checked += len(model.emission_groups)
             issues.extend(
                 check_groups(
                     model,
                     states,
                     terms,
+                    _corpus=_corpus,
                     where=f"entity[{binding.reference}]"
                     if binding.reference is not None
                     else location(binding.path),

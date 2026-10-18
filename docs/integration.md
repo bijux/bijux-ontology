@@ -69,6 +69,13 @@ exhaustion remain distinct. `allow_empty=True` explicitly excludes only the
 nonempty-data requirement. Project jobs use `kind: "query-rules"`, a named RDF
 `source` and a `rules` filename; every rule retains its own scope.
 
+Use `check_serializer_corpus(cases, models, vocabulary=vocabulary,
+required_branches=(BranchCoverage("record", "value", 0),))` to require actual
+sample coverage. Each `SerializerCase` calls its serializer once with owned
+options and retains checked output. `ScenarioCoverage` selects declared emission
+scenarios. Overlapping alternatives need an actual unambiguous discriminator;
+coverage never hides a failing sample or proves universal output correctness.
+
 `probe_context(context, [ContextProbe(model, type_values=("Record",))])`
 qualifies generated representatives for explicitly declared field branches
 through maintained JSON-LD processing. Compact `type_values` select an actual

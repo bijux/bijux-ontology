@@ -28,6 +28,7 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "serialization": frozenset(("coverage_missing",)),
     "selector": frozenset(
         "parent_count_mismatch count_mismatch "
         "structure_mismatch binding_unverified".split()
@@ -175,6 +176,12 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "serialization": (
+        "required representative serializer coverage",
+        "Actual cases do not establish every selected alternative or scenario.",
+        "Supply unambiguous cases for each required branch and retain failed samples.",
+        'BranchCoverage("record", "value", 0)',
+    ),
     "selector": (
         "explicit JSON-LD match coverage",
         "Selected parents lack required matches or actual bindings are ambiguous.",

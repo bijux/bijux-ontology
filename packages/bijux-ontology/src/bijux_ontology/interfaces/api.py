@@ -69,6 +69,13 @@ from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
 from bijux_ontology.models.context_probes.checking import probe_context
 from bijux_ontology.models.context_probes.types import ContextProbe, ProbeSample
+from bijux_ontology.models.corpus import (
+    BranchCoverage,
+    CorpusCheck,
+    ScenarioCoverage,
+    SerializerCase,
+    check_serializer_corpus,
+)
 from bijux_ontology.models.emission import ModelUsage, check_emission
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
@@ -150,6 +157,7 @@ __all__ = [
     "Absent",
     "AcceptancePolicy",
     "ArrayItems",
+    "BranchCoverage",
     "Budget",
     "CanonicalRDF",
     "Change",
@@ -162,6 +170,7 @@ __all__ = [
     "ContractObligation",
     "ContractResult",
     "CorpusBranch",
+    "CorpusCheck",
     "CorpusWitness",
     "DataView",
     "EntitySelector",
@@ -218,8 +227,10 @@ __all__ = [
     "RegistryMerge",
     "Report",
     "ResourceError",
+    "ScenarioCoverage",
     "Selection",
     "SourceSelector",
+    "SerializerCase",
     "SubjectIdentity",
     "TemplateKey",
     "TermDeclaration",
@@ -246,6 +257,7 @@ __all__ = [
     "check_ontology",
     "check_project",
     "check_rdf_emission",
+    "check_serializer_corpus",
     "check_skos",
     "check_vocabulary",
     "combine_reports",
