@@ -1332,3 +1332,13 @@ null resets and nested/scoped contexts remain unsupported. `export_relocation`
 returns checked bytes for the ordinary atomic `write_export` protocol only after
 all required preservation checks verify. Intended identity changes require an
 explicit migration rather than this preservation policy.
+
+`jsonld.streams.check_jsonld_records` lazily checks explicit `JSONLDRecord` text or
+byte frames with independent bases, blank-node scopes and record budgets. One
+captured context owner is shared; only the current `last_result` is retained.
+An ordinary callback receives each prepared RDF source and its budget. The final
+stream report covers actual input exhaustion; malformed tails and early close
+remain incomplete, with cross-record obligations explicitly excluded.
+`interfaces.execution.record_streams.AsyncJSONLDRecords` bridges the same iterator
+with one admitted pull. Cancellation waits for that pull before joining its
+private thread; caller producers, loaders, callbacks and PyLD remain cooperative.

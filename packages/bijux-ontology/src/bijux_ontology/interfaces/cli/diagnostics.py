@@ -28,6 +28,7 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "jsonld": frozenset("record_unavailable stream_empty".split()),
     "mapping": frozenset(
         "endpoint_unverified endpoint_kind semantics_unverified relation_forbidden "
         "relation_conflict maximum_exceeded minimum_missing invalid_input "
@@ -336,6 +337,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "jsonld": (
+        "explicit independent JSON-LD document records",
+        "A required record capability is unavailable or no records were supplied.",
+        "Inspect the framed inputs, explicit bases, installed JSON-LD capability "
+        "and per-record reports; retain the unchecked tail as incomplete.",
+        "check_jsonld_records(records, record_limits=Limits())",
+    ),
     "mapping": (
         "explicit SSSOM interchange and mapping policy",
         "A supplied mapping row or required consumer scope failed qualification.",
