@@ -1423,3 +1423,10 @@ text-discriminator cases; `select_binding` captures an actual record without a
 fallback. Reuse its owned `.document`, or retain ordinary emission conditions and
 SHACL `hasValue` trait guards when checking other records. An enumeration alone
 does not reselect a changed trait. `closed_values()` requires complete evidence.
+
+`bijux_ontology.shacl.external_reports.ingest_external_report` reads an ordinary
+external SHACL report with its raw graph, typed findings and nested details.
+Producer scope/backend claims remain descriptive; even a conforming report cannot
+certify fresh local execution or omitted coverage. `aggregate_shacl_reports` keeps
+external and local report scopes separate, including equal blank labels, and
+retains required unknowns and externally asserted failures.

@@ -255,6 +255,9 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "external_aggregate_empty external_nonconformance "
+        "external_detail_unverified external_projection_incomplete "
+        "external_scope_missing external_proof_unverified external_structure_invalid "
         "partition_scope_unverified partition_input_error "
         "rules_unverified rules_input_error "
         "target_unavailable upgrade_unverified upgrade_target_removed "
