@@ -19,6 +19,7 @@ from bijux_ontology.limits import Limits
 from bijux_ontology.vocabulary import check_vocabulary
 from bijux_ontology.workflows.projects.bundles import load_bundle
 from bijux_ontology.workflows.projects.checking import check_project
+from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 EX = Namespace("https://example.org/")
 
@@ -230,3 +231,138 @@ def test_directory_symlinks_and_manifest_path_escape_fail_without_copying(
     (source / "project.json").write_text(json.dumps(manifest))
     with pytest.raises(InputError, match="portable"):
         load_bundle(source)
+
+
+def dependency_directories(root: Path) -> tuple[Path, Path]:
+    """Separate actual RDF and relative context imports across two owned packages."""
+    parent = bundle_directory(root / "parent")
+    child = bundle_directory(root / "child")
+    parent_data = json.loads((parent / "project.json").read_text())
+    parent_data["rdf"] = {"import": parent_data["rdf"]["import"]}
+    parent_data["contexts"] = {
+        str(EX["base-context"]): parent_data["contexts"][str(EX["base-context"])]
+    }
+    parent_data["checks"] = [
+        {
+            "name": "parent-terms",
+            "kind": "vocabulary",
+            "source": "import",
+            "inventory": "inventory.json",
+        }
+    ]
+    (parent / "inventory.json").write_text(json.dumps([str(EX["import#Parent"])]))
+    (parent / "project.json").write_text(json.dumps(parent_data))
+    child_data = json.loads((child / "project.json").read_text())
+    del child_data["rdf"]["import"]
+    del child_data["contexts"][str(EX["base-context"])]
+    (child / "project.json").write_text(json.dumps(child_data))
+    return parent, child
+
+
+def test_owned_dependencies_preserve_closure_and_explicit_local_materialization(
+    tmp_path: Path,
+) -> None:
+    parent_path, child_path = dependency_directories(tmp_path)
+    parent_data = json.loads((parent_path / "project.json").read_text())
+    parent_data["rdf"]["import"]["effective_url"] = str(EX.effective)
+    (parent_path / "project.json").write_text(json.dumps(parent_data))
+    (parent_path / "inventory.json").write_text(
+        json.dumps([str(EX["effective#Parent"])])
+    )
+    for filename in ("ontology.trig", "inventory.json"):
+        child_file = child_path / filename
+        child_file.write_text(
+            child_file.read_text().replace(str(EX["import"]), str(EX.effective))
+        )
+    parent = load_bundle(parent_path)
+    with pytest.raises(InputError, match="supplied|JSON-LD"):
+        load_bundle(child_path)
+    child = load_bundle(child_path, dependencies=(parent,))
+    assert child.rdf_scope == ("ontology", "shapes", "data")
+    assert child.context_scope == (str(EX.context),)
+    assert "import.ttl" not in child.files and "base-context.json" not in child.files
+    assert check_vocabulary(
+        child.vocabulary("ontology"), [TermDeclaration(str(EX["effective#Parent"]))]
+    ).verified
+    assert expand_document(
+        {"@context": str(EX.context), "name": "actual"},
+        document_loader=child.document_loader,
+    ) == [{str(EX.name): [{"@value": "actual"}]}]
+    diamond = load_bundle(child_path, dependencies=(child, parent))
+    assert set(diamond.imports) == set(child.imports)
+    parent_path.rename(tmp_path / "parent-unavailable")
+    child_path.rename(tmp_path / "child-unavailable")
+    assert check_vocabulary(
+        child.vocabulary("ontology"), [TermDeclaration(str(EX["effective#Parent"]))]
+    ).verified
+    with pytest.raises(InputError, match="local_only"):
+        child.materialize(tmp_path / "implicit")
+    with pytest.raises(InputError, match="standalone"):
+        child.write_archive(tmp_path / "incomplete.zip")
+    assert not (tmp_path / "implicit").exists()
+    assert not (tmp_path / "incomplete.zip").exists()
+    materialized_parent = parent.materialize(tmp_path / "owned-parent")
+    materialized_child = child.materialize(tmp_path / "owned-child", local_only=True)
+    data = materialized_child.to_dict()
+    rdf = cast(dict[str, object], data["rdf"])
+    for name, source in parent.rdf.items():
+        assert source.document_iri is not None
+        rdf[source.document_iri] = {
+            "path": str(materialized_parent.rdf[name].content),
+            "iri": source.document_iri,
+            "format": source.format,
+            "effective_url": source.effective_url,
+            "graph_name": source.graph_name,
+            "union": source.union,
+        }
+    contexts = cast(dict[str, object], data["contexts"])
+    contexts.update(
+        {iri: str(path) for iri, path in materialized_parent.contexts.items()}
+    )
+    execution = ProjectConfig(data, directory=materialized_child.directory)
+    assert check_project(materialized_parent).verified
+    assert check_project(execution).verified
+    view = child.configuration
+    view.directory = tmp_path / "caller-mutation"
+    assert child.configuration.directory != view.directory
+
+
+def test_dependency_conflicts_and_child_limits_do_not_depend_on_parent_order(
+    tmp_path: Path,
+) -> None:
+    parent_path, child_path = dependency_directories(tmp_path)
+    parent = load_bundle(parent_path)
+    original_rdf = (parent_path / "import.ttl").read_text()
+    (parent_path / "import.ttl").write_text(
+        original_rdf + "\n<urn:extra> a <http://www.w3.org/2002/07/owl#Class>."
+    )
+    changed_rdf = load_bundle(parent_path)
+    (parent_path / "import.ttl").write_text(original_rdf)
+    original_context = (parent_path / "base-context.json").read_text()
+    (parent_path / "base-context.json").write_text(
+        json.dumps({"@context": {"name": str(EX.other)}})
+    )
+    changed_context = load_bundle(parent_path)
+    (parent_path / "base-context.json").write_text(original_context)
+    manifest = json.loads((parent_path / "project.json").read_text())
+    manifest["rdf"]["import"]["effective_url"] = str(EX["other-base"])
+    (parent_path / "project.json").write_text(json.dumps(manifest))
+    changed_base = load_bundle(parent_path)
+    for changed in (changed_rdf, changed_context, changed_base):
+        for dependencies in ((parent, changed), (changed, parent)):
+            with pytest.raises(InputError, match="Conflicting bundle logical binding"):
+                load_bundle(child_path, dependencies=dependencies)
+    with pytest.raises(LimitExceeded):
+        load_bundle(child_path, dependencies=(parent,), limits=Limits(max_resources=1))
+    with pytest.raises(LimitExceeded):
+        load_bundle(
+            child_path, dependencies=(parent,), limits=Limits(max_total_bytes=4000)
+        )
+    del manifest["rdf"]["import"]["effective_url"]
+    (parent_path / "project.json").write_text(json.dumps(manifest))
+    (parent_path / "import.ttl").write_text(original_rdf + "\n#" + "x" * 10_000)
+    large_parent = load_bundle(parent_path)
+    with pytest.raises(LimitExceeded, match="Dependency payload exceeds max_bytes"):
+        load_bundle(
+            child_path, dependencies=(large_parent,), limits=Limits(max_bytes=5000)
+        )

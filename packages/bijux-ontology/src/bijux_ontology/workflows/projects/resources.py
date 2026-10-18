@@ -19,6 +19,7 @@ from bijux_ontology.jsonld.resources import (
 )
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.loading import prepare_input
+from bijux_ontology.rdf.roles.classification import bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.loading import load_vocabulary
@@ -83,13 +84,18 @@ class _Contexts(ContextResources):
 class _Imports(Mapping[str, RdfSource]):
     def __init__(self, prepared: "ProjectResources") -> None:
         self._prepared = prepared
-        self._names = {
-            iri: name for name, iri in prepared._registered.items() if iri is not None
-        }
-        if len(self._names) != sum(
-            iri is not None for iri in prepared._registered.values()
-        ):
-            raise InputError("RDF resource logical IRIs must be unique")
+        self._names: dict[str, str] = {}
+        for name, identities in prepared._registered.items():
+            for iri in identities:
+                if iri is None:
+                    continue
+                bound_text(iri, prepared._preparation)
+                previous = self._names.get(iri)
+                if previous is not None and previous != name:
+                    raise InputError("RDF resource logical IRIs must be unique")
+                if previous is None:
+                    prepared._preparation.consume("states")
+                    self._names[iri] = name
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._names)
@@ -122,7 +128,8 @@ class ProjectResources:
         self._lock = RLock()
         self._rdf = dict(configuration.rdf)
         self._registered = {
-            name: source.document_iri for name, source in self._rdf.items()
+            name: (source.document_iri, source.effective_url)
+            for name, source in self._rdf.items()
         }
         self._vocabularies: dict[
             tuple[str, tuple[str, ...], str | None, bool], Vocabulary
@@ -266,7 +273,8 @@ class ProjectResources:
             revised = ProjectResources(self.configuration)
             revised._rdf = self._rdf | dict(rdf)
             revised._registered = self._registered | {
-                name: item.document_iri for name, item in rdf.items()
+                name: (item.document_iri, item.effective_url)
+                for name, item in rdf.items()
             }
             revised._imports = _Imports(revised)
             retained = {
