@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 from threading import Thread
 
 from bijux_ontology._json import decode_json, object_value
-from bijux_ontology.errors import InputError
+from bijux_ontology.errors import InputError, ResourceError
 from bijux_ontology.interfaces.cli.checkpoints import read_completed
 from bijux_ontology.interfaces.cli.protocol import report_from_data
 from bijux_ontology.interfaces.cli.results import CommandResult
@@ -79,18 +79,27 @@ def execute_bounded(
         reader = Thread(target=drain_errors, daemon=True)
         reader.start()
         stopped = ""
+        failure: BaseException | None = None
+        cleanup_error: ResourceError | None = None
         try:
             process.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
             stopped = "execution.deadline"
         except KeyboardInterrupt:
             stopped = "execution.cancelled"
+        except BaseException as error:
+            failure = error
+            raise
         finally:
-            stop_process(process)
-            reader.join(timeout=1)
-            if process.stderr is not None and not reader.is_alive():
-                process.stderr.close()
-        if stopped or (work / "result-exhausted").exists():
+            try:
+                stop_process(process, failure=failure)
+            except ResourceError as error:
+                cleanup_error = error
+            finally:
+                reader.join(timeout=1)
+                if process.stderr is not None and not reader.is_alive():
+                    process.stderr.close()
+        if stopped or cleanup_error is not None or (work / "result-exhausted").exists():
             reports = list(read_completed(work, limits))
             reports.append(
                 Report(
@@ -98,11 +107,27 @@ def execute_bounded(
                     requested=1,
                     issues=(
                         Issue(
-                            stopped or "execution.limit_exceeded",
-                            "Owned CLI execution stopped before checking completed"
-                            if stopped
-                            else "Complete command result exceeded max_total_bytes",
-                            kind="exhausted",
+                            stopped
+                            or (
+                                "execution.worker_failed"
+                                if cleanup_error is not None
+                                else "execution.limit_exceeded"
+                            ),
+                            (
+                                "Owned CLI execution stopped before checking completed"
+                                if stopped
+                                else "Owned CLI worker cleanup failed"
+                                if cleanup_error is not None
+                                else "Complete command result exceeded max_total_bytes"
+                            )
+                            + (
+                                f"; {cleanup_error}"
+                                if cleanup_error is not None
+                                else ""
+                            ),
+                            kind="input_error"
+                            if cleanup_error is not None and not stopped
+                            else "exhausted",
                         ),
                     ),
                 )

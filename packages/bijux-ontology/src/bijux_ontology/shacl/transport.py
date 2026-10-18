@@ -7,7 +7,10 @@ import time
 from contextlib import suppress
 from typing import BinaryIO
 
-from bijux_ontology.errors import LimitExceeded, ResourceError
+from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.processes import stop_owned_process
+
+_stop_group = stop_owned_process
 
 
 def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes:
@@ -72,47 +75,24 @@ def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes
             except subprocess.TimeoutExpired:
                 continue
     finally:
-        if process.poll() is None:
-            process.terminate()
-            try:
-                process.wait(timeout=1)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
-        for thread in threads:
-            if thread.ident is not None:
-                thread.join(timeout=1)
+        try:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=1)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+        finally:
+            for thread in threads:
+                if thread.ident is not None:
+                    thread.join(timeout=1)
     if overflow.is_set():
         raise LimitExceeded("SHACL process output exceeds protocol byte bound")
     if process.returncode and not stdout:
         detail = stderr.decode(errors="replace")[:2000]
         raise ResourceError(f"SHACL worker exited {process.returncode}: {detail}")
     return bytes(stdout)
-
-
-def _stop_group(process: subprocess.Popen[bytes]) -> None:
-    """Reap the worker and its owned POSIX process group after every stop path."""
-    import os
-    import signal
-
-    if os.name == "posix":
-        with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGTERM)
-    elif process.poll() is None:
-        process.terminate()
-    try:
-        process.wait(timeout=0.2)
-    except subprocess.TimeoutExpired:
-        if os.name == "posix":
-            with suppress(ProcessLookupError):
-                os.killpg(process.pid, signal.SIGKILL)
-        else:
-            process.kill()
-        process.wait()
-    # The leader may have exited while a descendant still owns a pipe.
-    if os.name == "posix":
-        with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGKILL)
 
 
 class SessionBackend:
@@ -127,6 +107,7 @@ class SessionBackend:
         self._launches = 0
         self._stderr_overflow = threading.Event()
         self._stderr_thread: threading.Thread | None = None
+        self._exchange_thread: threading.Thread | None = None
 
     @property
     def launches(self) -> int:
@@ -138,18 +119,56 @@ class SessionBackend:
         self._closed.set()
         self.reset()
 
-    def reset(self) -> None:
+    def reset(self, *, failure: BaseException | None = None) -> None:
         """Discard failed worker state; a later job may replay the owned plan."""
         with self._guard:
             process, self._process = self._process, None
-        if process is not None:
-            _stop_group(process)
-            if process.stdin is not None:
-                process.stdin.close()
-            if process.stdout is not None:
-                process.stdout.close()
-        if self._stderr_thread is not None and self._stderr_thread.ident is not None:
-            self._stderr_thread.join(timeout=1)
+        if process is None:
+            return
+        cleanup_error: ResourceError | None = None
+        try:
+            if process is not None:
+                _stop_group(process, failure=failure)
+        except ResourceError as error:
+            cleanup_error = error
+        finally:
+            exchange = self._exchange_thread
+            if exchange is not None and exchange.ident is not None:
+                exchange.join(timeout=0.2)
+            if exchange is not None and exchange.is_alive():
+                # Buffered close waits on an active read lock. The exchange owns
+                # its detached handles until that read returns; forbid reuse.
+                self._closed.set()
+                cleanup_error = cleanup_error or ResourceError(
+                    "SHACL worker pipes remain held after bounded cleanup"
+                )
+            elif process is not None:
+                for stream in (process.stdin, process.stdout):
+                    if stream is not None:
+                        try:
+                            stream.close()
+                        except (OSError, ValueError) as error:
+                            cleanup_error = cleanup_error or ResourceError(
+                                f"Cannot close SHACL worker pipe: {error}"
+                            )
+            if (
+                self._stderr_thread is not None
+                and self._stderr_thread.ident is not None
+            ):
+                self._stderr_thread.join(timeout=0.2)
+                if self._stderr_thread.is_alive():
+                    self._closed.set()
+                    cleanup_error = cleanup_error or ResourceError(
+                        "SHACL diagnostics pipe remains held after bounded cleanup"
+                    )
+        if cleanup_error is not None:
+            if failure is not None:
+                if isinstance(failure, InputError):
+                    failure.args = (f"{failure}; {cleanup_error}",)
+                else:
+                    failure.add_note(str(cleanup_error))
+            else:
+                raise cleanup_error
 
     def _interrupted(
         self, deadline: float | None, cancel: threading.Event | None
@@ -245,8 +264,13 @@ class SessionBackend:
                 errors.append(error)
             finally:
                 complete.set()
+                if self._process is not process:
+                    for stream in (incoming, outgoing):
+                        with suppress(OSError, ValueError):
+                            stream.close()
 
         thread = threading.Thread(target=communicate, daemon=True)
+        self._exchange_thread = thread
         thread.start()
         try:
             while not complete.wait(0.01):
@@ -269,11 +293,11 @@ class SessionBackend:
                     f"SHACL worker protocol failed: {errors[0]}"
                 ) from errors[0]
             return output[0]
-        except BaseException:
-            self.reset()
+        except BaseException as error:
+            self.reset(failure=error)
             raise
         finally:
-            thread.join(timeout=1)
+            thread.join(timeout=0.2)
 
     def execute(
         self, payload: bytes, *, deadline: float | None, cancel: threading.Event | None
@@ -309,6 +333,6 @@ class SessionBackend:
                 else:
                     raise ResourceError("Expected SHACL preparation acknowledgement")
             return self._exchange(payload, deadline, cancel)
-        except BaseException:
-            self.reset()
+        except BaseException as error:
+            self.reset(failure=error)
             raise
