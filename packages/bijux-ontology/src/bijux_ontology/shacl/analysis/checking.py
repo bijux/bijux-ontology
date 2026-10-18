@@ -69,6 +69,15 @@ class _Analysis:
         self.components: list[ShapeComponent] = []
         self.roots: list[RootConflict] = []
         self.completed = 0
+        self.owned_blanks: set[int] = set()
+
+    def bound_metadata(self, node: Node) -> None:
+        """Require actual snapshot ownership before anonymous equality lookups."""
+        bound_node(node, self.budget)
+        if isinstance(node, BNode) and id(node) not in self.owned_blanks:
+            raise InputError(
+                "Shape metadata blank terms require exact snapshot ownership"
+            )
 
     def values(
         self, shape: Node, predicate: URIRef, *, single: bool = False
@@ -609,11 +618,17 @@ def analyze_shape_profile(
                 operation.consume("triples")
                 for term in triple:
                     bound_node(term, operation)
+                    if (
+                        isinstance(term, BNode)
+                        and id(term) not in analysis.owned_blanks
+                    ):
+                        operation.consume("states")
+                        analysis.owned_blanks.add(id(term))
             nodes: dict[Node, None] = {}
             for node in profile.roots:
                 if not isinstance(node, URIRef | BNode):
                     raise InputError("Selected shape roots require resource terms")
-                bound_node(node, operation)
+                analysis.bound_metadata(node)
                 operation.consume("states")
                 nodes[node] = None
             roots = profile.roots
@@ -638,7 +653,7 @@ def analyze_shape_profile(
                     dependency.parameter,
                     dependency.dependency,
                 ):
-                    bound_node(node, operation)
+                    analysis.bound_metadata(node)
                 if dependency.parameter not in _REFERENCES:
                     raise InputError(
                         "Analysis requires exact supported shape-reference metadata"
@@ -649,7 +664,7 @@ def analyze_shape_profile(
                     if type(triple) is not tuple or len(triple) != 3:
                         raise InputError("Shape witnesses require original RDF triples")
                     for term in triple:
-                        bound_node(term, operation)
+                        analysis.bound_metadata(term)
                     if triple not in analysis.graph:
                         raise InputError(
                             "Shape reference witness is outside the profile"

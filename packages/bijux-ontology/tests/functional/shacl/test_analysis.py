@@ -3,8 +3,9 @@
 from dataclasses import replace
 
 import pytest
-from rdflib import Graph, Literal, Namespace, URIRef
+from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import SH, XSD
+from rdflib.term import Node
 
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -158,7 +159,54 @@ def test_signed_components_reuse_deactivation_and_malformed_metadata() -> None:
             ),
         ),
     )
-    for edited in modified:
+    anonymous = _profile(
+        "ex:R sh:property _:P. _:P sh:path ex:p; sh:minCount 1; sh:node ex:Bad. "
+        "ex:Bad sh:in ().",
+        "R",
+    )
+    assert anonymous.source is not None
+    child = next(d.dependency for d in anonymous.dependencies if d.shape == EX.R)
+    assert isinstance(child, BNode)
+    blank_root = extract_profile(anonymous.source, (child,))
+    assert analyze_shape_profile(blank_root).satisfiability == "impossible"
+
+    def foreign(node: Node) -> Node:
+        return BNode(str(node)) if isinstance(node, BNode) else node
+
+    forged_blanks = (
+        replace(blank_root, roots=(BNode(str(child)),)),
+        replace(
+            anonymous,
+            dependencies=tuple(
+                replace(d, shape=BNode(str(d.shape)))
+                if isinstance(d.shape, BNode)
+                else d
+                for d in anonymous.dependencies
+            ),
+        ),
+        replace(
+            anonymous,
+            dependencies=tuple(
+                replace(d, dependency=BNode(str(d.dependency)))
+                if isinstance(d.dependency, BNode)
+                else d
+                for d in anonymous.dependencies
+            ),
+        ),
+        replace(
+            anonymous,
+            dependencies=tuple(
+                replace(
+                    d,
+                    via=tuple(
+                        (foreign(a), foreign(b), foreign(c)) for a, b, c in d.via
+                    ),
+                )
+                for d in anonymous.dependencies
+            ),
+        ),
+    )
+    for edited in (*modified, *forged_blanks):
         checked = analyze_shape_profile(edited)
         assert checked.report.outcome == "unverified"
         assert checked.satisfiability == "not_determined"
