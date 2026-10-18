@@ -46,6 +46,13 @@ patterns = [
     "google-re2>=1.1.20251105,<2",
 ]
 
+sssom = [
+    "sssom==0.4.21",
+    "sssom-schema==1.1.0a5",
+    "pandas>=2,<4",
+    "pyyaml>=6,<7",
+]
+
 [tool.hatch.build.targets.wheel]
 core-metadata-version = "2.4"
 packages = ["src/bijux_ontology"]

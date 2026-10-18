@@ -1056,3 +1056,14 @@ can qualify through bounded RDF isomorphism; edited anonymous attribution stays
 unknown. Lost targets cannot resolve prior failures or certify compatibility.
 Comparison agreement is finite representative evidence, separate from raw data
 conformance and universal profile refinement.
+
+`bijux_ontology.vocabulary.mappings` reads and exports SSSOM TSV through the
+optional `[sssom]` extra and maintained schema/parser/writer. Supply explicit
+`mapping_set_id` and `license`; original rows, duplicates, lexical cells and
+metadata remain inspectable. `check_mappings` applies a `MappingPolicy` to exact
+subject/object `VocabularyView` scopes, independently of interchange validity.
+SKOS mapping directions remain distinct; confidence does not establish truth.
+Endpoint roles, cardinalities and conflicts require explicit consumer policy.
+Modifiers, composed/literal endpoints, extension semantics and unmapped sentinels
+remain unknown; sentinels cannot satisfy required cardinality. The supported TSV
+body excludes hash characters because maintained comment handling can lose data.
