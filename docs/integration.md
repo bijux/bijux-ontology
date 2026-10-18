@@ -756,3 +756,11 @@ Use `.select(subset_iri)` as `ValueConstraints(enumeration=...)` in ordinary mod
 checks. Only a complete closed inventory establishes absence; open, undefined or
 anonymous membership remains explicit in the returned reports. Subsets do not
 imply SKOS schemes or logical ontology modules.
+
+`bijux_ontology.rdf.migrations.lists.migrate_list` accepts a `ListTarget` naming
+one exact incoming edge and a `ListInsert`, `ListRemove` or `ListReorder` action.
+Supply exact `expected_before` and `expected_after` RDF-term tuples and ordinary
+migration checks. Dataset targets require an explicit physical graph. Changed
+lists receive fresh cells; original cells, annotations and shared-tail siblings
+remain intact. Actual after-checks and explicit accepted export use the same
+migration gates as value and graph changes.
