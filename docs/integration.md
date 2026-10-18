@@ -339,6 +339,18 @@ External references remain external, and alternate spellings establish no IRI
 equivalence. Native OBO annotation records remain separate evidence; the required
 report covers xref capture, attachment, accession and selected resolution policy.
 
+Install `[fhir]` for `interfaces.adapters.fhir.code_system.read_code_system` and
+`write_code_system`, backed by the maintained R5 model. Supply explicit reversible
+`FhirCodeBinding(FhirCodeIdentity(system, version, code), iri)` values from
+`interfaces.adapters.fhir.identity`; neither versions nor RDF IRIs are inferred.
+Supported concepts retain hierarchy, multilingual designation qualifiers and
+code/string/integer/boolean properties. The owned vocabulary supplies ordinary
+annotation checks; its RDF labels do not represent every FHIR qualifier.
+`check_code_membership` distinguishes complete content from fragments and
+supplements. Case-insensitive comparison requires explicit `case_comparison="ascii"`;
+original spellings remain unchanged. Keep all reports: unsupported fields,
+fractional numbers and unavailable comparison regimes cannot establish acceptance.
+
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
 `rdf.skolem.skolemize(source, caller_owned_base)` names blank resources with

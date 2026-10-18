@@ -103,6 +103,8 @@ _CODES = {
         "structure_mismatch binding_unverified".split()
     ),
     "adapter": frozenset(
+        "fhir_backend_unavailable fhir_input_error fhir_unsupported "
+        "fhir_membership_unverified fhir_export_error fhir_export_unverified "
         "shape_binding_unverified shape_constraint_untranslated "
         "shape_list_unverified shape_output_backend_unavailable "
         "shape_representation_unverified shape_source_scope_unverified "
@@ -650,6 +652,11 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "adapter.fhir_backend_unavailable": (
+        "The maintained FHIR R5 model is unavailable.",
+        "Install bijux-ontology[fhir] and retain the original resource and bindings.",
+        "read_code_system(content, bindings=bindings)",
+    ),
     "rdf.literal_conversion_unverified": (
         "The selected backend reconstructs literal spelling outside exact scope.",
         "Retain exact source terms and use a supported query or explicit conversion.",
