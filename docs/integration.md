@@ -347,6 +347,14 @@ are omitted; unresolved or dynamic dependencies remain unverified. Inspect
 through faithful RDF serialization. Agreement covers supplied cases only;
 independent role exports cannot preserve shared anonymous constants across roles.
 
+`interfaces.adapters.shacl.import_shape_contracts` imports selected property
+constraints through explicit `ShapeFieldBinding` serializer keys. Use
+`check_imported_output` for actual serialized JSON-LD or `check_imported_rdf`
+for selected native RDF. Both retain untranslated original obligations and
+qualify aggregate values; bare declarations cannot establish full SHACL
+conformance. Selected list-shaped values remain unknown. Shape targets and
+`sh:class` never manufacture exact application type declarations.
+
 `inspect_shapes(shapes, (root_iri,))` projects supported supplied constraints into
 the immutable authoring records and reports uninterpreted semantic RDF in
 `remainder`. `edit_shape_counts(inspection, (ShapeCountEdit(property_shape,
