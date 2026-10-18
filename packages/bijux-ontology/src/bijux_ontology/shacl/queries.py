@@ -79,8 +79,14 @@ def analyze_query(
     """Resolve actual calls under maintained SHACL query-prefix handling."""
     from pyshacl.helper.sparql_query_helper import SPARQLQueryHelper
 
-    if not isinstance(text, Literal):
-        raise InputError("SHACL query text must be a literal", location=str(node))
+    if (
+        not isinstance(text, Literal)
+        or text.language is not None
+        or text.datatype not in (None, XSD.string)
+    ):
+        raise InputError(
+            "SHACL query text requires an untagged string literal", location=str(node)
+        )
     helper = SPARQLQueryHelper(shape, node, str(text))  # type: ignore[no-untyped-call]
     helper.collect_prefixes()  # type: ignore[no-untyped-call]
     try:
