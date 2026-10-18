@@ -1446,6 +1446,9 @@ Reserved logical predicates and occurrence positions are caller policy; retained
 assertions and prohibited reactivation are distinct from ordinary label changes.
 Raw observations and adjacent differences remain available. Missing history or
 anonymous attribution cannot certify permanent identifier stability.
+Each release can bind its own `imports` to supplied local resources. Those
+resources qualify the authored import closure; lifecycle observations still
+cover the selected physical local graph. Missing resources remain unverified.
 
 `bijux_ontology.shacl.remediation.propose_remediations` accepts explicit
 `RemediationStrategy` callbacks keyed by named shape and constraint-component

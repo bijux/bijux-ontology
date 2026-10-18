@@ -10,6 +10,7 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.facts.types import FactPredicate
 from bijux_ontology.workflows.upgrades.lifecycle import (
     HistoryCoverage,
@@ -249,3 +250,47 @@ def test_mutated_scope_metadata_cannot_become_a_checked_history() -> None:
         [old, new], [TERM], policy=LifecyclePolicy(), coverage=history(old, new)
     )
     assert result.report.outcome == "input_error" and not result.observations
+
+
+def test_each_release_resolves_its_own_supplied_import_closure() -> None:
+    sources = [
+        release(
+            label,
+            "<urn:ontology> owl:imports <urn:support> . "
+            f"<urn:term:A> owl:deprecated {state} .",
+        )
+        for label, state in (("old", "true"), ("new", "false"))
+    ]
+    supplied = []
+    for item in sources:
+        nested = "urn:support:" + item.label
+        resources = {
+            "urn:support": RdfSource(
+                f"<urn:support> <{OWL.imports}> <{nested}> . "
+                f"<urn:term:A> <{OWL.deprecated}> true, false .",
+                format="turtle",
+                document_iri="urn:support",
+            ),
+            nested: RdfSource("", format="turtle", document_iri=nested),
+        }
+        supplied.append(Release(item.label, item.source, resources))
+    checked = check_lifecycle(
+        supplied, [TERM], policy=LifecyclePolicy(), coverage=history(*supplied)
+    )
+    assert checked.report.outcome == "disagreement"
+    assert [observation.deprecation.state for observation in checked.observations] == [
+        "deprecated",
+        "active",
+    ]
+    assert checked.events[-1].kind == "reactivated"
+    assert all(list(item.source.graph().objects(None, OWL.imports)) for item in sources)
+    missing = check_lifecycle(
+        [supplied[0], sources[1]],
+        [TERM],
+        policy=LifecyclePolicy(),
+        coverage=history(*supplied),
+    )
+    assert missing.report.outcome == "unverified"
+    assert [event.kind for event in missing.events] == ["retired"]
+    assert missing.observations[0].release is supplied[0]
+    assert any(issue.location == "urn:support" for issue in missing.report.issues)

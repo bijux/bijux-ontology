@@ -1,5 +1,6 @@
 """Explicit supplied release intervals and observable identifier lifecycle evidence."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Literal
 
@@ -8,6 +9,7 @@ from rdflib import URIRef
 from bijux_ontology.errors import InputError
 from bijux_ontology.rdf.roles.types import TermPosition
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.comparison import VocabularyChanges
 from bijux_ontology.vocabulary.facts.types import FactPredicate, SelectedFact
@@ -20,6 +22,7 @@ class Release:
 
     label: str
     source: PreparedSource
+    imports: Mapping[str, RdfSource | Payload] | None = None
 
     def __post_init__(self) -> None:
         """Require owned sources without copying or guessing their physical scope."""
@@ -27,6 +30,8 @@ class Release:
             raise InputError("A release requires an explicit nonempty text label")
         if not isinstance(self.source, PreparedSource):
             raise InputError("A release requires a PreparedSource")
+        if self.imports is not None and not isinstance(self.imports, Mapping):
+            raise InputError("Release imports require explicit local resource bindings")
 
 
 @dataclass(frozen=True)

@@ -4,12 +4,12 @@ from collections.abc import Sequence
 
 from rdflib import BNode, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.comparison import VocabularyChanges, compare_vocabularies
 from bijux_ontology.vocabulary.facts.comparison import _collect, _metadata
 from bijux_ontology.vocabulary.facts.types import FactSelection, SelectedFact
@@ -203,7 +203,9 @@ def check_lifecycle(
             if not _source(release, operation):
                 unknown("Exact literal terms and physical selected graphs are required")
                 break
-            vocabulary = load_vocabulary(release.source, budget=operation)
+            vocabulary = load_vocabulary(
+                release.source, imports=release.imports, budget=operation
+            )
             view = inspect_vocabulary(vocabulary, scopes=("local",), budget=operation)
             facts = _facts(view, selection, operation, issues) if selection else ()
             by_term: dict[URIRef, list[SelectedFact]] = {}
@@ -323,6 +325,19 @@ def check_lifecycle(
         finished = completed == requested and bool(selected) and len(supplied) >= 2
     except LimitExceeded as error:
         issues.exhausted(str(error), location="upgrade.lifecycle")
+    except ResourceError as error:
+        try:
+            issues.append(
+                Issue(
+                    "upgrade.lifecycle_unverified",
+                    "A required release resource is unavailable or unqualified",
+                    error.location,
+                    kind="unverified",
+                    details=Location.from_error(error),
+                )
+            )
+        except LimitExceeded:
+            issues.exhausted("Stopped retaining unavailable release resource")
     except InputError:
         try:
             issues.append(
