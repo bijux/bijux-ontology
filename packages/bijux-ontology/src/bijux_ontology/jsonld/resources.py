@@ -159,7 +159,19 @@ class OfflineDocumentLoader:
             raise
 
 
-def _absolutise_imports(context: object, base: str) -> None:
+def _resource_join(base: str, reference: str, budget: Budget) -> str:
+    """Reserve bounded URL resolution workspace before constructing a result."""
+    allowance = 2 * (len(base) + len(reference)) + 32
+    if allowance > budget.limits.max_bytes:
+        raise LimitExceeded("Resolved resource URL exceeds max_bytes")
+    budget.consume("work", allowance)
+    budget.consume("bytes", allowance * 4)
+    result = urljoin(base, reference)
+    bound_text(result, budget)
+    return result
+
+
+def _absolutise_imports(context: object, base: str, budget: Budget) -> None:
     """Bind imports only inside actual context and scoped-context positions."""
     # PyLD resolves remote @context URLs but leaves relative @import URLs
     # tied to the application base. Resolve those against the supplying document.
@@ -167,13 +179,13 @@ def _absolutise_imports(context: object, base: str) -> None:
         mapping = cast(dict[str, object], context)
         imported = mapping.get("@import")
         if isinstance(imported, str):
-            mapping["@import"] = urljoin(base, imported)
+            mapping["@import"] = _resource_join(base, imported, budget)
         for definition in mapping.values():
             if isinstance(definition, dict):
-                _absolutise_imports(definition.get("@context"), base)
+                _absolutise_imports(definition.get("@context"), base, budget)
     elif isinstance(context, list):
         for child in cast(list[object], context):
-            _absolutise_imports(child, base)
+            _absolutise_imports(child, base, budget)
 
 
 def context_is_unscoped(context: object) -> bool:
@@ -209,7 +221,8 @@ class ContextResources:
 
     Responses are copied at entry and exit; a URL is read once per operation.
     Reuse through ``context_resources`` preserves that snapshot and its budget.
-    Separate instances never share caches, even when they use the same loader.
+    Independent instances never share caches. Explicit budget forks reuse their
+    parent's captured responses and qualify independent child-owned copies.
     """
 
     def __init__(
@@ -245,43 +258,72 @@ class ContextResources:
         """Whether every resource used so far lacks scope-changing syntax."""
         return self._unscoped
 
+    def for_budget(self, budget: Budget) -> "ContextResources":
+        """Qualify per-record copies while preserving the cumulative resource owner."""
+        if not isinstance(budget, Budget):
+            raise InputError("Resource forks require an operation Budget")
+        if budget is self.budget:
+            return self
+        return ContextResources(self._owned_response, budget=budget)
+
     def __call__(self, url: str, options: dict[str, object]) -> dict[str, object]:
-        """Own effective resources without changing the supplying loader's data."""
+        """Return an independent copy of this operation's qualified response."""
+        return deepcopy(self._owned_response(url, options))
+
+    def _owned_response(
+        self, url: str, options: dict[str, object]
+    ) -> dict[str, object]:
+        """Hand owned data only to a qualifying child or public copy boundary."""
+        bound_text(url, self.budget)
         if url in self._snapshots:
-            _consume_work(self._snapshots[url]["document"], self.budget)
-            return deepcopy(self._snapshots[url])
+            _consume_work(self._snapshots[url], self.budget)
+            return self._snapshots[url]
         self.budget.consume("resources")
-        response = self._loader(url, options).copy()
+        raw = own_json(
+            self._loader(url, options),
+            source=url,
+            max_bytes=self.budget.limits.max_bytes,
+            max_depth=self.budget.limits.max_depth,
+        )
+        if not isinstance(raw, dict):
+            raise ContextInputError("A loader response must be a JSON object")
+        response = cast(dict[str, object], raw)
         effective_url = response.get("documentUrl")
         if not isinstance(effective_url, str):
             raise ContextInputError(
                 "A loader response must supply its effective documentUrl"
             )
-        document = own_json(
-            response.get("document"),
-            source=url,
-            max_bytes=self.budget.limits.max_bytes,
-            max_depth=self.budget.limits.max_depth,
-        )
-        self.budget.consume("bytes", _json_size(document))
-        _consume_work(document, self.budget)
+        bound_text(effective_url, self.budget)
+        document = response.get("document")
+        self.budget.consume("bytes", _json_size(response))
+        _consume_work(response, self.budget)
         response["document"] = document
         nodes = document if isinstance(document, list) else [document]
         for node in nodes:
             if isinstance(node, dict):
                 context = node.get("@context")
                 self._unscoped = self._unscoped and context_is_unscoped(context)
-                _absolutise_imports(context, effective_url)
+                _absolutise_imports(context, effective_url, self.budget)
         absolute_iri(effective_url)
         context_url = response.get("contextUrl")
         if context_url is not None and not isinstance(context_url, str):
             raise ContextInputError("A loader contextUrl must be a string or None")
         if isinstance(context_url, str):
-            context_url = urljoin(effective_url, context_url)
+            context_url = _resource_join(effective_url, context_url, self.budget)
             absolute_iri(context_url)
             response["contextUrl"] = context_url
         else:
             response["contextUrl"] = None
+        response = cast(
+            dict[str, object],
+            own_json(
+                response,
+                source=url,
+                max_bytes=self.budget.limits.max_bytes,
+                max_depth=self.budget.limits.max_depth,
+            ),
+        )
+        self.budget.consume("bytes", _json_size(response))
         identity = json.dumps(
             {"document": document, "contextUrl": context_url},
             ensure_ascii=False,
@@ -294,7 +336,7 @@ class ContextResources:
             )
         self._logical[effective_url] = identity
         self._snapshots[url] = response
-        return deepcopy(response)
+        return response
 
 
 def context_resources(

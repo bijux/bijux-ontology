@@ -158,3 +158,35 @@ def test_consumers_cannot_move_cached_resources_to_an_equal_but_distinct_budget(
     )
     assert report.outcome == "input_error"
     assert not report.verified
+
+
+@pytest.mark.parametrize("limits", [Limits(max_bytes=200), Limits(max_depth=1)])
+def test_resource_forks_bound_whole_responses_without_poisoning_shared_capture(
+    limits: Limits,
+) -> None:
+    calls: list[str] = []
+    document: dict[str, object] = {"@context": {"p": EX + "p"}}
+
+    def loader(url: str, options: dict[str, object]) -> dict[str, object]:
+        """Return tiny content with separately significant response metadata."""
+        calls.append(url)
+        return {
+            "document": document,
+            "documentUrl": EX + "effective",
+            "contentType": "application/ld+json; profile=" + "x" * 1000,
+        }
+
+    resources = context_resources(loader)
+    resources(EX + "context", {})
+    document["@context"] = {"p": EX + "changed"}
+    with pytest.raises(LimitExceeded):
+        resources.for_budget(Budget(limits))(EX + "context", {})
+    child = resources.for_budget(Budget())
+    response = child(EX + "context", {})
+    assert response["document"] == {"@context": {"p": EX + "p"}}
+    response["document"] = None
+    assert (
+        child(EX + "context", {})["document"]
+        == resources(EX + "context", {})["document"]
+    )
+    assert calls == [EX + "context"]
