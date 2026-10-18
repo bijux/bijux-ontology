@@ -1,7 +1,7 @@
 """Selected migration checks and explicit acceptance before verified RDF export."""
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, retain_report
@@ -9,6 +9,7 @@ from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.planning import capture_items, capture_source
 from bijux_ontology.rdf.patches.types import DatasetPatch
+from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.rdf.transforms import Transformation
@@ -42,6 +43,12 @@ class MigrationCandidate:
     before: tuple[Report, ...]
     after: tuple[Report, ...]
     report: Report
+    _metadata: SnapshotMetadata | None = field(
+        default=None, kw_only=True, repr=False, compare=False
+    )
+    _checked_source: PreparedSource | None = field(
+        default=None, kw_only=True, repr=False, compare=False
+    )
 
 
 def finish_migration(
@@ -65,6 +72,7 @@ def finish_migration(
     children: list[Report] = []
     completed = 0
     scoped_source = None
+    metadata = None
     try:
         retain_report(transformed.report, budget, issues)
         children.append(transformed.report)
@@ -174,6 +182,7 @@ def finish_migration(
                                 )
                             )
                         children.append(checked)
+            metadata = SnapshotMetadata.capture(scoped_source, budget)
     except LimitExceeded as error:
         issues.exhausted(str(error), location="rdf.migration")
     report = Report(
@@ -185,5 +194,11 @@ def finish_migration(
         regime="selected-rdf-migration-contracts",
     )
     return MigrationCandidate(
-        scoped_source, patch, tuple(reports[0]), tuple(reports[1]), report
+        scoped_source,
+        patch,
+        tuple(reports[0]),
+        tuple(reports[1]),
+        report,
+        _metadata=metadata,
+        _checked_source=scoped_source,
     )

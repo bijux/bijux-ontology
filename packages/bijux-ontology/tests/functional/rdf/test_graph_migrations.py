@@ -1,6 +1,7 @@
 """Actual dataset routing keeps identity, explicit inventory and contract truth."""
 
 import threading
+from dataclasses import replace
 from typing import cast
 
 from rdflib import BNode, Dataset, Literal, Namespace, URIRef
@@ -17,8 +18,64 @@ from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import term_key
+from bijux_ontology.reports import Report
 
 E = Namespace("https://graphs.example/")
+
+
+def test_export_requires_the_scope_origin_and_fidelity_that_passed_after_checks() -> (
+    None
+):
+    source = prepare_rdf(RdfSource(_source().dataset(), graph_name=str(E.G)))
+    expected = (True, None, None, "supplied_terms", "complete", str(E.G), False)
+    fields = (
+        "is_dataset",
+        "document_iri",
+        "effective_url",
+        "literal_fidelity",
+        "graph_fidelity",
+        "graph_name",
+        "union",
+    )
+
+    def selected(candidate: PreparedSource) -> Report:
+        assert tuple(getattr(candidate, name) for name in fields) == expected
+        assert (
+            E.keep,
+            E.note,
+            Literal("unchanged", datatype=XSD.string),
+        ) in candidate.graph()
+        return Report("selected-scope", 2)
+
+    result = migrate_graphs(
+        source,
+        (GraphRoute(E.G, E.G),),
+        after_checks=(MigrationCheck("selected-scope", selected),),
+    )
+    assert result.report.verified and result.source is not None
+    assert export_migration(result, accept=True, format="trig").report.verified
+    changes = (
+        False,
+        "urn:other-document",
+        "https://other.example/",
+        "normalized",
+        "nonempty-only",
+        None,
+        True,
+    )
+    for name, original, changed in zip(fields, expected, changes, strict=True):
+        setattr(result.source, name, changed)
+        refused = export_migration(result, accept=True, format="trig")
+        assert refused.content is None and refused.report.outcome == "unverified", name
+        setattr(result.source, name, original)
+    restored = export_migration(result, accept=True, format="trig")
+    assert restored.report.verified and restored.content is not None
+    foreign = prepare_rdf(RdfSource(_source().dataset(), graph_name=str(E.G)))
+    swapped = export_migration(
+        replace(result, source=foreign), accept=True, format="trig"
+    )
+    assert swapped.content is None and swapped.report.outcome == "unverified"
+    assert source.graph_name == str(E.G) and source.graph_fidelity == "complete"
 
 
 def _source() -> PreparedSource:

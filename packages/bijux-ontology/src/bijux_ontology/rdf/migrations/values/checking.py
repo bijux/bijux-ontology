@@ -343,4 +343,6 @@ def migrate_values(
         changed,
         unchanged,
         rejected,
+        _metadata=finished._metadata,
+        _checked_source=finished._checked_source,
     )
