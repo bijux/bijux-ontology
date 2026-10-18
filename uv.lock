@@ -238,6 +238,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+checksums = [
+    { name = "python-stdnum" },
+]
 jsonld = [
     { name = "pyld" },
 ]
@@ -285,6 +288,7 @@ requires-dist = [
     { name = "pyoxigraph", specifier = ">=0.5.11,<0.6" },
     { name = "pyparsing", marker = "extra == 'shacl'", specifier = ">=3.2,<4" },
     { name = "pyshacl", marker = "extra == 'shacl'", specifier = ">=0.40.1,<0.41" },
+    { name = "python-stdnum", marker = "extra == 'checksums'", specifier = ">=2.2,<3" },
     { name = "pyyaml", marker = "extra == 'sssom'", specifier = ">=6,<7" },
     { name = "rdflib", specifier = ">=7.6,<8" },
     { name = "referencing", marker = "extra == 'jsonschema'", specifier = ">=0.37,<0.38" },
@@ -292,7 +296,7 @@ requires-dist = [
     { name = "sssom-schema", marker = "extra == 'sssom'", specifier = "==1.1.0a5" },
     { name = "uri-template", marker = "extra == 'templates'", specifier = ">=1.3,<2" },
 ]
-provides-extras = ["jsonschema", "jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "sssom"]
+provides-extras = ["jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
 
 [[package]]
 name = "bijux-ontology-dev"
@@ -321,7 +325,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
-    { name = "bijux-ontology", extra = ["jsonld", "linkml", "patterns", "pydantic", "shacl", "sssom", "templates", "xsd"] },
+    { name = "bijux-ontology", extra = ["checksums", "jsonld", "linkml", "patterns", "pydantic", "shacl", "sssom", "templates", "xsd"] },
     { name = "bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning" },
     { name = "build" },
@@ -343,7 +347,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bijux-ontology", extras = ["jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "sssom"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology", extras = ["jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
     { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning", editable = "packages/bijux-ontology-reasoning" },
     { name = "build", specifier = ">=1.2,<2" },
@@ -2784,6 +2788,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/74/26/2fbeedb218a787a5eea551c7532cac4e009f83d689dd2faa0d0353473f86/python_dotenv-1.2.4.tar.gz", hash = "sha256:f0d53e69935a851c0dcc78f3ab7aaccd8cabef0b92382b576b824212902873c0", size = 60824, upload-time = "2026-10-01T05:36:10Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/60/d1/38f3a3405989a89ac18390803e70c6ad7c7760da4f9b83cbeca0c44a0c72/python_dotenv-1.2.4-py3-none-any.whl", hash = "sha256:42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc", size = 23266, upload-time = "2026-10-01T05:36:08.633Z" },
+]
+
+[[package]]
+name = "python-stdnum"
+version = "2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/7f/96c2b9de6024353177dc6139c33730d5ac25877bc33215515d6b95b84555/python_stdnum-2.2.tar.gz", hash = "sha256:e95fcfa858a703d4a40130cb3eaac133c60d8808a7f3c98efeedac968c2479b9", size = 1311813, upload-time = "2026-01-04T19:36:16.753Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2f/61/aa32d9c79f83a2fae033cd6496fb2a24aba918d31c73704271dfcfb48375/python_stdnum-2.2-py3-none-any.whl", hash = "sha256:bdf98fd117a0ca152e4047aa8ad254bae63853d4e915ddd4e0effb33ba0e9260", size = 1193213, upload-time = "2026-01-04T19:36:14.812Z" },
 ]
 
 [[package]]

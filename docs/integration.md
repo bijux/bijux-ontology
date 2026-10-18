@@ -28,6 +28,15 @@ the original spelling and checks only unmodified slots separated by reserved
 literals, strict single decoding and exact re-expansion. Ambiguous or unsupported
 inverse profiles return no guessed record.
 
+`vocabulary.accessions.check_accessions(values, registry, rules=...)` applies
+explicit `AccessionRule` policies to `AccessionValue` occurrences with declared
+CURIE or IRI intent and source locations. Install `[patterns]` for RE2 grammar,
+`[checksums]` for ISO 7064 MOD 11-2 or Luhn, and `[templates]` for alternate IRIs.
+ASCII case corrections are separate suggestions; original values stay intact.
+Unknown namespaces may be explicitly excluded. Missing rules and unsupported
+alternate recognition remain unverified, and valid accessions imply no term
+existence.
+
 Pass `compression="gzip"` with an explicit RDF `format` for paths, bytes or
 binary streams in `RdfSource` or `prepare_source`. `max_compressed_bytes` bounds
 input bytes; `max_bytes` bounds expanded bytes, and both consume the shared byte
