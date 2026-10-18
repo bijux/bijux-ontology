@@ -64,7 +64,6 @@ def _checks(
             report = declaration.check(
                 _materialize(captured.witness, source, operation)
             )
-            operation.consume("work")
             if not isinstance(report, Report):
                 raise InputError("Migration conditions must return Report")
             retain_report(report, operation, issues)
@@ -159,7 +158,6 @@ def execute_migration_plan(
                 actual = capture_source(current, "operation:", operation)
                 callback_source = _materialize(actual.witness, current, operation)
                 candidate = step.transform(callback_source, operation)
-                operation.consume("work")
                 if not isinstance(candidate, MigrationCandidate):
                     raise InputError(
                         "Migration operations must return MigrationCandidate"

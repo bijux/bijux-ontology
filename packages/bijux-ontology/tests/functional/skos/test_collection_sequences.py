@@ -154,7 +154,7 @@ def test_exhausted_tail_preserves_prefix_failure() -> None:
     view = inspect_vocabulary(graph)
     # The view already owns its input. Select a smaller navigation allowance,
     # without changing the immutable graph or rebuilding it under that bound.
-    view.limits = Limits(max_work=5)
+    view.limits = Limits(max_work=150)
     report = check_collection_sequence(view, str(EX.Ordered), expected=(EX.A,))
     assert report.outcome == "exhausted" and not report.complete
     assert any(
@@ -162,6 +162,7 @@ def test_exhausted_tail_preserves_prefix_failure() -> None:
         for issue in report.issues
     )
     assert not any(issue.actual == "0" for issue in report.issues)
+    view.limits = Limits(max_work=5)
     selected = collection_members(view, str(EX.Ordered), ordered=True)
     assert selected.items and not selected.report.complete
     assert [item.position for item in selected.items] == list(
@@ -189,7 +190,7 @@ def test_bounded_expected_capture_and_owned_view_do_not_guess_blank_identity() -
 def test_duplicate_and_maximum_findings_survive_exhaustion() -> None:
     graph, _ = _graph((EX.A, EX.A, EX.B, EX.C, EX.D))
     view = inspect_vocabulary(graph)
-    view.limits = Limits(max_work=7)
+    view.limits = Limits(max_work=252)
     report = check_collection_sequence(
         view,
         str(EX.Ordered),
@@ -208,6 +209,7 @@ def test_duplicate_and_maximum_findings_survive_exhaustion() -> None:
         if issue.code == "skos.policy.collection_size_mismatch"
     )
     assert size.expected == "1" and size.actual == "2"
+    view.limits = Limits(max_work=7)
     minimum = check_collection_sequence(view, str(EX.Ordered), minimum_size=10)
     assert minimum.outcome == "exhausted"
     assert not any(issue.kind == "finding" for issue in minimum.issues)

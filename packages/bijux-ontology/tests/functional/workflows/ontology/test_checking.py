@@ -161,7 +161,7 @@ def test_empty_and_bounded_selected_checks_cannot_manufacture_agreement() -> Non
         check_ontology(Graph(), families=())
     graph = Graph().add((EX.A, RDFS.subClassOf, Literal("bad")))
     exhausted = check_ontology(
-        graph, families=("references",), limits=Limits(max_issues=1, max_work=1)
+        graph, families=("references",), limits=Limits(max_issues=1, max_work=300)
     )
     assert exhausted.outcome == "exhausted"
     assert not exhausted.complete and not exhausted.verified

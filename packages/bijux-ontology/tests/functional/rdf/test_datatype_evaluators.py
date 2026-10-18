@@ -339,7 +339,7 @@ def test_shared_limits_preserve_findings_without_retaining_unqualified_anchors()
 ):
     evaluator = DatatypeEvaluator(str(EX.Bounded), (lambda value: False,) * 20)
     registry = DatatypeRegistry((evaluator,))
-    limited = registry.check(_literal("12"), budget=Budget(Limits(max_work=6)))
+    limited = registry.check(_literal("12"), budget=Budget(Limits(max_work=100)))
     assert limited.outcome == "exhausted" and not limited.complete
     assert any(issue.code == "literal.lexical_invalid" for issue in limited.issues)
     anchor = "x" * 100_000
@@ -370,7 +370,7 @@ def test_shared_limits_preserve_findings_without_retaining_unqualified_anchors()
         data,
         _vocabulary(),
         datatype_registry=DatatypeRegistry((_evaluator(),)),
-        limits=Limits(max_work=10),
+        limits=Limits(max_work=180),
     )
     assert actual.outcome == "exhausted"
     assert any(issue.code == "literal.lexical_invalid" for issue in actual.issues)

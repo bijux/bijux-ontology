@@ -15,7 +15,6 @@ from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, BudgetKind, Limits
 from bijux_ontology.rdf.execution import checkpoint, execute_worker
-from bijux_ontology.reports import Issue
 
 from .codecs import read_witness, term_data, witness_data
 from .types import PatchBlank, PatchUnavailable, PatchValue, SnapshotWitness
@@ -62,6 +61,7 @@ class Operation(Budget):
         shared = budget if budget is not None else Budget(limits)
         super().__init__(shared.limits)
         self.shared, self.cancel = shared, cancel
+        self._retained_issues = shared._retained_issues
         self.deadline = time.monotonic() + timeout
 
     def consume(self, kind: BudgetKind, amount: int = 1) -> None:
@@ -72,10 +72,6 @@ class Operation(Budget):
     def remaining(self, kind: BudgetKind) -> int:
         """Read the actual shared allowance, including any enclosing operation."""
         return self.shared.remaining(kind)
-
-    def _retain_issue(self, issue: Issue, *, repeated: bool) -> None:
-        """Preserve completed paid diagnostics across collector ownership transfer."""
-        self.shared._retain_issue(issue, repeated=repeated)
 
 
 class _ControlBudget(Budget):

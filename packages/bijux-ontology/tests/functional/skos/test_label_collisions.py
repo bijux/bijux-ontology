@@ -172,7 +172,7 @@ def test_indexed_selections_and_exhaustion_retain_known_collisions() -> None:
     view = inspect_vocabulary(graph)
     assert check_label_collisions(view, schemes=Indexed()).outcome == "disagreement"
     partial = check_label_collisions(
-        view, schemes=Indexed(), limits=Limits(max_work=160)
+        view, schemes=Indexed(), limits=Limits(max_work=600)
     )
     assert not partial.complete
     assert any(issue.code == "skos.policy.label_collision" for issue in partial.issues)

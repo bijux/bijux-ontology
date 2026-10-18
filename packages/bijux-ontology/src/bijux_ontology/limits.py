@@ -2,7 +2,7 @@
 
 from collections.abc import Iterable
 from dataclasses import dataclass, fields
-from itertools import chain
+from itertools import chain, islice
 from typing import Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded
@@ -61,9 +61,12 @@ class Budget:
     def _retain_issue(self, issue: Issue, *, repeated: bool) -> None:
         """Transfer paid diagnostics; repeated local retention still costs a slot."""
         identity = id(issue)
-        if repeated or identity not in self._retained_issues:
+        if identity not in self._retained_issues:
+            _issue_metadata(issue, self)
             self.consume("issues")
-            self._retained_issues.setdefault(identity, issue)
+            self._retained_issues[identity] = issue
+        elif repeated:
+            self.consume("issues")
 
 
 class IssueCollector(list[Issue]):
@@ -85,6 +88,27 @@ class IssueCollector(list[Issue]):
         """Retain each completed finding before a later exhaustion occurs."""
         for issue in issues:
             self.append(issue)
+
+    def retain_completed(self, report: Report) -> None:
+        """Transfer only this returned report's already qualified paid findings.
+
+        Terminal handoff examines bounded identity references, without adopting
+        unqualified report metadata or finding text after exhaustion. First
+        ownership reserved these references; repeated local append still uses
+        its ordinary issue allowance outside this terminal path.
+        """
+        owned = self.budget._retained_issues
+        if not owned:
+            return
+        cap = min(
+            self.budget.limits.max_states,
+            self.budget.limits.max_issues + self.budget.limits.max_depth,
+        )
+        for issue in islice(report.issues, cap):
+            identity = id(issue)
+            if owned.get(identity) is issue and identity not in self._retained_ids:
+                self._retained_ids.add(identity)
+                super().append(issue)
 
     def exhausted(self, message: str, *, location: str = "") -> None:
         """Explain stopped checking without discarding completed findings."""
@@ -108,7 +132,58 @@ def _report_text(value: str, budget: Budget) -> None:
     budget.consume("bytes", size)
 
 
-def retain_report(report: Report, operation: Budget, issues: IssueCollector) -> None:
+def _issue_metadata(issue: Issue, budget: Budget) -> None:
+    """Qualify all immutable fields and reserve bounded handoff references once."""
+    budget.consume("states", 2)
+    budget.consume("bytes", 64)
+    for text in (
+        issue.code,
+        issue.message,
+        issue.location,
+        issue.expected,
+        issue.actual,
+        issue.evidence_json,
+    ):
+        if text is not None:
+            _report_text(text, budget)
+    if issue.details is not None:
+        details = issue.details
+        for text in (
+            details.source,
+            details.term,
+            details.graph,
+            details.model,
+        ):
+            if text is not None:
+                _report_text(text, budget)
+        budget.consume("states", len(details.path))
+        for value in chain(details.path, (details.branch,)):
+            if value is None:
+                continue
+            if isinstance(value, int) and value.bit_length() > min(
+                4096, budget.limits.max_bytes
+            ):
+                raise LimitExceeded("Adopted diagnostic index exceeds max_bytes")
+            _report_text(str(value), budget)
+        if details.failure is not None:
+            failure = details.failure
+            budget.consume("states", len(failure.import_chain) + 1)
+            for text in chain(
+                (failure.document_iri or "", failure.location, failure.role),
+                failure.import_chain,
+            ):
+                _report_text(text, budget)
+            if failure.span is not None:
+                for value in failure.span.to_dict().values():
+                    if value is not None:
+                        if isinstance(value, int) and value.bit_length() > min(
+                            4096, budget.limits.max_bytes
+                        ):
+                            raise LimitExceeded("Parser coordinate exceeds max_bytes")
+                        _report_text(str(value), budget)
+
+
+def _adopt_report(report: Report, operation: Budget, issues: IssueCollector) -> None:
     """Bound adopted report trees without counting inherited diagnostics twice."""
     pending = [(report, 0)]
     reports: set[int] = set()
@@ -139,55 +214,15 @@ def retain_report(report: Report, operation: Budget, issues: IssueCollector) -> 
                 continue
             operation.consume("states")
             retained.add(id(issue))
-            for text in (
-                issue.code,
-                issue.message,
-                issue.location,
-                issue.expected,
-                issue.actual,
-                issue.evidence_json,
-            ):
-                if text is not None:
-                    _report_text(text, operation)
-            if issue.details is not None:
-                details = issue.details
-                for text in (
-                    details.source,
-                    details.term,
-                    details.graph,
-                    details.model,
-                ):
-                    if text is not None:
-                        _report_text(text, operation)
-                operation.consume("states", len(details.path))
-                for value in chain(details.path, (details.branch,)):
-                    if value is None:
-                        continue
-                    if isinstance(value, int) and value.bit_length() > min(
-                        4096, operation.limits.max_bytes
-                    ):
-                        raise LimitExceeded(
-                            "Adopted diagnostic index exceeds max_bytes"
-                        )
-                    _report_text(str(value), operation)
-                if details.failure is not None:
-                    failure = details.failure
-                    operation.consume("states", len(failure.import_chain) + 1)
-                    for text in chain(
-                        (failure.document_iri or "", failure.location, failure.role),
-                        failure.import_chain,
-                    ):
-                        _report_text(text, operation)
-                    if failure.span is not None:
-                        for value in failure.span.to_dict().values():
-                            if value is not None:
-                                if isinstance(value, int) and value.bit_length() > min(
-                                    4096, operation.limits.max_bytes
-                                ):
-                                    raise LimitExceeded(
-                                        "Parser coordinate exceeds max_bytes"
-                                    )
-                                _report_text(str(value), operation)
             issues.append(issue)
         operation.consume("states", len(current.children))
         pending.extend((child, depth + 1) for child in current.children)
+
+
+def retain_report(report: Report, operation: Budget, issues: IssueCollector) -> None:
+    """Bound adopted report trees and preserve only qualified paid prefix findings."""
+    try:
+        _adopt_report(report, operation, issues)
+    except LimitExceeded:
+        issues.retain_completed(report)
+        raise

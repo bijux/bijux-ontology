@@ -35,7 +35,7 @@ def test_owned_context_limits_stop_before_success(limits: Limits) -> None:
     assert not report.verified
 
 
-@pytest.mark.parametrize("limits", [Limits(max_issues=1), Limits(max_states=1)])
+@pytest.mark.parametrize("limits", [Limits(max_issues=1), Limits(max_states=3)])
 def test_later_exhaustion_retains_the_first_completed_disagreement(
     limits: Limits,
 ) -> None:
