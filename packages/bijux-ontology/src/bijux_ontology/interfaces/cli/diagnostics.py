@@ -259,6 +259,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "remediation_unverified "
         "external_aggregate_empty external_nonconformance "
         "external_detail_unverified external_projection_incomplete "
         "external_scope_missing external_proof_unverified external_structure_invalid "

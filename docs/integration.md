@@ -1446,3 +1446,12 @@ Reserved logical predicates and occurrence positions are caller policy; retained
 assertions and prohibited reactivation are distinct from ordinary label changes.
 Raw observations and adjacent differences remain available. Missing history or
 anonymous attribution cannot certify permanent identifier stability.
+
+`bijux_ontology.shacl.remediation.propose_remediations` accepts explicit
+`RemediationStrategy` callbacks keyed by named shape and constraint-component
+IRIs. Each receives a private source and actual findings, returning a proposed
+snapshot or `None` for unresolved content. Alternatives carry exact patches and
+full required SHACL rechecks, including original named target obligations;
+additional `MigrationCheck` contracts can reject application-specific changes.
+Inspect each candidate and use the existing explicit migration export gate.
+Callbacks are trusted in-process Python code; native checks have a deadline.
