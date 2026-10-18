@@ -13,6 +13,10 @@ from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.rdf.queries.literals import (
+    LiteralScopeUnsupported,
+    check_literal_scope,
+)
 from bijux_ontology.reports import Issue
 
 if TYPE_CHECKING:
@@ -98,6 +102,7 @@ def analyze_query(
             "SHACL query context could not be resolved", location=str(node)
         ) from error
     result: list[FunctionCall] = []
+    check_literal_scope(algebra, budget)
     for value in _nodes(algebra, budget):
         if value.name in ("ServiceGraphPattern", "Service", "DatasetClause"):
             raise InputError(
@@ -152,7 +157,18 @@ def check_function_dependencies(
         budget.consume("states")
         for predicate in (SH.select, SH.ask):
             for text in graph.objects(node, predicate):
-                analysis = analyze_query(shape, node, text, budget)
+                try:
+                    analysis = analyze_query(shape, node, text, budget)
+                except LiteralScopeUnsupported as error:
+                    issues.append(
+                        Issue(
+                            "rdf.literal_conversion_unverified",
+                            str(error),
+                            str(node),
+                            kind="unverified",
+                        )
+                    )
+                    continue
                 if normalized is not None:
                     normalized.append((node, predicate, Literal(analysis.text)))
                 for function in {call.iri for call in analysis.calls}:

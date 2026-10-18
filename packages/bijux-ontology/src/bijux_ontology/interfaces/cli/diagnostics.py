@@ -113,6 +113,7 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "literal_conversion_unverified "
         "canonicalization_literal_scope_unverified "
         "canonicalization_graph_scope_unverified canonicalization_empty_graph_loss "
         "canonicalization_unavailable canonicalization_input_invalid "
@@ -307,6 +308,11 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "rdf.literal_conversion_unverified": (
+        "The selected backend reconstructs literal spelling outside exact scope.",
+        "Retain exact source terms and use a supported query or explicit conversion.",
+        'query_rdf(source, "SELECT ?value WHERE {?s ?p ?value}", scope=scope)',
+    ),
     "context.probe_unverified": (
         "A declared branch lacks a supported finite JSON representative.",
         "Supply its explicit input shape or retain the unverified branch scope.",

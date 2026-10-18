@@ -221,6 +221,26 @@ def _result(
     if not isinstance(response, dict):
         raise ResourceError("Invalid local query response object")
     status = response.get("status")
+    if status == "unverified":
+        if set(response) != {"status", "message"} or not isinstance(
+            response["message"], str
+        ):
+            raise ResourceError("Malformed query literal-scope response")
+        return QueryResult(
+            Report(
+                "rdf.query",
+                requested=1,
+                complete=False,
+                issues=(
+                    Issue(
+                        "rdf.literal_conversion_unverified",
+                        response["message"],
+                        kind="unverified",
+                    ),
+                ),
+            ),
+            scope,
+        )
     if status != "result":
         if not isinstance(status, str) or status not in {"input_error", "exhausted"}:
             raise ResourceError("Unrecognised local query response status")

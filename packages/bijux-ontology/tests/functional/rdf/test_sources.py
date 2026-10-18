@@ -68,8 +68,9 @@ def test_literal_lexical_terms_are_preserved_or_loss_is_explicit(syntax: str) ->
         '<https://example.org/s> <https://example.org/p> " a  b "^^'
         "<http://www.w3.org/2001/XMLSchema#token> ."
     )
-    with pytest.raises(InputError, match="lexical preservation"):
-        prepare_source(token, format=syntax)
+    exact = prepare_source(token, format=syntax)
+    assert exact.literal_fidelity == "source_terms"
+    assert {str(value) for value in exact.graph().objects()} == {" a  b "}
     allowed = prepare_source(token, format=syntax, preserve_literals=False)
     assert allowed.literal_fidelity == "normalisation_allowed"
     assert {str(value) for value in allowed.graph().objects()} == {"a b"}
@@ -164,8 +165,7 @@ def test_literal_construction_shares_exact_fidelity_and_role_validation() -> Non
     assert literal_term("name", language="en").language == "en"
     with pytest.raises(InputError, match="rdf:langString"):
         literal_term("name", language="en", datatype=str(XSD.integer))
-    with pytest.raises(InputError, match="lexical preservation"):
-        literal_term(" a  b ", datatype=str(XSD.token))
+    assert str(literal_term(" a  b ", datatype=str(XSD.token))) == " a  b "
     assert str(literal_term(" a  b ", datatype=str(XSD.token), preserve=False)) == "a b"
 
 

@@ -13,6 +13,7 @@ from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.reports import Location
 from bijux_ontology.shacl.paths import ShaclPath, decode_path
 
@@ -129,15 +130,15 @@ def _observed_edge(occurrence: ObservedOccurrence) -> _Edge | None:
     elif isinstance(value, dict):
         raw = cast(dict[str, object], value)
         identifier = raw.get("@id")
+        lexical = raw.get("@value")
         if isinstance(identifier, str) and not identifier.startswith("_:"):
             target = URIRef(identifier)
-        elif isinstance(raw.get("@value"), str) and "@direction" not in raw:
+        elif isinstance(lexical, str) and "@direction" not in raw:
             datatype, language = raw.get("@type"), raw.get("@language")
-            target = Literal(
-                raw["@value"],
-                datatype=URIRef(datatype) if isinstance(datatype, str) else None,
-                lang=language if isinstance(language, str) else None,
-                normalize=False,
+            target = literal_term(
+                lexical,
+                datatype=datatype if isinstance(datatype, str) else None,
+                language=language if isinstance(language, str) else None,
             )
         else:
             return None
