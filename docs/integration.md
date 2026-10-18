@@ -1067,3 +1067,13 @@ Endpoint roles, cardinalities and conflicts require explicit consumer policy.
 Modifiers, composed/literal endpoints, extension semantics and unmapped sentinels
 remain unknown; sentinels cannot satisfy required cardinality. The supported TSV
 body excludes hash characters because maintained comment handling can lose data.
+
+`validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
+opt into supported SPARQL targets and parameterized target types. The existing
+owned worker enumerates each selected root once, then validates ordinary Core
+constraints and coverage against those exact focus nodes. Target types use
+maintained required/optional binding and Core datatype/class/node-kind guards.
+Constraint queries and function catalogs retain their separate trust controls;
+unselected targets and pair-mode targets stay inactive. Unsupported target kinds,
+missing required bindings, forbidden retrieval and incomplete enumeration cannot
+verify. Empty targets may conform while failing an explicit coverage minimum.

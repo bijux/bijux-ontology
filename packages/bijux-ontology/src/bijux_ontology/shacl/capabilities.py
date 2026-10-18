@@ -136,9 +136,16 @@ def prepare_capabilities(
     trusted_sparql: bool,
     limits: Limits,
     enabled_functions: frozenset[URIRef] = frozenset(),
+    inspect_targets: bool = False,
 ) -> CapabilityPlan:
     """Resolve selected queries and explicitly required parameter bindings."""
-    if not trusted_sparql and not requirements and not roots and not enabled_functions:
+    if (
+        not trusted_sparql
+        and not requirements
+        and not roots
+        and not enabled_functions
+        and not inspect_targets
+    ):
         return CapabilityPlan(None)
     try:
         from pyshacl.errors import (

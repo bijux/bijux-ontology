@@ -17,6 +17,7 @@ from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.shacl.bindings import ANCHOR, SELECTION, read_bindings
 from bijux_ontology.shacl.coverage import TARGET
 from bijux_ontology.shacl.functions import register_functions
+from bijux_ontology.shacl.targets.execution import materialize_targets
 
 
 def target_coverage(
@@ -189,6 +190,8 @@ def execute(
                 data,
                 limits,
             ) as function_calls:
+                if request.get("trusted_targets"):
+                    materialize_targets(data, shapes, ontology, limits)
                 conforms, report, _ = pyshacl.validate(
                     data,
                     shacl_graph=shapes,
