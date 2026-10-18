@@ -297,6 +297,13 @@ Independent operations share names only through explicit owned `BlankNodePair`
 correspondence. Naming changes RDF identity; reversal preserves original sharing
 and exact literals. Similar IRI spellings never authorize reversal.
 
+`rdf.algebra.rdf_set_operation(left, right, operation, ...)` computes exact
+intersection, difference or symmetric difference. Explicit graph selections
+operate on triples; whole datasets retain quad and empty-graph inventories.
+Every retained quad keeps its graph. Independent anonymous inputs require
+complete owned `blank_pairs` or explicit `named_only=True`; one snapshot shares
+identity across its graph selections. No logical equivalence is inferred.
+
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.

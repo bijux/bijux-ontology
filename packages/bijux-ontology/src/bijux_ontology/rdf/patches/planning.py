@@ -10,7 +10,8 @@ from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, bound_text, literal_datatype
 from bijux_ontology.reports import Issue, Report
 
@@ -82,10 +83,19 @@ def capture_items(
     return tuple(result)
 
 
-def capture_source(source: PreparedSource, prefix: str, budget: Budget) -> Captured:
+def capture_source(
+    source: PreparedSource,
+    prefix: str,
+    budget: Budget,
+    *,
+    graph_name: GraphSelection | None = None,
+    project_graph: bool = False,
+) -> Captured:
     """Read only the actual authorized contexts, retaining empty named graphs."""
     if not isinstance(source, PreparedSource):
         raise InputError("RDF patches require owned PreparedSource inputs")
+    if type(project_graph) is not bool or graph_name is not None and not project_graph:
+        raise InputError("An explicit capture graph requires graph projection")
     if source.union:
         raise PatchUnavailable(
             "A union projection does not establish physical dataset graph inventory"
@@ -123,7 +133,26 @@ def capture_source(source: PreparedSource, prefix: str, budget: Budget) -> Captu
     kind: SnapshotKind = "graph" if not source.is_dataset else "dataset"
     selection: PatchResource | None = None
     contexts: list[tuple[URIRef | BNode | None, Graph]] = []
-    if not source.is_dataset:
+    if project_graph:
+        kind = "graph"
+        selected = graph_name if graph_name is not None else source.graph_name
+        if selected is not None:
+            if not isinstance(selected, str) or isinstance(selected, Literal):
+                raise InputError(
+                    "A graph projection requires a named or owned blank selector"
+                )
+            bound_text(selected, budget)
+            if isinstance(selected, BNode):
+                if not any(
+                    name is selected for name in source._graph_names(budget=budget)
+                ):
+                    raise PatchUnavailable(
+                        "A projected blank graph lacks snapshot ownership"
+                    )
+            elif isinstance(selected, URIRef) or selected != "@default":
+                absolute_iri(selected)
+        contexts.append((None, source._read(graph_name, budget=budget)))
+    elif not source.is_dataset:
         contexts.append((None, source._read(budget=budget)))
     elif source.graph_name is not None:
         if source.graph_name == "@default":
