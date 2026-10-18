@@ -7,6 +7,7 @@ from typing import Literal, TypeVar
 from rdflib import RDF, URIRef
 from rdflib import Literal as RDFLiteral
 
+from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 
@@ -51,16 +52,22 @@ class TermDeclaration:
 
 @dataclass(frozen=True)
 class ValueDeclaration:
-    """One permitted value branch; its RDF types apply simultaneously."""
+    """One permitted value branch; its RDF types apply simultaneously.
+
+    Language and direction are unchecked with None, required absent with ABSENT,
+    or compared to the supplied tag/direction. RDF direction encodings are
+    selected by the checking operation; native datatypes stay physical.
+    """
 
     kind: ValueKind = "unknown"
     datatype: str | None = None
-    language: str | None = None
+    language: str | Absent | None = None
     types: tuple[str, ...] = ()
     model: str | None = None
     container: str | None = None
     _: KW_ONLY
     samples: tuple[RDFLiteral, ...] = ()
+    direction: Literal["ltr", "rtl"] | Absent | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.kind, str) or self.kind not in {
@@ -73,8 +80,19 @@ class ValueDeclaration:
         object.__setattr__(self, "types", _iris(self.types, "types"))
         if self.datatype is not None:
             absolute_iri(self.datatype, location="datatype")
-        if self.language is not None:
+        if isinstance(self.language, str):
             language_tag(self.language, location="language")
+        elif self.language is not None and self.language is not ABSENT:
+            raise InputError("Expected a language tag, ABSENT or None")
+        if (
+            self.direction is not None
+            and self.direction is not ABSENT
+            and (
+                not isinstance(self.direction, str)
+                or self.direction not in ("ltr", "rtl")
+            )
+        ):
+            raise InputError("Expected ltr, rtl, ABSENT or None direction")
         if self.model is not None:
             _text(self.model, "model")
         if self.container is not None:
@@ -82,14 +100,18 @@ class ValueDeclaration:
         if self.kind == "literal" and (self.types or self.model is not None):
             raise InputError("Literal branches cannot declare resource types or models")
         if self.kind in {"iri", "object"} and (
-            self.datatype is not None or self.language is not None
+            self.datatype is not None
+            or self.language is not None
+            or self.direction is not None
         ):
             raise InputError("Resource branches cannot declare literal metadata")
-        if self.language is not None and self.datatype not in (
+        if isinstance(self.language, str) and self.datatype not in (
             None,
             str(RDF.langString),
         ):
             raise InputError("A language-tagged literal has datatype rdf:langString")
+        if self.language is ABSENT and self.datatype == str(RDF.langString):
+            raise InputError("rdf:langString requires a language tag")
         samples = _sequence(self.samples, "samples")
         if any(not isinstance(sample, RDFLiteral) for sample in samples):
             raise InputError("Literal samples must be RDFLib Literal values")

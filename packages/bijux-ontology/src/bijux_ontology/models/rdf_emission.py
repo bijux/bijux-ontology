@@ -11,6 +11,7 @@ from rdflib.term import Node
 
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -21,6 +22,7 @@ from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
 
 from .coverage import predicate_issues
+from .direction import project_direction
 from .emission_groups import TermKey, check_groups
 from .occurrences import check_output_counts
 from .registry import index_models
@@ -87,6 +89,7 @@ def check_rdf_emission(
     union: bool = False,
     limits: Limits | None = None,
     budget: Budget | None = None,
+    rdf_direction: DirectionPolicy | None = None,
 ) -> Report:
     """Check actual selected RDF using the existing value and occurrence contracts.
 
@@ -97,6 +100,8 @@ def check_rdf_emission(
     express required RDF predicate occurrences. Exact native literal validation
     and counts use the prepared source's available literal fidelity.
     """
+    if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
+        raise InputError("Unknown RDF direction policy")
     if not isinstance(source, PreparedSource):
         raise InputError("RDF emission checking requires an owned PreparedSource")
     if isinstance(cast(object, usages), (str, bytes)) or not isinstance(
@@ -379,10 +384,26 @@ def check_rdf_emission(
                     for node, container, empty in observed:
                         budget.consume("work", 1 + len(field.values))
                         actual = _traits(graph, node, budget)
+                        recognized, projected = (
+                            project_direction(graph, node, rdf_direction, budget)
+                            if any(branch.kind == "literal" for branch in field.values)
+                            else (False, None)
+                        )
                         matches = tuple(
-                            matches_value(
+                            None
+                            if recognized
+                            and projected is None
+                            and branch.kind == "literal"
+                            else None
+                            if projected is not None
+                            and branch.kind == "literal"
+                            and not isinstance(node, Literal)
+                            and branch.datatype is not None
+                            else matches_value(
                                 branch,
-                                actual,
+                                projected
+                                if branch.kind == "literal" and projected is not None
+                                else actual,
                                 registry,
                                 container=container,
                                 empty=empty,
@@ -402,8 +423,32 @@ def check_rdf_emission(
                                     actual=actual.kind,
                                 )
                             )
+                        if (
+                            projected is not None
+                            and not isinstance(node, Literal)
+                            and not empty
+                        ):
+                            checked += 1
+                            if source.literal_fidelity not in {
+                                "source_terms",
+                                "supplied_terms",
+                            }:
+                                issues.append(
+                                    Issue(
+                                        "literal.lexical_unverified",
+                                        "Preparation did not retain "
+                                        "exact component literals",
+                                        field_where,
+                                        kind="unverified",
+                                        actual=source.literal_fidelity,
+                                    )
+                                )
                         if isinstance(node, Literal) and not empty:
-                            literal = check_literal(node, location=field_where)
+                            literal = (
+                                Report("literal", 1)
+                                if projected is not None
+                                else check_literal(node, location=field_where)
+                            )
                             checked += literal.checked
                             issues.extend(literal.issues)
                             if source.literal_fidelity not in {

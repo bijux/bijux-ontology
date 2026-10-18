@@ -1,6 +1,6 @@
 """Public JSON-shaped declaration ingestion shared by API and console callers."""
 
-from typing import cast
+from typing import Literal, cast
 
 from rdflib import Literal as RDFLiteral
 from rdflib import URIRef
@@ -16,6 +16,7 @@ from bijux_ontology._json import (
     string_value,
     string_values,
 )
+from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import (
     Emission,
     EmissionCondition,
@@ -65,13 +66,29 @@ def terms_from_data(value: object, *, source: str = "") -> tuple[TermDeclaration
     return tuple(result)
 
 
+def _trait(value: object) -> str | Absent | None:
+    """Keep an authored absence requirement distinct from omitted metadata."""
+    if isinstance(value, dict) and set(value) == {"absent"} and value["absent"] is True:
+        return ABSENT
+    return optional_string_value(value)
+
+
 def _value(value: object) -> ValueDeclaration:
     data = object_value(
         value, location="", message="Expected a JSON object with string keys"
     )
     known_keys(
         data,
-        {"kind", "datatype", "language", "types", "model", "container", "samples"},
+        {
+            "kind",
+            "datatype",
+            "language",
+            "direction",
+            "types",
+            "model",
+            "container",
+            "samples",
+        },
         location="",
         message="Unknown declaration keys",
     )
@@ -81,7 +98,10 @@ def _value(value: object) -> ValueDeclaration:
     return ValueDeclaration(
         kind=cast(ValueKind, kind),
         datatype=optional_string_value(data.get("datatype")),
-        language=optional_string_value(data.get("language")),
+        language=_trait(data.get("language")),
+        direction=cast(
+            Literal["ltr", "rtl"] | Absent | None, _trait(data.get("direction"))
+        ),
         types=string_values(data.get("types", [])),
         model=optional_string_value(data.get("model")),
         container=optional_string_value(data.get("container")),

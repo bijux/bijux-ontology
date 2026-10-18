@@ -243,6 +243,14 @@ Pass an adapter’s `declaration_report` to retain extraction limitations. This 
 sampled evidence; it does not prove every possible serializer output. Callbacks
 execute in-process.
 
+`ValueDeclaration` treats `language=None` and `direction=None` as unchecked;
+`ABSENT` requires absence. Languages compare without case, while `ltr` and `rtl`
+compare exactly. Model and serializer checks accept `rdf_direction="i18n-datatype"`
+or `"compound-literal"` to qualify supported directional output. Physical RDF
+datatypes and resource kinds still govern range checks. Ambiguous compound
+resources, unsupported encodings and unresolved source-to-RDF counts remain
+unverified.
+
 For ordinary nested Pydantic models, an authoritative context can supply the RDF
 mappings without duplicate primitive declarations:
 

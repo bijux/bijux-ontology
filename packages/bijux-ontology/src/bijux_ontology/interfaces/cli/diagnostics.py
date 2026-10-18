@@ -88,6 +88,7 @@ _CODES = {
         "datatype_unverified lexical_invalid lexical_unverified".split()
     ),
     "models": frozenset(
+        "direction_unverified contextual_direction_unverified "
         "emission_group_conflict emission_group_unverified "
         "scenario_coverage_unverified emission_scenario_conflict "
         "scenario_condition_conflict scenario_condition_unverified "

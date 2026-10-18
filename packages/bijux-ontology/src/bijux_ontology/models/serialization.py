@@ -13,6 +13,7 @@ from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.reports import Issue, Report, combine_reports
@@ -64,6 +65,7 @@ def check_instance(
     document_loader: DocumentLoader | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
+    rdf_direction: DirectionPolicy | None = None,
     _corpus: _CorpusEvidence | None = None,
 ) -> InstanceCheck:
     """Call the actual serializer once with exact options and check its output.
@@ -101,6 +103,7 @@ def check_instance(
         base=base,
         document_loader=document_loader,
         budget=operation,
+        rdf_direction=rdf_direction,
         _corpus=_corpus,
     )
 
@@ -139,6 +142,7 @@ def check_serialized(
     document_loader: DocumentLoader | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
+    rdf_direction: DirectionPolicy | None = None,
     _corpus: _CorpusEvidence | None = None,
 ) -> InstanceCheck:
     """Check one already serialized output using the shared semantic budget.
@@ -178,7 +182,11 @@ def check_serialized(
             document, max_bytes=selected.max_bytes, max_depth=selected.max_depth
         )
         document_json = json.dumps(document, ensure_ascii=False, allow_nan=False)
-        reports.append(check_models(models, vocabulary, budget=operation))
+        reports.append(
+            check_models(
+                models, vocabulary, budget=operation, rdf_direction=rdf_direction
+            )
+        )
         reports.append(
             check_emission(
                 document,
@@ -187,6 +195,7 @@ def check_serialized(
                 base=base,
                 document_loader=document_loader,
                 budget=operation,
+                rdf_direction=rdf_direction,
                 _corpus=_corpus,
             )
         )
