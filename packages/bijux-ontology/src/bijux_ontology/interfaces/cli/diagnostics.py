@@ -219,7 +219,7 @@ _CODES = {
     "rdf": frozenset(
         "triple_terms_unverified "
         "container_contract container_unverified container_conversion_rejected "
-        "query_transform_unverified query_transform_invalid "
+        "query_transform_unverified query_transform_invalid query_unverified "
         "reification_contract reification_unverified "
         "merge_conflict merge_unverified merge_resolution_required "
         "algebra_identity_unverified "

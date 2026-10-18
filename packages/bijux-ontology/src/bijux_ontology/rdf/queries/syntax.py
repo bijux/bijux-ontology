@@ -5,7 +5,7 @@ from collections.abc import Mapping
 import pyoxigraph
 from rdflib import URIRef
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.errors import InputError, ResourceError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.terms import bound_text
 
@@ -32,4 +32,8 @@ def check_query_syntax(
     except SyntaxError as error:
         raise InputError(
             "SPARQL query violates syntax or variable-scope rules"
+        ) from error
+    except RuntimeError as error:
+        raise ResourceError(
+            "Native SPARQL syntax qualification cannot support this query"
         ) from error

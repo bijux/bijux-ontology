@@ -349,3 +349,41 @@ def test_deadline_expiring_at_capture_end_is_exhausted() -> None:
         DelayedNamespaces(), "ASK {}", scope=QueryScope("default"), timeout=0.005
     )
     assert result.report.outcome == "exhausted" and result.answer is None
+
+
+@pytest.mark.parametrize(
+    ("body", "outcome", "code"),
+    [
+        (
+            "SELECT (<urn:extension>(1) AS ?v) WHERE {}",
+            "unverified",
+            "rdf.query_unverified",
+        ),
+        (
+            'SELECT (x:normalizedString(" a  b ") AS ?v) WHERE {}',
+            "unverified",
+            "rdf.literal_conversion_unverified",
+        ),
+        (
+            'SELECT (x:normalizedString(" a  b ") AS ?v) '
+            "WHERE { BIND(1 AS ?n) BIND(2 AS ?n) }",
+            "input_error",
+            "input.invalid",
+        ),
+        ("SELECT (x:string(1) AS ?v) WHERE {}", "agreement", None),
+    ],
+)
+def test_native_function_capability_is_distinct_from_invalid_query_scope(
+    body: str, outcome: str, code: str | None
+) -> None:
+    result = query_rdf(
+        Graph(),
+        "PREFIX x: <http://www.w3.org/2001/XMLSchema#> " + body,
+        scope=QueryScope("default"),
+    )
+    assert result.report.outcome == outcome
+    if code is not None:
+        assert result.answer is None and not result.rows
+        assert any(issue.code == code for issue in result.report.issues)
+    else:
+        assert result.rows == ((Literal("1", datatype=XSD.string),),)

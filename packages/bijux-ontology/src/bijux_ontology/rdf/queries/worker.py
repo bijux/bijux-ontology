@@ -14,7 +14,7 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.plugins.sparql.processor import SPARQLProcessor
 
 from bijux_ontology._json import decode_json
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.queries.literals import (
     LiteralScopeUnsupported,
@@ -47,9 +47,17 @@ def _checked_query(text: str, namespaces: Mapping[str, URIRef], budget: Budget) 
                 pending.extend((child, depth + 1) for child in value.values())
             elif isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
                 pending.extend((child, depth + 1) for child in value)
-        check_query_syntax(text, namespaces, budget)
+        unavailable = None
+        try:
+            check_query_syntax(text, namespaces, budget)
+        except ResourceError as error:
+            # A parsed query may use a native unsupported function. Retain the
+            # more precise literal-construction boundary when it also applies.
+            unavailable = error
         translated = translateQuery(parsed, initNs=namespaces)
         check_literal_scope(translated.algebra, budget)
+        if unavailable is not None:
+            raise unavailable
         return translated
     except (InputError, LimitExceeded):
         raise
@@ -164,6 +172,8 @@ def process_request(payload: bytes, cap: int) -> bytes:
             if isinstance(error, (LimitExceeded, MemoryError))
             else "unverified"
             if isinstance(error, LiteralScopeUnsupported)
+            else "unavailable"
+            if isinstance(error, ResourceError)
             else "input_error",
             "message": f"{type(error).__name__}: {str(error)[:2000]}",
         }
