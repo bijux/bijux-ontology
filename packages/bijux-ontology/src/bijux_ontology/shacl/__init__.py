@@ -1,5 +1,13 @@
 """Optional supplied-shapes validation with preserved backend evidence."""
 
+from bijux_ontology.shacl.analysis import (
+    LocalConflict,
+    RootConflict,
+    ShapeAnalysis,
+    ShapeComponent,
+    SignedDependency,
+    analyze_shape_profile,
+)
 from bijux_ontology.shacl.authoring import (
     ShaclComparison,
     ShaclConstraint,
@@ -52,6 +60,12 @@ from bijux_ontology.shacl.profiles import (
 from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "LocalConflict",
+    "RootConflict",
+    "ShapeAnalysis",
+    "ShapeComponent",
+    "SignedDependency",
+    "analyze_shape_profile",
     "ShapeCountEdit",
     "ShapeEdit",
     "ShapeInspection",

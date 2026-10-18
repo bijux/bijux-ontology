@@ -296,6 +296,14 @@ graph and runs maintained validation with root coverage. Unknown extensions
 block edits by default; explicit `allow_opaque=True` preserves them while keeping
 the projection unverified. Export `candidate.source` through `export_rdf`.
 
+`analyze_shape_profile(profile)` checks finite count, fixed-value and enumeration
+incompatibilities before loading data. Local conflicts remain conditional on
+invocation; only justified necessary conflicts propagate to selected roots.
+Inspect signed dependencies and components for recursion boundaries. The analyzer
+checks dependency metadata against actual RDF and preserves valid alternatives.
+`not_determined` never certifies arbitrary satisfiability; recursive semantics,
+qualified sibling exclusions and unsupported metadata remain explicit unknowns.
+
 Use `compile_model_shapes(models, bindings)` with explicit `ModelShapeBinding`
 targets to translate supported output declarations into the same typed shapes.
 Asserted model/value types use exact `rdf:type` values; subclass edges do not
