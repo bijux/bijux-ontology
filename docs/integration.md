@@ -1323,3 +1323,12 @@ base, comments and processing instructions. DTD/entity declarations and external
 resolution are outside the supported profile. HTML supports fragment inspection;
 it has no supported canonical value comparison. Original RDF terms stay exact,
 and native execution has an owned deadline and cancellation lifecycle.
+
+`documents.relocation.relocate_document(..., old_url=..., new_url=...,
+policy="pin-old-base", requirements=...)` prepares an owned JSON-LD relocation.
+It preserves selected source-form and optional occurrence contracts, then compares
+whole resolved RDF. Root context references keep their original effective bases;
+null resets and nested/scoped contexts remain unsupported. `export_relocation`
+returns checked bytes for the ordinary atomic `write_export` protocol only after
+all required preservation checks verify. Intended identity changes require an
+explicit migration rather than this preservation policy.
