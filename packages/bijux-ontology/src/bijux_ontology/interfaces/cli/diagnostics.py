@@ -48,6 +48,7 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "compilation_conflict compilation_unverified "
         "list_group_mismatch list_order_mismatch list_unverified "
         "probe_unverified "
         "change_unverified before_input_error after_input_error "

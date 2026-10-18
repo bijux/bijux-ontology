@@ -342,6 +342,16 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
 
+Use `compile_context(probes, type_scoped=False)` to generate mappings from
+explicit `ContextProbe` model/field intent. Supported forward/reverse fields,
+IRI coercions, datatypes, languages and list/set containers are checked by the
+maintained processor. Type-scoped mode requires explicit compact type terms.
+Conflicts, unsupported scope or exhausted qualification withhold `.context`;
+a successful export is an independent JSON object. Retain `compiled.report`
+with `check_instance(..., context=compiled.context,
+declaration_report=compiled.report)` when checking actual serializer output.
+Generated representatives do not establish every possible output.
+
 For ordinary nested Pydantic models, an authoritative context can supply the RDF
 mappings without duplicate primitive declarations:
 

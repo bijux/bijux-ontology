@@ -69,6 +69,7 @@ from bijux_ontology.jsonld.selectors import (
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
+from bijux_ontology.models.context_compilation import CompiledContext, compile_context
 from bijux_ontology.models.context_probes.checking import probe_context
 from bijux_ontology.models.context_probes.types import ContextProbe, ProbeSample
 from bijux_ontology.models.corpus import (
@@ -217,6 +218,7 @@ __all__ = [
     "CheckError",
     "CollectionExpansion",
     "CollectionOccurrence",
+    "CompiledContext",
     "ContextCorpusDocument",
     "ContextCorpusUpgrade",
     "ContextExpectation",
@@ -346,6 +348,7 @@ __all__ = [
     "compare_rdf",
     "compare_serializations",
     "compare_vocabularies",
+    "compile_context",
     "context_document_loader",
     "convert_to_rdf",
     "existential_path",
