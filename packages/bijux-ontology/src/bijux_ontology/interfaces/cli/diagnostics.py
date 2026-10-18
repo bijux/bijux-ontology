@@ -28,6 +28,11 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "taxonomy": frozenset(
+        "class_role_unverified expression_unrepresented outside_parent "
+        "annotation_invalid label_choice_invalid label_ambiguous "
+        "scope_unverified".split()
+    ),
     "acquisition": frozenset("resource_failed unavailable".split()),
     "schema": frozenset(
         "translation_invalid translation_unverified "
@@ -289,6 +294,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "taxonomy": (
+        "explicit named taxonomy publication",
+        "A selected class role, hierarchy assertion or publication choice failed.",
+        "Inspect exact source and hierarchy selections, class bindings, label "
+        "choices and omission policies; rerun the required consumer checks.",
+        "project_taxonomy(source, hierarchy, policy, hierarchy_basis='asserted')",
+    ),
     "acquisition": (
         "explicit offline resource preparation",
         "A selected acquisition closure failed or could not be qualified.",

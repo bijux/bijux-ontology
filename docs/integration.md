@@ -1034,3 +1034,14 @@ explicit acceptance for portable RDF. Excluded collection members block complete
 publication; mapping exclusions remain explicit. Shared labels, list order and
 authored membership direction are retained. This certifies the selected
 publication contract, without claiming OWL equivalence or global minimality.
+
+`bijux_ontology.workflows.ontology.taxonomy.project_taxonomy` publishes a selected
+named subclass hierarchy through the same checked publication/export boundary.
+Supply source and hierarchy snapshots, `TaxonomyProjection` and an explicit
+`hierarchy_basis="asserted"` or `"supplied-inferred"`; the latter declares supplied
+evidence rather than running inference. Choose `same-iri-punning` or complete
+`ClassConcept` bindings with an ordinary source-class annotation predicate.
+Required consumer checks validate the actual SKOS result. Competing preferred
+labels and unrepresented selected expressions block publication until exact
+source-label choices or explicit omission policies resolve them. Original
+assertions, identity bindings and omission witnesses remain inspectable.
