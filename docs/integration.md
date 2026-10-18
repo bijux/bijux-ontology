@@ -1362,3 +1362,15 @@ and explicit `RetainedUsage` path pairs. Array rebinding additionally needs the
 same actual named parent. Failed base/tests reject publication; unsupported
 operations or uncertain identity remain unverified. `export_document_patch`
 returns immutable checked JSON bytes for ordinary atomic `write_export`.
+
+Use `interfaces.adapters.csvw.extract_csvw` with optional `[csvw]`, inline
+single-table metadata, exact URL-to-CSV-text resources and an explicit metadata
+base. Maintained CSVW tooling interprets explicit subject/predicate/value URI
+templates, scalar string/integer/decimal/boolean/anyURI cells, column null/default,
+inherited required policies, unordered separators and scalar primary keys.
+Unsupported rules or missing resources prevent complete extraction. Returned
+cells retain original text, row, column, physical start line and emitted RDF;
+`CsvwCheck` callbacks inspect the owned source. Acceptance requires the aggregate
+report. Shared subjects are legal without declared uniqueness. Decimals retain
+native exact values independently of caller Decimal settings; split/default
+amplification is bounded before native parsing. No external resources are fetched.

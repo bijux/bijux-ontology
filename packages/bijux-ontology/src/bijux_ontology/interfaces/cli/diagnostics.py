@@ -28,6 +28,9 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "csvw": frozenset(
+        "cell_invalid duplicate_key extraction_unverified input_invalid".split()
+    ),
     "jsonld": frozenset("record_unavailable stream_empty".split()),
     "mapping": frozenset(
         "endpoint_unverified endpoint_kind semantics_unverified relation_forbidden "
@@ -342,6 +345,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "csvw": (
+        "explicit CSVW-described table extraction",
+        "A selected cell, declared key or required conversion rule is unqualified.",
+        "Inspect the original table, row, cell and explicit metadata; supply "
+        "required resources and retain unsupported conversion rules as unknown.",
+        "extract_csvw(description, tables, base=metadata_url)",
+    ),
     "jsonld": (
         "explicit independent JSON-LD document records",
         "A required record capability is unavailable or no records were supplied.",
