@@ -351,6 +351,15 @@ supplements. Case-insensitive comparison requires explicit `case_comparison="asc
 original spellings remain unchanged. Keep all reports: unsupported fields,
 fractional numbers and unavailable comparison regimes cannot establish acceptance.
 
+The sibling `fhir.value_set` adapter reads and writes supported R5 ValueSets.
+`compile_value_set(..., mode="compose", systems=..., bindings=...)` applies finite
+local includes minus exclusions through the existing allowed-value contracts;
+`mode="expansion"` keeps abstract grouping entries separate from submitted codes.
+Every coded entry needs its own system and version policy. Paged expansions,
+ambiguous totals, unavailable versions and unsupported filters remain open;
+neither nesting nor an available parent supplies a missing identity. Export
+preserves the original presentation tree and parameters without declaring closure.
+
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
 `rdf.skolem.skolemize(source, caller_owned_base)` names blank resources with
