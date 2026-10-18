@@ -140,6 +140,11 @@ def test_actual_serializer_once_with_owned_options_and_resources() -> None:
     assert result.before.verified and result.after.verified and result.report.verified
     assert not result.declarations and not result.samples[0].values
     assert result.samples[0].dataset.verified and result.samples[0].mapping.verified
+    calls.clear()
+    single = check_application(_schema(), version)
+    assert single.report.verified
+    assert calls == [(version.cases[0].instance, True)]
+    assert single.samples["sample"].document == result.samples[0].before.document
 
 
 def test_both_valid_predicate_and_field_name_changes_are_explicit() -> None:
@@ -567,7 +572,8 @@ def test_single_application_retains_actual_outputs_without_a_baseline() -> None:
     assert result.report.verified
     assert result.version is version
     assert result.samples["sample"].document == {
-        **version.outputs["sample"].document, "@context": version.context
+        **version.outputs["sample"].document,
+        "@context": version.context,
     }
     assert "sample" in result.sources
     assert result.parts["sample/sample"].verified
