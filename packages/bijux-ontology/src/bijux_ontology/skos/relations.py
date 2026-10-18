@@ -1,6 +1,6 @@
 """Finite hierarchical and mapping integrity, with separate authoring policies."""
 
-from rdflib import URIRef
+from rdflib import BNode, URIRef
 from rdflib.namespace import SKOS
 from rdflib.term import Node
 
@@ -8,7 +8,54 @@ from bijux_ontology.limits import Budget, IssueCollector
 
 from ..reports import Issue
 from .selection import RuleSelection, SkosScope
-from .structure import reachability
+from .structure import _MAPPINGS, reachability
+
+
+def _mapping_endpoints(
+    scope: SkosScope, policy: RuleSelection, budget: Budget, issues: IssueCollector
+) -> int:
+    """Check incident mappings without selecting unrelated endpoint obligations."""
+    facts, resources = scope.facts, scope.resources
+    seen: set[tuple[Node, Node, str]] = set()
+    checked = 0
+    for subject, _predicate, target in facts.mapping_edges:
+        budget.consume("work")
+        if subject not in resources and target not in resources:
+            continue
+        checked += 1
+        anchor = subject if subject in resources else target
+        other = target if anchor == subject else subject
+        for endpoint in (subject, target):
+            if not isinstance(endpoint, (URIRef, BNode)):
+                kind = "shape"
+            elif facts.roles.get(endpoint, frozenset()) & {
+                SKOS.ConceptScheme,
+                SKOS.Collection,
+            }:
+                if "resource-integrity" in policy.names and endpoint in resources:
+                    continue
+                kind = "role"
+            else:
+                continue
+            key = anchor, endpoint, kind
+            if key in seen:
+                continue
+            budget.consume("states")
+            seen.add(key)
+            issues.append(
+                Issue(
+                    "skos.reference_shape_unverified"
+                    if kind == "shape"
+                    else "skos.resource_role_conflict",
+                    "Mapping requires a resource endpoint"
+                    if kind == "shape"
+                    else f"Mapping endpoint {endpoint.n3()} has a disjoint known role",
+                    str(anchor),
+                    kind="unverified" if kind == "shape" else "finding",
+                    actual=str(other),
+                )
+            )
+    return checked
 
 
 def check_relations(
@@ -20,11 +67,27 @@ def check_relations(
     checked = 0
     closure = (
         reachability(facts.transitive, budget)
-        if set(rules) & {"relation-integrity", "acyclic"}
+        if "relation-integrity" in rules
+        or ("acyclic" in rules and policy.hierarchy_basis == "effective")
         else {}
     )
+    policy_closure = (
+        closure
+        if policy.hierarchy_basis == "effective"
+        else reachability(facts.authored_transitive, budget)
+        if "acyclic" in rules
+        else {}
+    )
+    policy_broader = (
+        facts.authored_broader
+        if policy.hierarchy_basis == "asserted"
+        else facts.broader
+    )
+    incident_mappings = "mapping-endpoints" in rules
     if "relation-integrity" in rules:
         for subject, predicate, _target in facts.invalid_targets:
+            if incident_mappings and predicate in _MAPPINGS:
+                continue
             if subject in resources:
                 issues.append(
                     Issue(
@@ -36,7 +99,9 @@ def check_relations(
                     )
                 )
         for subject, target in facts.related:
-            if subject not in resources:
+            if subject not in resources and not (
+                incident_mappings and target in resources
+            ):
                 continue
             budget.consume("work")
             checked += 1
@@ -45,12 +110,12 @@ def check_relations(
                     Issue(
                         "skos.related_hierarchy_conflict",
                         "Associative and hierarchy relations are disjoint",
-                        str(subject),
+                        str(subject if subject in resources else target),
                         actual=" -> ".join(map(str, closure[subject][target])),
                     )
                 )
     if "acyclic" in rules:
-        for node, paths in closure.items():
+        for node, paths in policy_closure.items():
             if node not in resources:
                 continue
             checked += 1
@@ -65,23 +130,34 @@ def check_relations(
                 )
     if "mapping-integrity" in rules:
         exact = reachability(facts.exact, budget)
+        seen_conflicts: set[tuple[Node, Node]] = set()
         for subject, target in facts.broad_mappings | facts.related_mappings:
-            if subject not in resources:
+            if subject not in resources and not (
+                incident_mappings and target in resources
+            ):
                 continue
             budget.consume("work")
             checked += 1
             if target in exact.get(subject, {}):
+                anchor = subject if subject in resources else target
+                other = target if subject in resources else subject
+                if (anchor, other) in seen_conflicts:
+                    continue
+                budget.consume("states")
+                seen_conflicts.add((anchor, other))
                 issues.append(
                     Issue(
                         "skos.mapping_conflict",
                         "Exact mapping conflicts with broad/narrow/related mapping",
-                        str(subject),
-                        actual=str(target),
+                        str(anchor),
+                        actual=str(other),
                     )
                 )
+    if incident_mappings:
+        checked += _mapping_endpoints(scope, policy, budget, issues)
     if "same-scheme-hierarchy" in rules or "isolated" in rules:
         connected: set[Node] = set()
-        for subject, targets in facts.broader.items():
+        for subject, targets in policy_broader.items():
             for target in targets:
                 budget.consume("work")
                 connected.update((subject, target))

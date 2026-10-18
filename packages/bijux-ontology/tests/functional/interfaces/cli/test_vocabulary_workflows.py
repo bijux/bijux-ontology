@@ -13,6 +13,81 @@ from bijux_ontology.interfaces.cli import main
 EX = "https://example.org/"
 
 
+def test_skos_cli_and_projects_keep_profile_and_hierarchy_choices(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from bijux_ontology import ProjectConfig, check_project
+
+    vocabulary = tmp_path / "terms.ttl"
+    vocabulary.write_text(
+        "@prefix skos:<http://www.w3.org/2004/02/skos/core#>. "
+        "<urn:a> skos:inScheme <urn:one>; skos:broadMatch <urn:b>. "
+        "<urn:b> skos:inScheme <urn:two>.",
+        encoding="utf-8",
+    )
+    for basis, status in (("asserted", 0), ("effective", 1)):
+        assert (
+            main(
+                [
+                    "skos",
+                    str(vocabulary),
+                    "--rule",
+                    "same-scheme-hierarchy",
+                    "--hierarchy-basis",
+                    basis,
+                    "--json",
+                ]
+            )
+            == status
+        )
+        report = json.loads(capsys.readouterr().out)
+        assert "hierarchy-policy:" + basis in report["families"]
+    vocabulary.write_text(
+        "@prefix skos:<http://www.w3.org/2004/02/skos/core#>. "
+        "<urn:a> skos:broadMatch <urn:b>. <urn:b> a skos:ConceptScheme.",
+        encoding="utf-8",
+    )
+    assert (
+        main(
+            [
+                "skos",
+                str(vocabulary),
+                "--concept",
+                "urn:a",
+                "--profile",
+                "mapping-integrity",
+                "--json",
+            ]
+        )
+        == 1
+    )
+    report = json.loads(capsys.readouterr().out)
+    assert "mapping-endpoints" in report["families"]
+    assert any(
+        issue["code"] == "skos.resource_role_conflict" for issue in report["issues"]
+    )
+    config = ProjectConfig(
+        {
+            "version": 1,
+            "rdf": {"terms": {"path": "terms.ttl"}},
+            "checks": [
+                {
+                    "name": "mapping",
+                    "kind": "skos",
+                    "source": "terms",
+                    "concepts": ["urn:a"],
+                    "profile": "mapping-integrity",
+                    "hierarchy_basis": "asserted",
+                }
+            ],
+        },
+        directory=tmp_path,
+    )
+    checked = check_project(config)
+    assert checked.outcome == "disagreement"
+    assert any(issue.code == "skos.resource_role_conflict" for issue in checked.issues)
+
+
 def test_skos_publication_policy_and_registered_code_help(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -95,6 +95,8 @@ def check_kind(job: Mapping[str, object]) -> CheckKind:
             "allow_empty",
         },
         "skos": {
+            "profile",
+            "hierarchy_basis",
             "scopes",
             "concepts",
             "schemes",

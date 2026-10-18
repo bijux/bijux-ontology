@@ -28,6 +28,18 @@ _RELATIONS = frozenset(
 )
 
 
+_MAPPINGS = frozenset(
+    (
+        SKOS.mappingRelation,
+        SKOS.broadMatch,
+        SKOS.narrowMatch,
+        SKOS.relatedMatch,
+        SKOS.closeMatch,
+        SKOS.exactMatch,
+    )
+)
+
+
 @dataclass(frozen=True)
 class SkosStructure:
     """Selected asserted facts and only the advertised finite SKOS implications."""
@@ -37,6 +49,8 @@ class SkosStructure:
     members: Mapping[Node, frozenset[Node]]
     broader: Mapping[Node, frozenset[Node]]
     transitive: Mapping[Node, frozenset[Node]]
+    authored_broader: Mapping[Node, frozenset[Node]]
+    authored_transitive: Mapping[Node, frozenset[Node]]
     exact: Mapping[Node, frozenset[Node]]
     related: frozenset[tuple[Node, Node]]
     broad_mappings: frozenset[tuple[Node, Node]]
@@ -52,6 +66,8 @@ def structure(graph: Graph, budget: Budget) -> SkosStructure:
     members: dict[Node, set[Node]] = {}
     broader: dict[Node, set[Node]] = {}
     transitive: dict[Node, set[Node]] = {}
+    authored_broader: dict[Node, set[Node]] = {}
+    authored_transitive: dict[Node, set[Node]] = {}
     exact: dict[Node, set[Node]] = {}
     related: set[tuple[Node, Node]] = set()
     broad_mappings: set[tuple[Node, Node]] = set()
@@ -69,6 +85,8 @@ def structure(graph: Graph, budget: Budget) -> SkosStructure:
             roles.setdefault(subject, set()).add(URIRef(str(value)))
             if value == SKOS.OrderedCollection:
                 roles[subject].add(SKOS.Collection)
+        if predicate in _MAPPINGS:
+            mappings.append((subject, URIRef(str(predicate)), value))
         # Retain malformed members for the opt-in collection policy; their
         # rejection as relation endpoints must not erase the authored evidence.
         if predicate == SKOS.member:
@@ -105,6 +123,14 @@ def structure(graph: Graph, budget: Budget) -> SkosStructure:
             roles.setdefault(subject, set()).update(
                 (SKOS.OrderedCollection, SKOS.Collection)
             )
+        if predicate == SKOS.broader:
+            authored_broader.setdefault(subject, set()).add(value)
+        elif predicate == SKOS.narrower:
+            authored_broader.setdefault(value, set()).add(subject)
+        if predicate == SKOS.broaderTransitive:
+            authored_transitive.setdefault(subject, set()).add(value)
+        elif predicate == SKOS.narrowerTransitive:
+            authored_transitive.setdefault(value, set()).add(subject)
         if predicate in (SKOS.broader, SKOS.broadMatch):
             broader.setdefault(subject, set()).add(value)
         elif predicate in (SKOS.narrower, SKOS.narrowMatch):
@@ -124,22 +150,18 @@ def structure(graph: Graph, budget: Budget) -> SkosStructure:
             )
         if predicate == SKOS.relatedMatch:
             related_mappings.update(((subject, value), (value, subject)))
-        if predicate in (
-            SKOS.broadMatch,
-            SKOS.narrowMatch,
-            SKOS.relatedMatch,
-            SKOS.closeMatch,
-            SKOS.exactMatch,
-        ):
-            mappings.append((subject, URIRef(str(predicate)), value))
     for subject, values in broader.items():
         transitive.setdefault(subject, set()).update(values)
+    for subject, values in authored_broader.items():
+        authored_transitive.setdefault(subject, set()).update(values)
     return SkosStructure(
         {key: frozenset(values) for key, values in roles.items()},
         {key: frozenset(values) for key, values in schemes.items()},
         {key: frozenset(values) for key, values in members.items()},
         {key: frozenset(values) for key, values in broader.items()},
         {key: frozenset(values) for key, values in transitive.items()},
+        {key: frozenset(values) for key, values in authored_broader.items()},
+        {key: frozenset(values) for key, values in authored_transitive.items()},
         {key: frozenset(values) for key, values in exact.items()},
         frozenset(related),
         frozenset(broad_mappings),

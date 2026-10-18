@@ -1,6 +1,7 @@
 """SKOS integrity is separate from caller-selected publication requirements."""
 
 from collections.abc import Sequence
+from typing import Literal
 
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, SKOS
@@ -25,6 +26,16 @@ _INTEGRITY = (
     "relation-integrity",
     "mapping-integrity",
 )
+_PROFILES = {
+    "core-integrity": _INTEGRITY,
+    "mapping-integrity": (
+        "resource-integrity",
+        "relation-integrity",
+        "mapping-integrity",
+        "mapping-endpoints",
+    ),
+}
+_HIERARCHY_POLICIES = frozenset(("acyclic", "same-scheme-hierarchy", "isolated"))
 _RULES = frozenset(
     (
         *_INTEGRITY,
@@ -37,6 +48,7 @@ _RULES = frozenset(
         "same-scheme-hierarchy",
         "isolated",
         "mapping-targets",
+        "mapping-endpoints",
         "notation-required",
         "notation-unique",
         "deprecated-active",
@@ -52,7 +64,9 @@ def check_skos(
     scopes: Sequence[str] = ("local", "imports"),
     concepts: Sequence[str] = (),
     schemes: Sequence[str] = (),
-    rules: Sequence[str] = _INTEGRITY,
+    rules: Sequence[str] | None = None,
+    profile: Literal["core-integrity", "mapping-integrity"] | None = None,
+    hierarchy_basis: Literal["asserted", "effective"] = "effective",
     languages: Sequence[str] = (),
     language_fallback: Sequence[str] = (),
     definition_predicates: Sequence[str] = (str(SKOS.definition),),
@@ -67,11 +81,36 @@ def check_skos(
     language coverage, schemes, definitions, notations and unresolved targets are
     opt-in policies; they are never relabelled universal SKOS contradictions.
     ``concepts`` selects exact resources; ``schemes`` narrows known membership.
+    With no profile or rules, the existing four integrity families apply.
+    Profiles compose finite condition dependencies: core-integrity is those four;
+    mapping-integrity is resource-integrity, relation-integrity, mapping-integrity
+    and mapping-endpoints. Explicit rules add conditions to the chosen profile.
+    Mapping endpoints imply Concept roles without requiring external declarations.
+    hierarchy_basis affects only acyclic, same-scheme-hierarchy and isolated:
+    asserted uses authored broader/narrower links; acyclic additionally includes
+    authored broaderTransitive/narrowerTransitive. Effective also includes supported
+    mapping implications. Semantic integrity always retains those implications;
+    neither basis claims arbitrary OWL entailment.
     Notation collections intersect that selection. Supporting ordered lists do
     not select their other members for publication checks.
     """
-    if isinstance(rules, (str, bytes)) or not rules or set(rules) - _RULES:
+    if profile is not None and (
+        not isinstance(profile, str) or profile not in _PROFILES
+    ):
+        raise InputError("Select a supported SKOS integrity profile")
+    if hierarchy_basis not in ("asserted", "effective"):
+        raise InputError("hierarchy_basis must be asserted or effective")
+    explicit = (_INTEGRITY if profile is None else ()) if rules is None else rules
+    if isinstance(explicit, (str, bytes)) or not isinstance(explicit, Sequence):
         raise InputError("Select supported nonempty SKOS rule names")
+    explicit = tuple(explicit)
+    if (
+        any(not isinstance(name, str) for name in explicit)
+        or set(explicit) - _RULES
+        or (not explicit and profile is None)
+    ):
+        raise InputError("Select supported nonempty SKOS rule names")
+    rules = tuple(dict.fromkeys((*(_PROFILES[profile] if profile else ()), *explicit)))
     if type(closed_targets) is not bool:
         raise InputError("closed_targets must be a boolean")
     for iri in (
@@ -151,6 +190,7 @@ def check_skos(
             closed_targets,
             tuple(notation_collections),
             tuple(replacement_predicates),
+            hierarchy_basis,
         )
         checked += check_resources(selected_scope, policy, budget, issues)
         checked += check_relations(selected_scope, policy, budget, issues)
@@ -164,5 +204,13 @@ def check_skos(
         requested=checked if complete else checked + 1,
         complete=complete,
         regime="skos-selected-closure",
-        families=tuple(rules),
+        families=(
+            *rules,
+            *((f"profile:{profile}",) if profile else ()),
+            *(
+                (f"hierarchy-policy:{hierarchy_basis}",)
+                if set(rules) & _HIERARCHY_POLICIES
+                else ()
+            ),
+        ),
     )

@@ -46,6 +46,18 @@ including their predicate, direction, value and container checks; it does not
 prove arbitrary serializer output or biological correctness. Map-container
 qualification and structural `@id`/`@type` field aliases remain unverified.
 
+`check_skos(vocabulary, profile="mapping-integrity")` composes resource roles,
+relation clashes, exact-match conflicts and incident mapping endpoint checks.
+It does not require external target declarations. `profile="core-integrity"`
+and the omitted profile retain the four default integrity families; explicit
+`rules` add selected conditions to a profile. For opt-in `acyclic`, `isolated`
+and `same-scheme-hierarchy` policies, `hierarchy_basis="asserted"` uses authored
+hierarchy edges; the default `effective` also includes supported mapping
+implications. Semantic integrity retains broadMatch's hierarchy implications
+under both policy choices. Reports list expanded conditions and the chosen basis.
+The CLI exposes `--profile` and `--hierarchy-basis`; SKOS project jobs accept
+`profile` and `hierarchy_basis`.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
