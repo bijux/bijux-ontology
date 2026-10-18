@@ -30,6 +30,15 @@ selected source. Incomplete metadata, unsupported inference and mutation raise
 `OakOperationError` with the required report. One budget covers each whole batch;
 an explicitly supplied shared `Budget` also spans successive calls.
 
+`interfaces.adapters.obo_graphs` reads and writes a selected OBO Graphs ontology
+with `[jsonschema]` and the bundled upstream schema. Class edges retain subclass
+or authored existential meaning; supported logical definitions and qualified
+annotations round-trip. Supply an ontology `graph_id` and exact physical graph
+selection; generic plain-literal metadata predicates require explicit selection.
+Unsupported source assertions appear in `.omitted` and block export by default.
+`allow_lossy=True` permits supported output while retaining required loss findings.
+Preservation concerns supported axiom meaning, with distinct ontology/entity roles.
+
 Install `bijux-ontology[templates]` for `IdentifierTemplate(template, keys)` with
 explicit `TemplateKey` string/integer bindings. `.construct()` uses maintained
 URI escaping; `.construct_many()` rejects exact IRI collisions atomically.
