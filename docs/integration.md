@@ -311,6 +311,13 @@ ReificationContract(...))` for explicit completeness, component uniqueness,
 `rdf:Statement` typing or per-graph statement uniqueness. Separate reifiers
 retain their identities even when their described triples match.
 
+`rdf.containers.inspect_containers(source)` retains numbered membership in
+numeric order, including gaps, ambiguous slots and repeated values. Closure is
+an explicit `ContainerContract("sequence")` or `ContainerContract("bag")`.
+`container_to_list` rewires one selected `ListTarget` after matching exact
+`expected_values`; a bag also needs explicit numbered ordering. Original
+container data remains intact. Selected migration checks gate final export.
+
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
 `jsonld.html.extract_html_jsonld(content, document_url)` extracts JSON-LD
