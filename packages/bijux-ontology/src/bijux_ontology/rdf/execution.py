@@ -28,6 +28,7 @@ WorkerModule = Literal[
     "bijux_ontology.rdf.patches.correspondence",
     "bijux_ontology.workflows.projects.acquisition.worker",
     "bijux_ontology.vocabulary.mappings.worker",
+    "bijux_ontology.shacl.rules.worker",
 ]
 
 
@@ -50,6 +51,7 @@ def execute_worker(
         "bijux_ontology.rdf.patches.correspondence",
         "bijux_ontology.workflows.projects.acquisition.worker",
         "bijux_ontology.vocabulary.mappings.worker",
+        "bijux_ontology.shacl.rules.worker",
     ):
         raise InputError("Unsupported RDF worker module")
     if not isinstance(payload, bytes) or type(cap) is not int or cap <= 0:

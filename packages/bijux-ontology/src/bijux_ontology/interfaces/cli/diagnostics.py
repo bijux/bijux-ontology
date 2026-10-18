@@ -213,6 +213,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "rules_unverified rules_input_error "
         "target_unavailable upgrade_unverified upgrade_target_removed "
         "component_unverified "
         "analysis_metadata_unverified analysis_profile_unverified "

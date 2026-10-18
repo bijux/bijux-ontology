@@ -202,7 +202,10 @@ def _signature(function: SPARQLFunction, graph: Graph) -> None:
 
 
 def prepare_functions(
-    catalog: ShaclFunctionCatalog | None, limits: Limits
+    catalog: ShaclFunctionCatalog | None,
+    limits: Limits,
+    *,
+    budget: Budget | None = None,
 ) -> FunctionPlan:
     """Qualify parsed dependencies without selecting dormant adjacent functions."""
     if catalog is None:
@@ -240,7 +243,7 @@ def prepare_functions(
                 ),
             ),
         )
-    budget = Budget(limits)
+    budget = budget or Budget(limits)
     issues = IssueCollector(budget)
     states: dict[URIRef, int] = {}
     ordered = []
@@ -337,13 +340,15 @@ def register_functions(
     names: Sequence[str],
     data: Graph,
     limits: Limits,
+    *,
+    budget: Budget | None = None,
 ) -> Iterator[dict[str, int]]:
     """Register maintained SPARQL bodies only within the already isolated worker."""
     from pyshacl.functions.shacl_function import SPARQLFunction
     from pyshacl.graph_abstraction import DataGraph
     from pyshacl.shapes_graph import ShapesGraph
 
-    budget = Budget(limits)
+    operation = budget if budget is not None else Budget(limits)
     calls = dict.fromkeys(names, 0)
     depth = 0
 
@@ -368,7 +373,7 @@ def register_functions(
         ) -> URIRef | BNode | Literal:
             """Bind supplied RDF arguments and retain results or SPARQL errors."""
             nonlocal depth
-            budget.consume("work")
+            operation.consume("work")
             if depth >= limits.max_depth:
                 raise LimitExceeded("Function invocation depth exceeds max_depth")
             calls[str(self.node)] += 1

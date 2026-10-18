@@ -1077,3 +1077,13 @@ Constraint queries and function catalogs retain their separate trust controls;
 unselected targets and pair-mode targets stay inactive. Unsupported target kinds,
 missing required bindings, forbidden retrieval and incomplete enumeration cannot
 verify. Empty targets may conform while failing an explicit coverage minimum.
+
+`bijux_ontology.shacl.rules.materialize_rules` runs explicitly trusted selected
+TripleRules or controlled SPARQL CONSTRUCT rules. Inspect separate asserted and
+derived RDF, mode and completed pass count. `ordered-pass` executes one complete
+ordered program; `global-fixed-point` repeats the entire program until a full
+pass adds no exact RDF terms. Fresh blank-node growth cannot fake convergence.
+The initial profile requires one physical graph and named selected owners with
+distinct orders; unsupported rules, exhausted closure and missing required
+`MigrationCheck` callbacks prevent a verified publication candidate. The result
+uses the ordinary checked migration export and explicit acceptance gate.
