@@ -245,6 +245,10 @@ jsonld = [
     { name = "lxml" },
     { name = "pyld" },
 ]
+jsonpatch = [
+    { name = "jsonpatch" },
+    { name = "jsonpointer" },
+]
 jsonschema = [
     { name = "jsonschema" },
     { name = "referencing" },
@@ -283,6 +287,8 @@ xsd = [
 requires-dist = [
     { name = "elementpath", marker = "extra == 'xsd'", specifier = ">=5.1.4,<6" },
     { name = "google-re2", marker = "extra == 'patterns'", specifier = ">=1.1.20251105,<2" },
+    { name = "jsonpatch", marker = "extra == 'jsonpatch'", specifier = ">=1.35,<2" },
+    { name = "jsonpointer", marker = "extra == 'jsonpatch'", specifier = ">=3,<4" },
     { name = "jsonschema", marker = "extra == 'jsonschema'", specifier = ">=4.26,<5" },
     { name = "linkml-runtime", marker = "extra == 'linkml'", specifier = ">=1.12.1,<2" },
     { name = "lxml", marker = "extra == 'jsonld'", specifier = ">=6,<7" },
@@ -302,7 +308,7 @@ requires-dist = [
     { name = "sssom-schema", marker = "extra == 'sssom'", specifier = "==1.1.0a5" },
     { name = "uri-template", marker = "extra == 'templates'", specifier = ">=1.3,<2" },
 ]
-provides-extras = ["markup", "jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
+provides-extras = ["jsonpatch", "markup", "jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
 
 [[package]]
 name = "bijux-ontology-dev"
@@ -331,7 +337,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
-    { name = "bijux-ontology", extra = ["checksums", "jsonld", "linkml", "patterns", "pydantic", "shacl", "sssom", "templates", "xsd"] },
+    { name = "bijux-ontology", extra = ["checksums", "jsonld", "jsonpatch", "linkml", "patterns", "pydantic", "shacl", "sssom", "templates", "xsd"] },
     { name = "bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning" },
     { name = "build" },
@@ -353,7 +359,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bijux-ontology", extras = ["jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology", extras = ["jsonpatch", "jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
     { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning", editable = "packages/bijux-ontology-reasoning" },
     { name = "build", specifier = ">=1.2,<2" },
@@ -1296,6 +1302,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/67/3a/feb245b755f7a47a0df4f30be645e8485d15ff13d0c95e018e4505a8811f/jsonasobj2-1.0.4.tar.gz", hash = "sha256:f50b1668ef478004aa487b2d2d094c304e5cb6b79337809f4a1f2975cc7fbb4e", size = 95522, upload-time = "2021-06-02T17:43:28.39Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e5/90/0d93963711f811efe528e3cead2f2bfb78c196df74d8a24fe8d655288e50/jsonasobj2-1.0.4-py3-none-any.whl", hash = "sha256:12e86f86324d54fcf60632db94ea74488d5314e3da554c994fe1e2c6f29acb79", size = 6324, upload-time = "2021-06-02T17:43:27.126Z" },
+]
+
+[[package]]
+name = "jsonpatch"
+version = "1.35"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jsonpointer" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/df/f8/48a6033ebdd5013a58b5a79402eacb15ffb6e208f244c1c17f6f1e3b29c2/jsonpatch-1.35.tar.gz", hash = "sha256:679ad08672b4663c7ef1e5f3331d940f5e7786661b9acc1530104be1638e7a4f", size = 39440, upload-time = "2026-10-10T21:34:24.61Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/46/840ee494290e36ffad7c905b1f90a5a074d94de0f752ebe466ebccd6e1e1/jsonpatch-1.35-py3-none-any.whl", hash = "sha256:417e05303ebf7aef98d3ebf1e1ae7e7a4de6ec57bc5d243cd3509eff650e959f", size = 17005, upload-time = "2026-10-10T21:34:23.299Z" },
 ]
 
 [[package]]

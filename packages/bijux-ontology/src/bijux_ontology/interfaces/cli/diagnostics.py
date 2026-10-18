@@ -56,7 +56,10 @@ _CODES = {
     "documents": frozenset(
         "form_shape form_key_missing form_key_unexpected form_embedding "
         "form_binding_unverified form_scope_unverified "
-        "relocation_unverified relocation_invalid".split()
+        "relocation_unverified relocation_invalid "
+        "patch_precondition_failed patch_invalid patch_unverified "
+        "patch_retained_missing patch_retained_changed "
+        "patch_rebinding_unverified".split()
     ),
     "obo": frozenset(
         "alternative_id_unverified alternative_id_ambiguous "

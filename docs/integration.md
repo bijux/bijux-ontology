@@ -1342,3 +1342,11 @@ remain incomplete, with cross-record obligations explicitly excluded.
 `interfaces.execution.record_streams.AsyncJSONLDRecords` bridges the same iterator
 with one admitted pull. Cancellation waits for that pull before joining its
 private thread; caller producers, loaders, callbacks and PyLD remain cooperative.
+
+Install `bijux-ontology[jsonpatch,jsonld]` for
+`documents.patches.apply_document_patch`. Supported add/remove/replace/test edits
+require an exact `expected_base`, selected before/after forms, changed meanings
+and explicit `RetainedUsage` path pairs. Array rebinding additionally needs the
+same actual named parent. Failed base/tests reject publication; unsupported
+operations or uncertain identity remain unverified. `export_document_patch`
+returns immutable checked JSON bytes for ordinary atomic `write_export`.
