@@ -209,6 +209,7 @@ def _query(
     max_rows: int,
     deadline: float,
     cancel: threading.Event | None,
+    owned_worker: bool,
 ) -> QueryResult:
     """Keep each maintained engine call inside the suite's absolute deadline."""
     checkpoint(deadline, cancel)
@@ -223,6 +224,7 @@ def _query(
         limits=limits,
         timeout=remaining,
         cancel=cancel,
+        _owned_worker=owned_worker,
     )
     checkpoint(deadline, cancel)
     return result
@@ -246,6 +248,7 @@ def run_query_rules(
     timeout: float = 30.0,
     cancel: threading.Event | None = None,
     allow_empty: bool = False,
+    _owned_worker: bool = False,
 ) -> QueryRuleResult:
     """Run finite named ASK/SELECT obligations on one owned prepared resource.
 
@@ -362,6 +365,7 @@ def run_query_rules(
                     max_rows,
                     deadline,
                     cancel,
+                    _owned_worker,
                 )
                 guards[rule.scope] = guard
             if guard is not None and not guard.report.verified:
@@ -388,7 +392,14 @@ def run_query_rules(
             else:
                 checkpoint(deadline, cancel)
                 result = _query(
-                    source, rule.query, rule.scope, selected, max_rows, deadline, cancel
+                    source,
+                    rule.query,
+                    rule.scope,
+                    selected,
+                    max_rows,
+                    deadline,
+                    cancel,
+                    _owned_worker,
                 )
                 _retain_rows(result.variables, result.rows, budget, deadline, cancel)
                 results.append((rule.name, result))

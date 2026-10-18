@@ -316,7 +316,7 @@ def check_project(
             if (
                 _job_deadline is not None
                 and blocked is None
-                and job.get("kind") == "shacl"
+                and job.get("kind") in ("shacl", "query-rules")
             ):
                 if timeout is not None and (
                     type(timeout) not in (float, int)
@@ -324,7 +324,7 @@ def check_project(
                     or cast(float, timeout) <= 0
                 ):
                     raise InputError(
-                        "SHACL timeout must be positive and finite or None"
+                        "Native job timeout must be positive and finite or None"
                     )
                 _job_deadline(
                     time.monotonic() + cast(float, timeout)

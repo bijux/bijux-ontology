@@ -148,6 +148,7 @@ def run_check(
             max_rows=cast(int, job.get("max_rows", 1000)),
             timeout=cast(float, job.get("timeout", 30.0)),
             allow_empty=boolean(job.get("allow_empty", False)),
+            _owned_worker=_owned_worker,
         ).report
     selection = VocabularySelection.from_job(job)
     vocabulary = resources.vocabulary(

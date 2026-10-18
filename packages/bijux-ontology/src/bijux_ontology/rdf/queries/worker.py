@@ -142,11 +142,14 @@ def evaluate(request: dict[str, Any], cap: int) -> dict[str, Any]:
     }
 
 
-def main() -> int:
-    """Accept one bounded JSON request; emit one bounded structured result."""
-    cap = int(sys.argv[1])
+def process_request(payload: bytes, cap: int) -> bytes:
+    """Execute the same bounded protocol inside an already owned worker."""
+    previous = (
+        rdflib.NORMALIZE_LITERALS,
+        sparql.SPARQL_DEFAULT_GRAPH_UNION,
+        sparql.SPARQL_LOAD_GRAPHS,
+    )
     try:
-        payload = sys.stdin.buffer.read(cap + 1)
         if len(payload) > cap:
             raise LimitExceeded("Local query request exceeds protocol byte bound")
         request = decode_json(payload, max_bytes=cap)
@@ -162,6 +165,12 @@ def main() -> int:
             else "input_error",
             "message": f"{type(error).__name__}: {str(error)[:2000]}",
         }
+    finally:
+        (
+            rdflib.NORMALIZE_LITERALS,
+            sparql.SPARQL_DEFAULT_GRAPH_UNION,
+            sparql.SPARQL_LOAD_GRAPHS,
+        ) = previous
     encoded = json.dumps(response, ensure_ascii=True, separators=(",", ":")).encode()
     if len(encoded) > cap:
         encoded = json.dumps(
@@ -170,7 +179,13 @@ def main() -> int:
                 "message": "Local query response exceeds protocol byte bound",
             }
         ).encode()
-    sys.stdout.buffer.write(encoded)
+    return encoded
+
+
+def main() -> int:
+    """Accept one bounded JSON request; emit one bounded structured result."""
+    cap = int(sys.argv[1])
+    sys.stdout.buffer.write(process_request(sys.stdin.buffer.read(cap + 1), cap))
     return 0
 
 

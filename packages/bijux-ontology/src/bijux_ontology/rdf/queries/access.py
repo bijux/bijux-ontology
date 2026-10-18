@@ -337,6 +337,7 @@ def query_rdf(
     limits: Limits | None = None,
     timeout: float = 10.0,
     cancel: threading.Event | None = None,
+    _owned_worker: bool = False,
 ) -> QueryResult:
     """Run local ASK/SELECT with explicit graph scope and an owned deadline.
 
@@ -369,13 +370,21 @@ def query_rdf(
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise LimitExceeded("RDF operation exceeded its wall-clock deadline")
-        raw = execute_worker(
-            "bijux_ontology.rdf.queries.worker",
-            payload,
-            cap=selected.max_total_bytes,
-            timeout=remaining,
-            cancel=cancel,
-        )
+        if _owned_worker:
+            # The fixed project worker's host owns cancellation and its absolute
+            # job deadline, including opaque native search. A second process
+            # group would escape that ownership when the project is stopped.
+            from bijux_ontology.rdf.queries.worker import process_request
+
+            raw = process_request(payload, selected.max_total_bytes)
+        else:
+            raw = execute_worker(
+                "bijux_ontology.rdf.queries.worker",
+                payload,
+                cap=selected.max_total_bytes,
+                timeout=remaining,
+                cancel=cancel,
+            )
         budget.consume("bytes", len(raw))
         result = _result(raw, scope, selected, max_rows)
         checkpoint(deadline, cancel)

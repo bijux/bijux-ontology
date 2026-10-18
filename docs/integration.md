@@ -453,8 +453,8 @@ resources and returns a raw `report`. Supported operations also include
 `emission`, `serialization`, `flatten`, `framing`, `vocabulary` and `project`; declarations
 use their existing JSON codecs. `project` takes `configuration` and an absolute
 `directory`, retaining completed scopes on cancellation or deadline. Direct SHACL
-project jobs execute inside that owned worker; the host also enforces their
-configured job timeout, without creating an independent nested SHACL process.
+and query-rule jobs execute inside that owned worker; the host also enforces
+their configured job timeout, without creating an independent nested process.
 
 Use `check_project_parallel(configuration, workers=2, artifacts=Path("artifacts/checks"))`
 from `bijux_ontology.workflows.projects.parallel` for independent vocabulary,

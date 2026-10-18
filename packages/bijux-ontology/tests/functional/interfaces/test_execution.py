@@ -309,10 +309,11 @@ def test_isolated_context_preserves_index_requirements(
 
 @pytest.mark.skipif(os.name != "posix", reason="Actual POSIX process ownership")
 @pytest.mark.parametrize("interruption", ["cancel", "deadline"])
-def test_isolated_project_shacl_stays_owned_and_honors_job_timeout(
-    tmp_path: Path, interruption: str
+@pytest.mark.parametrize("native_kind", ["shacl", "query-rules"])
+def test_isolated_project_native_jobs_stay_owned_and_honor_timeout(
+    tmp_path: Path, interruption: str, native_kind: str
 ) -> None:
-    """Stop actual expensive SHACL without leaving a nested independent process."""
+    """Stop actual native search without leaving a nested independent process."""
     import json
     import subprocess
 
@@ -329,6 +330,19 @@ def test_isolated_project_shacl_stays_owned_and_honors_job_timeout(
         "?a <urn:number> ?b . ?c <urn:number> ?d . ?e <urn:number> ?f "
         'FILTER ((?b + ?d + ?f) < 0) }"""].'
     )
+    (tmp_path / "rules.json").write_text(
+        json.dumps(
+            [
+                {
+                    "name": "costly",
+                    "query": "SELECT ?a WHERE { ?a <urn:number> ?b . "
+                    "?c <urn:number> ?d . ?e <urn:number> ?f "
+                    "FILTER ((?b + ?d + ?f) < 0) }",
+                    "scope": {"kind": "default"},
+                }
+            ]
+        )
+    )
     configuration = {
         "version": 1,
         "rdf": {name: {"path": name + ".ttl"} for name in ("small", "data", "shapes")},
@@ -340,11 +354,13 @@ def test_isolated_project_shacl_stays_owned_and_honors_job_timeout(
                 "inventory": "inventory.json",
             },
             {
-                "name": "shapes",
-                "kind": "shacl",
-                "document": "data",
-                "shapes": "shapes",
-                "trusted_sparql": True,
+                "name": "native",
+                "kind": native_kind,
+                **(
+                    {"document": "data", "shapes": "shapes", "trusted_sparql": True}
+                    if native_kind == "shacl"
+                    else {"source": "data", "rules": "rules.json"}
+                ),
                 "timeout": 0.3 if interruption == "deadline" else 5.0,
             },
         ],
@@ -355,7 +371,7 @@ def test_isolated_project_shacl_stays_owned_and_honors_job_timeout(
     nested: set[int] = set()
 
     def observe() -> None:
-        """Observe real descendants; cancellation begins after SHACL admission."""
+        """Observe real descendants; cancellation begins after native admission."""
         while not stop.wait(0.01):
             rows = [
                 line.strip().split(None, 2)
@@ -372,7 +388,14 @@ def test_isolated_project_shacl_stays_owned_and_honors_job_timeout(
             nested.update(
                 int(pid)
                 for pid, parent, command in rows
-                if int(parent) in owned and "bijux_ontology.shacl.worker" in command
+                if int(parent) in owned
+                and any(
+                    name in command
+                    for name in (
+                        "bijux_ontology.shacl.worker",
+                        "bijux_ontology.rdf.queries.worker",
+                    )
+                )
             )
             if interruption == "cancel" and any(runs.glob("*/job-deadline")):
                 cancellation.set()
@@ -404,6 +427,18 @@ def test_isolated_project_shacl_stays_owned_and_honors_job_timeout(
     (tmp_path / "shapes.ttl").write_text(
         "@prefix sh:<http://www.w3.org/ns/shacl#>. <urn:Shape> a sh:NodeShape; "
         "sh:targetNode <urn:record>; sh:property [sh:path <urn:p>; sh:minCount 1]."
+    )
+    (tmp_path / "rules.json").write_text(
+        json.dumps(
+            [
+                {
+                    "name": "exists",
+                    "query": "ASK {}",
+                    "scope": {"kind": "default"},
+                    "expected": True,
+                }
+            ]
+        )
     )
     cast(list[dict[str, object]], configuration["checks"])[1]["timeout"] = 5.0
     recovered = WorkerExecutor(artifacts=runs, timeout=6).run(
