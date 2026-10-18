@@ -127,7 +127,13 @@ def _project_result(
             f"SHACL worker {response.get('type')}: {response.get('message')}"
         )
     if status != "result":
-        issue_kind: IssueKind = "exhausted" if status == "exhausted" else "input_error"
+        issue_kind: IssueKind = (
+            "exhausted"
+            if status == "exhausted"
+            else "unverified"
+            if status == "unavailable"
+            else "input_error"
+        )
         return ShaclResult(
             Report(
                 "shacl",
