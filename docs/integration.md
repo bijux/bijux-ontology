@@ -423,6 +423,18 @@ Composition and materialization inventories are bounded; execution and report
 limits apply separately per project. PROF interchange describes resources and
 parents without manufacturing executable checks.
 
+`bijux_ontology.workflows.projects.routing.check_profile_routes` reads configured
+declaration predicates from actual selected records and dispatches a closed
+`ProfilePlan` registry. Every record retains the caller's mandatory baseline,
+including missing, unknown or weaker declarations. Multiple declarations require
+an explicit `multiple="all"` policy. `ProfileJobBinding` binds every selected
+SHACL job's complete named shape set to the supplied snapshot; completed named
+shape/focus coverage is required. Unsupported data jobs and blank focus coverage
+remain unknown. Whole selected graphs retain shared nodes. Pass actual JSON-LD
+conversion evidence as `input_report`; no re-expansion or remote discovery occurs.
+Routing capture and report adoption are bounded separately from each project's
+backend limits.
+
 `load_bundle(..., dependencies=(parent,))` retains owned parent RDF and context
 resources separately from local files. Dependent bundles require explicit
 `materialize(path, local_only=True)` and cannot be exported as standalone archives.

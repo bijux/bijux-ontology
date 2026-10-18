@@ -13,6 +13,7 @@ from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Issue, IssueKind, Report, combine_reports
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
+from bijux_ontology.workflows.projects.inputs import ShaclJobInput, capture_job_inputs
 from bijux_ontology.workflows.projects.jobs import (
     APPLICATION_KINDS,
     check_kind,
@@ -235,13 +236,17 @@ class PreparedChecks:
         )
         return _aggregate(str(job["name"]), reports, count, pending)
 
-    def check(self, job: dict[str, object]) -> Report:
+    def check(
+        self, job: dict[str, object], *, shacl_input: ShaclJobInput | None = None
+    ) -> Report:
         """Validate and run one job, retaining lazy context-batch execution."""
         with self._resources.operation():
             bound_text(
                 cast(str, job.get("name", "")), Budget(self.configuration.limits)
             )
             kind = check_kind(job)
+            if shacl_input is not None and kind != "shacl":
+                raise InputError("Runtime SHACL inputs require a SHACL job")
             if self.configuration.version == 1 and (
                 kind in APPLICATION_KINDS or "depends_on" in job
             ):
@@ -252,13 +257,14 @@ class PreparedChecks:
                 raise InputError("Required job dependencies need project execution")
             if kind == "context" and "documents" in job:
                 return self._context_batch(job)
-            return run_check(kind, job, self._resources)
+            return run_check(kind, job, self._resources, shacl_input=shacl_input)
 
 
 def check_project(
     configuration: ProjectConfig | PreparedChecks,
     *,
     completed: Callable[[Report], None] | None = None,
+    job_inputs: Mapping[str, ShaclJobInput] | None = None,
 ) -> Report:
     """Retain completed sibling evidence when a required independent input fails."""
     prepared = (
@@ -272,6 +278,14 @@ def check_project(
     work = Budget(config.limits)
     previous: dict[str, Report] = {}
     jobs = config.checks()
+    runtime = capture_job_inputs(job_inputs, work)
+    if runtime:
+        known = set()
+        for job in jobs:
+            bound_text(cast(str, job["name"]), work)
+            known.add(job["name"])
+        if runtime.keys() - known:
+            raise InputError("Runtime inputs must identify declared project jobs")
     for index, job in enumerate(jobs):
         name = location = f"project/checks/{index}"
         try:
@@ -292,7 +306,8 @@ def check_project(
                             key: value
                             for key, value in job.items()
                             if key != "depends_on"
-                        }
+                        },
+                        shacl_input=runtime.get(name),
                     ),
                     scope=name,
                 )

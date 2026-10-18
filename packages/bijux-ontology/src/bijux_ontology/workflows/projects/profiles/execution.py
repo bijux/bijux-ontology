@@ -1,5 +1,6 @@
 """Explicit owned materialization followed by the ordinary project contract runner."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from bijux_ontology.workflows.projects.contracts import (
     ContractResult,
     check_contract,
 )
+from bijux_ontology.workflows.projects.inputs import ShaclJobInput, capture_job_inputs
 
 from .identity import digest, layer_key
 from .loading import _items, _qualify_profile, _text
@@ -31,14 +33,19 @@ class EffectiveProfile:
     report: Report
     limits: Limits
 
-    def check(self, destination: Path) -> ContractResult:
+    def check(
+        self,
+        destination: Path,
+        *,
+        job_inputs: Mapping[str, Mapping[str, ShaclJobInput]] | None = None,
+    ) -> ContractResult:
         """Materialize and run mandatory layers with each project's own limits.
 
         Composition/materialization inventory is bounded separately. Execution
         and report quotas apply per layer; there is no global backend deadline
         or cumulative contract-runner budget. Raw layer reports are retained.
         """
-        return check_profile(self, destination)
+        return check_profile(self, destination, job_inputs=job_inputs)
 
 
 def _configuration(
@@ -201,7 +208,12 @@ def _materialize(
     return configurations
 
 
-def check_profile(profile: EffectiveProfile, destination: Path) -> ContractResult:
+def check_profile(
+    profile: EffectiveProfile,
+    destination: Path,
+    *,
+    job_inputs: Mapping[str, Mapping[str, ShaclJobInput]] | None = None,
+) -> ContractResult:
     """Run every selected layer with its original limits and untouched raw truth.
 
     Inventory and materialization use the composition limits. The existing
@@ -215,7 +227,23 @@ def check_profile(profile: EffectiveProfile, destination: Path) -> ContractResul
         return check_contract(
             (ContractObligation("composition", lambda: profile.report),), policy=policy
         )
+    runtime: dict[str, dict[str, ShaclJobInput]] = {}
     try:
+        inventory = Budget(profile.limits)
+        if job_inputs is not None:
+            if not isinstance(job_inputs, Mapping):
+                raise InputError("Profile runtime inputs require named layers")
+            inventory.consume("states", len(job_inputs))
+            for iri, inputs in job_inputs.items():
+                _text(iri, inventory, iri=True)
+                runtime[iri] = capture_job_inputs(inputs, inventory)
+            selected = {
+                _text(layer.iri, inventory, iri=True)
+                for layer in profile.layers
+                if layer.selected
+            }
+            if runtime.keys() - selected:
+                raise InputError("Runtime inputs must identify selected profile layers")
         configurations = _materialize(profile, destination)
     except (InputError, OSError, UnicodeError) as error:
         issues = IssueCollector(Budget(profile.limits))
@@ -236,9 +264,12 @@ def check_profile(profile: EffectiveProfile, destination: Path) -> ContractResul
         if layer.selected:
             config = configurations[layer.iri]
 
-            def run(configuration: ProjectConfig = config) -> Report:
+            def run(
+                configuration: ProjectConfig = config,
+                inputs: Mapping[str, ShaclJobInput] | None = runtime.get(layer.iri),
+            ) -> Report:
                 """Retain the ordinary layer report without policy rewriting."""
-                return check_project(configuration)
+                return check_project(configuration, job_inputs=inputs)
 
             obligations.append(ContractObligation(name, run))
         else:

@@ -17,6 +17,7 @@ from bijux_ontology.rdf.literals import Regime as ModelRegime
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.builtins import Regime
 from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.workflows.projects.inputs import ShaclJobInput
 from bijux_ontology.workflows.projects.jobs import (
     CheckKind,
     GraphSelection,
@@ -28,10 +29,16 @@ from bijux_ontology.workflows.projects.resources import ProjectResources
 
 
 def run_check(
-    kind: CheckKind, job: Mapping[str, object], resources: ProjectResources
+    kind: CheckKind,
+    job: Mapping[str, object],
+    resources: ProjectResources,
+    *,
+    shacl_input: ShaclJobInput | None = None,
 ) -> Report:
     """Execute one supported check using its operation-owned explicit inputs."""
     config = resources.configuration
+    if shacl_input is not None and kind != "shacl":
+        raise InputError("Runtime SHACL inputs require a SHACL job")
     if kind in ("emission", "context-corpus", "upgrade"):
         from bijux_ontology.workflows.projects.application_jobs import (
             run_application_job,
@@ -59,14 +66,38 @@ def run_check(
             limits=config.limits,
         ).with_source(str(config.path(job.get("document"))))
     if kind == "shacl":
+        from rdflib import URIRef
+
+        from bijux_ontology.limits import Budget
         from bijux_ontology.shacl.checking import validate_shapes
+        from bijux_ontology.shacl.coverage import ShaclCoverageContract
+
+        coverage = None
+        if shacl_input is not None:
+            if boolean(job.get("preflight", False)):
+                raise InputError("Routed SHACL jobs require actual execution")
+            if any(not isinstance(node, URIRef) for node in shacl_input.focus_nodes):
+                raise InputError("Runtime pair coverage requires named focus nodes")
+            budget = Budget(config.limits)
+            count = len(shacl_input.focus_nodes) * len(shacl_input.use_shapes)
+            budget.consume("states", count)
+            budget.consume("work", count)
+            coverage = ShaclCoverageContract(
+                pairs=tuple(
+                    (str(shape), str(focus))
+                    for shape in shacl_input.use_shapes
+                    for focus in shacl_input.focus_nodes
+                )
+            )
 
         supporting = job.get("ontology")
         selected = GraphSelection.from_job(
             job, name_key="data_graph", union_key="data_union"
         )
         return validate_shapes(
-            resources.source(text_value(job.get("document"), location="document")),
+            shacl_input.source
+            if shacl_input is not None
+            else resources.source(text_value(job.get("document"), location="document")),
             resources.source(text_value(job.get("shapes"), location="shapes")),
             ontology=resources.source(text_value(supporting, location="ontology"))
             if supporting is not None
@@ -75,9 +106,16 @@ def run_check(
             union=selected.union,
             imports=resources.imports,
             trusted_sparql=boolean(job.get("trusted_sparql", False)),
-            focus_nodes=strings(job.get("focus_nodes", [])),
-            use_shapes=strings(job.get("use_shapes", [])),
-            mode=text_value(job.get("mode", "targets"), location="mode"),
+            focus_nodes=shacl_input.focus_nodes
+            if shacl_input is not None
+            else strings(job.get("focus_nodes", [])),
+            use_shapes=shacl_input.use_shapes
+            if shacl_input is not None
+            else strings(job.get("use_shapes", [])),
+            mode="pairs"
+            if shacl_input is not None
+            else text_value(job.get("mode", "targets"), location="mode"),
+            coverage=coverage,
             preflight=boolean(job.get("preflight", False)),
             timeout=cast(float | None, job.get("timeout", 30.0)),
             limits=config.limits,
