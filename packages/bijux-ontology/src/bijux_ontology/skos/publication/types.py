@@ -80,3 +80,39 @@ class TopConceptCheck:
     roots: tuple[Node, ...]
     assertions: tuple[Edge, ...]
     report: Report
+
+
+@dataclass(frozen=True)
+class HierarchyStep:
+    """One chosen traversal orientation and its original authored RDF assertion."""
+
+    source: Node
+    target: Node
+    assertion: Edge
+
+
+@dataclass(frozen=True)
+class ConceptReachability:
+    """A supplied root reaches one selected concept by these actual assertions."""
+
+    concept: Node
+    root: Node
+    steps: tuple[HierarchyStep, ...]
+
+
+@dataclass(frozen=True)
+class SchemeCoverage:
+    """Finite selected-concept coverage, separate from SKOS logical validity.
+
+    ``unreachable=None`` means the required traversal/analysis did not complete.
+    Cycle witnesses describe selected-concept directed topology; they do not
+    enumerate every simple cycle. None disables that optional policy analysis.
+    """
+
+    scheme: URIRef
+    concepts: tuple[Node, ...]
+    roots: tuple[Node, ...]
+    witnesses: tuple[ConceptReachability, ...]
+    unreachable: tuple[tuple[Node, ...], ...] | None
+    cycles: tuple[tuple[HierarchyStep, ...], ...] | None
+    report: Report

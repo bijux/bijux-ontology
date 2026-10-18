@@ -106,6 +106,13 @@ An optional `allowed` inventory and `broader="forbid-within-scheme"` qualify
 authored broader/narrower assertions; parents with unresolved scheme membership
 remain unverified. These consumer rules leave default SKOS integrity unchanged.
 
+`check_scheme_coverage(view, scheme_iri)` returns actual root-to-concept witnesses
+and unreachable components over authored hierarchy links. Choose traversal
+`direction`, `cross_scheme` bridges and `cycles` explicitly when defaults differ
+from the publication policy. Coverage concerns selected scheme concepts; it does
+not establish logical validity. Incomplete traversal retains proved paths and
+returns `unreachable=None`.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.

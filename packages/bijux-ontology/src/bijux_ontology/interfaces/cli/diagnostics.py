@@ -139,6 +139,9 @@ _CODES = {
         "implicit_target_unverified nonconformance sparql_unverified".split()
     ),
     "skos": frozenset(
+        "publication.root_not_published publication.root_scope_unverified "
+        "publication.unreachable_component publication.hierarchy_cycle "
+        "publication.scope_unverified "
         "publication.required_root_missing publication.root_not_allowed "
         "publication.root_has_broader publication.broader_scope_unverified "
         "publication.reference_unverified "

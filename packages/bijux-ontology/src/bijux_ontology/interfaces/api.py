@@ -109,8 +109,12 @@ from bijux_ontology.reports import (
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.collections import check_collection_sequence
 from bijux_ontology.skos.publication import (
+    ConceptReachability,
+    HierarchyStep,
+    SchemeCoverage,
     TopConceptCheck,
     TopConceptPolicy,
+    check_scheme_coverage,
     check_top_concepts,
 )
 from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
@@ -247,6 +251,9 @@ __all__ = [
     "SubjectIdentity",
     "TemplateKey",
     "TermDeclaration",
+    "ConceptReachability",
+    "HierarchyStep",
+    "SchemeCoverage",
     "TopConceptCheck",
     "TopConceptPolicy",
     "TermInfo",
@@ -274,6 +281,7 @@ __all__ = [
     "check_project",
     "check_rdf_emission",
     "check_serializer_corpus",
+    "check_scheme_coverage",
     "check_skos",
     "check_top_concepts",
     "check_vocabulary",
