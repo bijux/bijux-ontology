@@ -43,6 +43,7 @@ from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationValueEdit
+from bijux_ontology.vocabulary.annotations.hygiene.types import AnnotationLiteralRepair
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.sources import OwnedSource
 from bijux_ontology.vocabulary.view import Vocabulary
@@ -222,6 +223,9 @@ def author_vocabulary(
     from bijux_ontology.vocabulary.annotations.graphs.changes import (
         change_annotation_value,
     )
+    from bijux_ontology.vocabulary.annotations.hygiene.changes import (
+        repair_annotation_literal,
+    )
 
     from .annotations import change_annotation, change_qualified
     from .skos import change_skos
@@ -255,6 +259,8 @@ def author_vocabulary(
                 change_qualified(state, edit)
             elif isinstance(edit, AnnotationValueEdit):
                 change_annotation_value(state, edit)
+            elif isinstance(edit, AnnotationLiteralRepair):
+                repair_annotation_literal(state, edit)
             elif isinstance(
                 edit,
                 CreateSkosResource

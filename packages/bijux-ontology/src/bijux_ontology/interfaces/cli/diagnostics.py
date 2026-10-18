@@ -48,6 +48,7 @@ _CODES = {
     ),
     "annotations": frozenset(
         "attachment_shape graph_unverified comparison_unverified "
+        "hygiene_violation hygiene_unverified "
         "minimum_missing maximum_exceeded language_minimum_missing "
         "language_maximum_exceeded value_kind datatype entity_unresolved".split()
     ),

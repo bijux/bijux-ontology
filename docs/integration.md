@@ -898,3 +898,18 @@ source's physical graph or explicit union. Hidden partitions cannot introduce
 mapping collisions or enter callback snapshots. Renamed graph selections and
 selected empty graphs remain explicit. Successful syntactic checks do not grant
 ontology or publication approval; required after checks remain separate.
+
+`check_annotation_hygiene` from `bijux_ontology.vocabulary.annotations.hygiene`
+checks explicit `HygieneRule` policies over inspected annotation paths. Whitespace,
+character categories and Unicode normalization are opt-in; findings retain
+half-open codepoint spans in original literal text and the actual Unicode version.
+An unavailable requested Unicode version or unexercised required policy stays
+unverified. No language, script or multiline restriction is imposed by default.
+
+`repair_annotation_hygiene` accepts exact `AnnotationLiteralRepair` witnesses and
+required caller-selected publication checks. It replaces the literal and its
+actual OWL target anchors while preserving reifiers, nested qualifiers, language
+and datatype. Attachment and lexical checks always rerun; collision, language
+and other publication obligations use ordinary `MigrationCheck` callbacks.
+Missing checks, shared ownership and anonymous identity correspondence that
+cannot be established prevent approval. Export requires explicit acceptance.
