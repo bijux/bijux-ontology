@@ -210,3 +210,40 @@ def test_serializer_checks_share_a_cumulative_operation_budget() -> None:
         limits=Limits(max_work=120),
     )
     assert fresh.report.verified, fresh.report.to_dict()
+
+
+def test_serializer_diagnostics_bound_owned_text_without_caller_formatting() -> None:
+    """Failure reporting cannot retain oversized text or dispatch user hooks."""
+
+    class UnsafeError(ValueError):
+        def __str__(self) -> str:
+            raise AssertionError("Caller formatting must not run")
+
+    model = ModelDeclaration("record", (str(EX.Record),))
+    for error, expected in (
+        (ValueError("x" * 100_000), "exhausted"),
+        (UnsafeError("ordinary failure"), "input_error"),
+        (ValueError(UnsafeError()), "input_error"),
+        (ValueError("\ud800"), "input_error"),
+        (MemoryError("resource exhausted"), "exhausted"),
+    ):
+
+        def failure(
+            instance: object, *, error: Exception = error, **options: object
+        ) -> object:
+            raise error
+
+        checked = check_instance(
+            object(),
+            failure,
+            [model],
+            [ModelUsage("record")],
+            vocabulary=vocabulary(),
+            options={},
+            limits=Limits(max_bytes=1000, max_total_bytes=10000),
+        )
+        assert checked.report.outcome == expected
+        assert not checked.report.complete
+        assert max(len(issue.message) for issue in checked.report.issues) <= 1000
+        if isinstance(error, UnsafeError):
+            assert checked.report.issues[0].message == "ordinary failure"

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from rdflib import Graph
 
@@ -94,7 +94,9 @@ def check_instance(
         return InstanceCheck(
             None,
             None,
-            combine_reports("serialization.sample", *reports, _failure(error)),
+            combine_reports(
+                "serialization.sample", *reports, _failure(error, operation)
+            ),
         )
     return check_serialized(
         output,
@@ -118,8 +120,30 @@ def _operation(limits: Limits | None, budget: Budget | None) -> Budget:
     return budget if budget is not None else Budget(limits)
 
 
-def _failure(error: Exception) -> Report:
+def _failure(error: Exception, operation: Budget) -> Report:
+    """Keep failure reporting bounded without invoking caller formatting hooks."""
     exhausted = isinstance(error, (LimitExceeded, MemoryError))
+    message = "Serialization or its contract checks failed"
+    # Read the built-in exception storage, bypassing custom args/str properties.
+    arguments = cast(tuple[object, ...], BaseException.__dict__["args"].__get__(error))
+    if len(arguments) == 1 and type(arguments[0]) is str:
+        text = arguments[0]
+        try:
+            if len(text) > operation.limits.max_bytes:
+                raise LimitExceeded("Failure detail exceeds max_bytes")
+            operation.consume("work", len(text) + 1)
+            size = len(text.encode("utf-8"))
+            if size > operation.limits.max_bytes:
+                raise LimitExceeded("Failure detail exceeds max_bytes")
+            operation.consume("bytes", size)
+            if text.strip():
+                message = text
+        except LimitExceeded:
+            exhausted = True
+        except UnicodeEncodeError:
+            pass
+    if exhausted and message == "Serialization or its contract checks failed":
+        message = "Serialization stopped within its resource limits"
     return Report(
         "serialization.sample",
         requested=1,
@@ -127,7 +151,7 @@ def _failure(error: Exception) -> Report:
         issues=(
             Issue(
                 "execution.limit_exceeded" if exhausted else "input.invalid",
-                f"{type(error).__name__}: {error}",
+                message,
                 kind="exhausted" if exhausted else "input_error",
             ),
         ),
@@ -216,7 +240,7 @@ def check_serialized(
             )
         )
     except Exception as error:
-        reports.append(_failure(error))
+        reports.append(_failure(error, operation))
     return InstanceCheck(
         output_json, document_json, combine_reports("serialization.sample", *reports)
     )
