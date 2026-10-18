@@ -1181,6 +1181,13 @@ stay distinct. Inspect `result.report`, `result.resources` and `result.archive`.
 Preparation proves selected resource availability; run ordinary bundle checks to
 qualify the application. Existing checks never acquire missing resources.
 
+`workflows.projects.representations.check_representations(resource, policy=...)`
+checks a `PublishedResource` with explicit `RepresentationVariant` Accept,
+media/profile and effective-URL bindings. Actual context/import closure and RDF
+comparison share the acquisition limits and owned worker lifetime. Inspect each
+variant's response and raw report. An explicit `graph_name` verifies only that
+projection; complete agreement includes required empty named graphs.
+
 The console equivalent is `bijux-ontology acquire project-directory --request
 ontology.ttl https://example.org/ontology --origin https://example.org
 --destination resources.zip --timeout 30 --json`. Repeat `--request` and `--origin`

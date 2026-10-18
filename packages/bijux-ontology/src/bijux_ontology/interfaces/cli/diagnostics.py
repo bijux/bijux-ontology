@@ -39,6 +39,11 @@ _CODES = {
         "scope_unverified".split()
     ),
     "acquisition": frozenset("resource_failed unavailable".split()),
+    "publication": frozenset(
+        "identity_mismatch media_mismatch profile_mismatch "
+        "graph_scope_unverified reference_unverified variant_unverified "
+        "input_unverified".split()
+    ),
     "schema": frozenset(
         "translation_invalid translation_unverified "
         "output_invalid output_unverified".split()
@@ -348,6 +353,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Inspect exact origins, redirect/media/size limits and missing resources; "
         "keep ordinary checks offline and retain the original project inputs.",
         "acquire_bundle(source, requests=requests, policy=policy, destination=archive)",
+    ),
+    "publication": (
+        "explicit negotiated RDF representations",
+        "An observed variant differs or a required representation is unqualified.",
+        "Inspect the variant, effective URL, media/profile and required resources; "
+        "retain graph projection and unavailable processing boundaries.",
+        "check_representations(resource, policy=policy)",
     ),
     "schema": (
         "explicit serialized JSON output contracts",
