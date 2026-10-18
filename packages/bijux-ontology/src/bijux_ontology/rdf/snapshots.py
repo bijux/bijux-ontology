@@ -318,6 +318,46 @@ class PreparedSource:
             standardize_apart=False,
         )
 
+    def _contexts(
+        self,
+        graph_name: GraphSelection | None = None,
+        *,
+        union: bool = False,
+        budget: Budget,
+    ) -> Iterator[
+        tuple[TypingLiteral["graph", "default", "named"], URIRef | BNode | None, Graph]
+    ]:
+        """Read exact contexts within the authorized selection, retaining ownership."""
+        selected = self._read(graph_name, union=union, budget=budget)
+        if self.graph_name is not None or self.union:
+            graph_name, union = self.graph_name, self.union
+        if not union or not self.is_dataset:
+            budget.consume("work")
+            budget.consume("states")
+            if not self.is_dataset:
+                yield "graph", None, selected
+            elif graph_name == "@default":
+                yield "default", None, selected
+            else:
+                assert graph_name is not None
+                name = (
+                    graph_name if isinstance(graph_name, BNode) else URIRef(graph_name)
+                )
+                yield "named", name, selected
+            return
+        default = self._dataset.default_graph.identifier
+        for context in self._dataset.graphs():
+            budget.consume("work")
+            budget.consume("states")
+            if context.identifier == default:
+                yield "default", None, _read_graph(context)
+            else:
+                yield (
+                    "named",
+                    cast(URIRef | BNode, context.identifier),
+                    _read_graph(context),
+                )
+
     def _read(
         self,
         graph_name: GraphSelection | None = None,

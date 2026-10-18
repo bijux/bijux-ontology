@@ -1,12 +1,12 @@
 """Owned vocabulary roles and shared immutable scoped inspection indexes."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from threading import Lock
 from types import MappingProxyType
 from typing import cast
 
-from rdflib import Graph, Literal, URIRef
+from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF
 from rdflib.term import Node
 
@@ -16,6 +16,7 @@ from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import _read_graph, bind_namespaces, copy_graph
 
 from .results import Edge, TermInfo
+from .sources import GraphKind, OwnedSource, source_role
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,9 +189,10 @@ class Vocabulary:
         selected = limits if limits is not None else Limits()
         budget = Budget(selected)
 
-        def own(graph: Graph) -> Graph:
+        def own(graph: Graph) -> OwnedSource:
             """Separate each independent input's blank scope exactly once."""
-            return prepare_rdf(graph, limits=selected, budget=budget)._read()
+            prepared = prepare_rdf(graph, limits=selected, budget=budget)
+            return OwnedSource(prepared, prepared._read())
 
         self._initialize(
             own(local), tuple(map(own, imports)), tuple(map(own, lookup)), selected
@@ -198,17 +200,20 @@ class Vocabulary:
 
     def _initialize(
         self,
-        local: Graph,
-        imports: tuple[Graph, ...],
-        lookup: tuple[Graph, ...],
+        local: OwnedSource,
+        imports: tuple[OwnedSource, ...],
+        lookup: tuple[OwnedSource, ...],
         limits: Limits,
     ) -> None:
         """Retain only owned immutable graph handles before publishing readers."""
         self._limits = limits
-        self._sources = (
+        self._source_handles = (
             ("local", local),
-            *((f"import[{index}]", graph) for index, graph in enumerate(imports)),
-            *((f"lookup[{index}]", graph) for index, graph in enumerate(lookup)),
+            *((f"import[{index}]", source) for index, source in enumerate(imports)),
+            *((f"lookup[{index}]", source) for index, source in enumerate(lookup)),
+        )
+        self._sources = tuple(
+            (scope, source.selected) for scope, source in self._source_handles
         )
         self._reads: dict[tuple[str, ...], _VocabularyRead] = {}
         self._indexes: dict[tuple[str, ...], _VocabularyIndex] = {}
@@ -220,9 +225,9 @@ class Vocabulary:
     @classmethod
     def _from_owned(
         cls,
-        local: Graph,
-        imports: tuple[Graph, ...],
-        lookup: tuple[Graph, ...],
+        local: OwnedSource,
+        imports: tuple[OwnedSource, ...],
+        lookup: tuple[OwnedSource, ...],
         limits: Limits,
     ) -> "Vocabulary":
         """Adopt internal readers prepared within the caller's shared budget."""
@@ -278,6 +283,25 @@ class Vocabulary:
                     graph = _read_graph(union)
                 self._reads[key] = _VocabularyRead(selected, graph)
             return self._reads[key]
+
+    def _fact_sources(
+        self, scopes: Sequence[str], budget: Budget
+    ) -> Iterator[tuple[str, GraphKind, URIRef | BNode | None, Graph]]:
+        """Read exact selected graph contexts only when fact ownership is requested."""
+        if (
+            isinstance(scopes, (str, bytes))
+            or not scopes
+            or set(scopes) - {"local", "imports", "lookup"}
+        ):
+            raise InputError("Select local/imports/lookup source roles explicitly")
+        allowance = Budget(budget.limits)
+        for scope, source in self._source_handles:
+            if source_role(scope) in scopes:
+                allowance.consume("resources")
+                allowance.consume("triples", len(source.selected))
+                budget.consume("resources")
+                for kind, name, graph in source.contexts(budget):
+                    yield scope, kind, name, graph
 
     def _inspect(
         self, reader: _VocabularyRead, budget: Budget | None = None

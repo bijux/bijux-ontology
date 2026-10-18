@@ -5,17 +5,20 @@ from collections.abc import Mapping, Sequence
 from rdflib import Graph
 
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.rdf.loading import _charge_graph
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 
 from .imports import required_imports
+from .sources import OwnedSource
 from .view import Vocabulary
 
 
 def load_vocabulary(
-    source: RdfSource | Payload,
+    source: PreparedSource | RdfSource | Payload,
     *,
     base: str | None = None,
     format: str | None = None,
@@ -37,16 +40,30 @@ def load_vocabulary(
     resources = context_resources(document_loader, limits=limits, budget=budget)
     budget = resources.budget
     selected = budget.limits
-    prepared = prepare_source(
-        source,
-        base=base,
-        format=format,
-        limits=selected,
-        budget=budget,
-        preserve_literals=preserve_literals,
-        document_loader=resources,
+    prepared = (
+        source
+        if isinstance(source, PreparedSource)
+        else prepare_source(
+            source,
+            base=base,
+            format=format,
+            limits=selected,
+            budget=budget,
+            preserve_literals=preserve_literals,
+            document_loader=resources,
+        )
     )
-    local = prepared._read(graph_name, union=union, budget=budget)
+    if isinstance(source, PreparedSource) and (base is not None or format is not None):
+        raise InputError("Prepared vocabulary sources retain their format and base")
+    local = OwnedSource(
+        prepared,
+        prepared._read(graph_name, union=union, budget=budget),
+        graph_name,
+        union,
+    )
+    if isinstance(source, PreparedSource):
+        budget.consume("resources")
+        _charge_graph(local.selected, budget, selected.max_bytes)
     imported = required_imports(
         prepared,
         local,
@@ -55,14 +72,22 @@ def load_vocabulary(
         preserve_literals=preserve_literals,
         document_loader=resources,
     )
-    lookups = [
-        prepare_source(
-            item._read() if isinstance(item, PreparedSource) else item,
-            limits=selected,
-            budget=budget,
-            preserve_literals=preserve_literals,
-            document_loader=resources,
-        )._read(budget=budget)
-        for item in lookup
-    ]
+    lookups = []
+    for item in lookup:
+        resource = (
+            item
+            if isinstance(item, PreparedSource)
+            else prepare_source(
+                item,
+                limits=selected,
+                budget=budget,
+                preserve_literals=preserve_literals,
+                document_loader=resources,
+            )
+        )
+        graph = resource._read(budget=budget)
+        if isinstance(item, PreparedSource):
+            budget.consume("resources")
+            _charge_graph(graph, budget, selected.max_bytes)
+        lookups.append(OwnedSource(resource, graph))
     return Vocabulary._from_owned(local, imported, tuple(lookups), selected)

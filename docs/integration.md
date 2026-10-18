@@ -37,7 +37,8 @@ Caller streams remain open; individual compressed documents are not archives.
 Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
 `graph_name="@default"`, or `union=True`. Imports, lookup resources and prepared
 SHACL inputs retain that selection. `prepared.dataset()` still exports every
-original graph; conflicting graph overrides fail explicitly.
+original graph; conflicting graph overrides fail explicitly. Required import
+aliases must agree on selected graph ownership and RDF content.
 
 Exact source storage retains distinct `xsd:token` and `xsd:normalizedString`
 spellings through comparison, worker transport, canonicalization and RDF export.

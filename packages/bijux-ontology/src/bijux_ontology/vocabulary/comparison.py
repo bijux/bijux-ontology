@@ -16,6 +16,7 @@ from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.results import TermInfo
+from bijux_ontology.vocabulary.sources import source_role
 from bijux_ontology.vocabulary.view import Vocabulary
 
 ANNOTATIONS = (
@@ -106,17 +107,6 @@ class VocabularyChanges:
 
     changes: tuple[Change, ...]
     report: Report
-
-
-def source_role(scope: str) -> str:
-    """Source array order is not semantic ownership; local/import/lookup roles are."""
-    return (
-        "imports"
-        if scope.startswith("import[")
-        else "lookup"
-        if scope.startswith("lookup[")
-        else scope
-    )
 
 
 def selected_view(
