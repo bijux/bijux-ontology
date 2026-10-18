@@ -36,6 +36,7 @@ class Budget:
     def __init__(self, limits: Limits | None = None) -> None:
         self.limits = limits if limits is not None else Limits()
         self._counts: dict[BudgetKind, int] = {}
+        self._retained_issues: dict[int, Issue] = {}
 
     def consume(self, kind: BudgetKind, amount: int = 1) -> None:
         """Consume a named allowance, retaining no cross-operation state."""
@@ -49,6 +50,13 @@ class Budget:
             raise LimitExceeded(f"Exceeded {name}")
         self._counts[kind] = count
 
+    def _retain_issue(self, issue: Issue, *, repeated: bool) -> None:
+        """Transfer paid diagnostics; repeated local retention still costs a slot."""
+        identity = id(issue)
+        if repeated or identity not in self._retained_issues:
+            self.consume("issues")
+            self._retained_issues.setdefault(identity, issue)
+
 
 class IssueCollector(list[Issue]):
     """Bound retained ordinary findings, reserving one final exhaustion marker."""
@@ -56,10 +64,13 @@ class IssueCollector(list[Issue]):
     def __init__(self, budget: Budget) -> None:
         super().__init__()
         self.budget = budget
+        self._retained_ids: set[int] = set()
 
     def append(self, issue: Issue) -> None:
         """Retain a diagnostic only when its operation allowance remains."""
-        self.budget.consume("issues")
+        identity = id(issue)
+        self.budget._retain_issue(issue, repeated=identity in self._retained_ids)
+        self._retained_ids.add(identity)
         super().append(issue)
 
     def extend(self, issues: Iterable[Issue]) -> None:
