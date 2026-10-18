@@ -130,14 +130,6 @@ def finish_migration(
                         )
                     budget.consume("states")
                     seen.add(declaration.name)
-                    owned = _materialize(captured.witness, source, budget)
-                    checked = declaration.check(owned)
-                    budget.consume("work")
-                    if not isinstance(checked, Report):
-                        raise InputError(
-                            "Migration contract callbacks must return Report"
-                        )
-                    retain_report(checked, budget, selected_issues)
                     size = (
                         len(role.encode("utf-8"))
                         + 1
@@ -145,10 +137,32 @@ def finish_migration(
                     )
                     if size > budget.limits.max_bytes:
                         raise LimitExceeded("Migration check name exceeds max_bytes")
-                    budget.consume("bytes", size)
+                    budget.consume("bytes", size + 64)
+                    budget.consume("states", 2)
                     anchor = role + "." + declaration.name
-                    checked = replace(checked, scope=anchor)
+                    owned = _materialize(captured.witness, source, budget)
+                    checked = declaration.check(owned)
+                    if not isinstance(checked, Report):
+                        raise InputError(
+                            "Migration contract callbacks must return Report"
+                        )
+                    try:
+                        retain_report(checked, budget, selected_issues)
+                    except LimitExceeded as error:
+                        terminal = IssueCollector(budget)
+                        terminal.retain_completed(checked)
+                        terminal.exhausted(str(error), location=anchor)
+                        bounded = Report(
+                            anchor, 0, tuple(terminal), requested=1, complete=False
+                        )
+                        reports[side].append(bounded)
+                        if role == "after":
+                            children.append(bounded)
+                        raise
                     reports[side].append(checked)
+                    budget.consume("work")
+                    checked = replace(checked, scope=anchor)
+                    reports[side][-1] = checked
                     if role == "after":
                         if not checked.checked:
                             issues.append(
