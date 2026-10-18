@@ -1,11 +1,11 @@
 """Cycle-safe navigation over chosen asserted relationships, without inference."""
 
 from collections import deque
-from collections.abc import Iterator, Sequence
+from collections.abc import Generator, Sequence
 from dataclasses import KW_ONLY, dataclass
 from typing import Literal
 
-from rdflib import URIRef
+from rdflib import BNode, URIRef
 from rdflib.namespace import RDFS, SKOS
 from rdflib.term import Node
 
@@ -392,13 +392,15 @@ def collection_members(
 
 def _ordered_collection_members(
     view: VocabularyView,
-    collection: str,
+    collection: str | BNode,
     budget: Budget,
     issues: IssueCollector,
-) -> Iterator[Membership]:
+) -> Generator[Membership, None, None]:
     """Share proved list positions between navigation and streaming constraints."""
-    selected = view.relationships(
-        collection, predicates=(str(SKOS.memberList),), budget=budget
+    selected = view.statements(
+        collection if isinstance(collection, BNode) else URIRef(collection),
+        predicates=(str(SKOS.memberList),),
+        budget=budget,
     )
     list.extend(issues, selected.report.issues)
     if not selected.report.complete:
@@ -409,7 +411,7 @@ def _ordered_collection_members(
                 Issue(
                     "terms.collection_list_ambiguous",
                     "Ordered view needs exactly one supplied member list",
-                    collection,
+                    str(collection),
                     kind="unverified",
                 )
             )
@@ -426,11 +428,11 @@ def _ordered_collection_members(
             budget.consume("states")
             yield Membership(member, edge, True, position=position)
     except LimitExceeded as error:
-        issues.exhausted(str(error), location=collection)
+        issues.exhausted(str(error), location=str(collection))
     except InputError as error:
         try:
             issues.append(
-                Issue("terms.collection_list_malformed", str(error), collection)
+                Issue("terms.collection_list_malformed", str(error), str(collection))
             )
         except LimitExceeded as exhausted:
-            issues.exhausted(str(exhausted), location=collection)
+            issues.exhausted(str(exhausted), location=str(collection))

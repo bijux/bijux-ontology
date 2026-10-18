@@ -110,6 +110,11 @@ from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.collections import check_collection_sequence
 from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.collections import (
+    CollectionExpansion,
+    CollectionOccurrence,
+    expand_collection,
+)
 from bijux_ontology.vocabulary.comparison import (
     Change,
     VocabularyChanges,
@@ -163,6 +168,8 @@ __all__ = [
     "CanonicalRDF",
     "Change",
     "CheckError",
+    "CollectionExpansion",
+    "CollectionOccurrence",
     "ContextCorpusDocument",
     "ContextCorpusUpgrade",
     "ContextExpectation",
@@ -269,6 +276,7 @@ __all__ = [
     "compare_vocabularies",
     "context_document_loader",
     "convert_to_rdf",
+    "expand_collection",
     "expand_document",
     "expectations_from_data",
     "export_jsonld",

@@ -107,6 +107,13 @@ expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 zero-based `position`; direct `skos:member` assertions have no position. Missing
 or ambiguous lists remain unverified, and proved violations survive bad tails.
 
+`expand_collection(view, collection_iri, nested="expand")` retains concept
+occurrences and their complete membership paths, reusing shared child decoding.
+Its `concepts` set and duplicate-preserving `sequence` serve distinct purposes:
+a sequence is available only for complete, fully ordered membership. Mixed or
+unordered membership supplies no total order. `nested="retain"` keeps child
+collections atomic; cycles, unresolved roles and exhausted bounds remain visible.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
