@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from rdflib import BNode, URIRef
+
 from bijux_ontology.errors import InputError
 from bijux_ontology.rdf.stores.seals import StoreFile
 from bijux_ontology.reports import Report
@@ -47,3 +49,16 @@ class BackendCapability:
     loader_profile: str | None
     profiles: tuple[OwlProfile, ...]
     report: Report
+
+
+@dataclass(frozen=True)
+class ProfileDocument:
+    """One selected original RDF document; serialization is not a raw-input hash."""
+
+    identifier: str
+    document_iri: str | None
+    effective_url: str | None
+    role: str
+    graph_kind: str
+    graph_name: URIRef | BNode | None
+    serialization_sha256: str

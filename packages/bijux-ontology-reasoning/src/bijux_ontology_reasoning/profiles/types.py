@@ -4,26 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rdflib import BNode, URIRef
-
 from bijux_ontology.reports import Report
 
 from ..backend.types import BackendCapability as BackendCapability
 from ..backend.types import OwlProfile as OwlProfile
 from ..backend.types import OwlProfileBackend as OwlProfileBackend
-
-
-@dataclass(frozen=True)
-class ProfileDocument:
-    """One selected original RDF document; serialization is not a raw-input hash."""
-
-    identifier: str
-    document_iri: str | None
-    effective_url: str | None
-    role: str
-    graph_kind: str
-    graph_name: URIRef | BNode | None
-    serialization_sha256: str
+from ..backend.types import ProfileDocument as ProfileDocument
 
 
 @dataclass(frozen=True)
