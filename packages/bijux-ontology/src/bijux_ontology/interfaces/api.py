@@ -178,6 +178,16 @@ from bijux_ontology.vocabulary.comparison import (
     VocabularyChanges,
     compare_vocabularies,
 )
+from bijux_ontology.vocabulary.facts import (
+    AnonymousFactComparison,
+    FactGraph,
+    FactPredicate,
+    FactSelection,
+    SelectedFact,
+    SelectedFactDifference,
+    SelectedFactDifferences,
+    compare_selected_facts,
+)
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.languages import matches_language, negotiate_annotations
 from bijux_ontology.vocabulary.loading import load_vocabulary
@@ -227,6 +237,7 @@ from bijux_ontology.workflows.upgrades.corpus import (
     CorpusWitness,
     assess_context_corpus,
 )
+from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
@@ -353,6 +364,14 @@ __all__ = [
     "ValueEnumeration",
     "ValueTraits",
     "Vocabulary",
+    "AnonymousFactComparison",
+    "FactAffectedUse",
+    "FactGraph",
+    "FactPredicate",
+    "FactSelection",
+    "SelectedFact",
+    "SelectedFactDifference",
+    "SelectedFactDifferences",
     "VocabularyChanges",
     "VocabularyCursor",
     "VocabularyPage",
@@ -392,6 +411,7 @@ __all__ = [
     "compare_rdf",
     "compare_literal_values",
     "compare_serializations",
+    "compare_selected_facts",
     "compare_vocabularies",
     "compile_context",
     "context_document_loader",

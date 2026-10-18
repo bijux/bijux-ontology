@@ -343,6 +343,16 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
 
+Pass `fact_selection=FactSelection((FactPredicate(predicate_iri),), scopes=("local",))`
+to `compare_vocabularies` or `assess_upgrade` for arbitrary exact assertions.
+The resulting `selected_facts` retains graph ownership, original RDF terms and
+per-position roles alongside categorized changes. Custom endpoint roles require
+explicit `subject_role`/`object_role` choices. Upgrade `role_uses` accepts explicit
+`RoleUse` contracts; `fact_uses` distinguishes direct from uncertain role joins.
+Anonymous comparisons preserve joint sharing through maintained RDF comparison;
+changed anonymous ownership remains unverified. Incomplete inventories establish
+no missing facts, and graph selectors never pair foreign blank labels.
+
 Use `ValueDeclaration("iri", role=ResourceRole("class", punning="allow"))`
 to select class identifiers explicitly. Concept and instance roles remain
 separate; an instance role's `types` require actual asserted or supported named

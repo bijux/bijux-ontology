@@ -128,6 +128,17 @@ def oxigraph_term(
     raise InputError("Quoted triples or unrecognised RDF term shapes are unsupported")
 
 
+def literal_datatype(node: Literal) -> URIRef:
+    """Read the intrinsic RDF 1.1 datatype without changing supplied metadata."""
+    return (
+        node.datatype
+        if node.datatype is not None
+        else RDF.langString
+        if node.language is not None
+        else XSD.string
+    )
+
+
 def term_key(node: Node | None) -> tuple[str | None, ...]:
     """Preserve numeric lexical forms and canonicalise only implicit string typing.
 
@@ -143,13 +154,7 @@ def term_key(node: Node | None) -> tuple[str | None, ...]:
     if isinstance(node, Literal):
         if node.language is not None:
             language_tag(node.language)
-        datatype = (
-            node.datatype
-            if node.datatype is not None
-            else RDF.langString
-            if node.language is not None
-            else XSD.string
-        )
+        datatype = literal_datatype(node)
         return (
             "literal",
             str(node),

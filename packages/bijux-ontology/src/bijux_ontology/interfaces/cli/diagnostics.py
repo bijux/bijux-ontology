@@ -199,6 +199,7 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "fact_impact_unverified "
         "child_model_unavailable usage_unavailable deprecation_unverified "
         "corpus_baseline_missing corpus_candidate_missing "
         "corpus_comparison_unverified corpus_coverage_missing "
@@ -206,6 +207,7 @@ _CODES = {
         "no_contracts contract_persistent contract_resolved contract_introduced".split()
     ),
     "vocabulary": frozenset(
+        "fact_role_unverified fact_attribution_unverified fact_graph_unverified "
         "coverage_gap coverage_source_missing declaration_conflict "
         "entity_kind_mismatch fact_changed reference_kind_mismatch reference_missing "
         "term_missing unknown_reserved_term "

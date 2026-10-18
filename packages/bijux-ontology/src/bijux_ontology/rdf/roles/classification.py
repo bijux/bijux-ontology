@@ -6,7 +6,7 @@ from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import validate_node, validate_triple
+from bijux_ontology.rdf.terms import literal_datatype, validate_node, validate_triple
 
 from .types import Statement, TermPosition, TermRole, TermRoleOccurrence
 
@@ -206,8 +206,8 @@ def classify_statement(
     )
     for role in (object_role,) if object_role is not None else second:
         retain(value, "object", role)
-    if isinstance(value, Literal) and value.datatype is not None:
-        retain(value.datatype, "datatype", "datatype")
+    if isinstance(value, Literal):
+        retain(literal_datatype(value), "datatype", "datatype")
     if graph is not None:
         retain(graph, "graph", "unknown")
     return tuple(result)

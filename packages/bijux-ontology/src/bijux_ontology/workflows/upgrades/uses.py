@@ -4,6 +4,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
+from rdflib import URIRef
+
 from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.observations import (
@@ -13,10 +15,12 @@ from bijux_ontology.jsonld.observations import (
     location,
 )
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.rdf.roles.classification import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
 
-UseRole = Literal["term", "class", "predicate", "datatype"]
+UseRole = Literal["term", "class", "predicate", "datatype", "concept", "individual"]
 
 
 @dataclass(frozen=True)
@@ -75,6 +79,7 @@ def index_uses(
     models: Sequence[ModelDeclaration] = (),
     *,
     observed_usages: Sequence[ObservedUsage] = (),
+    role_uses: Sequence[RoleUse] = (),
     limits: Limits | None = None,
     budget: Budget | None = None,
 ) -> UseIndex:
@@ -86,7 +91,7 @@ def index_uses(
     """
     if any(
         not isinstance(values, Sequence) or isinstance(values, (str, bytes))
-        for values in (terms, models, observed_usages)
+        for values in (terms, models, observed_usages, role_uses)
     ):
         raise InputError("Use inputs must be sequences of typed declarations or usages")
     if limits is not None and budget is not None and limits != budget.limits:
@@ -123,6 +128,36 @@ def index_uses(
             if not isinstance(term, TermDeclaration):
                 raise InputError("Use indexing requires typed term declarations")
             retain(Use(term.iri, "term", term.location))
+            checked += 1
+        for use in role_uses:
+            operation.consume("work")
+            if not isinstance(use, RoleUse):
+                raise InputError("Use indexing requires typed resource-role uses")
+            bound_node(use.term, operation)
+            bound_text(use.location, operation)
+            if not isinstance(use.term, URIRef):
+                issues.append(
+                    Issue(
+                        "upgrade.usage_unavailable",
+                        "Anonymous role references need established owner attribution",
+                        use.location,
+                        kind="unverified",
+                    )
+                )
+                continue
+            chosen = (
+                use.contract.bridge.source_role
+                if use.contract.bridge is not None
+                else use.contract.kind
+            )
+            role: UseRole = "individual" if chosen == "instance" else chosen
+            retain(Use(str(use.term), role, use.location))
+            for iri in use.contract.types:
+                bound_text(iri, operation)
+                retain(Use(iri, "class", use.location))
+            if use.contract.bridge is not None:
+                bound_text(use.contract.bridge.predicate, operation)
+                retain(Use(use.contract.bridge.predicate, "predicate", use.location))
             checked += 1
         for model in registry.values():
             operation.consume("work")

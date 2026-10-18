@@ -5,7 +5,7 @@ from typing import cast
 
 import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
-from rdflib.namespace import OWL, RDF, RDFS, SKOS
+from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
 from bijux_ontology.declarations.resource_roles import (
     ResourceKind,
@@ -187,6 +187,11 @@ def test_per_term_occurrences_distinguish_punning_and_declaration_positions() ->
     assert ("object", "individual", EX.Other) in roles(
         (EX.C, SKOS.exactMatch, EX.Other)
     )
+    for value, datatype in (
+        (Literal("text"), XSD.string),
+        (Literal("text", lang="en"), RDF.langString),
+    ):
+        assert ("datatype", "datatype", datatype) in roles((EX.C, EX.custom, value))
 
 
 def test_exact_selected_graph_keeps_instance_witnesses_and_owned_blank_identity() -> (
