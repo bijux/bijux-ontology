@@ -21,6 +21,7 @@ from bijux_ontology.rdf.queries.literals import (
     check_literal_scope,
 )
 from bijux_ontology.rdf.queries.protocol import read_term, term_data
+from bijux_ontology.rdf.queries.syntax import check_query_syntax
 from bijux_ontology.rdf.terms import validate_triple
 
 
@@ -46,6 +47,7 @@ def _checked_query(text: str, namespaces: Mapping[str, URIRef], budget: Budget) 
                 pending.extend((child, depth + 1) for child in value.values())
             elif isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
                 pending.extend((child, depth + 1) for child in value)
+        check_query_syntax(text, namespaces, budget)
         translated = translateQuery(parsed, initNs=namespaces)
         check_literal_scope(translated.algebra, budget)
         return translated
