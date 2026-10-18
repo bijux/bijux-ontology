@@ -1343,6 +1343,14 @@ retain every original row, path, qualifier and conflicting target. Uninterpreted
 qualifiers block affected derivations; confidence is never multiplied. Candidates
 establish neither OWL identity nor a newly authored SSSOM mapping set.
 
+`workflows.upgrades.mappings.reconciliation.reconcile_mappings` groups exact
+row content and interpretation context across supplied mapping releases. Every
+original occurrence remains available; confidence and differing qualifiers stay
+independent alternatives. `apply_mapping_resolution` requires an explicit
+`MappingResolution` bound to that review, retained group positions, authority,
+reason and output identity/license. The native SSSOM producer and selected
+endpoint/cardinality/conflict policies rerun before approved output is available.
+
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing
 owned worker enumerates each selected root once, then validates ordinary Core
