@@ -136,6 +136,7 @@ from bijux_ontology.vocabulary.comparison import (
     compare_vocabularies,
 )
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
+from bijux_ontology.vocabulary.languages import matches_language, negotiate_annotations
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.registry import (
     IdentifierRegistry,
@@ -317,6 +318,8 @@ __all__ = [
     "load_catalog",
     "load_vocabulary",
     "merge_identifier_registry",
+    "matches_language",
+    "negotiate_annotations",
     "merge_sources",
     "models_from_data",
     "prepare_jsonld",

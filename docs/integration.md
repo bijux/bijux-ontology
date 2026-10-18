@@ -125,6 +125,13 @@ languages, exact literal-form comparisons, asserted/either orientation or
 forbidden relations. Equal forms preserve distinct label resources; missing
 forms remain unverified. Subrelations inherit no implicit reverse assertion.
 
+`negotiate_annotations(view, iri, predicates=(label_iri,), ranges=("fr-CA",))`
+uses [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647.html) lookup, preserving
+tied annotations and their original terms. Select basic/extended filtering,
+source-role priority and explicit untagged/other fallback when required.
+`matches_language("en-GB", "en")` is filtering only; it supplies no lookup
+fallback or publication-coverage guarantee.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.
