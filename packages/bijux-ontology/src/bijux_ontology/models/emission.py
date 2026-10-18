@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import KW_ONLY, dataclass, replace
 from typing import TYPE_CHECKING, cast
 
-from rdflib import RDF, Literal, URIRef
+from rdflib import RDF, Graph, Literal, URIRef
 from rdflib.term import Node
 
 from bijux_ontology._json import own_json
@@ -41,7 +41,10 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.roles.classification import bound_text
 from bijux_ontology.rdf.terms import literal_term, term_key
+from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.view import Vocabulary
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
@@ -57,6 +60,7 @@ from .direction import DirectionCheck
 from .emission_groups import TermKey, check_groups
 from .occurrences import check_occurrences
 from .registry import index_models
+from .resource_roles.checking import _RoleChecks
 from .value_matching import identity_matches as _identity_matches
 from .value_matching import matches_value
 
@@ -122,6 +126,7 @@ def _matches(
     budget: Budget,
     native_literals: dict[str, Literal],
     lexical_valid: bool | None = None,
+    role_checks: _RoleChecks | None = None,
 ) -> bool | None:
     """Resolve actual joined descriptions before shared scalar contract matching."""
     traits = occurrence.traits
@@ -147,8 +152,27 @@ def _matches(
                     + traits.direction
                 ),
             )
+    role_result = None
+    if value.role is not None and role_checks is not None:
+        role_term = None
+        if traits.identifier_kind == "iri" and traits.identifier is not None:
+            bound_text(traits.identifier, budget)
+            role_term = URIRef(traits.identifier)
+        role_result = role_checks.matches(
+            value.role,
+            role_term,
+            traits.types,
+            value.types,
+            predicate=occurrence.predicate,
+            reverse=occurrence.reverse,
+        )
     matched = matches_value(
-        value, traits, registry, container=occurrence.container, empty=occurrence.empty
+        value,
+        traits,
+        registry,
+        container=occurrence.container,
+        empty=occurrence.empty,
+        role_result=role_result,
     )
     if matched is False or value.constraints is None or occurrence.empty:
         return matched
@@ -311,6 +335,7 @@ def check_emission(
     models: Sequence[ModelDeclaration],
     usages: Sequence[ModelUsage],
     *,
+    vocabulary: Vocabulary | Graph | VocabularyView | None = None,
     base: str | None = None,
     document_loader: DocumentLoader | None = None,
     allowed_drops: frozenset[str] = frozenset(),
@@ -348,12 +373,20 @@ def check_emission(
     native_literals: dict[str, Literal] = {}
     literal_valid: bool | None = None
     direction_check = DirectionCheck(rdf_direction)
+    role_checks: _RoleChecks | None = None
     try:
         registry = index_models(models, budget, issues)
+        role_checks = None
         for declaration in registry.values():
             for field in declaration.fields:
                 for index, branch in enumerate(field.values):
                     budget.consume("work")
+                    if (
+                        branch.role is not None
+                        and vocabulary is not None
+                        and role_checks is None
+                    ):
+                        role_checks = _RoleChecks(vocabulary, budget)
                     retain_enumeration_report(
                         branch.constraints,
                         enumeration_reports,
@@ -682,6 +715,7 @@ def check_emission(
                             rdf_direction,
                             budget=budget,
                             native_literals=native_literals,
+                            role_checks=role_checks,
                             lexical_valid=literal_valid,
                         )
                         for value in field.values
@@ -718,6 +752,7 @@ def check_emission(
                             rdf_direction,
                             budget=budget,
                             native_literals=native_literals,
+                            role_checks=role_checks,
                         )
                         is not False
                     }
@@ -949,6 +984,7 @@ def check_emission(
                             rdf_direction,
                             budget=budget,
                             native_literals=native_literals,
+                            role_checks=role_checks,
                             lexical_valid=literal_valid,
                         )
                         for value in field.values
@@ -1010,6 +1046,7 @@ def check_emission(
                             rdf_direction,
                             budget=budget,
                             native_literals=native_literals,
+                            role_checks=role_checks,
                         )
                         is not False
                     }
@@ -1281,6 +1318,7 @@ def check_emission(
                                 rdf_direction,
                                 budget=budget,
                                 native_literals=native_literals,
+                                role_checks=role_checks,
                                 lexical_valid=literal_valid,
                             )
                             for value in field.values
@@ -1317,6 +1355,7 @@ def check_emission(
                                 rdf_direction,
                                 budget=budget,
                                 native_literals=native_literals,
+                                role_checks=role_checks,
                             )
                             is not False
                         }
@@ -1398,7 +1437,14 @@ def check_emission(
         "model-emission",
         checked,
         tuple(issues),
-        children=tuple(enumeration_reports.values()),
+        children=(
+            *enumeration_reports.values(),
+            *(
+                (role_checks.exhaustion,)
+                if role_checks is not None and role_checks.exhaustion is not None
+                else ()
+            ),
+        ),
         complete=complete,
         families=("representative-serialization", "literal-values"),
         requested=max(checked, len(usages)),

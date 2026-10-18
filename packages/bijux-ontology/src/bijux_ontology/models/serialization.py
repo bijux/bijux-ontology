@@ -18,6 +18,7 @@ from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.reports import Issue, Report, combine_reports
+from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 
 from .checking import check_models
@@ -186,6 +187,11 @@ def check_serialized(
             document, max_bytes=selected.max_bytes, max_depth=selected.max_depth
         )
         document_json = json.dumps(document, ensure_ascii=False, allow_nan=False)
+        vocabulary = (
+            vocabulary
+            if isinstance(vocabulary, Vocabulary)
+            else load_vocabulary(vocabulary, budget=operation)
+        )
         reports.append(
             check_models(
                 models,
@@ -200,6 +206,7 @@ def check_serialized(
                 document,
                 models,
                 usages,
+                vocabulary=vocabulary,
                 base=base,
                 document_loader=document_loader,
                 budget=operation,

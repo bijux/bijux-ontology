@@ -205,6 +205,15 @@ def _branch_issues(
 ) -> list[Issue]:
     issues: list[Issue] = []
     if (
+        value.role is not None
+        and value.role.kind == "instance"
+        and value.role.bridge is None
+        and value.role.types
+    ):
+        value = replace(
+            value, types=tuple(dict.fromkeys((*value.types, *value.role.types)))
+        )
+    if (
         value.model is not None
         and value.model not in registry
         and value.container != "@list"

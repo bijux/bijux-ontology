@@ -14,6 +14,7 @@ from bijux_ontology.declarations import (
     ModelDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.declarations.resource_roles import ResourceRole
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.checking import check_models
@@ -83,6 +84,61 @@ def baseline(
         check_models(models, graph),
         check_emission(output, models, (ModelUsage("node"),)),
     )
+
+
+@pytest.mark.parametrize("engine", ("source", "native"))
+def test_compiled_role_checks_retain_owned_vocabulary_and_actual_type_witnesses(
+    engine: str,
+) -> None:
+    if engine == "source":
+        pytest.importorskip("pyld")
+    model = ModelDeclaration(
+        "node",
+        (str(EX.Node),),
+        (
+            FieldDeclaration(
+                "child",
+                str(EX.child),
+                (
+                    ValueDeclaration(
+                        "object",
+                        role=ResourceRole(
+                            "instance", types=(str(EX.Node),), type_mode="named"
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+    ontology = (
+        vocabulary()
+        .add((EX.Child, RDF.type, OWL.Class))
+        .add((EX.Child, RDFS.subClassOf, EX.Node))
+    )
+    plan = PreparedModels((model,), ontology)
+    assert plan.declaration_report.verified
+    ontology.remove((EX.Child, RDFS.subClassOf, EX.Node))
+
+    def check(kind: str) -> Report:
+        """Require the actual output witness against the compiled owned vocabulary."""
+        if engine == "source":
+            return plan.check(
+                {
+                    "@context": {"@vocab": str(EX)},
+                    "@id": str(EX.root),
+                    "@type": "Node",
+                    "child": {"@id": str(EX.kid), "@type": kind},
+                },
+                (ModelUsage("node"),),
+            )
+        data = (
+            Graph().add((EX.root, RDF.type, EX.Node)).add((EX.root, EX.child, EX.kid))
+        )
+        data.add((EX.kid, RDF.type, EX[kind]))
+        return plan.check_rdf(prepare_rdf(data), (RdfModelUsage("node", EX.root),))
+
+    assert check("Child").verified
+    assert not check("Unrelated").verified
 
 
 def test_batch_matches_individual_nested_recursive_and_native_contracts() -> None:

@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "roles": frozenset(
+        "role_unverified punning_forbidden instance_type_missing "
+        "bridge_unverified type_conflict profile_unavailable".split()
+    ),
     "documents": frozenset(
         "form_shape form_key_missing form_key_unexpected form_embedding "
         "form_binding_unverified form_scope_unverified".split()
@@ -270,6 +274,14 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Inspect the reported input path, actual expansion, logical base "
         "and owned contexts.",
         '{"@context":{"label":"https://example.org/label"},"label":"Colour"}',
+    ),
+    "roles": (
+        "selected application resource interpretations",
+        "A required class, concept or instance role conflicts with its policy "
+        "or lacks an established witness.",
+        "Inspect the selected resource, actual type witnesses, explicit bridge "
+        "and punning policy; full profile validation needs its own capability.",
+        'ResourceRole("instance", types=("urn:application:Record",))',
     ),
     "data": (
         "supplied RDF data, named ontology contracts and query obligations",

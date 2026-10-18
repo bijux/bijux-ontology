@@ -11,6 +11,7 @@ from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 
+from .resource_roles import ResourceRole
 from .value_constraints import ValueConstraints
 
 ValueKind = Literal["literal", "iri", "object", "unknown"]
@@ -71,6 +72,7 @@ class ValueDeclaration:
     samples: tuple[RDFLiteral, ...] = ()
     direction: Literal["ltr", "rtl"] | Absent | None = None
     constraints: ValueConstraints | None = None
+    role: ResourceRole | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.kind, str) or self.kind not in {
@@ -119,6 +121,11 @@ class ValueDeclaration:
             self.constraints, ValueConstraints
         ):
             raise InputError("Expected explicit application value constraints")
+        if self.role is not None and (
+            not isinstance(self.role, ResourceRole)
+            or self.kind not in ("iri", "object")
+        ):
+            raise InputError("Resource role contracts require a resource value branch")
         samples = _sequence(self.samples, "samples")
         if any(not isinstance(sample, RDFLiteral) for sample in samples):
             raise InputError("Literal samples must be RDFLib Literal values")

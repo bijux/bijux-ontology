@@ -9,7 +9,7 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from bijux_ontology.declarations.types import ModelDeclaration
+from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.values import ValueTraits
@@ -21,6 +21,8 @@ from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.view import Vocabulary
 
 from .application_values import application_matches, retain_enumeration_report
 from .coverage import predicate_issues
@@ -28,6 +30,7 @@ from .direction import project_direction
 from .emission_groups import TermKey, check_groups
 from .occurrences import check_output_counts
 from .registry import index_models
+from .resource_roles.checking import _RoleChecks
 from .value_matching import identity_matches, matches_value
 
 
@@ -87,6 +90,7 @@ def check_rdf_emission(
     models: Sequence[ModelDeclaration],
     usages: Sequence[RdfModelUsage],
     *,
+    vocabulary: Vocabulary | Graph | VocabularyView | None = None,
     graph_name: GraphSelection | None = None,
     union: bool = False,
     limits: Limits | None = None,
@@ -122,12 +126,15 @@ def check_rdf_emission(
     enumeration_reports: dict[tuple[int, bool], Report] = {}
     checked = 0
     complete = True
+    role_checks: _RoleChecks | None = None
     try:
         registry = index_models(models, budget, issues)
+        needs_roles = False
         for declaration in registry.values():
             for field in declaration.fields:
                 for branch in field.values:
                     budget.consume("work")
+                    needs_roles |= branch.role is not None
                     retain_enumeration_report(
                         branch.constraints,
                         enumeration_reports,
@@ -145,6 +152,44 @@ def check_rdf_emission(
                             )
                         )
         graph = source._read(graph_name, union=union, budget=budget)
+        role_checks = (
+            _RoleChecks(vocabulary, budget, graph)
+            if vocabulary is not None and needs_roles
+            else None
+        )
+
+        def match_value(
+            branch: ValueDeclaration,
+            traits: ValueTraits,
+            node: Node,
+            *,
+            container: str = "unordered",
+            empty: bool = False,
+        ) -> bool | None:
+            """Reuse selected physical terms and one operation's role contracts."""
+            role_result = None
+            if (
+                branch.role is not None
+                and role_checks is not None
+                and isinstance(node, URIRef | BNode)
+            ):
+                role_result = role_checks.matches(
+                    branch.role,
+                    node,
+                    traits.types,
+                    branch.types,
+                    predicate=field.predicate,
+                    reverse=field.reverse,
+                )
+            return matches_value(
+                branch,
+                traits,
+                registry,
+                container=container,
+                empty=empty,
+                role_result=role_result,
+            )
+
         budget.consume("resources")
         budget.consume("triples", len(graph))
         nodes: set[Node] = set()
@@ -382,7 +427,7 @@ def check_rdf_emission(
                         non_list = True
                     endpoint_traits = _traits(graph, endpoint, budget)
                     unordered = any(
-                        matches_value(branch, endpoint_traits, registry) is True
+                        match_value(branch, endpoint_traits, endpoint) is True
                         for branch in field.values
                     )
                     if need_list and is_list and not unordered:
@@ -443,12 +488,12 @@ def check_rdf_emission(
                             and branch.kind == "literal"
                             and not isinstance(node, Literal)
                             and branch.datatype is not None
-                            else matches_value(
+                            else match_value(
                                 branch,
                                 projected
                                 if branch.kind == "literal" and projected is not None
                                 else actual,
-                                registry,
+                                node,
                                 container=container,
                                 empty=empty,
                             )
@@ -570,7 +615,14 @@ def check_rdf_emission(
         "rdf-emission",
         checked,
         tuple(issues),
-        children=tuple(enumeration_reports.values()),
+        children=(
+            *enumeration_reports.values(),
+            *(
+                (role_checks.exhaustion,)
+                if role_checks is not None and role_checks.exhaustion is not None
+                else ()
+            ),
+        ),
         requested=checked if complete else checked + 1,
         complete=complete,
         regime="actual-rdf-output",

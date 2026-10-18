@@ -343,6 +343,18 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
 
+Use `ValueDeclaration("iri", role=ResourceRole("class", punning="allow"))`
+to select class identifiers explicitly. Concept and instance roles remain
+separate; an instance role's `types` require actual asserted or supported named
+witnesses. `check_resource_roles(vocabulary, [RoleUse(term, role)], data=source,
+graph=graph_name)` checks finite selected roles directly. `RoleBridge` follows
+one explicit vocabulary link; target facts never discharge source type
+obligations. Source emission requires named endpoints and leaves bridge-to-instance
+unknown; native checks can use exact owned blank nodes. Punning prohibition is
+application policy. Full OWL profile requests require a separate capability and
+remain unverified when unavailable. `classify_statement` retains per-position
+roles: the two occurrences in `C rdf:type C` are individual and class.
+
 Use `check_data_compatibility(data, vocabulary)` for finite actual RDF checks
 of named domain/range consequences, explicit disjoint types, property kinds and
 supported literal range membership. Select the data `graph_name` or `union` and

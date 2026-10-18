@@ -19,6 +19,7 @@ from bijux_ontology.declarations.codecs import (
     terms_from_data,
 )
 from bijux_ontology.declarations.enumerations import ValueEnumeration
+from bijux_ontology.declarations.resource_roles import ResourceRole, RoleBridge
 from bijux_ontology.declarations.types import (
     EmissionCondition,
     EmissionCoverage,
@@ -95,6 +96,7 @@ from bijux_ontology.models.corpus import (
 from bijux_ontology.models.emission import ModelUsage, check_emission
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
+from bijux_ontology.models.resource_roles import RoleUse, check_resource_roles
 from bijux_ontology.models.serialization import InstanceCheck, check_instance
 from bijux_ontology.owl.obligations import (
     ObligationResult,
@@ -109,6 +111,7 @@ from bijux_ontology.rdf.datatype_evaluators import (
     DatatypeRegistry,
 )
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
+from bijux_ontology.rdf.roles import TermRoleOccurrence, classify_statement
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.transforms import (
@@ -342,6 +345,10 @@ __all__ = [
     "UpgradeAssessment",
     "UseIndex",
     "ValueConstraints",
+    "ResourceRole",
+    "RoleBridge",
+    "RoleUse",
+    "TermRoleOccurrence",
     "ValueDeclaration",
     "ValueEnumeration",
     "ValueTraits",
@@ -361,6 +368,8 @@ __all__ = [
     "check_collection_sequence",
     "check_context",
     "check_contract",
+    "check_resource_roles",
+    "classify_statement",
     "check_data_compatibility",
     "check_data_usage",
     "check_document_form",

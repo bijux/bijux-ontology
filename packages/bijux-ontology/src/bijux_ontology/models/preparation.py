@@ -50,6 +50,7 @@ class PreparedModels:
     _loader: OfflineDocumentLoader
     _base: str | None
     _rdf_direction: DirectionPolicy | None
+    _vocabulary: Vocabulary
 
     def __init__(
         self,
@@ -118,6 +119,7 @@ class PreparedModels:
         names.extend(f"jsonld:{url}" for url in sorted(snapshots))
         if rdf_direction is not None:
             names.append("rdf_direction")
+        object.__setattr__(self, "_vocabulary", owned)
         object.__setattr__(self, "models", declarations)
         object.__setattr__(self, "declaration_report", report)
         object.__setattr__(self, "limits", selected)
@@ -197,6 +199,7 @@ class PreparedModels:
                 self._document(document, operation),
                 self.models,
                 usages,
+                vocabulary=self._vocabulary,
                 base=self._base,
                 document_loader=self._loader,
                 rdf_direction=self._rdf_direction,
@@ -226,6 +229,7 @@ class PreparedModels:
                 source,
                 self.models,
                 usages,
+                vocabulary=self._vocabulary,
                 graph_name=graph_name,
                 union=union,
                 rdf_direction=self._rdf_direction,
