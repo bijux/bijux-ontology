@@ -47,7 +47,7 @@ _CODES = {
         "relation_conflict maximum_exceeded minimum_missing invalid_input "
         "interchange_unverified composition_input_unverified "
         "composition_rule_unverified composition_semantics_unverified "
-        "composition_invalid".split()
+        "composition_invalid proposal_invalid".split()
     ),
     "taxonomy": frozenset(
         "class_role_unverified expression_unrepresented outside_parent "

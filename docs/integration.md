@@ -1312,6 +1312,14 @@ optional `[sssom]` extra and maintained schema/parser/writer. Supply explicit
 metadata remain inspectable. `check_mappings` applies a `MappingPolicy` to exact
 subject/object `VocabularyView` scopes, independently of interchange validity.
 SKOS mapping directions remain distinct; confidence does not establish truth.
+`vocabulary.mappings.proposals.propose_lexical_mappings(source_index, target_index)`
+joins prepared lexical indexes with equal case policies. Original predicates,
+languages, scopes and homonyms remain reviewable; ranks order spelling and field
+priority, never semantic confidence. `approve_mapping_proposals` requires actual
+candidate references, explicit predicates, justifications, qualifications and an
+`IdentifierRegistry`. Only selected approvals enter the native SSSOM producer;
+incomplete candidate generation cannot authorize assertions. Host preparation
+and interchange can share a `Budget`; native worker limits remain independent.
 Endpoint roles, cardinalities and conflicts require explicit consumer policy.
 Modifiers, composed/literal endpoints, extension semantics and unmapped sentinels
 remain unknown; sentinels cannot satisfy required cardinality. The supported TSV
