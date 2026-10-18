@@ -46,6 +46,13 @@ local rules do not establish equivalence to them. `read_bioregistry_bundle`
 loads an explicit member through the ordinary offline bundle reader. Neither
 operation creates ontology declarations.
 
+Use `workflows.upgrades.identifiers.compare_identifier_releases` with two
+`IdentifierRelease` policies and actual `AccessionValue` occurrences to distinguish
+changed expansion, canonical spelling, validity and recognition ambiguity.
+Raw before/after checks remain available. Advisory updates require explicit
+`IdentifierEquivalence` IRI pairs and actual after-policy validation; no input is
+rewritten and ontology membership cannot erase a changed identifier.
+
 Pass `compression="gzip"` with an explicit RDF `format` for paths, bytes or
 binary streams in `RdfSource` or `prepare_source`. `max_compressed_bytes` bounds
 input bytes; `max_bytes` bounds expanded bytes, and both consume the shared byte

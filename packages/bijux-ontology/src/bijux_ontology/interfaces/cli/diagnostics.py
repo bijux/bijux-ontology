@@ -283,6 +283,7 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "identifier_changed identifier_unverified identifier_input_error "
         "matrix_unverified "
         "value_inadmissible value_unverified value_scope_unverified "
         "plan_unverified plan_final_changed "
