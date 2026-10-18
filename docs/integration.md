@@ -1455,3 +1455,12 @@ full required SHACL rechecks, including original named target obligations;
 additional `MigrationCheck` contracts can reject application-specific changes.
 Inspect each candidate and use the existing explicit migration export gate.
 Callbacks are trusted in-process Python code; native checks have a deadline.
+
+`bijux_ontology.workflows.ontology.materialization.prepare_materialization` owns
+asserted input and an `EntailmentPlan` or `RulePlan`. Its session applies exact
+asserted patches with an `expected` revision receipt, then recomputes the complete
+maintained closure. Removed supports and replaced programs cannot retain stale
+derivations; explicitly asserted duplicates remain asserted. Only a fully checked
+update publishes a new revision. Failed updates expose no replacement closure.
+Ambiguous anonymous correspondence stays unavailable; rule callbacks remain
+ordinary trusted Python. Close the session when its retained inputs are no longer needed.
