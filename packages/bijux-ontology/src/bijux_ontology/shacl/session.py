@@ -116,7 +116,7 @@ class ShaclSession:
         preparation = json.dumps(
             {
                 "command": "prepare",
-                "graphs": static.serialize(format="trig"),
+                "graphs": static.serialize(format="nquads"),
                 **_options(self._plan, ()),
                 "anchor_count": len(self._bindings.anchors),
                 "memory_bytes": memory_bytes,
@@ -234,7 +234,7 @@ class ShaclSession:
             payload = json.dumps(
                 {
                     "command": "validate",
-                    "graphs": roles.serialize(format="trig"),
+                    "graphs": roles.serialize(format="nquads"),
                     "focus_nodes": tuple(str(node) for node in focus)
                     if self._plan.mode == "targets"
                     else (),

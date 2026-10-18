@@ -799,7 +799,7 @@ def validate_shapes(
         {"data": dg, **_role_graphs(plan)}, focus, plan.roots, plan.limits
     )
     payload = json.dumps(
-        {"graphs": roles.serialize(format="trig"), **_options(plan, focus)}
+        {"graphs": roles.serialize(format="nquads"), **_options(plan, focus)}
     ).encode()
     if len(payload) > plan.limits.max_total_bytes:
         raise LimitExceeded("SHACL request exceeds max_total_bytes")
