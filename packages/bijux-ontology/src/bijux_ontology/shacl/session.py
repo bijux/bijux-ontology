@@ -19,17 +19,16 @@ from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.shacl.bindings import StaticBindings, TermSelection, transport_roles
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
-from bijux_ontology.shacl.checking import (
-    ShaclResult,
-    _incomplete,
+from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.execution.planning import (
     _metadata,
     _options,
     _prepare_data,
     _prepare_plan,
-    _project_result,
     _role_graphs,
 )
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.execution.projection import _incomplete, _project_result
+from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.findings import ShaclSource
 from bijux_ontology.shacl.functions import ShaclFunctionCatalog
 from bijux_ontology.shacl.transport import SessionBackend

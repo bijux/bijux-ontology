@@ -18,7 +18,7 @@ from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, bound_text, literal_datatype
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.shacl.checking import _select_roots
+from bijux_ontology.shacl.execution.planning import _select_roots
 from bijux_ontology.shacl.paths import decode_path
 
 from .resources import _capture, _owned
