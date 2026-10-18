@@ -10,7 +10,7 @@ from rdflib import Graph, Literal
 from bijux_ontology._json import own_json
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.checking import prepare_usages
+from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.paths import bound_path, location
@@ -50,6 +50,7 @@ def check_emission(
     _corpus: _CorpusEvidence | None = None,
     datatype_registry: DatatypeRegistry | None = None,
     context_expectations: Sequence[ContextExpectation] = (),
+    _prepared: PreparedUsages | None = None,
 ) -> Report:
     """Check selected actual outputs, without claiming all hypothetical instances.
 
@@ -83,6 +84,22 @@ def check_emission(
     role_checks: _RoleChecks | None = None
     state: EmissionContext | None = None
     try:
+        if _prepared is not None:
+            if (
+                not isinstance(_prepared, PreparedUsages)
+                or _prepared._budget is not budget
+            ):
+                raise InputError("Prepared usages require their originating Budget")
+            if document is not _prepared._document or base != _prepared._base:
+                raise InputError("Prepared usage document or base differs")
+            if document_loader is not _prepared._loader:
+                raise InputError("Prepared usages require their captured context owner")
+            if (
+                _prepared.allowed_drops != allowed_drops
+                or _prepared.allowed_omissions
+                or _prepared._omission_issues
+            ):
+                raise InputError("Prepared usages carry unrelated exclusions")
         if not isinstance(context_expectations, Sequence) or isinstance(
             cast(object, context_expectations), str | bytes
         ):
@@ -132,13 +149,17 @@ def check_emission(
         snapshot = own_json(
             document, max_bytes=selected.max_bytes, max_depth=selected.max_depth
         )
-        prepared = prepare_usages(
-            snapshot,
-            base=base,
-            document_loader=document_loader,
-            allowed_drops=allowed_drops,
-            limits=selected,
-            budget=budget,
+        prepared = (
+            _prepared
+            if _prepared is not None
+            else prepare_usages(
+                snapshot,
+                base=base,
+                document_loader=document_loader,
+                allowed_drops=allowed_drops,
+                limits=selected,
+                budget=budget,
+            )
         )
         state = EmissionContext(
             snapshot,
