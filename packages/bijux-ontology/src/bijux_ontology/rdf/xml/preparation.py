@@ -277,6 +277,13 @@ def prepare_xml(
             boundary.parser.Parse(payload[offset : offset + 16_384], False)
         boundary.parser.Parse(b"", True)
     except expat.ExpatError as error:
+        # Expat counts UTF-16 code units for UTF-16 input, Unicode code points
+        # for UTF-8. Preserve its original columns with the proven input unit.
+        error._bijux_column_unit = (  # type: ignore[attr-defined]
+            "unicode_code_points"
+            if boundary.encoding == "utf-8"
+            else "utf16_code_units"
+        )
         if error.code == expat.errors.codes.get(
             expat.errors.XML_ERROR_AMPLIFICATION_LIMIT_BREACH
         ):

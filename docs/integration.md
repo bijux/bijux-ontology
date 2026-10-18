@@ -857,8 +857,9 @@ other DTD constructs are explicit capability failures. Entity declarations
 combined with RDF XMLLiteral content are unsupported because the qualified native
 parser cannot preserve namespace-entity references inside that literal. Expanded
 content, nesting and normalized bytes share the operation limits. Malformed XML
-retains original parser coordinates; native RDF failures without coordinates
-remain spanless.
+retains original parser coordinates and their column unit: Unicode code points
+for UTF-8, UTF-16 code units for UTF-16. Native RDF failures without coordinates
+remain spanless; an unqualified caller-supplied column unit stays absent.
 
 `inspect_annotation_graph` from `bijux_ontology.vocabulary.annotations.graphs`
 reads selected direct, axiom and recursively qualified annotations from one owned

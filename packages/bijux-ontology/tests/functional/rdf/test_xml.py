@@ -257,6 +257,39 @@ def test_xml_and_later_rdf_failures_preserve_original_source() -> None:
         ROOT + '<rdf:Description rdf:about="record"><p:label>é😀</p:label>'
         '<p:bad rdf:resource="urn:o" rdf:nodeID="n"/></rdf:Description></rdf:RDF>'
     )
+    from bijux_ontology.interfaces.execution.protocol import report_from_data
+    from bijux_ontology.reports import Issue, Location, Report
+
+    columns = []
+    for encoding in ("utf-8", "utf-16-le", "utf-16-be"):
+        payload = (ROOT + "<p:bad>é😀</rdf:RDF>").encode(encoding)
+        if encoding != "utf-8":
+            payload = (
+                b"\xff\xfe" if encoding == "utf-16-le" else b"\xfe\xff"
+            ) + payload
+        with pytest.raises(ResourceError) as unicode_error:
+            prepare_rdf(RdfSource(payload, "xml", "urn:xml"))
+        error = unicode_error.value
+        assert error.failure is not None and error.failure.span is not None
+        span = error.failure.span
+        assert span.column_unit == (
+            "unicode_code_points" if encoding == "utf-8" else "utf16_code_units"
+        )
+        assert span.start_column is not None
+        columns.append(span.start_column)
+        report = Report(
+            "xml",
+            issues=(
+                Issue(
+                    "input.invalid",
+                    "Malformed XML",
+                    kind="input_error",
+                    details=Location.from_error(error),
+                ),
+            ),
+        )
+        assert report_from_data(report.to_dict()) == report
+    assert columns[1] == columns[2] == columns[0] + 1
     failures = []
     for encoding in ("utf-8", "utf-16-le", "utf-16-be"):
         with pytest.raises(ResourceError) as failed:

@@ -44,6 +44,7 @@ def test_native_parser_coordinates_and_explicit_content_location() -> None:
         assert failure.document_iri == "urn:broken"
         assert failure.location == "vendor/input.ttl" and failure.role == "data"
         assert failure.span is not None
+        assert failure.span.column_unit == "unicode_code_points"
         assert (failure.span.start_line, failure.span.start_column) == (2, 11)
         assert (failure.span.end_line, failure.span.end_column) == (2, 24)
         assert isinstance(caught.value.__cause__, SyntaxError)
@@ -89,6 +90,7 @@ def test_json_decoder_span_and_spanless_native_guard_stay_distinct() -> None:
     assert failure is not None and failure.span is not None
     assert (failure.span.start_line, failure.span.start_column) == (2, 1)
     assert failure.span.end_line is None and failure.span.end_column is None
+    assert failure.span.column_unit == "unicode_code_points"
     with pytest.raises(InputError) as unsupported:
         prepare_source(
             RdfSource(
@@ -175,6 +177,7 @@ def test_project_and_cli_keep_content_failure_and_successful_sibling(
     assert details is not None and details.failure is not None
     assert details.failure.document_iri == "urn:standalone"
     assert details.failure.span is not None and details.failure.span.start_column == 11
+    assert details.failure.span.column_unit == "unicode_code_points"
 
 
 def test_adopting_large_failure_metadata_retains_prior_findings_before_exhaustion() -> (
