@@ -844,6 +844,11 @@ def test_cyclic_paths_and_result_details_are_finite_and_truthful() -> None:
     assert decode_path(shapes, path, limits=Limits(max_work=1)).kind == "unsupported"
     with pytest.raises(LimitExceeded):
         decode_path(shapes, path, limits=Limits(max_work=1), raise_limits=True)
+    operators = Graph()
+    for index in range(10_000):
+        operators.add((path, SH.inversePath, URIRef(f"urn:operator:{index}")))
+    with pytest.raises(LimitExceeded):
+        decode_path(operators, path, limits=Limits(max_work=1), raise_limits=True)
     report = Graph().add((EX.result, RDF.type, SH.ValidationResult))
     report.add((EX.result, SH.detail, EX.result)).add((EX.result, SH.resultPath, path))
     report += shapes
