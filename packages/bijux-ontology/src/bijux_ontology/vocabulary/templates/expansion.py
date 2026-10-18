@@ -10,6 +10,8 @@ from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, cast
 from urllib.parse import unquote_to_bytes
 
+from rdflib import BNode, Literal
+
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -306,7 +308,7 @@ class IdentifierTemplate:
         budget: Budget | None = None,
     ) -> IdentifierRecognition:
         """Retain original spelling and recognize only the exact expansion image."""
-        if not isinstance(iri, str):
+        if not isinstance(iri, str) or isinstance(iri, BNode | Literal):
             raise InputError("Expected an IRI string")
         if limits is not None and budget is not None and limits != budget.limits:
             raise InputError("Recognition limits conflict with its shared budget")
@@ -382,6 +384,8 @@ class IdentifierTemplate:
         inverse profiles raise ResourceError; callers cannot treat them as
         evidence that a different alternate is uniquely recognized.
         """
+        if not isinstance(iri, str) or isinstance(iri, BNode | Literal):
+            raise InputError("Expected an IRI string")
         _text(iri, budget)
         absolute_iri(iri)
         inverse = self._inverse(budget)
@@ -438,7 +442,9 @@ class IdentifierTemplate:
             budget,
             sum(len(part.encode("utf-8")) for part in literals),
         )
-        return result if result.iri == iri else None
+        # Compare accepted IRI spellings without invoking RDF-kind equality on
+        # URIRef string subclasses or changing the original recognition input.
+        return result if str.__eq__(result.iri, iri) else None
 
     def construct_many(
         self,

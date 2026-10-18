@@ -6,6 +6,7 @@ from dataclasses import FrozenInstanceError
 from typing import cast, overload
 
 import pytest
+from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, Limits
@@ -26,6 +27,11 @@ def test_two_key_reserved_unicode_roundtrip_and_owned_order() -> None:
     recognized = profile.recognize(record.iri)
     assert recognized.report.verified
     assert recognized.record == record
+    named = URIRef(record.iri)
+    recognized_named = profile.recognize(named)
+    assert recognized_named.report.verified and recognized_named.record == record
+    assert recognized_named.original_iri is named
+    assert profile.match(named, budget=Budget()) == record
     assert record.bindings == (("accession", "A?B#C%"), ("collection", "lab/α"))
     with pytest.raises(FrozenInstanceError):
         profile.template = "https://example.org/changed"  # type: ignore[misc]
@@ -271,12 +277,16 @@ def test_recognition_rejects_non_string_runtime_inputs() -> None:
         1,
         True,
         b"https://example.org/value",
+        BNode("https://example.org/value"),
+        Literal("https://example.org/value"),
         [],
         {},
     )
     for invalid in invalid_values:
         with pytest.raises(InputError, match="IRI string"):
             profile.recognize(cast(str, invalid))
+        with pytest.raises(InputError, match="IRI string"):
+            profile.match(cast(str, invalid), budget=Budget())
     relative = profile.recognize("relative/id")
     assert relative.original_iri == "relative/id"
     assert relative.report.outcome == "input_error"
