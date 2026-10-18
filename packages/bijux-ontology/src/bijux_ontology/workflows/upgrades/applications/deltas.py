@@ -50,6 +50,19 @@ def _field(version: ApplicationVersion, binding: ApplicationField) -> FieldDecla
     )
 
 
+def _declaration_value(
+    declaration: TermDeclaration | ModelDeclaration | FieldDeclaration | RoleUse,
+    aspect: str,
+    budget: Budget,
+) -> object:
+    """Compare nested model contracts independently of their diagnostic origins."""
+    if aspect == "fields" and isinstance(declaration, ModelDeclaration):
+        budget.consume("work", len(declaration.fields))
+        budget.consume("states", len(declaration.fields))
+        return tuple(replace(field, location="") for field in declaration.fields)
+    return getattr(declaration, aspect)
+
+
 def _declarations(
     before: ApplicationVersion | None,
     after: ApplicationVersion,
@@ -98,7 +111,8 @@ def _declarations(
                 for item in fields(old)
                 if item.name
                 not in ("location", "name", "identifier", "field", "samples")
-                and getattr(old, item.name) != getattr(new, item.name)
+                and _declaration_value(old, item.name, budget)
+                != _declaration_value(new, item.name, budget)
             )
             if not aspects:
                 continue
