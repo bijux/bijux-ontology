@@ -290,6 +290,13 @@ For JSON-LD, pass original usages and expectations to `check_context`. Reuse exp
 
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
+`rdf.skolem.skolemize(source, caller_owned_base)` names blank resources with
+fresh scoped IRIs across subject, object and graph roles. Retain its `.mapping`
+for `deskolemize(result.source, result.mapping)` on that exact output snapshot.
+Independent operations share names only through explicit owned `BlankNodePair`
+correspondence. Naming changes RDF identity; reversal preserves original sharing
+and exact literals. Similar IRI spellings never authorize reversal.
+
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.
