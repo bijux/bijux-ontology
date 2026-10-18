@@ -294,6 +294,144 @@ def report(scope: str, issues: IssueCollector, *, complete: bool) -> Report:
     )
 
 
+def _plan_captured_patch(
+    left: Captured,
+    right: Captured,
+    *,
+    pairs: tuple[BlankNodePair, ...],
+    created: tuple[BNode, ...],
+    removed: tuple[BNode, ...],
+    operation: Operation,
+) -> DatasetPatch:
+    """Plan from exact operation-owned captures without recapturing blank ownership."""
+    if left.witness.kind != right.witness.kind:
+        raise PatchUnavailable(
+            "A patch cannot change or widen its authorized snapshot scope"
+        )
+    mapping: dict[PatchBlank, PatchBlank] = {}
+    matched: set[PatchBlank] = set()
+    for pair in pairs:
+        operation.consume("work")
+        a, b = left.reference(pair.before), right.reference(pair.after)
+        if b in mapping or a in matched:
+            raise InputError("Declared blank correspondence must be one-to-one")
+        operation.consume("states", 2)
+        mapping[b] = a
+        matched.add(a)
+    operation.consume("work", len(created) + len(removed) + len(mapping) + len(matched))
+    operation.consume("states", len(created) + len(removed))
+    created_refs = {right.reference(node) for node in created}
+    removed_refs = {left.reference(node) for node in removed}
+    if (
+        len(created_refs) != len(created)
+        or len(removed_refs) != len(removed)
+        or created_refs & mapping.keys()
+        or removed_refs & matched
+    ):
+        raise InputError(
+            "Blank correspondence classifications must be disjoint and unique"
+        )
+    equal, _ = compare_witnesses(left.witness, right.witness, operation)
+    if equal:
+        patch = DatasetPatch(left.witness, right.witness)
+    else:
+        same_anonymous, _ = compare_witnesses(
+            anonymous(left.witness, operation),
+            anonymous(right.witness, operation),
+            operation,
+        )
+        before_graphs: tuple[PatchResource, ...]
+        after_graphs: tuple[PatchResource, ...]
+        if same_anonymous and not (pairs or created or removed):
+            before_quads = tuple(
+                q
+                for q in left.witness.quads
+                if not any(
+                    isinstance(t, PatchBlank) for t in (q.subject, q.value, q.graph)
+                )
+            )
+            after_quads = tuple(
+                q
+                for q in right.witness.quads
+                if not any(
+                    isinstance(t, PatchBlank) for t in (q.subject, q.value, q.graph)
+                )
+            )
+            before_graphs = tuple(
+                g for g in left.witness.graphs if not isinstance(g, PatchBlank)
+            )
+            after_graphs = tuple(
+                g for g in right.witness.graphs if not isinstance(g, PatchBlank)
+            )
+            final = right.witness
+        else:
+            before_tokens, after_tokens = (
+                blank_tokens(left.witness, operation),
+                blank_tokens(right.witness, operation),
+            )
+            if not before_tokens:
+                operation.consume("states", len(after_tokens))
+                operation.consume("work", len(after_tokens))
+                created_refs = {PatchBlank(token) for token in after_tokens}
+            if not after_tokens:
+                operation.consume("states", len(before_tokens))
+                operation.consume("work", len(before_tokens))
+                removed_refs = {PatchBlank(token) for token in before_tokens}
+            if {ref.token for ref in matched | removed_refs} != before_tokens or {
+                ref.token for ref in set(mapping) | created_refs
+            } != after_tokens:
+                raise PatchUnavailable(
+                    "Changed anonymous content requires complete declared "
+                    "retained/new/removed node correspondence"
+                )
+            final = replace_witness(right.witness, mapping, operation)
+            before_quads, after_quads = left.witness.quads, final.quads
+            before_graphs, after_graphs = left.witness.graphs, final.graphs
+        operation.consume(
+            "work",
+            len(before_quads)
+            + len(after_quads)
+            + len(before_graphs)
+            + len(after_graphs),
+        )
+        operation.consume(
+            "states",
+            len(before_quads)
+            + len(after_quads)
+            + len(before_graphs)
+            + len(after_graphs),
+        )
+        left_q, right_q, left_g, right_g = (
+            set(before_quads),
+            set(after_quads),
+            set(before_graphs),
+            set(after_graphs),
+        )
+        removals = tuple(q for q in before_quads if q not in right_q)
+        additions = tuple(q for q in after_quads if q not in left_q)
+        removed_graphs = tuple(g for g in before_graphs if g not in right_g)
+        added_graphs = tuple(g for g in after_graphs if g not in left_g)
+        prospective = edited(
+            left.witness,
+            removals,
+            additions,
+            removed_graphs,
+            added_graphs,
+            operation,
+        )
+        accepted, _ = compare_witnesses(prospective, final, operation)
+        if not accepted:
+            raise Rejected(
+                "rdf.patch_postcondition_failed",
+                "Planned edits do not reconstruct the requested target",
+            )
+        patch = DatasetPatch(
+            left.witness, final, removals, additions, removed_graphs, added_graphs
+        )
+    operation.consume("work", 0)
+    return patch
+
+
 def plan_rdf_patch(
     base: PreparedSource,
     target: PreparedSource,
@@ -323,133 +461,14 @@ def plan_rdf_patch(
             capture_source(base, "base:", operation),
             capture_source(target, "new:", operation),
         )
-        if left.witness.kind != right.witness.kind:
-            raise PatchUnavailable(
-                "A patch cannot change or widen its authorized snapshot scope"
-            )
-        mapping: dict[PatchBlank, PatchBlank] = {}
-        matched: set[PatchBlank] = set()
-        for pair in pairs:
-            operation.consume("work")
-            a, b = left.reference(pair.before), right.reference(pair.after)
-            if b in mapping or a in matched:
-                raise InputError("Declared blank correspondence must be one-to-one")
-            operation.consume("states", 2)
-            mapping[b] = a
-            matched.add(a)
-        operation.consume(
-            "work", len(created) + len(removed) + len(mapping) + len(matched)
+        patch = _plan_captured_patch(
+            left,
+            right,
+            pairs=pairs,
+            created=created,
+            removed=removed,
+            operation=operation,
         )
-        operation.consume("states", len(created) + len(removed))
-        created_refs = {right.reference(node) for node in created}
-        removed_refs = {left.reference(node) for node in removed}
-        if (
-            len(created_refs) != len(created)
-            or len(removed_refs) != len(removed)
-            or created_refs & mapping.keys()
-            or removed_refs & matched
-        ):
-            raise InputError(
-                "Blank correspondence classifications must be disjoint and unique"
-            )
-        equal, _ = compare_witnesses(left.witness, right.witness, operation)
-        if equal:
-            patch = DatasetPatch(left.witness, right.witness)
-        else:
-            same_anonymous, _ = compare_witnesses(
-                anonymous(left.witness, operation),
-                anonymous(right.witness, operation),
-                operation,
-            )
-            before_graphs: tuple[PatchResource, ...]
-            after_graphs: tuple[PatchResource, ...]
-            if same_anonymous and not (pairs or created or removed):
-                before_quads = tuple(
-                    q
-                    for q in left.witness.quads
-                    if not any(
-                        isinstance(t, PatchBlank) for t in (q.subject, q.value, q.graph)
-                    )
-                )
-                after_quads = tuple(
-                    q
-                    for q in right.witness.quads
-                    if not any(
-                        isinstance(t, PatchBlank) for t in (q.subject, q.value, q.graph)
-                    )
-                )
-                before_graphs = tuple(
-                    g for g in left.witness.graphs if not isinstance(g, PatchBlank)
-                )
-                after_graphs = tuple(
-                    g for g in right.witness.graphs if not isinstance(g, PatchBlank)
-                )
-                final = right.witness
-            else:
-                before_tokens, after_tokens = (
-                    blank_tokens(left.witness, operation),
-                    blank_tokens(right.witness, operation),
-                )
-                if not before_tokens:
-                    operation.consume("states", len(after_tokens))
-                    operation.consume("work", len(after_tokens))
-                    created_refs = {PatchBlank(token) for token in after_tokens}
-                if not after_tokens:
-                    operation.consume("states", len(before_tokens))
-                    operation.consume("work", len(before_tokens))
-                    removed_refs = {PatchBlank(token) for token in before_tokens}
-                if {ref.token for ref in matched | removed_refs} != before_tokens or {
-                    ref.token for ref in set(mapping) | created_refs
-                } != after_tokens:
-                    raise PatchUnavailable(
-                        "Changed anonymous content requires complete declared "
-                        "retained/new/removed node correspondence"
-                    )
-                final = replace_witness(right.witness, mapping, operation)
-                before_quads, after_quads = left.witness.quads, final.quads
-                before_graphs, after_graphs = left.witness.graphs, final.graphs
-            operation.consume(
-                "work",
-                len(before_quads)
-                + len(after_quads)
-                + len(before_graphs)
-                + len(after_graphs),
-            )
-            operation.consume(
-                "states",
-                len(before_quads)
-                + len(after_quads)
-                + len(before_graphs)
-                + len(after_graphs),
-            )
-            left_q, right_q, left_g, right_g = (
-                set(before_quads),
-                set(after_quads),
-                set(before_graphs),
-                set(after_graphs),
-            )
-            removals = tuple(q for q in before_quads if q not in right_q)
-            additions = tuple(q for q in after_quads if q not in left_q)
-            removed_graphs = tuple(g for g in before_graphs if g not in right_g)
-            added_graphs = tuple(g for g in after_graphs if g not in left_g)
-            prospective = edited(
-                left.witness,
-                removals,
-                additions,
-                removed_graphs,
-                added_graphs,
-                operation,
-            )
-            accepted, _ = compare_witnesses(prospective, final, operation)
-            if not accepted:
-                raise Rejected(
-                    "rdf.patch_postcondition_failed",
-                    "Planned edits do not reconstruct the requested target",
-                )
-            patch = DatasetPatch(
-                left.witness, final, removals, additions, removed_graphs, added_graphs
-            )
-        operation.consume("work", 0)
     except LimitExceeded as error:
         patch = None
         issues.exhausted(str(error), location="rdf.patch")
