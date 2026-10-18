@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from rdflib.namespace import RDF
 
+from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.patches.types import (
     DatasetPatch,
@@ -20,9 +21,13 @@ def copy_chain(
     before: tuple[PatchValue, ...],
     after: tuple[PatchValue, ...],
     budget: Budget,
+    *,
+    force: bool = False,
 ) -> DatasetPatch:
     """Rewire one root edge; retain every original cell and sibling assertion."""
-    if before == after:
+    if type(force) is not bool:
+        raise InputError("List chain force must be a boolean")
+    if before == after and not force:
         return DatasetPatch(base, base)
     budget.consume("states", 3 * len(after) + len(base.quads) + 2)
     budget.consume("work", 3 * len(after) + len(base.quads) + 2)
