@@ -229,6 +229,8 @@ _CODES = {
         "loader_unverified profile_unverified profile_violation".split()
     ),
     "ontology": frozenset(
+        "ownership_unverified ownership_input_error owner_conflict "
+        "definition_redefined "
         "annotation_shape annotation_statement_missing cardinality_shape "
         "obligation_unknown obligation_contradicted obligation_exhausted "
         "characteristic_conflict datatype_restriction_shape "

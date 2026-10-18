@@ -360,6 +360,17 @@ ambiguous totals, unavailable versions and unsupported filters remain open;
 neither nesting nor an available parent supplies a missing identity. Export
 preserves the original presentation tree and parameters without declaring closure.
 
+`workflows.ontology.ownership.check_ownership` applies explicit `OwnerClaim`
+declarations to protected outgoing `FactSelection` predicates and exact terms.
+Claims supply actual authoritative views; exact terms and the longest declared
+namespace select ownership, optionally by RDF role. An external extension may
+omit imported assertions and add annotations outside the protected selection.
+New protected assertions must match authoritative content. Evidence retains
+original source/graph witnesses; namespace overlap, duplicate assertions and
+legal punning alone establish no conflict. Anonymous definitions remain unknown.
+Each current term needs a subject occurrence in the selected scope; an owner's
+separate evidence cannot supply that coverage.
+
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
 `rdf.skolem.skolemize(source, caller_owned_base)` names blank resources with
