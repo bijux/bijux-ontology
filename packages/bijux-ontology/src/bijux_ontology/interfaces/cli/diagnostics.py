@@ -102,7 +102,7 @@ _CODES = {
     ),
     "literal": frozenset(
         "conversion_unverified datatype_unverified "
-        "lexical_invalid lexical_unverified".split()
+        "lexical_invalid lexical_unverified value_unverified".split()
     ),
     "models": frozenset(
         "direction_unverified contextual_direction_unverified "
@@ -299,11 +299,11 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         '[{"path":["label"],"predicate":"https://example.org/label"}]',
     ),
     "literal": (
-        "RDF literal lexical and datatype checks",
-        "A lexical value violates, or is not supported by, the selected "
-        "datatype check.",
-        "Keep lexical text and datatype distinct; correct the value or "
-        "declare a supported type.",
+        "RDF literal and value checks",
+        "A lexical, datatype or value comparison fails or cannot be "
+        "established under the selected regime.",
+        "Retain the original terms and inspect the selected datatype "
+        "capability or comparison regime.",
         '"01"^^<http://www.w3.org/2001/XMLSchema#integer>',
     ),
     "models": (

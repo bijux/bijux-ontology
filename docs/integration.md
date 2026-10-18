@@ -342,6 +342,15 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
 
+`compare_literal_values(left, right, regime=...)` returns the original RDF
+literals and an `equal`, `different` or `indeterminate` relation. Choose
+`sparql-1.1` numeric promotion or `owl2-datatype-map` data-value identity;
+the latter preserves disjoint numeric families, signed zeros and timezone
+offsets. Exact RDF term equality remains separate. Supported calendars require
+`[xsd]`, explicit timezone, years 1–9999 and at most six fractional digits;
+SPARQL supports `dateTime`, while OWL also supports `dateTimeStamp`.
+NaN, custom equality and unavailable conversions remain indeterminate.
+
 `DatatypeRegistry` owns exact custom-IRI `DatatypeEvaluator` entries. Supply
 conjunctive sample validators, an optional bounded scalar converter and an
 explicit directional datatype relation independently. `convert` returns a

@@ -117,6 +117,10 @@ from bijux_ontology.rdf.transforms import (
     recheck_transformation,
     remap_iris,
 )
+from bijux_ontology.rdf.value_comparison import (
+    LiteralValueComparison,
+    compare_literal_values,
+)
 from bijux_ontology.reports import (
     AcceptancePolicy,
     CheckError,
@@ -284,6 +288,7 @@ __all__ = [
     "LimitExceeded",
     "Limits",
     "Location",
+    "LiteralValueComparison",
     "ModelAssessment",
     "ModelDeclaration",
     "OutputRequirement",
@@ -374,6 +379,7 @@ __all__ = [
     "combine_reports",
     "compare_context_usages",
     "compare_rdf",
+    "compare_literal_values",
     "compare_serializations",
     "compare_vocabularies",
     "compile_context",
