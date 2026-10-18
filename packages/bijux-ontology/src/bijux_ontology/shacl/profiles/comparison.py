@@ -1,157 +1,21 @@
 """Actual selected profile behavior, kept separate from raw SHACL conformance."""
 
-import time
 from dataclasses import replace
 
-from rdflib import BNode, Graph, URIRef
-from rdflib.namespace import SH
+from rdflib import URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, IssueCollector, retain_report
+from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.correspondence import Operation, compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.checking import ShaclResult
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
-from bijux_ontology.shacl.session import ShaclSession
 
-from .resources import _owned
-from .types import ProfileCase, ProfileComparison, ShapeProfile, ShapeTerm, Triple
-
-
-def _remaining(operation: Operation) -> float:
-    """Check the global deadline before creating each owned backend request."""
-    operation.consume("work")
-    remaining = operation.deadline - time.monotonic()
-    if remaining <= 0:
-        raise LimitExceeded("Shape profile exceeded its deadline")
-    return remaining
-
-
-def _data(source: PreparedSource, budget: Budget) -> PreparedSource:
-    """Freeze exactly one explicit graph before both sides consume a case."""
-    if source.union or source.literal_fidelity not in (
-        "source_terms",
-        "supplied_terms",
-    ):
-        raise InputError("Profile cases require an exact selected physical graph")
-    graph = source._read(budget=budget)
-    triples: list[Triple] = []
-    for triple in graph:
-        budget.consume("work")
-        budget.consume("states")
-        for node in triple:
-            bound_node(node, budget)
-        triples.append(triple)
-    return _owned(source, graph, triples, budget)
-
-
-def _portable_roles(
-    profile: ShapeProfile, data: PreparedSource, budget: Budget
-) -> bool:
-    """Reject exact anonymous identity shared across separately serialized roles.
-
-    This tests owned term objects, never coincident blank labels. Anonymous shape
-    structure within one role remains portable through ordinary RDF isomorphism.
-    """
-    seen: set[int] = set()
-    portable = True
-    for source in (profile.source, profile.ontology, data):
-        if source is None:
-            continue
-        current: set[int] = set()
-        for triple in source._read(budget=budget):
-            budget.consume("work")
-            for node in triple:
-                bound_node(node, budget)
-                if isinstance(node, BNode):
-                    budget.consume("states")
-                    identity = id(node)
-                    if identity in seen:
-                        portable = False
-                    current.add(identity)
-        budget.consume("states", len(current))
-        seen.update(current)
-    return portable
-
-
-def _run(
-    shapes: PreparedSource,
-    profile: ShapeProfile,
-    data: PreparedSource,
-    budget: Operation,
-) -> ShaclResult:
-    """Use the existing cancellable isolated worker with this request's deadline."""
-    budget.consume("resources")
-    with ShaclSession(
-        shapes,
-        ontology=profile.ontology,
-        use_shapes=profile.roots,
-        preflight=True,
-        coverage=ShaclCoverageContract(),
-        limits=budget.limits,
-        timeout=_remaining(budget),
-    ) as session:
-        result = session._validate(
-            data,
-            focus_nodes=(),
-            graph_name=None,
-            union=False,
-            source_usages=(),
-            scope="dataset",
-            budget=budget,
-            cancel=budget.cancel,
-        )
-    retained = IssueCollector(budget)
-    try:
-        retain_report(result.report, budget, retained)
-        budget.consume("states", len(result.findings))
-    except LimitExceeded as error:
-        retained.exhausted(str(error))
-        result.report = Report(
-            "shacl",
-            result.report.checked,
-            tuple(retained),
-            requested=result.report.requested,
-            complete=False,
-            regime=result.report.regime,
-        )
-        result.conformance_report = result.report
-        keep = sum(issue.code == "shacl.nonconformance" for issue in retained)
-        result.findings = result.findings[:keep]
-        result.root_findings = ()
-        result.findings_complete = False
-        result.coverage = None
-        result.constraints = None
-    return result
-
-
-def _semantics(result: ShaclResult, budget: Budget) -> tuple[Graph, bool]:
-    """Compare standard RDF result semantics, excluding generated message prose.
-
-    Blank source shapes/paths carry maintained cloned descriptions and compare
-    jointly through RDF isomorphism. Anonymous data endpoints lack an established
-    cross-result association here and therefore remain explicitly unknown.
-    """
-    graph = result.report_graph()
-    established = True
-    for finding in result.findings:
-        budget.consume("work")
-        if isinstance(finding.focus_node, BNode) or isinstance(finding.value, BNode):
-            established = False
-        for node in (finding.source_shape, finding.path):
-            if isinstance(node, BNode) and (node, None, None) not in graph:
-                established = False
-    for triple in graph:
-        budget.consume("work")
-        budget.consume("triples")
-        for node in triple:
-            bound_node(node, budget)
-    graph.remove((None, SH.resultMessage, None))
-    return graph, established
+from .execution import freeze_data, portable_roles, result_semantics, validate_profile
+from .types import ProfileCase, ProfileComparison, ShapeProfile, ShapeTerm
 
 
 def _coverage(
@@ -204,10 +68,10 @@ def compare_profile(
                 local = IssueCollector(budget)
                 comparison: Report | None = None
                 try:
-                    data = _data(case.data, budget)
-                    before = _run(authored, profile, data, budget)
-                    after = _run(profile.source, profile, data, budget)
-                    if not _portable_roles(profile, data, budget):
+                    data = freeze_data(case.data, budget)
+                    before = validate_profile(authored, profile, data, budget)
+                    after = validate_profile(profile.source, profile, data, budget)
+                    if not portable_roles(profile, data, budget):
                         local.append(
                             Issue(
                                 "shacl.profile_behavior_unverified",
@@ -248,8 +112,8 @@ def compare_profile(
                             )
                         )
                     else:
-                        left, left_established = _semantics(before, budget)
-                        right, right_established = _semantics(after, budget)
+                        left, left_established = result_semantics(before, budget)
+                        right, right_established = result_semantics(after, budget)
                         if not left_established or not right_established:
                             local.append(
                                 Issue(
