@@ -30,10 +30,13 @@ from bijux_ontology.shacl.model_shapes import (
     ModelShapeTranslation,
     compile_model_shapes,
 )
+from bijux_ontology.shacl.path_fields import PathFieldProjection, project_path_field
 from bijux_ontology.shacl.paths import ShaclPath
 from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "PathFieldProjection",
+    "project_path_field",
     "ModelShapeBinding",
     "ModelShapeTranslation",
     "compile_model_shapes",

@@ -212,6 +212,18 @@ The selected graph supplies all record and path support. Open or partial
 external scope retains unresolved absence; witnessed cycles and excess owners
 remain findings. This operation makes no OWL consistency claim.
 
+Declare a logical multi-hop field with `PathFieldDeclaration` and bind its
+actual subject using `PathFieldUsage`. `check_path_fields` checks finite
+predicate, sequence and inverse paths on owned RDF or `JSONLDPreparation`.
+Endpoint alternatives/counts and `IntermediateRequirement` node counts, types
+and ownership are separate obligations. Graph scope applies throughout; paths
+never become direct ontology properties. Source permissions, unsupported paths
+or ambiguous bindings remain unknown. The default output contract waives JSON
+null/empty restrictions; requesting them requires separate source evidence.
+`project_path_field(..., shape=shape_iri)` from `bijux_ontology.shacl` reuses
+typed model translation for supported Core constraints. Keep its report with
+backend results, including any lexical or intermediate-description limitation.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model

@@ -27,6 +27,10 @@ from bijux_ontology.declarations.codecs import (
 )
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
+from bijux_ontology.declarations.path_fields import (
+    IntermediateRequirement,
+    PathFieldDeclaration,
+)
 from bijux_ontology.declarations.resource_roles import ResourceRole, RoleBridge
 from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
 from bijux_ontology.declarations.types import (
@@ -103,6 +107,7 @@ from bijux_ontology.models.corpus import (
     check_serializer_corpus,
 )
 from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
 from bijux_ontology.models.resource_roles import RoleUse, check_resource_roles
@@ -250,6 +255,10 @@ from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
+    "IntermediateRequirement",
+    "PathFieldDeclaration",
+    "PathFieldUsage",
+    "check_path_fields",
     "TopologyContract",
     "TopologyRelation",
     "TopologyRecord",

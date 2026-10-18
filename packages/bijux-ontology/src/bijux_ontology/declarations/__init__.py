@@ -4,6 +4,7 @@ from bijux_ontology.absence import ABSENT, Absent
 
 from .enumerations import ValueEnumeration
 from .keys import KeyComponent, KeyContract
+from .path_fields import IntermediateRequirement, PathFieldDeclaration
 from .topology import TopologyContract, TopologyRelation
 from .types import (
     Emission,
@@ -22,6 +23,8 @@ from .types import (
 from .value_constraints import ValueConstraints
 
 __all__ = [
+    "IntermediateRequirement",
+    "PathFieldDeclaration",
     "TopologyContract",
     "TopologyRelation",
     "KeyComponent",

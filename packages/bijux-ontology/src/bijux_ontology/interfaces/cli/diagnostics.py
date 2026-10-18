@@ -93,6 +93,8 @@ _CODES = {
     ),
     "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
+        "path_mapping_unverified path_intermediate_count_mismatch "
+        "path_intermediate_mismatch path_ownership_mismatch "
         "source_field_undeclared predicate_undeclared source_coverage_unverified "
         "extension_allowed "
         "group_unverified group_count_mismatch scenario_unverified "
@@ -158,6 +160,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "path_field_unverified "
         "model_shape_unverified "
         "dataset_scope_unverified "
         "backend_warning execution_incomplete feature_unverified "

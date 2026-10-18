@@ -60,6 +60,7 @@ from .interfaces.api import (
     IndexMapObservation,
     InputError,
     InstanceCheck,
+    IntermediateRequirement,
     Issue,
     IssueSelection,
     JSONLDPreparation,
@@ -89,6 +90,8 @@ from .interfaces.api import (
     OntologyObligation,
     OntologyVersion,
     OutputRequirement,
+    PathFieldDeclaration,
+    PathFieldUsage,
     PreparedChecks,
     PreparedModels,
     PreparedSource,
@@ -163,6 +166,7 @@ from .interfaces.api import (
     check_label_collisions,
     check_models,
     check_ontology,
+    check_path_fields,
     check_project,
     check_rdf_emission,
     check_record_keys,
@@ -227,6 +231,10 @@ from .interfaces.api import (
 )
 
 __all__ = [
+    "IntermediateRequirement",
+    "PathFieldDeclaration",
+    "PathFieldUsage",
+    "check_path_fields",
     "TopologyContract",
     "TopologyRelation",
     "TopologyRecord",
