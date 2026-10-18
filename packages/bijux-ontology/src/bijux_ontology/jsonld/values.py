@@ -1,6 +1,6 @@
 """Immutable traits of values observed in actual expanded JSON-LD usages."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, cast
 
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -21,6 +21,7 @@ class ValueTraits:
     identifier_kind: str = "absent"
     types: tuple[str, ...] = ()
     direction: str | None = None
+    index: str | None = field(default=None, kw_only=True)
 
 
 def identifier_kind(value: object) -> str:
@@ -51,6 +52,8 @@ def value_traits(value: object, predicate: str) -> ValueTraits:
     if not isinstance(value, dict):
         return ValueTraits("unknown")
     node = cast(dict[str, object], value)
+    index = node.get("@index")
+    index = index if isinstance(index, str) else None
     if "@value" in node:
         datatype = node.get("@type")
         if datatype == "@json":
@@ -75,6 +78,7 @@ def value_traits(value: object, predicate: str) -> ValueTraits:
             str(datatype),
             str(language) if language else None,
             direction=str(direction) if direction else None,
+            index=index,
         )
     identifier = node.get("@id")
     identifier = identifier if isinstance(identifier, str) else None
@@ -91,4 +95,5 @@ def value_traits(value: object, predicate: str) -> ValueTraits:
         identifier=identifier,
         identifier_kind=identifier_kind(identifier),
         types=types,
+        index=index,
     )

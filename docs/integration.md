@@ -342,6 +342,16 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
 
+`check_index_maps(prepared_usages, expectations)` checks exact source map keys
+and processor-qualified correspondence using `IndexMapExpectation` and named,
+graph-qualified `IndexBinding` records. Raw key facts survive unresolved origin;
+merged or anonymous records remain unverified. `ContextExpectation(index=...)`
+checks expanded node/value metadata; `list_index=...` checks the wrapper metadata
+separately from members. `None` leaves either unchecked; `ABSENT` requires absence.
+Plain index metadata and source keys do not change RDF equality. An explicit
+`index_property` selects a custom property index whose contribution is ordinary
+RDF. No association is inferred from raw positions or generated blank labels.
+
 `check_document_form(document_or_prepared, requirements, expectations=...)`
 checks explicit source representation with `FormRequirement` selectors for
 object/array/scalar shape, exact required/allowed keys and reference/inline

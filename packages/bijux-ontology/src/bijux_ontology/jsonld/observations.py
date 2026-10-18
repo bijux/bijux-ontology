@@ -1,7 +1,7 @@
 """Immutable expanded usage evidence and its semantic contribution identities."""
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import cast
 
 from bijux_ontology.limits import Budget
@@ -66,6 +66,7 @@ class ObservedOccurrence:
     subject_identity: int | None = None
     graph_identity: int | None = None
     identifier_identity: int | None = None
+    list_index: str | None = field(default=None, kw_only=True)
 
     @property
     def value(self) -> object:
@@ -260,6 +261,7 @@ def occurrences(
                         empty=True,
                         list_id=list_id,
                         list_length=0,
+                        list_index=cast(dict[str, str], value).get("@index"),
                         anonymous_graph=anonymous_graph,
                         subject_identity=subject_identity,
                         graph_identity=graph_identity,
@@ -278,6 +280,9 @@ def occurrences(
                         depth,
                         list_id=list_id,
                         list_length=len(members) if listed else None,
+                        list_index=cast(dict[str, str], value).get("@index")
+                        if listed
+                        else None,
                         anonymous_graph=anonymous_graph,
                         subject_identity=subject_identity,
                         graph_identity=graph_identity,

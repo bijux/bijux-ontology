@@ -1,7 +1,7 @@
 """Validated declarations of expected meanings for selected JSON-LD usages."""
 
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, cast
 
 from bijux_ontology._json import own_json
@@ -13,6 +13,7 @@ from bijux_ontology.reports import Issue
 from ..errors import InputError
 from .lists import ExpectedList, compare_lists
 from .observations import ObservedUsage, SourcePath, location
+from .selectors import _text_metadata
 from .values import ValueKind
 
 ContainerKind = Literal["list", "unordered"]
@@ -42,6 +43,8 @@ class ContextExpectation:
     identifier_kind: Literal["iri", "blank", "relative"] | None = None
     ordered_values: tuple[object, ...] | None = None
     lists: tuple[ExpectedList, ...] | None = None
+    index: str | Absent | None = field(default=None, kw_only=True)
+    list_index: str | Absent | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
         if (
@@ -81,7 +84,7 @@ class ContextExpectation:
         for value in (self.datatype, self.identifier):
             if isinstance(value, str):
                 absolute_iri(value)
-        for name in ("datatype", "language", "identifier"):
+        for name in ("datatype", "language", "identifier", "index", "list_index"):
             value = getattr(self, name)
             if value is not None and value is not ABSENT and not isinstance(value, str):
                 raise InputError(f"{name} must be a string, ABSENT or None")
@@ -124,6 +127,9 @@ def compare_usage(
     diagnostics lets callers retain earlier findings if a later charge exhausts
     the budget; orchestration and report completeness remain the caller's concern.
     """
+    for value in (expectation.index, expectation.list_index):
+        if isinstance(value, str):
+            _text_metadata(value, budget)
     where = location(expectation.path)
     if expectation.lists is not None:
         yield from compare_lists(expectation.lists, usage, budget=budget)
@@ -169,6 +175,12 @@ def compare_usage(
                 )
             )
         traits = item.traits
+        comparisons.extend(
+            [
+                ("index_mismatch", expectation.index, traits.index),
+                ("list_index_mismatch", expectation.list_index, item.list_index),
+            ]
+        )
         comparisons.extend(
             [
                 (

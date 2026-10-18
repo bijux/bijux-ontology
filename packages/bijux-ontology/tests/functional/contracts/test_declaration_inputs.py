@@ -186,3 +186,21 @@ def test_closed_coverage_python_and_json_share_alias_and_metadata_invariants() -
     ):
         with pytest.raises(InputError):
             models_from_data([{**data, "coverage": invalid}])
+
+
+@pytest.mark.parametrize("field", ("index", "list_index"))
+def test_index_traits_preserve_exact_absent_and_unchecked_json(field: str) -> None:
+    base = {"path": ["items"], "predicate": EX + "items"}
+    assert getattr(expectations_from_data([base])[0], field) is None
+    for raw, wanted in (
+        (None, None),
+        ({"absent": True}, ABSENT),
+        ("", ""),
+        ("chapter", "chapter"),
+    ):
+        selected = expectations_from_data([{**base, field: raw}])[0]
+        assert getattr(selected, field) == wanted
+    invalid_values: tuple[object, ...] = (False, [], {"absent": 1})
+    for invalid in invalid_values:
+        with pytest.raises(InputError):
+            expectations_from_data([{**base, field: invalid}], source="indexes.json")

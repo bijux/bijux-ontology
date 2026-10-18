@@ -55,6 +55,13 @@ from bijux_ontology.jsonld.flattening import (
     FlattenedDocument,
     flatten_document,
 )
+from bijux_ontology.jsonld.index_maps import (
+    IndexBinding,
+    IndexMapCheck,
+    IndexMapExpectation,
+    IndexMapObservation,
+    check_index_maps,
+)
 from bijux_ontology.jsonld.lists import ExpectedList
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.preparation import JSONLDPreparation, prepare_jsonld
@@ -253,6 +260,10 @@ __all__ = [
     "IdentifierRecord",
     "IdentifierRegistry",
     "IdentifierTemplate",
+    "IndexBinding",
+    "IndexMapCheck",
+    "IndexMapExpectation",
+    "IndexMapObservation",
     "InputError",
     "InstanceCheck",
     "Issue",
@@ -340,6 +351,7 @@ __all__ = [
     "check_document_form",
     "check_emission",
     "check_instance",
+    "check_index_maps",
     "check_label_collisions",
     "check_models",
     "check_ontology",

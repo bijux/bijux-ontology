@@ -51,6 +51,8 @@ def expectations_from_data(
                     "identifier_kind",
                     "ordered_values",
                     "lists",
+                    "index",
+                    "list_index",
                 },
                 location="",
                 message="Unknown declaration keys",
@@ -68,6 +70,8 @@ def expectations_from_data(
                         ContextValueKind | None,
                         optional_string_value(data.get("value_kind")),
                     ),
+                    index=_trait(data.get("index")),
+                    list_index=_trait(data.get("list_index")),
                     datatype=_trait(data.get("datatype")),
                     language=_trait(data.get("language")),
                     container=cast(

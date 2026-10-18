@@ -53,6 +53,9 @@ _CODES = {
     ),
     "context": frozenset(
         "compilation_conflict compilation_unverified "
+        "index_mismatch list_index_mismatch index_keys_mismatch "
+        "index_origin_mismatch index_unverified index_binding_mismatch "
+        "index_binding_missing "
         "list_group_mismatch list_order_mismatch list_unverified "
         "probe_unverified "
         "change_unverified before_input_error after_input_error "

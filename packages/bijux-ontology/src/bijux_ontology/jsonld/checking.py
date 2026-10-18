@@ -11,7 +11,7 @@ from ..reports import Issue, Report
 from .entities import EntityInventory
 from .expansion import _drop_issues, _validate_allowed_drops, expand_document
 from .expectations import ContextExpectation, compare_usage
-from .observations import ObservedUsage, SourcePath, location
+from .observations import ObservedOccurrence, ObservedUsage, SourcePath, location
 from .omissions import project_omissions
 from .resources import (
     ContextInputError,
@@ -180,6 +180,18 @@ class PreparedUsages:
         return resolve_selection(
             selector, self._document, self._entities, self.observe, self._budget
         )
+
+    def _index_derivative(
+        self, path: SourcePath
+    ) -> tuple[
+        ObservedUsage,
+        tuple[ObservedOccurrence, ...],
+        tuple[ObservedOccurrence, ...],
+        str | None,
+        str | None,
+    ]:
+        """Reuse owned identities and bounded derivative processing."""
+        return self._index.index_derivative(path)
 
     def check(
         self,
