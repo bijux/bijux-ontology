@@ -39,6 +39,7 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "probe_unverified "
         "change_unverified before_input_error after_input_error "
         "container_mismatch datatype_mismatch "
         "flatten_correspondence_unverified flatten_input_error "
@@ -303,6 +304,11 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "context.probe_unverified": (
+        "A declared branch lacks a supported finite JSON representative.",
+        "Supply its explicit input shape or retain the unverified branch scope.",
+        'ContextProbe(model, samples=(ProbeSample("field", 0, raw_json),))',
+    ),
     "data.query_violation": (
         "A consumer SELECT rule returned an actual violating RDF binding.",
         "Inspect the exact bound terms and local query; correct data or the rule.",

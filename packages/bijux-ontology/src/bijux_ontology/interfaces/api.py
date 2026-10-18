@@ -66,6 +66,8 @@ from bijux_ontology.jsonld.selectors import (
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
+from bijux_ontology.models.context_probes.checking import probe_context
+from bijux_ontology.models.context_probes.types import ContextProbe, ProbeSample
 from bijux_ontology.models.emission import ModelUsage, check_emission
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
@@ -142,6 +144,7 @@ __all__ = [
     "ContextCorpusUpgrade",
     "ContextExpectation",
     "ContextInputError",
+    "ContextProbe",
     "ContractObligation",
     "ContractResult",
     "CorpusBranch",
@@ -179,6 +182,7 @@ __all__ = [
     "PreparedModels",
     "PreparedSource",
     "PreparedUsages",
+    "ProbeSample",
     "ProjectConfig",
     "Property",
     "QueryResult",
@@ -245,6 +249,7 @@ __all__ = [
     "prepare_jsonld",
     "prepare_source",
     "prepare_usages",
+    "probe_context",
     "query_rdf",
     "query_rules_from_data",
     "prove_obligations",

@@ -34,6 +34,18 @@ exhaustion remain distinct. `allow_empty=True` explicitly excludes only the
 nonempty-data requirement. Project jobs use `kind: "query-rules"`, a named RDF
 `source` and a `rules` filename; every rule retains its own scope.
 
+`probe_context(context, [ContextProbe(model, type_values=("Record",))])`
+qualifies generated representatives for explicitly declared field branches
+through maintained JSON-LD processing. Compact `type_values` select an actual
+type-scoped context and must expand to the model's declared types. Scalars and
+list/set values use neutral representatives; object and custom datatype branches
+can supply `ProbeSample("field", branch_index, raw_json)`.
+Each report scope records its branch, sample origin and source shape. Unsupported
+or unrepresented branches stay unverified. Agreement covers these finite inputs,
+including their predicate, direction, value and container checks; it does not
+prove arbitrary serializer output or biological correctness. Map-container
+qualification and structural `@id`/`@type` field aliases remain unverified.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
