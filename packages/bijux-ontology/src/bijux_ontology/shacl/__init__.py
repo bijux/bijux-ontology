@@ -14,6 +14,7 @@ from bijux_ontology.shacl.authoring import (
     ShaclCount,
     ShaclLogical,
     ShaclNodeShape,
+    ShaclParameter,
     ShaclPropertyShape,
     ShaclQualifiedCount,
     ShaclShapeRef,
@@ -22,6 +23,15 @@ from bijux_ontology.shacl.authoring import (
 )
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import ShaclFinding, ShaclResult, validate_shapes
+from bijux_ontology.shacl.components import (
+    ComponentCheck,
+    ComponentShapes,
+    ComponentUse,
+    ComponentValidator,
+    ShaclComponent,
+    check_components,
+    compile_components,
+)
 from bijux_ontology.shacl.coverage import (
     ShaclCoverage,
     ShaclCoverageContract,
@@ -60,6 +70,14 @@ from bijux_ontology.shacl.profiles import (
 from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "ComponentCheck",
+    "ComponentShapes",
+    "ComponentUse",
+    "ComponentValidator",
+    "ShaclComponent",
+    "ShaclParameter",
+    "check_components",
+    "compile_components",
     "LocalConflict",
     "RootConflict",
     "ShapeAnalysis",

@@ -8,10 +8,8 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING
 
-from pyparsing import ParseBaseException
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, SH
-from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.sparql import SPARQLError
 from rdflib.term import Identifier
 
@@ -20,6 +18,12 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import copy_graph
 from bijux_ontology.reports import Issue
+from bijux_ontology.shacl.authoring.parameters import (
+    ShaclParameter,
+)
+from bijux_ontology.shacl.authoring.parameters import (
+    parameter_name as _name,
+)
 from bijux_ontology.shacl.queries import _CASTS, analyze_query
 
 if TYPE_CHECKING:
@@ -29,51 +33,9 @@ if TYPE_CHECKING:
     from rdflib.plugins.sparql.sparql import FrozenBindings
 
 
-def _name(path: str) -> str:
-    name = path.split("#", 1)[1] if "#" in path else path.rsplit("/", 1)[-1]
-    try:
-        parsed = parseQuery(f"SELECT ?{name} WHERE {{}}")
-    except ParseBaseException as error:
-        raise InputError(
-            "Function parameter local name is not a SPARQL variable"
-        ) from error
-    if (
-        len(parsed[1]["projection"]) != 1
-        or str(parsed[1]["projection"][0]["var"]) != name
-    ):
-        raise InputError(
-            "Function parameter path requires a SPARQL variable local name"
-        )
-    return name
-
-
 @dataclass(frozen=True)
-class ShaclFunctionParameter:
-    """An RDF argument name, optional position and descriptive datatype."""
-
-    path: str
-    order: int | Decimal | None = None
-    optional: bool = False
-    datatype: str | None = None
-
-    def __post_init__(self) -> None:
-        absolute_iri(self.path)
-        try:
-            _name(self.path)
-        except Exception as error:
-            raise InputError(
-                "Function parameter path has no supported variable name"
-            ) from error
-        if type(self.optional) is not bool:
-            raise InputError("Function optional must be a boolean")
-        if self.order is not None and (
-            isinstance(self.order, bool)
-            or not isinstance(self.order, (int, Decimal))
-            or not Decimal(self.order).is_finite()
-        ):
-            raise InputError("Function order requires a finite integer or decimal")
-        if self.datatype is not None:
-            absolute_iri(self.datatype)
+class ShaclFunctionParameter(ShaclParameter):
+    """An explicit function argument with shared SHACL parameter semantics."""
 
 
 @dataclass(frozen=True)

@@ -316,6 +316,16 @@ an unbounded datatype shape alone cannot promise native lexical agreement.
 An explicit target without a positive assertion requirement still needs native
 subject-occurrence evidence; naming a SHACL focus node does not supply a record.
 
+Author reusable parameterized checks with `ShaclComponent`, `ShaclParameter`,
+`ComponentValidator` and `ComponentUse` from `bijux_ontology.shacl`.
+`compile_components(shapes, components, uses)` returns ordinary owned SHACL RDF.
+The supported forms are generic ASK and node/property SELECT; required parameters,
+query forms, pre-bound variables and offline prefixes are qualified explicitly.
+`check_components(data, compiled, trusted_sparql=True)` runs the actual backend
+without enabling advanced mode for ordinary ASK. Keep structural and query
+reports separate; unavailable custom functions and anonymous execution/data
+bindings remain unknown. Package the artifact through ordinary `export_rdf`.
+
 SHACL findings retain report-local identities, nested details and finite typed
 property paths in `result.findings` and each generic issue’s `evidence`.
 Supply `ShaclSource(prepared_usages, paths, source=...)` through `source_usages=`
