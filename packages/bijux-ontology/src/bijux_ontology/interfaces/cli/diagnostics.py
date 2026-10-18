@@ -161,6 +161,7 @@ _CODES = {
         "sample_contract_conflict type_unverified value_kind_conflict "
         "value_unverified".split()
     ),
+    "owl": frozenset(("assertion_contradiction", "assertion_unverified")),
     "ontology": frozenset(
         "annotation_shape annotation_statement_missing cardinality_shape "
         "obligation_unknown obligation_contradicted obligation_exhausted "
@@ -407,6 +408,14 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Inspect the named field and ontology endpoint constraints; do "
         "not infer a remapping.",
         'FieldDeclaration("image", "urn:image", (ValueDeclaration("iri"),))',
+    ),
+    "owl": (
+        "selected finite OWL assertion witnesses",
+        "Original assertions establish a contradiction or leave required work "
+        "unresolved.",
+        "Inspect retained assertion and identity premises, selected graph and datatype "
+        "map; absence of a finite witness does not establish consistency.",
+        "check_assertion_witnesses(source)",
     ),
     "ontology": (
         "selected RDF/OWL encoding rules",

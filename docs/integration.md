@@ -870,3 +870,14 @@ requires the original complete OBO attachment inventory. `AnnotationValueEdit`
 uses `author_vocabulary` with explicit after checks to replace an exclusively
 owned leaf qualifier; shared, ambiguous or nonleaf edits remain unverified.
 Referenced resource bodies stay opaque, and export still requires acceptance.
+
+`check_assertion_witnesses` from `bijux_ontology.owl.assertions` checks selected
+finite individual/property assertions without a DL backend. It retains original
+premises for irreflexive, asymmetric, disjoint-property, negative-assertion and
+identity/difference contradictions. Functionality, inverse functionality and
+supported named-class keys can establish equality; different IRIs alone do not
+establish difference. Keys require a shared witness for every property, with named
+object fillers. Literal values use the selected supported OWL datatype map while
+preserving RDF lexical terms. Results distinguish `contradiction_found`,
+`no_witness_in_selected_scope` and `incomplete`; none is a general consistency
+verdict. Unsupported entailments and stopped work remain explicit.
