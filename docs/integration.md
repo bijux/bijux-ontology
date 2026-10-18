@@ -782,3 +782,14 @@ source keys and matched target records; open or incomplete lookup cannot prove
 absence, while known excess matches still fail. An optional `target_model` runs
 ordinary native RDF model checks on each matched owned target. These are
 application reference obligations, independent of OWL identity assertions.
+
+`bijux_ontology.interfaces.adapters.jsonschema.generation.compile_output_schema`
+compiles explicit models and root names into JSON Schema 2020-12 plus linked RDF
+mappings and annotations. `JsonRepresentation` selects native scalars, arrays or
+explicit `@list` wrappers. Inspect `translations` and the required `report` for
+untranslated or changed obligations; `.validate(actual_output)` checks JSON
+conformance separately. JSON validation establishes neither RDF context/subject
+semantics nor exact RDF numeric identity. Ordinary array length does not prove
+RDF distinct-value counts. The existing importer accepts the documented finite
+scalar/local-definition subset; general unions and list wrappers remain outside
+that importer's supported scope. Install `[jsonschema]` to request compilation.

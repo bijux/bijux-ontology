@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "schema": frozenset(
+        "translation_invalid translation_unverified "
+        "output_invalid output_unverified".split()
+    ),
     "roles": frozenset(
         "role_unverified punning_forbidden instance_type_missing "
         "bridge_unverified type_conflict profile_unavailable".split()
@@ -261,6 +265,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "schema": (
+        "explicit serialized JSON output contracts",
+        "A selected JSON assertion fails or an RDF obligation lacks translation.",
+        "Inspect the generated schema, linked RDF mappings and each translation; "
+        "validate actual serializer output separately from RDF equivalence.",
+        "compile_output_schema(models, roots, schema_iri=resource).validate(output)",
+    ),
     "profile": (
         "explicit offline validation profiles",
         "Selected profile resources or obligations conflict or lack qualification.",
