@@ -831,3 +831,10 @@ require membership through an owned vocabulary view. Findings retain actual key
 pointers and expanded IRIs. Scoped contexts, keyword aliases, nullified terms and
 opaque JSON retain their processor roles; the policy does not redefine JSON-LD
 validity. Select descendants explicitly with existing source selectors.
+
+`check_dataset_layout` from `bijux_ontology.data.layout` checks an explicitly
+supplied complete dataset against `DatasetLayout`. Declare open or closed graph
+inventory, required graphs (including empty ones), and `ContentPlacement` rules
+for selected predicates, types or owned subjects. Findings identify the physical
+graph and original statement. Incomplete empty-graph fidelity cannot establish a
+closed inventory; pinned or union views do not establish original partitions.
