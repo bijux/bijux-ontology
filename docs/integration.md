@@ -823,3 +823,11 @@ Inspect numeric observations and their pointers before conversion. A requested
 datatype and context-free input;
 unsupported projections return no checked output. Already decoded Python floats
 carry no raw-token precision claim. Ordinary JSON decoding remains unchanged.
+
+`check_term_usages` from `bijux_ontology.jsonld.term_usage` checks direct keys in
+selected source-object regions of one `PreparedUsages`. Use `TermUsageRegion` to
+require explicit definitions, permit default-vocabulary extension regions, or
+require membership through an owned vocabulary view. Findings retain actual key
+pointers and expanded IRIs. Scoped contexts, keyword aliases, nullified terms and
+opaque JSON retain their processor roles; the policy does not redefine JSON-LD
+validity. Select descendants explicitly with existing source selectors.
