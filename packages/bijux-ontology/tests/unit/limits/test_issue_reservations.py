@@ -1,14 +1,15 @@
 """Paid findings transfer without freeing repeated output from issue limits."""
 
 import gc
+import json
 import weakref
 
 import pytest
 
-from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.reports import Issue, Location, Report
+from bijux_ontology.reports import Issue, Location, Report, report_from_data
 
 
 def test_nested_transfers_survive_full_budget_but_local_repetition_still_costs() -> (
@@ -94,3 +95,39 @@ def test_partial_metadata_qualification_cannot_authorize_unbounded_issue_handoff
     with pytest.raises(LimitExceeded):
         retain_report(Report("returned", 1, (unqualified,)), budget, parent)
     assert not parent
+
+
+def test_owned_worker_roundtrip_preserves_paid_nested_finding_ownership() -> None:
+    """Transported child copies share ownership and do not require a second slot."""
+    finding = Issue("example.invalid", "Actual completed failure")
+    original = Report(
+        "outer", 1, (finding,), children=(Report("inner", 1, (finding,)),)
+    )
+    received = report_from_data(json.loads(json.dumps(original.to_dict())))
+    assert received.to_dict() == original.to_dict()
+    assert received.issues[0] is received.children[0].issues[0]
+    host = Budget(Limits(max_issues=1))
+    host.consume("states", 16)
+    host.consume("bytes", 1024)
+    host.consume("work", 16)
+    host.consume("issues")
+    host._register_transferred_report(received, paid_issues=1, max_references=16)
+    retained = IssueCollector(host)
+    retain_report(received, host, retained)
+    assert retained == [finding] and host.remaining("issues") == 0
+    with pytest.raises(LimitExceeded):
+        retained.append(Issue("example.invalid", "Actual completed failure"))
+
+
+def test_invalid_worker_receipt_cannot_authorize_a_finding() -> None:
+    """Missing logical payment and missing host reservation both fail closed."""
+    report = Report("native", 1, (Issue("example.invalid", "Not paid here"),))
+    for paid, capacity in ((0, 16), (1, 1)):
+        host = Budget(Limits(max_issues=1))
+        host.consume("issues")
+        with pytest.raises(InputError):
+            host._register_transferred_report(
+                report, paid_issues=paid, max_references=capacity
+            )
+        with pytest.raises(LimitExceeded):
+            IssueCollector(host).append(report.issues[0])

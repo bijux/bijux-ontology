@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from dataclasses import KW_ONLY, dataclass, replace
 from typing import Literal, cast
 
-from .errors import InputError, InputFailure
+from .errors import InputError, InputFailure, SourceSpan
 
 IssueKind = Literal["finding", "unverified", "input_error", "exhausted"]
 Severity = Literal["error", "warning", "info"]
@@ -499,3 +499,104 @@ def combine_reports(scope: str, *reports: Report) -> Report:
             dict.fromkeys(item for report in reports for item in report.exclusions)
         ),
     )
+
+
+def _report_object(value: object, *, location: str) -> dict[str, object]:
+    """Require a decoded report object without importing input or budget layers."""
+    if not isinstance(value, dict) or not all(isinstance(key, str) for key in value):
+        raise InputError("Expected an object", location=location)
+    return cast(dict[str, object], value)
+
+
+def _input_failure(value: object) -> InputFailure | None:
+    """Reconstruct typed content evidence without interpreting parser messages."""
+    if value is None:
+        return None
+    data = _report_object(value, location="worker input failure")
+    chain = data.get("import_chain", [])
+    if not isinstance(chain, list):
+        raise InputError("Worker import chains require arrays")
+    span = None
+    if data.get("span") is not None:
+        raw = _report_object(data["span"], location="worker parser span")
+        span = SourceSpan(
+            cast(int | None, raw.get("start_line")),
+            cast(int | None, raw.get("start_column")),
+            cast(int | None, raw.get("end_line")),
+            cast(int | None, raw.get("end_column")),
+            column_unit=cast(
+                Literal["unicode_code_points", "utf16_code_units"] | None,
+                raw.get("column_unit"),
+            ),
+        )
+    return InputFailure(
+        cast(str | None, data.get("document_iri")),
+        cast(str, data.get("location", "")),
+        cast(str, data.get("role", "input")),
+        tuple(chain),
+        span,
+    )
+
+
+def issue_from_data(value: object) -> Issue:
+    """Reconstruct one typed issue without interpreting policy or parser messages."""
+    item = _report_object(value, location="worker issue")
+    details = item.get("details")
+    location = None
+    if details is not None:
+        part = _report_object(details, location="worker location")
+        location = Location(
+            source=cast(str, part.get("source", "")),
+            path=cast(tuple[str | int, ...], part.get("path", ())),
+            term=cast(str | None, part.get("term")),
+            graph=cast(str | None, part.get("graph")),
+            model=cast(str | None, part.get("model")),
+            branch=cast(int | None, part.get("branch")),
+            failure=_input_failure(part.get("input_failure")),
+        )
+    return Issue(
+        cast(str, item.get("code")),
+        cast(str, item.get("message")),
+        location=cast(str, item.get("location", "")),
+        kind=cast(IssueKind, item.get("kind")),
+        severity=cast(Severity, item.get("severity")),
+        expected=cast(str | None, item.get("expected")),
+        actual=cast(str | None, item.get("actual")),
+        details=location,
+        evidence_json=json.dumps(item["evidence"], allow_nan=False)
+        if item.get("evidence") is not None
+        else None,
+    )
+
+
+def _report_from_data(value: object, retained: dict[Issue, Issue]) -> Report:
+    """Reconstruct validated truth; never trust transmitted policy or exit status."""
+    data = _report_object(value, location="worker report")
+    if type(data.get("schema_version")) is not int or data["schema_version"] != 1:
+        raise InputError("Unsupported worker report schema")
+    raw_issues = data.get("issues")
+    raw_children = data.get("scopes")
+    if not isinstance(raw_issues, list) or not isinstance(raw_children, list):
+        raise InputError("Worker report requires issues and scopes arrays")
+    issues = [
+        retained.setdefault(item, item)
+        for raw in raw_issues
+        for item in (issue_from_data(raw),)
+    ]
+    return Report(
+        cast(str, data.get("scope")),
+        cast(int, data.get("checked")),
+        tuple(issues),
+        allow_empty=cast(bool, data.get("allow_empty", False)),
+        requested=cast(int, data.get("requested")),
+        complete=cast(bool, data.get("complete")),
+        regime=cast(str, data.get("regime")),
+        families=cast(tuple[str, ...], data.get("families", ())),
+        exclusions=cast(tuple[str, ...], data.get("exclusions", ())),
+        children=tuple(_report_from_data(child, retained) for child in raw_children),
+    )
+
+
+def report_from_data(value: object) -> Report:
+    """Reconstruct bounded decoded evidence with shared immutable issue ownership."""
+    return _report_from_data(value, {})
