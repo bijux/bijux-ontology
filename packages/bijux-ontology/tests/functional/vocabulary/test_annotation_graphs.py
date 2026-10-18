@@ -283,3 +283,33 @@ def test_physical_graph_identity_exact_literals_and_bounded_prefixes() -> None:
     assert result.report.outcome == "exhausted" and all(
         not issue.location for issue in result.report
     )
+
+
+def test_anonymous_roots_require_stored_subject_and_object_witnesses() -> None:
+    graph = Graph().add((BNode("root"), RDFS.label, LABEL))
+    graph.add((E.Cell, RDFS.seeAlso, BNode("value")))
+    source = prepare_rdf(graph)
+    owned = source.graph()
+    subject = next(owned.subjects(RDFS.label, None))
+    value = next(owned.objects(E.Cell, RDFS.seeAlso))
+    label = owned.value(subject, RDFS.label)
+    assert isinstance(subject, BNode) and isinstance(value, BNode)
+    assert isinstance(label, Literal)
+    root = AnnotationStatement(subject, RDFS.label, label)
+    link = AnnotationStatement(E.Cell, RDFS.seeAlso, value)
+    assert inspect_annotation_graph(source, (root, link)).report.verified
+    foreign_subject, foreign_value = BNode(str(subject)), BNode(str(value))
+    assert foreign_subject is not subject and foreign_value is not value
+    for forged in (
+        replace(root, subject=foreign_subject),
+        replace(link, value=foreign_value),
+    ):
+        result = inspect_annotation_graph(source, (forged,))
+        assert result.report.outcome == "unverified"
+        assert result.report.checked == 0 and not result.paths
+    assert (
+        inspect_annotation_graph(
+            source, (root,), limits=Limits(max_work=1)
+        ).report.outcome
+        == "exhausted"
+    )
