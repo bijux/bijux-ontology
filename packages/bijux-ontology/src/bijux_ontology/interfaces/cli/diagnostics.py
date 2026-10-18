@@ -50,6 +50,7 @@ _CODES = {
         "structure_mismatch binding_unverified".split()
     ),
     "adapter": frozenset(
+        "schema_unverified schema_mismatch "
         "alias_unverified class_mapping_unverified computed_output_unverified "
         "emission_unverified excluded_emission_conflict mapping_conflict "
         "mapping_unverified field_contract_conflict alias_contract_conflict "

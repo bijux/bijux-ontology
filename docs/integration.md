@@ -643,3 +643,14 @@ removal use explicit `added_graphs` and `removed_graphs`; a removed graph must
 be empty after the proposed moves. Exact terms, shared blanks and unrelated
 partitions remain intact. The same before/after contract and explicit export
 gate applies, including actual graph-local constraint failures.
+
+Install `[jsonschema]` to import supported offline JSON Schema 2020-12 contracts.
+`bijux_ontology.interfaces.adapters.jsonschema` exposes `SchemaModel`,
+`model_declarations` and `check_instance`. Supply explicit RDF classes and
+`RdfField` mappings for each referenced object variant. The checks invoke the
+real serializer once with
+its supplied options and returns the exact checked output. Set
+`output_schema=True` to check that output against the JSON Schema assertions.
+Schema `required` and `additionalProperties` remain JSON rules; RDF occurrence
+guarantees require explicit `OutputRequirement` records. Missing mappings,
+unavailable offline references and unsupported applicators remain unverified.

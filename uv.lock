@@ -194,6 +194,10 @@ dependencies = [
 jsonld = [
     { name = "pyld" },
 ]
+jsonschema = [
+    { name = "jsonschema" },
+    { name = "referencing" },
+]
 linkml = [
     { name = "linkml-runtime" },
 ]
@@ -218,6 +222,7 @@ xsd = [
 requires-dist = [
     { name = "elementpath", marker = "extra == 'xsd'", specifier = ">=5.1.4,<6" },
     { name = "google-re2", marker = "extra == 'patterns'", specifier = ">=1.1.20251105,<2" },
+    { name = "jsonschema", marker = "extra == 'jsonschema'", specifier = ">=4.26,<5" },
     { name = "linkml-runtime", marker = "extra == 'linkml'", specifier = ">=1.12.1,<2" },
     { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2.11,<3" },
     { name = "pyld", marker = "extra == 'jsonld'", specifier = ">=3.3,<4" },
@@ -225,9 +230,10 @@ requires-dist = [
     { name = "pyparsing", marker = "extra == 'shacl'", specifier = ">=3.2,<4" },
     { name = "pyshacl", marker = "extra == 'shacl'", specifier = ">=0.40.1,<0.41" },
     { name = "rdflib", specifier = ">=7.6,<8" },
+    { name = "referencing", marker = "extra == 'jsonschema'", specifier = ">=0.37,<0.38" },
     { name = "uri-template", marker = "extra == 'templates'", specifier = ">=1.3,<2" },
 ]
-provides-extras = ["jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns"]
+provides-extras = ["jsonschema", "jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns"]
 
 [[package]]
 name = "bijux-ontology-dev"
