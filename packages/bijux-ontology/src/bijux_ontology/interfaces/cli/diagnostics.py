@@ -89,6 +89,7 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "consolidation_unverified consolidation_conflict consolidation_input_error "
         "layout_unverified layout_count_mismatch layout_graph_forbidden "
         "layout_content_misplaced layout_input_error "
         "topology_binding_unverified topology_corpus_unverified topology_cycle "

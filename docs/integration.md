@@ -840,3 +840,12 @@ inventory, required graphs (including empty ones), and `ContentPlacement` rules
 for selected predicates, types or owned subjects. Findings identify the physical
 graph and original statement. Incomplete empty-graph fidelity cannot establish a
 closed inventory; pinned or union views do not establish original partitions.
+
+Use `prepare_corpus` and `consolidate_entities` from
+`bijux_ontology.data.consolidation` for explicitly supplied repeated descriptions.
+`CorpusDocument` selects actual document/graph participation; `PredicateAgreement`
+requires exact or selected literal-value agreement, and additive predicates permit
+complementary facts. A candidate is returned only after agreement and required
+`ConsolidationCheck` callbacks verify. Contributions retain both document origins;
+independent blank nodes and physical graph partitions remain separate unless an
+explicit union is requested. These are application agreements, not OWL consistency.
