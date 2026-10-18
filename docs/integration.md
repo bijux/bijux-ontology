@@ -1399,3 +1399,12 @@ cells retain original text, row, column, physical start line and emitted RDF;
 report. Shared subjects are legal without declared uniqueness. Decimals retain
 native exact values independently of caller Decimal settings; split/default
 amplification is bounded before native parsing. No external resources are fetched.
+
+
+`bijux_ontology.shacl.skos_profiles` exports selected plain-label policies as
+portable typed SHACL. Supply `SkosProfile` with explicit named targets, required
+languages and rules, then `compile_skos_profile(..., trusted_sparql=True)` for
+exact label integrity and language coverage. Execute the returned components
+with the existing trusted SHACL APIs against the same asserted physical graph.
+Keep the translation report: unsupported rules, XL-dependent combinations and
+unpreserved scope remain untranslated, even when an RDF artifact is available.

@@ -255,7 +255,7 @@ _CODES = {
         "partition_scope_unverified partition_input_error "
         "rules_unverified rules_input_error "
         "target_unavailable upgrade_unverified upgrade_target_removed "
-        "component_unverified "
+        "component_unverified skos_scope_untranslated skos_rule_untranslated "
         "analysis_metadata_unverified analysis_profile_unverified "
         "analysis_qualification_unverified analysis_recursion_unverified "
         "static_incompatibility "
