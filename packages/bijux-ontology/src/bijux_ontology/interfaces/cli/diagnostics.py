@@ -71,6 +71,7 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "frame_unverified frame_input_error "
         "term_usage_disallowed term_usage_membership "
         "term_usage_unverified term_usage_input_error "
         "number_not_portable number_not_exact number_rdf_not_exact "

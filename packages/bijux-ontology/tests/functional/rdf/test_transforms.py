@@ -226,3 +226,45 @@ def test_candidate_rechecks_preserve_outcomes_and_callback_ownership() -> None:
 
     with pytest.raises(RuntimeError, match="Deliberate"):
         recheck_transformation(original, transformed.source, {"failure": failed})
+
+
+def test_explicit_extraction_graph_narrows_without_borrowing_other_partitions() -> None:
+    dataset = Dataset()
+    dataset.default_graph.add((A, P, Literal("default")))
+    dataset.graph(G).add((A, P, Literal("selected")))
+    dataset.graph(URIRef(EX + "hidden")).add((A, P, Literal("hidden")))
+    source = prepare_source(dataset)
+    result = extract_neighbourhood(
+        source, (str(A),), predicates=(str(P),), graph_name=str(G)
+    )
+    assert result.report.verified and result.source is not None
+    assert result.source.graph_name == str(G)
+    assert set(result.source.graph()) == {(A, P, source.graph(G).value(A, P))}
+    assert len(result.source.dataset()) == 1
+    default = extract_neighbourhood(
+        source, (str(A),), predicates=(str(P),), graph_name="@default"
+    )
+    assert default.source is not None and default.source.graph_name == "@default"
+    with pytest.raises(InputError, match="conflicts"):
+        extract_neighbourhood(
+            result.source,
+            (str(A),),
+            predicates=(str(P),),
+            graph_name=str(URIRef(EX + "hidden")),
+        )
+
+    with pytest.raises(InputError, match="absent"):
+        extract_neighbourhood(
+            source, (str(A),), predicates=(str(P),), graph_name=EX + "absent"
+        )
+    empty_name = URIRef(EX + "empty")
+    dataset.graph(empty_name)
+    empty = extract_neighbourhood(
+        prepare_source(dataset),
+        (str(A),),
+        predicates=(str(P),),
+        graph_name=str(empty_name),
+    )
+    assert empty.source is not None and empty.source.graph_name == str(empty_name)
+    assert set(empty.source._graph_names()) == {empty_name}
+    assert empty.report.outcome == "not_applicable"

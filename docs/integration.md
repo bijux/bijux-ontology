@@ -265,6 +265,20 @@ descriptions expose `expanded_paths` into expanded input, not compact source
 pointers. Blank-node or anonymous-graph correspondence remains unverified without
 an identity witness. RDF preservation does not promise original JSON shape.
 
+Use `frame_document(document, frame, retained=EntitySelector(...),
+predicates=(...))` to check an intentional projection through PyLD. Select named
+roots in one explicit graph; required predicates and their attached anonymous
+structures compare jointly, preserving shared identity, lists and exact literals.
+Declare omitted records with `omitted` and seed predicate exclusions with
+`omitted_predicates`; exclusions require observed source content. Those predicates
+are outside preservation truth, including framing defaults there. Required loss
+or invented required values withhold the checked document and RDF. This proves
+selected retention, with no whole-dataset equivalence or pure-subset guarantee.
+`result.bind(iri, graph=...)` supplies actual output paths for `ModelUsage`; pass
+`result.base` to subsequent JSON-LD checks when IDs are relative. Direct processing
+runs in process; `WorkerExecutor.run("framing", ...)` supplies explicit isolated
+deadlines and cancellation using the same offline resource protocol.
+
 Loading errors expose `InputError.failure` from `bijux_ontology.errors`: the
 logical document IRI, supplied location and role, known import chain, and any
 parser-provided span. Pass `location=` and `role=` on `RdfSource` when available.
@@ -397,7 +411,7 @@ Use `WorkerExecutor(python=installed_python, timeout=30, limits=Limits(...))`
 for bounded embedding. `run("context", {"document": output, "expectations":
 expectation_data, "resources": contexts, "base": logical_base})` transfers JSON
 resources and returns a raw `report`. Supported operations also include
-`emission`, `serialization`, `flatten`, `vocabulary` and `project`; declarations
+`emission`, `serialization`, `flatten`, `framing`, `vocabulary` and `project`; declarations
 use their existing JSON codecs. `project` takes `configuration` and an absolute
 `directory`, retaining completed scopes on cancellation or deadline.
 

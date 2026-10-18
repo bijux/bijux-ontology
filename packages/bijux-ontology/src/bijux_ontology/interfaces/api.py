@@ -71,6 +71,12 @@ from bijux_ontology.jsonld.flattening import (
     FlattenedDocument,
     flatten_document,
 )
+from bijux_ontology.jsonld.framing import (
+    FramedDocument,
+    FrameNode,
+    FrameOmission,
+    frame_document,
+)
 from bijux_ontology.jsonld.index_maps import (
     IndexBinding,
     IndexMapCheck,
@@ -387,6 +393,9 @@ __all__ = [
     "FieldDeclaration",
     "FlatNode",
     "FlattenedDocument",
+    "FramedDocument",
+    "FrameNode",
+    "FrameOmission",
     "FormRequirement",
     "IdentifierBatch",
     "IdentifierRecognition",
@@ -535,6 +544,7 @@ __all__ = [
     "export_rdf",
     "extract_neighbourhood",
     "flatten_document",
+    "frame_document",
     "index_uses",
     "inspect_vocabulary",
     "load_project",
