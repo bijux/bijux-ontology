@@ -254,6 +254,7 @@ pydantic = [
     { name = "pydantic" },
 ]
 shacl = [
+    { name = "owlrl" },
     { name = "pyparsing" },
     { name = "pyshacl" },
 ]
@@ -276,6 +277,7 @@ requires-dist = [
     { name = "google-re2", marker = "extra == 'patterns'", specifier = ">=1.1.20251105,<2" },
     { name = "jsonschema", marker = "extra == 'jsonschema'", specifier = ">=4.26,<5" },
     { name = "linkml-runtime", marker = "extra == 'linkml'", specifier = ">=1.12.1,<2" },
+    { name = "owlrl", marker = "extra == 'shacl'", specifier = ">=7.6.2,<8" },
     { name = "pandas", marker = "extra == 'sssom'", specifier = ">=2,<4" },
     { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2.11,<3" },
     { name = "pyld", marker = "extra == 'jsonld'", specifier = ">=3.3,<4" },

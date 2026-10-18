@@ -1096,3 +1096,13 @@ break requires known old permission and known new exclusion. Open or incomplete
 membership remains unknown, and unused vocabulary changes do not create data
 breaks. `ValueReplacement` evaluates an advisory proposal without rewriting data
 or approving a migration. Every selected record/field pair requires an occurrence.
+
+`bijux_ontology.rdf.entailment.prepare_entailment(source, regime="rdfs")`
+or `regime="owl-rl"` uses maintained `owlrl` from `[shacl]` as an explicit
+preparation step. Inspect separate asserted, derived and effective snapshots,
+final generalized consequences, regime and backend. Pass a verified effective
+snapshot to ordinary `validate_shapes`; emitted JSON requirements stay separate.
+Physical graph pins remain scoped; explicit unions are flattened. For blank
+graph names, pass the actual returned `graph_name` to snapshot/check operations.
+Unsupported datatypes, unresolved imports and incomplete closure yield no checked
+derived/effective artifact. This finite rule closure does not certify OWL 2 DL.
