@@ -287,6 +287,15 @@ are omitted; unresolved or dynamic dependencies remain unverified. Inspect
 through faithful RDF serialization. Agreement covers supplied cases only;
 independent role exports cannot preserve shared anonymous constants across roles.
 
+`inspect_shapes(shapes, (root_iri,))` projects supported supplied constraints into
+the immutable authoring records and reports uninterpreted semantic RDF in
+`remainder`. `edit_shape_counts(inspection, (ShapeCountEdit(property_shape,
+ShaclCount(minimum=1)),), data=actual_data)` supports ordinary property count
+edits. The candidate retains every other assertion in the selected physical
+graph and runs maintained validation with root coverage. Unknown extensions
+block edits by default; explicit `allow_opaque=True` preserves them while keeping
+the projection unverified. Export `candidate.source` through `export_rdf`.
+
 Use `compile_model_shapes(models, bindings)` with explicit `ModelShapeBinding`
 targets to translate supported output declarations into the same typed shapes.
 Asserted model/value types use exact `rdf:type` values; subclass edges do not

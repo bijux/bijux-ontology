@@ -167,6 +167,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "shape_projection_unverified shape_edit_unverified "
         "profile_dependency_unverified profile_behavior_unverified "
         "profile_behavior_changed "
         "path_field_unverified "

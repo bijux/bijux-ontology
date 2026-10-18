@@ -25,6 +25,14 @@ from bijux_ontology.shacl.functions import (
     ShaclFunctionParameter,
     ShaclSparqlFunction,
 )
+from bijux_ontology.shacl.inspection import (
+    ShapeCountEdit,
+    ShapeEdit,
+    ShapeInspection,
+    ShapeRemainder,
+    edit_shape_counts,
+    inspect_shapes,
+)
 from bijux_ontology.shacl.model_shapes import (
     ModelShapeBinding,
     ModelShapeTranslation,
@@ -44,6 +52,12 @@ from bijux_ontology.shacl.profiles import (
 from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "ShapeCountEdit",
+    "ShapeEdit",
+    "ShapeInspection",
+    "ShapeRemainder",
+    "edit_shape_counts",
+    "inspect_shapes",
     "ProfileCase",
     "ProfileComparison",
     "ProfileExport",
