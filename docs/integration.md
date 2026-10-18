@@ -773,3 +773,12 @@ Reserved names and normalized collisions remain unresolved. Generated modules
 expose exact RDFLib constants, immutable `TERMS`, and typed `INVENTORY` usable by
 `namespace_inventory`; unknown members never expand to new IRIs. Optional
 `annotations` select literal documentation without executing ontology text.
+
+`bijux_ontology.data.foreign_references` provides `ForeignReferenceContract`,
+`prepare_foreign_targets` and `check_foreign_references`. Supply scoped `KeyRecord`
+corpora, aligned source/target `KeyContract` policies, and explicit completeness.
+Reuse the prepared target index across source batches. Results retain actual
+source keys and matched target records; open or incomplete lookup cannot prove
+absence, while known excess matches still fail. An optional `target_model` runs
+ordinary native RDF model checks on each matched owned target. These are
+application reference obligations, independent of OWL identity assertions.

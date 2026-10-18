@@ -85,6 +85,8 @@ _CODES = {
         "topology_reference_missing topology_reference_unverified "
         "topology_roots_unverified topology_scope_unverified "
         "topology_target_invalid topology_unreachable "
+        "foreign_target_duplicate foreign_lookup_unverified foreign_missing "
+        "foreign_ambiguous foreign_source_unverified "
         "key_absent key_multiple key_collision key_binding_unverified "
         "key_path_unverified key_normalization_unverified "
         "key_comparison_unverified key_corpus_unverified key_projection_unverified "
