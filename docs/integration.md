@@ -1314,3 +1314,12 @@ numbers and malformed JSON are invalid; nested diagnostics use JSON pointers.
 The original RDF literal stays unchanged: parsed value equality proves no RDF
 term equality. Optional `jsonschema` checks require an explicit finite JSON Schema
 2020-12 dialect and resource identity; unsupported schema features remain unknown.
+
+Install `bijux-ontology[markup]` for
+`rdf.literal_values.markup.inspect_markup_literal` and `compare_markup_values`.
+The explicit `xml-exc-c14n-with-comments` regime compares self-contained XML
+fragments using maintained lxml/libxml2, preserving inline namespaces, language,
+base, comments and processing instructions. DTD/entity declarations and external
+resolution are outside the supported profile. HTML supports fragment inspection;
+it has no supported canonical value comparison. Original RDF terms stay exact,
+and native execution has an owned deadline and cancellation lifecycle.

@@ -178,7 +178,8 @@ _CODES = {
         "conversion_unverified datatype_unverified "
         "lexical_invalid lexical_unverified value_unverified "
         "json_invalid json_mismatch json_unverified "
-        "json_schema_mismatch json_schema_unverified".split()
+        "json_schema_mismatch json_schema_unverified "
+        "markup_invalid markup_unverified markup_value_changed".split()
     ),
     "models": frozenset(
         "direction_unverified contextual_direction_unverified "
