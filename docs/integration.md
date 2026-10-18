@@ -119,6 +119,12 @@ plain SKOS label `roles`, `comparison` (`exact`, `casefold`, `nfc`, `nfc-casefol
 and explicit `LabelHomonym` owner sets. Comparison keys never alter RDF literals;
 legal homonyms remain legal under default integrity checks.
 
+`check_xl_relations(view, policies)` checks explicitly declared SKOS-XL relation
+predicates and flat subrelation inventories. `XLRelationPolicy` selects endpoint
+languages, exact literal-form comparisons, asserted/either orientation or
+forbidden relations. Equal forms preserve distinct label resources; missing
+forms remain unverified. Subrelations inherit no implicit reverse assertion.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.

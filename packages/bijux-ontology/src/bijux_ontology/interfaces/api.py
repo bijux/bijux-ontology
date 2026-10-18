@@ -108,6 +108,11 @@ from bijux_ontology.reports import (
 )
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.collections import check_collection_sequence
+from bijux_ontology.skos.label_relations import (
+    XLRelation,
+    XLRelationPolicy,
+    check_xl_relations,
+)
 from bijux_ontology.skos.labels import LabelHomonym, check_label_collisions
 from bijux_ontology.skos.publication import (
     ConceptReachability,
@@ -268,6 +273,8 @@ __all__ = [
     "VocabularyChanges",
     "VocabularyView",
     "WorkerExecutor",
+    "XLRelation",
+    "XLRelationPolicy",
     "assess_context_corpus",
     "assess_models",
     "assess_upgrade",
@@ -288,6 +295,7 @@ __all__ = [
     "check_skos",
     "check_top_concepts",
     "check_vocabulary",
+    "check_xl_relations",
     "combine_reports",
     "compare_context_usages",
     "compare_rdf",
