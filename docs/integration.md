@@ -1368,6 +1368,15 @@ unselected metadata remain informational; incomplete baseline or consumer scope
 stays unknown. Selected identifier qualifiers need qualified prefix interpretation;
 selected `curie_map` metadata compares the actual retained prefix maps.
 
+`bijux_ontology.data.projection.project_records` reads explicit `ReadBinding`
+subjects and `ReadField` paths in one selected physical graph. Immutable records
+retain exact terms, ordered list members and source-qualified reference handles.
+Raw terms are the default; opt into checked string, integer, boolean or Decimal
+conversion. Unsupported conversions retain their terms with an unknown report.
+Use `construct_projected(result, factory)` for trusted application construction
+only after every declared check succeeds. The factory owns its runtime and output;
+this read contract makes no serializer inversion or ORM promise.
+
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing
 owned worker enumerates each selected root once, then validates ordinary Core

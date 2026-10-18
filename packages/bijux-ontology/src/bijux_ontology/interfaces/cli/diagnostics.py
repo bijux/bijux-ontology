@@ -28,6 +28,11 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "projection": frozenset(
+        "term_unverified value_invalid reference_unverified conversion_unverified "
+        "path_unverified ambiguous cardinality list_invalid graph_unverified "
+        "identity subject_unverified type_missing invalid_input".split()
+    ),
     "shex": frozenset(
         "unsupported input_invalid backend_unavailable not_matched engine_error".split()
     ),
@@ -381,6 +386,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "projection": (
+        "explicit graph-qualified RDF record projection",
+        "A selected field or record disagrees with its read contract or lacks proof.",
+        "Inspect the exact graph, subject, path, original terms and cardinality; "
+        "choose raw retention for unsupported conversion and require full "
+        "verification before invoking a trusted consumer factory.",
+        "project_records(source, (ReadBinding('record', subject, fields),))",
+    ),
     "shex": (
         "explicit supplied ShEx node-to-shape obligations",
         "A native ShEx obligation fails or exceeds its qualified capability.",
