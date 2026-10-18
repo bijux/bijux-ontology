@@ -250,7 +250,7 @@ _CODES = {
         "fact_role_unverified fact_attribution_unverified fact_graph_unverified "
         "coverage_gap coverage_source_missing declaration_conflict "
         "entity_kind_mismatch fact_changed reference_kind_mismatch reference_missing "
-        "term_missing unknown_reserved_term "
+        "term_missing unknown_reserved_term binding_name_unresolved "
         "registry_alias_conflict registry_canonical_conflict "
         "identifier_template_unverified identifier_template_mismatch "
         "identifier_collision identifier_input_error".split()

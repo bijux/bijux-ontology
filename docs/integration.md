@@ -764,3 +764,12 @@ migration checks. Dataset targets require an explicit physical graph. Changed
 lists receive fresh cells; original cells, annotations and shared-tail siblings
 remain intact. Actual after-checks and explicit accepted export use the same
 migration gates as value and graph changes.
+
+`bijux_ontology.interfaces.adapters.vocabulary_bindings.generate_vocabulary_bindings`
+returns candidate Python source and a required report for explicitly selected
+vocabulary IRIs. Use `names` for IRI-to-name overrides, `aliases` for additional
+name-to-IRI bindings, and `invalid_names="normalize"` to request safe identifiers.
+Reserved names and normalized collisions remain unresolved. Generated modules
+expose exact RDFLib constants, immutable `TERMS`, and typed `INVENTORY` usable by
+`namespace_inventory`; unknown members never expand to new IRIs. Optional
+`annotations` select literal documentation without executing ontology text.
