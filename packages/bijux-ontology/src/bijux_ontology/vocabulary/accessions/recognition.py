@@ -93,13 +93,14 @@ def resolve(
     registry: IdentifierRegistry,
     rules: dict[str, AccessionRule],
     budget: Budget,
-) -> tuple[AccessionRule | None, str | None, bool]:
+) -> tuple[AccessionRule | None, str | None, bool, bool | None]:
     """Recognize all applicable representations without guessing between intents.
 
     A failed candidate match is ordinary nonmembership, not a discarded finding.
     Unsupported alternate qualification remains required unknown even beside a
     supported match. Distinct recognized accession records are ambiguous.
     """
+    value = _text(value, budget)
     if mode == "curie":
         budget.consume("work", len(value) + len(registry.bindings))
         if ":" not in value:
@@ -109,7 +110,7 @@ def resolve(
         bindings = dict(registry.bindings)
         namespace = bindings.get(prefix)
         if namespace is None:
-            return None, None, True
+            return None, None, True, False
         expanded = len(namespace.encode("utf-8")) + len(local.encode("utf-8"))
         if expanded > budget.limits.max_bytes:
             from bijux_ontology.errors import LimitExceeded
@@ -121,7 +122,7 @@ def resolve(
             "work", len(value) + sum(len(p) + len(n) for p, n in registry.bindings)
         )
         registry.expand_curie(value)
-        return rules.get(namespace), local, namespace in rules
+        return rules.get(namespace), local, namespace in rules, False
     absolute_iri(value)
     best: str | None = None
     for namespace, _prefix in registry.canonical_prefixes:
@@ -152,6 +153,7 @@ def resolve(
                 budget.consume("states")
                 candidates[(rule.namespace, local)] = rule
     if len(candidates) != 1:
-        return None, None, qualified and not candidates
+        ambiguous = True if len(candidates) > 1 else False if qualified else None
+        return None, None, qualified and not candidates, ambiguous
     (namespace, local), rule = next(iter(candidates.items()))
-    return rule, local, qualified
+    return rule, local, qualified, False if qualified else None

@@ -1,6 +1,6 @@
 """Explicit accession policies and exact caller-owned source occurrences."""
 
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 from typing import Literal
 
 from rdflib import BNode
@@ -97,7 +97,12 @@ class AccessionValue:
 
 @dataclass(frozen=True)
 class AccessionObservation:
-    """Retain original identity separately from a qualified representation hint."""
+    """Retain original identity separately from qualified recognition evidence.
+
+    True ambiguity witnesses two distinct actual namespace/local records, even
+    beside unavailable alternatives. False means completed nonambiguous matching;
+    None leaves uniqueness unresolved. Rule validity remains separate.
+    """
 
     original: AccessionValue
     status: Literal["valid", "invalid", "unknown", "excluded"]
@@ -105,6 +110,8 @@ class AccessionObservation:
     local: str | None = None
     canonical_curie: str | None = None
     suggested_curie: str | None = None
+    _: KW_ONLY
+    ambiguous: bool | None = None
 
 
 @dataclass(frozen=True)

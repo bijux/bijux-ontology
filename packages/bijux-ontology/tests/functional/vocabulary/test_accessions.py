@@ -313,3 +313,48 @@ def test_missing_optional_processors_never_supply_positive_evidence() -> None:
     )
     assert result.report.outcome == "unverified" and not result.report.verified
     assert result.observations[0].status == "unknown"
+
+
+def test_ambiguity_is_actual_distinct_records_not_unavailable_recognition() -> None:
+    pytest.importorskip("uri_template")
+    pytest.importorskip("re2")
+    template = IdentifierTemplate(
+        "https://shared.example/{local}", [TemplateKey("local")]
+    )
+    unavailable = IdentifierTemplate(
+        "https://shared.example/{+local}", [TemplateKey("local")]
+    )
+    namespaces = ("urn:first:", "urn:second:", "urn:third:")
+    owned = IdentifierRegistry(
+        [
+            NamespaceContribution(value, f"p{index}", "caller")
+            for index, value in enumerate(namespaces)
+        ]
+    )
+    term = URIRef("https://shared.example/abc")
+    values = [AccessionValue(term, "iri")]
+    rules = [
+        AccessionRule(value, "[a-z]+", alternates=(template,))
+        for value in namespaces[:2]
+    ]
+    unique = check_accessions(values, owned, rules=rules[:1])
+    assert unique.report.verified and unique.observations[0].ambiguous is False
+    assert unique.observations[0].original.value is term
+    ambiguous = check_accessions(values, owned, rules=rules)
+    assert (
+        ambiguous.report.outcome == "unverified"
+        and ambiguous.observations[0].ambiguous is True
+    )
+    assert ambiguous.observations[0].original.value is term
+    partial = AccessionRule(namespaces[2], "[a-z]+", alternates=(unavailable,))
+    assert (
+        check_accessions(values, owned, rules=[*rules, partial])
+        .observations[0]
+        .ambiguous
+        is True
+    )
+    unresolved = check_accessions(values, owned, rules=[rules[0], partial])
+    assert (
+        unresolved.report.outcome == "unverified"
+        and unresolved.observations[0].ambiguous is None
+    )

@@ -123,7 +123,7 @@ def check_accessions(
                 raise InputError("Expected typed AccessionValue")
             where = _where(value, operation)
             try:
-                rule, local, qualified = resolve(
+                rule, local, qualified, ambiguous = resolve(
                     value.value, value.mode, owned, prepared, operation
                 )
             except LimitExceeded:
@@ -155,7 +155,9 @@ def check_accessions(
                         unknown=True,
                     )
                     checked += 1
-                observations.append(AccessionObservation(value, status))
+                observations.append(
+                    AccessionObservation(value, status, ambiguous=ambiguous)
+                )
                 continue
             bound_text(local, operation)
             operation.consume("work", len(local) + 1)
@@ -172,7 +174,9 @@ def check_accessions(
                         unknown=True,
                     )
                     observations.append(
-                        AccessionObservation(value, "unknown", rule.namespace, local)
+                        AccessionObservation(
+                            value, "unknown", rule.namespace, local, ambiguous=False
+                        )
                     )
                     checked += 1
                     continue
@@ -225,7 +229,13 @@ def check_accessions(
                         suggestion = candidate
             observations.append(
                 AccessionObservation(
-                    value, status, rule.namespace, local, canonical, suggestion
+                    value,
+                    status,
+                    rule.namespace,
+                    local,
+                    canonical,
+                    suggestion,
+                    ambiguous=False,
                 )
             )
             checked += 1
