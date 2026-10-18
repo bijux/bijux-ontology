@@ -318,6 +318,15 @@ subject-occurrence evidence; naming a SHACL focus node does not supply a record.
 
 Author reusable parameterized checks with `ShaclComponent`, `ShaclParameter`,
 `ComponentValidator` and `ComponentUse` from `bijux_ontology.shacl`.
+`compare_shape_refinement(parent, child)` from `bijux_ontology.shacl` compares
+`RefinementContract(source, root, data_graph=...)` under aligned declared targets
+and graph scopes. The finite fragment covers counts, exact fixed/enumerated terms,
+datatypes, node kinds and acyclic node conjunction/disjunction. Refinement requires
+a universal supported implication proof plus actual compatible data; weakening
+requires a witness passing the child's complete target scope and failing the
+parent's. Unsupported constraints or unsuccessful finite witness construction
+remain unknown. Witness literals must pass the maintained lexical checker.
+
 `compile_components(shapes, components, uses)` returns ordinary owned SHACL RDF.
 The supported forms are generic ASK and node/property SELECT; required parameters,
 query forms, pre-bound variables and offline prefixes are qualified explicitly.

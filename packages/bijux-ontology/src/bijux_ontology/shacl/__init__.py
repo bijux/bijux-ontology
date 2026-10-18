@@ -67,9 +67,19 @@ from bijux_ontology.shacl.profiles import (
     export_profile,
     extract_profile,
 )
+from bijux_ontology.shacl.refinement import (
+    ProfileRefinement,
+    RefinementContract,
+    RefinementProof,
+    compare_shape_refinement,
+)
 from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "ProfileRefinement",
+    "RefinementContract",
+    "RefinementProof",
+    "compare_shape_refinement",
     "ComponentCheck",
     "ComponentShapes",
     "ComponentUse",

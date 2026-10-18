@@ -176,6 +176,7 @@ _CODES = {
         "analysis_metadata_unverified analysis_profile_unverified "
         "analysis_qualification_unverified analysis_recursion_unverified "
         "static_incompatibility "
+        "profile_weakening profile_refinement_unverified "
         "shape_projection_unverified shape_edit_unverified "
         "profile_dependency_unverified profile_behavior_unverified "
         "profile_behavior_changed "
