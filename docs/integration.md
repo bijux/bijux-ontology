@@ -20,6 +20,14 @@ competing canonical spellings require an explicit `canonical_prefixes` choice.
 The immutable registry separates `.iri(value)` from `.expand_curie(value)` and
 uses the longest namespace in `.compact_iri(value)` without guessing intent.
 
+Install `bijux-ontology[templates]` for `IdentifierTemplate(template, keys)` with
+explicit `TemplateKey` string/integer bindings. `.construct()` uses maintained
+URI escaping; `.construct_many()` rejects exact IRI collisions atomically.
+Forward profiles support one `{key}` or `{+key}` per key. `.recognize(iri)` retains
+the original spelling and checks only unmodified slots separated by reserved
+literals, strict single decoding and exact re-expansion. Ambiguous or unsupported
+inverse profiles return no guessed record.
+
 Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
 `graph_name="@default"`, or `union=True`. Imports, lookup resources and prepared
 SHACL inputs retain that selection. `prepared.dataset()` still exports every

@@ -86,8 +86,29 @@ import pytest
         assert declaration.fields[0].predicate == "https://example.org/name"
         assert not view.schema.classes["Image"].slots
         """,
+        """
+        from uri_template import URITemplate
+        from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
+        profile = IdentifierTemplate(
+            "https://example.org/id/{collection}/{accession}",
+            (TemplateKey("collection"), TemplateKey("accession", "integer")),
+        )
+        record = profile.construct({"collection": "lab/α", "accession": 7})
+        assert record.iri == "https://example.org/id/lab%2F%CE%B1/7"
+        assert URITemplate(profile.template).expand(
+            collection="lab/α", accession="7",
+        ) == record.iri
+        recognized = profile.recognize(record.iri)
+        assert recognized.report.verified and recognized.record == record
+        assert record.bindings == (("collection", "lab/α"), ("accession", 7))
+        """,
     ],
-    ids=["shacl-conformance", "pydantic-serialization", "linkml-inheritance"],
+    ids=[
+        "shacl-conformance",
+        "pydantic-serialization",
+        "linkml-inheritance",
+        "typed-template-identifiers",
+    ],
 )
 def test_real_installed_integrations(
     installed_all_extras: tuple[Path, Path, dict[str, str]], program: str
@@ -263,8 +284,9 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
             model_declarations as linkml_models,
         )
         from bijux_ontology.shacl import validate_shapes
+        from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
         from bijux_ontology import expand_document, compare_rdf
-        for name in ("pyld", "pyshacl", "pydantic", "linkml_runtime"):
+        for name in ("pyld", "pyshacl", "pydantic", "linkml_runtime", "uri_template"):
             assert find_spec(name) is None, name
         assert compare_rdf(Graph(), Graph()).verified
         try:
@@ -273,6 +295,13 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
             assert "[jsonld]" in str(error)
         else:
             raise AssertionError("Missing JSON-LD capability falsely succeeded")
+        try:
+            IdentifierTemplate("https://example.org/{key}", (TemplateKey("key"),))
+        except ResourceError as error:
+            assert "[templates]" in str(error)
+            assert "uri-template>=1.3,<2" in str(error)
+        else:
+            raise AssertionError("Missing template capability falsely succeeded")
         for adapter, extra in (
             (pydantic_models, "pydantic"), (linkml_models, "linkml")
         ):

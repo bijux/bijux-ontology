@@ -115,6 +115,13 @@ from bijux_ontology.vocabulary.registry import (
     merge_identifier_registry,
 )
 from bijux_ontology.vocabulary.results import TermInfo
+from bijux_ontology.vocabulary.templates import (
+    IdentifierBatch,
+    IdentifierRecognition,
+    IdentifierRecord,
+    IdentifierTemplate,
+    TemplateKey,
+)
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
@@ -165,7 +172,11 @@ __all__ = [
     "FieldDeclaration",
     "FlatNode",
     "FlattenedDocument",
+    "IdentifierBatch",
+    "IdentifierRecognition",
+    "IdentifierRecord",
     "IdentifierRegistry",
+    "IdentifierTemplate",
     "InputError",
     "InstanceCheck",
     "Issue",
@@ -208,6 +219,7 @@ __all__ = [
     "Selection",
     "SourceSelector",
     "SubjectIdentity",
+    "TemplateKey",
     "TermDeclaration",
     "TermInfo",
     "Transformation",

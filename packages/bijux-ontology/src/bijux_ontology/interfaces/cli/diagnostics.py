@@ -165,7 +165,9 @@ _CODES = {
         "coverage_gap coverage_source_missing declaration_conflict "
         "entity_kind_mismatch fact_changed reference_kind_mismatch reference_missing "
         "term_missing unknown_reserved_term "
-        "registry_alias_conflict registry_canonical_conflict".split()
+        "registry_alias_conflict registry_canonical_conflict "
+        "identifier_template_unverified identifier_template_mismatch "
+        "identifier_collision identifier_input_error".split()
     ),
 }
 
@@ -360,6 +362,26 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
         "The selected function dependency closure contains unsupported recursion.",
         "Supply an acyclic supported catalog; do not bypass dependency checking.",
         "double(x) calls multiply(x, 2), with no dependency back to double.",
+    ),
+    "vocabulary.identifier_template_unverified": (
+        "The template is outside the explicitly supported inverse profile.",
+        "Use typed slots with reserved literal separators or retain uncertainty.",
+        'IdentifierTemplate("https://example.org/{collection}/{record}", keys)',
+    ),
+    "vocabulary.identifier_template_mismatch": (
+        "The original IRI is outside the template's exact typed expansion image.",
+        "Check the original spelling and declared keys without normalizing identity.",
+        'profile.recognize("https://example.org/images/item")',
+    ),
+    "vocabulary.identifier_collision": (
+        "Multiple input records construct the same exact IRI.",
+        "Choose an injective template or explicitly deduplicate the caller inputs.",
+        "profile.construct_many(records)",
+    ),
+    "vocabulary.identifier_input_error": (
+        "A supplied identifier or typed template binding is invalid.",
+        "Supply the declared string/integer keys and preserve the original IRI.",
+        'profile.construct({"collection": "images", "record": 1})',
     ),
     "vocabulary.registry_alias_conflict": (
         "A contributed prefix identifies different exact namespaces.",

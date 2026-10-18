@@ -32,6 +32,9 @@ pydantic = [
 linkml = [
     "linkml-runtime>=1.12.1,<2",
 ]
+templates = [
+    "uri-template>=1.3,<2",
+]
 
 [tool.hatch.build.targets.wheel]
 core-metadata-version = "2.4"
