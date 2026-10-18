@@ -102,12 +102,24 @@ import pytest
         assert recognized.report.verified and recognized.record == record
         assert record.bindings == (("collection", "lab/α"), ("accession", 7))
         """,
+        """
+        from rdflib import Literal
+        from rdflib.namespace import XSD
+        from bijux_ontology.rdf.literals import check_literal
+        assert check_literal(Literal("P1Y2M", datatype=XSD.yearMonthDuration,
+                                     normalize=False)).verified
+        bad = check_literal(Literal("P0D", datatype=XSD.yearMonthDuration,
+                                    normalize=False))
+        assert bad.outcome == "disagreement"
+        assert bad.issues[0].code == "literal.lexical_invalid"
+        """,
     ],
     ids=[
         "shacl-conformance",
         "pydantic-serialization",
         "linkml-inheritance",
         "typed-template-identifiers",
+        "xsd-lexical-validation",
     ],
 )
 def test_real_installed_integrations(
@@ -286,9 +298,21 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
         from bijux_ontology.shacl import validate_shapes
         from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
         from bijux_ontology import expand_document, compare_rdf
-        for name in ("pyld", "pyshacl", "pydantic", "linkml_runtime", "uri_template"):
+        for name in (
+            "pyld", "pyshacl", "pydantic", "linkml_runtime",
+            "uri_template", "elementpath",
+        ):
             assert find_spec(name) is None, name
         assert compare_rdf(Graph(), Graph()).verified
+        from rdflib import Literal
+        from rdflib.namespace import XSD
+        from bijux_ontology.rdf.literals import check_literal
+        lexical = check_literal(Literal("P1Y", datatype=XSD.duration, normalize=False))
+        assert lexical.outcome == "unverified"
+        assert "[xsd]" in lexical.issues[0].message
+        assert "elementpath>=5.1.4,<6" in lexical.issues[0].message
+        assert check_literal(Literal("../relative", datatype=XSD.anyURI,
+                                     normalize=False)).verified
         try:
             expand_document({"urn:p": "value"})
         except ResourceError as error:

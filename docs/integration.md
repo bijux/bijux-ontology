@@ -46,6 +46,13 @@ Queries can project those exact source terms. RDFLib query constants, casts and
 `rdf.literal_conversion_unverified`; SHACL preflight retains the same boundary.
 Explicit `preserve_literals=False` permits normalization at source preparation.
 
+Install `bijux-ontology[xsd]` for finite XSD 1.1 lexical checks of durations,
+binary forms, partial Gregorian dates and ASCII Name/NCName/NMTOKEN values.
+Raw spelling is checked without XML whitespace preprocessing or term replacement.
+QName, document-dependent types and non-ASCII names remain unverified. Core
+`xsd:anyURI` checks XML character validity, including relative strings and spaces;
+it does not validate or resolve an RDF IRI. Custom datatype relations stay unknown.
+
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
 `run_query_rules(source, load_query_rules(Path("rules.json")))` checks named
