@@ -75,7 +75,7 @@ def execute_worker(
     checkpoint(deadline, cancel)
     try:
         process = spawn_owned_process(
-            [sys.executable, "-m", module, str(cap)],
+            [sys.executable, "-I", "-B", "-m", module, str(cap)],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

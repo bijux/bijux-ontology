@@ -58,6 +58,8 @@ def execute_bounded(
         process = spawn_owned_process(
             [
                 sys.executable,
+                "-I",
+                "-B",
                 "-m",
                 "bijux_ontology.interfaces.cli.worker",
                 str(request),

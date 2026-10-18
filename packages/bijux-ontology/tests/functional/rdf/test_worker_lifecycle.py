@@ -373,3 +373,24 @@ def test_one_shot_shacl_timeout_reaps_its_real_nested_worker(
             with suppress(ProcessLookupError, PermissionError):
                 os.killpg(process.pid, signal.SIGKILL)
             process.wait(timeout=2)
+
+
+def test_owned_query_module_cannot_be_replaced_by_the_working_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An actual installed native worker ignores a same-named local package."""
+    from bijux_ontology.rdf.queries import QueryScope, query_rdf
+
+    package = tmp_path / "bijux_ontology" / "rdf" / "queries"
+    package.mkdir(parents=True)
+    for directory in (package, package.parent, package.parent.parent):
+        (directory / "__init__.py").write_text("")
+    marker = tmp_path / "unexpected-worker"
+    (package / "worker.py").write_text(
+        "from pathlib import Path\n"
+        f"Path({str(marker)!r}).write_text('unexpected module executed')\n"
+    )
+    monkeypatch.chdir(tmp_path)
+    result = query_rdf(Graph(), "ASK {}", scope=QueryScope("default"))
+    assert result.report.verified and result.answer is True
+    assert not marker.exists()

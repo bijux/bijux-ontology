@@ -17,7 +17,7 @@ def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes
     """Drain both streams while writing input, and reap every started process."""
     try:
         process = spawn_owned_process(
-            [sys.executable, "-m", "bijux_ontology.shacl.worker", str(cap)],
+            [sys.executable, "-I", "-B", "-m", "bijux_ontology.shacl.worker", str(cap)],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -183,6 +183,8 @@ class SessionBackend:
             process = spawn_owned_process(
                 [
                     sys.executable,
+                    "-I",
+                    "-B",
                     "-m",
                     "bijux_ontology.shacl.worker",
                     str(self._cap),
