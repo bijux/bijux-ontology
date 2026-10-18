@@ -304,6 +304,13 @@ Every retained quad keeps its graph. Independent anonymous inputs require
 complete owned `blank_pairs` or explicit `named_only=True`; one snapshot shares
 identity across its graph selections. No logical equivalence is inferred.
 
+`rdf.reification.inspect_reifications(source)` inventories exact per-graph
+statement descriptions and annotations without asserting their described triples.
+Missing or ambiguous components remain visible. Use `check_reifications(source,
+ReificationContract(...))` for explicit completeness, component uniqueness,
+`rdf:Statement` typing or per-graph statement uniqueness. Separate reifiers
+retain their identities even when their described triples match.
+
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.
