@@ -25,10 +25,18 @@ from bijux_ontology.shacl.functions import (
     ShaclFunctionParameter,
     ShaclSparqlFunction,
 )
+from bijux_ontology.shacl.model_shapes import (
+    ModelShapeBinding,
+    ModelShapeTranslation,
+    compile_model_shapes,
+)
 from bijux_ontology.shacl.paths import ShaclPath
 from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "ModelShapeBinding",
+    "ModelShapeTranslation",
+    "compile_model_shapes",
     "ShaclComparison",
     "ShaclConstraint",
     "ShaclCount",

@@ -256,6 +256,18 @@ without returning partial shapes. It infers no constraints from ontology axioms.
 Use `validate_shapes(data, compiled, preflight=True)` to run maintained
 meta-SHACL and data validation; compilation alone does not establish conformance.
 
+Use `compile_model_shapes(models, bindings)` with explicit `ModelShapeBinding`
+targets to translate supported output declarations into the same typed shapes.
+Asserted model/value types use exact `rdf:type` values; subclass edges do not
+substitute for required assertions. Reverse fields, alternatives, explicit value
+counts and closed enumerations retain their meaning. Keep the returned `report`
+alongside its optional `source`: source permissions, conditional groups, list and
+role rules, and native lexical checks beyond the backend's supported subset
+remain required unknowns. Finite exact enumerations can qualify lexical domains;
+an unbounded datatype shape alone cannot promise native lexical agreement.
+An explicit target without a positive assertion requirement still needs native
+subject-occurrence evidence; naming a SHACL focus node does not supply a record.
+
 SHACL findings retain report-local identities, nested details and finite typed
 property paths in `result.findings` and each generic issue’s `evidence`.
 Supply `ShaclSource(prepared_usages, paths, source=...)` through `source_usages=`

@@ -153,6 +153,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "model_shape_unverified "
         "dataset_scope_unverified "
         "backend_warning execution_incomplete feature_unverified "
         "path_unverified finding_unverified "
