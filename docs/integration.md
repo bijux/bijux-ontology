@@ -937,3 +937,22 @@ observed positive ancestry remains usable. Partial indexes cannot establish
 unique accession identity. Custom ontology validators and unsupported policies
 stay unverified. Native in-process validators retain their ordinary execution
 boundary; adapter budgets do not preempt arbitrary consumer code.
+
+`bijux_ontology.vocabulary.schemaorg` provides an opt-in dialect over supplied
+release bytes. `prepare_schemaorg(RdfSource(...), release="30.1",
+namespace=URIRef("https://schema.org/"))` records the exact byte hash and owns the
+parsed release. Supply its logical document IRI and acquisition limits; no URL is
+fetched. `schemaorg_property` retains original includes, inverse and lifecycle
+assertions. Multiple includes targets are alternatives. Exact extension choices
+and finite IRI mappings remain explicit; HTTP and HTTPS names stay distinct.
+
+`check_schemaorg` checks selected actual subjects and predicates. Its default
+`published` report is advisory guidance. Choose `mode="application"` for required
+endpoint expectations, `text_fallback="allow"` to permit text explicitly, and
+`lifecycle="reject"` to diagnose a superseded property with its supplied replacement.
+The raw guidance report remains available when application fallback is allowed.
+Named class ancestry is supported. Native scalar bridges cover Text, Boolean,
+URL, Integer, Number and Float; unsupported datatype encodings, list/container
+expectations, inherited-only property hints and missing class proof stay unknown.
+These are selected application rules, with no OWL consistency claim. Anonymous
+subjects require actual witnesses from the supplied `PreparedSource`.

@@ -52,6 +52,10 @@ _CODES = {
         "minimum_missing maximum_exceeded language_minimum_missing "
         "language_maximum_exceeded value_kind datatype entity_unresolved".split()
     ),
+    "schemaorg": frozenset(
+        "expectation_mismatch expectation_unverified "
+        "selection_unverified superseded".split()
+    ),
     "sdrf": frozenset("unverified semantic_mismatch consumer".split()),
     "serialization": frozenset(("coverage_missing",)),
     "selector": frozenset(
@@ -320,6 +324,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Inspect the entity, predicate, language mode and owned source scopes; "
         "select fallback explicitly and retain original attachment witnesses.",
         'AnnotationRequirement("urn:label", languages=(LanguageRequirement("en"),))',
+    ),
+    "schemaorg": (
+        "explicit supplied Schema.org vocabulary expectations",
+        "An actual selected value disagrees with guidance or application policy.",
+        "Inspect the pinned release, original includes alternatives and selected "
+        "sections; choose strict application and text fallback policy explicitly.",
+        "check_schemaorg(data, view, subjects=subjects, predicates=predicates)",
     ),
     "sdrf": (
         "selected local SDRF ontology checks",
