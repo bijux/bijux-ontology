@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from rdflib import Graph, Literal
 
@@ -12,7 +12,8 @@ from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.paths import location
+from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.paths import bound_path, location
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.emission.application import retain_enumeration_report
@@ -48,6 +49,7 @@ def check_emission(
     rdf_direction: DirectionPolicy | None = None,
     _corpus: _CorpusEvidence | None = None,
     datatype_registry: DatatypeRegistry | None = None,
+    context_expectations: Sequence[ContextExpectation] = (),
 ) -> Report:
     """Check selected actual outputs, without claiming all hypothetical instances.
 
@@ -59,6 +61,8 @@ def check_emission(
     Predicates, reversal, collection membership and literal traits come from the
     shared standards-processed usage snapshot, never a second expansion engine.
     Type checks compare explicit emitted types, without ontology entailment.
+    Additional context expectations check caller-selected source meanings in
+    that same preparation, independently of source or joined-entity bindings.
     """
     if datatype_registry is not None and (
         not isinstance(datatype_registry, DatatypeRegistry)
@@ -79,6 +83,24 @@ def check_emission(
     role_checks: _RoleChecks | None = None
     state: EmissionContext | None = None
     try:
+        if not isinstance(context_expectations, Sequence) or isinstance(
+            cast(object, context_expectations), str | bytes
+        ):
+            raise InputError("Context expectations require a finite sequence")
+        count = len(context_expectations)
+        budget.consume("states", count)
+        budget.consume("bytes", 16 * count)
+        supplied_expectations = []
+        for index in range(count):
+            budget.consume("work")
+            try:
+                expectation = context_expectations[index]
+            except IndexError as error:
+                raise InputError("Context expectation inventory changed") from error
+            if not isinstance(expectation, ContextExpectation):
+                raise InputError("Expected typed ContextExpectation records")
+            bound_path(expectation.path, budget)
+            supplied_expectations.append(expectation)
         registry = index_models(models, budget, issues)
         role_checks = None
         for declaration in registry.values():
@@ -147,6 +169,8 @@ def check_emission(
                     )
                 )
         expectations = check_sources(state)
+        budget.consume("states", len(supplied_expectations))
+        expectations.extend(supplied_expectations)
         check_coverage(state)
         check_output_groups(state)
         mapping = prepared.check(expectations, allow_empty=True)

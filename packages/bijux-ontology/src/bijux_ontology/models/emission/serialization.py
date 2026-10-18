@@ -14,6 +14,7 @@ from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
+from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import check_models
@@ -173,12 +174,14 @@ def check_serialized(
     rdf_direction: DirectionPolicy | None = None,
     _corpus: _CorpusEvidence | None = None,
     datatype_registry: DatatypeRegistry | None = None,
+    context_expectations: Sequence[ContextExpectation] = (),
 ) -> InstanceCheck:
     """Check one already serialized output using the shared semantic budget.
 
     The original output and contextualized document are owned separately. This
     qualifies this supplied sample only; no serializer call or universal output
     guarantee is inferred. Source and declaration diagnostics remain raw truth.
+    Explicit context expectations reuse the emission operation's preparation.
     """
     if declaration_report is not None and not isinstance(declaration_report, Report):
         raise InputError("declaration_report requires a Report")
@@ -237,6 +240,7 @@ def check_serialized(
                 rdf_direction=rdf_direction,
                 _corpus=_corpus,
                 datatype_registry=datatype_registry,
+                context_expectations=context_expectations,
             )
         )
     except Exception as error:
