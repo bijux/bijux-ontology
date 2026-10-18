@@ -26,8 +26,11 @@ def decode_path(
     *,
     limits: Limits | None = None,
     budget: Budget | None = None,
+    raise_limits: bool = False,
 ) -> ShaclPath:
-    """Decode a property path without following cyclic or unbounded RDF structure."""
+    """Decode a finite path, optionally propagating operation exhaustion."""
+    if type(raise_limits) is not bool:
+        raise InputError("Path exhaustion propagation must be boolean")
     budget = budget if budget is not None else Budget(limits)
 
     def walk(current: Node, active: frozenset[Node], depth: int) -> ShaclPath:
@@ -67,5 +70,9 @@ def decode_path(
 
     try:
         return walk(node, frozenset(), 0)
-    except (InputError, LimitExceeded) as error:
+    except LimitExceeded as error:
+        if raise_limits:
+            raise
+        return ShaclPath("unsupported", node, limitation=str(error))
+    except InputError as error:
         return ShaclPath("unsupported", node, limitation=str(error))
