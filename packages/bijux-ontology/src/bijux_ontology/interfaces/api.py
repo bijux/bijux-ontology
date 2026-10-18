@@ -108,6 +108,7 @@ from bijux_ontology.reports import (
 )
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.collections import check_collection_sequence
+from bijux_ontology.skos.labels import LabelHomonym, check_label_collisions
 from bijux_ontology.skos.publication import (
     ConceptReachability,
     HierarchyStep,
@@ -211,6 +212,7 @@ __all__ = [
     "IssueSelection",
     "JSONLDPreparation",
     "KeyedItems",
+    "LabelHomonym",
     "LimitExceeded",
     "Limits",
     "Location",
@@ -276,6 +278,7 @@ __all__ = [
     "check_data_usage",
     "check_emission",
     "check_instance",
+    "check_label_collisions",
     "check_models",
     "check_ontology",
     "check_project",

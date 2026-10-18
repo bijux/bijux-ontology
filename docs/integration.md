@@ -113,6 +113,12 @@ from the publication policy. Coverage concerns selected scheme concepts; it does
 not establish logical validity. Incomplete traversal retains proved paths and
 returns `unreachable=None`.
 
+`check_label_collisions(view, schemes=(scheme_iri,))` applies optional uniqueness
+to selected concept labels, separately for each scheme and language. Select
+plain SKOS label `roles`, `comparison` (`exact`, `casefold`, `nfc`, `nfc-casefold`)
+and explicit `LabelHomonym` owner sets. Comparison keys never alter RDF literals;
+legal homonyms remain legal under default integrity checks.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.

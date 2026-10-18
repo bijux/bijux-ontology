@@ -139,6 +139,7 @@ _CODES = {
         "implicit_target_unverified nonconformance sparql_unverified".split()
     ),
     "skos": frozenset(
+        "policy.label_collision policy.label_collision_unverified "
         "publication.root_not_published publication.root_scope_unverified "
         "publication.unreachable_component publication.hierarchy_cycle "
         "publication.scope_unverified "
