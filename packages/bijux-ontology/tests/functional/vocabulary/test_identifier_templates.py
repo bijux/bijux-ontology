@@ -7,8 +7,8 @@ from typing import cast, overload
 
 import pytest
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
 
 
@@ -52,6 +52,13 @@ def test_single_decode_and_exact_iri_image() -> None:
     record = profile.construct({"key": "%2F"})
     assert record.iri.endswith("%252F")
     assert profile.recognize(record.iri).record == record
+    operation = Budget()
+    assert profile.match(record.iri, budget=operation) == record
+    assert profile.match("https://example.org/other/value", budget=operation) is None
+    assert operation.remaining("issues") == operation.limits.max_issues
+    operation.consume("work", operation.remaining("work"))
+    with pytest.raises(LimitExceeded):
+        profile.match(record.iri, budget=operation)
     for iri in (
         "https://example.org/id/%2f",
         "https://example.org/id/%41",
@@ -105,6 +112,8 @@ def test_unsupported_inverse_never_returns_a_record(template: str) -> None:
     result = profile.recognize("https://example.org/value")
     assert result.record is None
     assert result.report.outcome == "unverified"
+    with pytest.raises(ResourceError, match="inverse profile"):
+        profile.match("https://example.org/value", budget=Budget())
     if template != "https://example.org/{+key}":
         with pytest.raises(InputError, match="Unsupported forward"):
             profile.construct({"key": "value"})

@@ -1,9 +1,7 @@
 """Bounded application predicates over an already established actual RDF term."""
 
 from decimal import Decimal, InvalidOperation
-from importlib.metadata import PackageNotFoundError, version
 from sys import getsizeof
-from typing import Protocol, cast
 
 from rdflib import Literal, URIRef
 from rdflib.namespace import RDF, XSD
@@ -14,22 +12,9 @@ from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
+from bijux_ontology.rdf.patterns import matches_pattern
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Report
-
-_PATTERN_MEMORY = 65_536
-
-
-class _Pattern(Protocol):
-    """The two maintained public RE2 operations used for boolean predicates."""
-
-    def fullmatch(self, text: str) -> object:
-        """Match the entire original text with maintained UTF-8 semantics."""
-        ...
-
-    def search(self, text: str) -> object:
-        """Match a substring of the original text without rewriting it."""
-        ...
 
 
 def _text(value: str, budget: Budget) -> str:
@@ -56,36 +41,6 @@ def _term(term: Node, budget: Budget) -> tuple[str | None, ...]:
         if term.language is not None:
             _text(term.language, budget)
     return term_key(term)
-
-
-def _pattern(pattern: str, text: str, mode: str, budget: Budget) -> bool | None:
-    """Use maintained bounded RE2 syntax, without a backtracking fallback.
-
-    The public wrapper caches at most 128 compiled expressions. A fixed 64 KiB
-    approximate RE2 cap limits our entries' engine allowance to 8 MiB;
-    it is not a process RSS guarantee. Program/input work is charged first.
-    """
-    budget.consume("work", (len(pattern) + 1) * (len(text) + 1))
-    try:
-        release = version("google-re2")
-        numbers = tuple(int(part) for part in release.split("."))
-        if numbers < (1, 1, 20251105) or numbers[0] != 1:
-            return None
-        import re2  # type: ignore[import-untyped]
-    except (PackageNotFoundError, ImportError, ValueError):
-        return None
-    options = re2.Options()
-    options.max_mem = _PATTERN_MEMORY
-    options.log_errors = False
-    options.never_capture = True
-    try:
-        compiled = cast(_Pattern, re2.compile(pattern, options=options))
-        result = (
-            compiled.fullmatch(text) if mode == "fullmatch" else compiled.search(text)
-        )
-    except re2.error:
-        return None
-    return result is not None
 
 
 def _number(term: Node, budget: Budget, lexical_valid: bool | None) -> Decimal | None:
@@ -216,7 +171,7 @@ def application_matches(
             if constraints.pattern is not None:
                 pattern = _text(constraints.pattern, budget)
                 results.append(
-                    _pattern(pattern, text, constraints.pattern_mode, budget)
+                    matches_pattern(pattern, text, constraints.pattern_mode, budget)
                 )
     if constraints.iri_namespaces:
         count = len(constraints.iri_namespaces)
