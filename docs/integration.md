@@ -1023,3 +1023,14 @@ Directory input aliases, including missing declared members, reject before HTTP.
 Fetch/closure and final ordinary bundle validation retain separate documented
 Limits boundaries inside the owned worker deadline. Host capture/report adoption
 are separately bounded; filesystem I/O keeps its ordinary OS execution boundary.
+
+Use `bijux_ontology.workflows.ontology.publication.SkosPublication` and
+`compile_skos_publication(source, specification)` to publish selected concepts,
+multilingual labels, XL resources and ordered collections from one selected
+physical graph. Declare `mapping_boundary="retain-reference"`, `"include-target"`
+or `"omit"`, and supply nonempty ordinary `MigrationCheck` publication checks.
+The result is a checked `MigrationPlanResult`; use `export_migration_plan` with
+explicit acceptance for portable RDF. Excluded collection members block complete
+publication; mapping exclusions remain explicit. Shared labels, list order and
+authored membership direction are retained. This certifies the selected
+publication contract, without claiming OWL equivalence or global minimality.
