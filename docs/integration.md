@@ -1360,6 +1360,14 @@ independent alternatives. `apply_mapping_resolution` requires an explicit
 reason and output identity/license. The native SSSOM producer and selected
 endpoint/cardinality/conflict policies rerun before approved output is available.
 
+`workflows.upgrades.mappings.impact.assess_mapping_impact` compares supplied
+releases against explicit directional `MappingUse` occurrences, finite record
+coverage and selected qualifications. Used row loss, newly ambiguous cardinality
+or newly incompatible relations identify affected records. Unused edits and
+unselected metadata remain informational; incomplete baseline or consumer scope
+stays unknown. Selected identifier qualifiers need qualified prefix interpretation;
+selected `curie_map` metadata compares the actual retained prefix maps.
+
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing
 owned worker enumerates each selected root once, then validates ordinary Core

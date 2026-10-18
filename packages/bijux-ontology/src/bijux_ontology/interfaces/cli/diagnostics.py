@@ -346,6 +346,8 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "mapping_obligation_changed mapping_cardinality_changed "
+        "mapping_impact_unverified mapping_impact_input_error mapping_relation_changed "
         "lifecycle_violation lifecycle_unverified lifecycle_input_error "
         "identifier_changed identifier_unverified identifier_input_error "
         "matrix_unverified "

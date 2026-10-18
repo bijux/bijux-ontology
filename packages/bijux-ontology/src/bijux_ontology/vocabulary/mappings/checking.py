@@ -49,6 +49,27 @@ _SUPPORTED = frozenset(
 )
 
 
+def _relation_conflict_evidence(
+    subject: str, object: str, left: str, right: str, budget: Budget
+) -> str:
+    """Retain the exact directed pair and incompatible relation obligation."""
+    size = 0
+    for value in (subject, object, left, right):
+        bound_text(value, budget)
+        size += len(value)
+    budget.consume("work", size + 1)
+    budget.consume("bytes", 256 + 12 * size)
+    return json.dumps(
+        {
+            "requirement": "relation_conflict",
+            "subject": subject,
+            "object": object,
+            "relations": [left, right],
+        },
+        sort_keys=True,
+    )
+
+
 def _endpoint(
     iri: str,
     view: VocabularyView,
@@ -339,6 +360,9 @@ def check_mappings(
                             "Rows violate a declared incompatible-relation policy",
                             where,
                             actual=row.predicate,
+                            evidence_json=_relation_conflict_evidence(
+                                row.subject, row.object, left, right, operation
+                            ),
                         )
                     )
             previous.add(row.predicate)
