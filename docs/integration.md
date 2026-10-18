@@ -270,6 +270,8 @@ logical document IRI, supplied location and role, known import chain, and any
 parser-provided span. Pass `location=` and `role=` on `RdfSource` when available.
 Reports retain these as `Issue.details.failure`, independently of the job's
 configuration location; absent parser coordinates remain absent.
+Source identity, supplied location and nondefault role text also consume the
+shared cumulative byte budget during preparation.
 
 Keep findings and unsupported comparisons visible. Apply narrow code/location exceptions through `AcceptancePolicy`; they do not change verification truth. Retain application validation, reference checks and any existing reasoning gate. Supplied-shapes validation is an optional additional operation, not general OWL consistency checking.
 

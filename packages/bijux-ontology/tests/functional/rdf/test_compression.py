@@ -83,7 +83,9 @@ def test_separate_input_expansion_and_shared_cumulative_limits() -> None:
     with pytest.raises(LimitExceeded, match="Expanded gzip RDF"):
         prepare_source(stream, format="turtle", compression="gzip", max_bytes=1_000)
     assert not stream.closed
-    total = len(compressed) + len(PAYLOAD)
+    # Logical document identity and effective base are separately retained fields.
+    identity_bytes = 2 * len(BASE.encode("utf-8"))
+    total = len(compressed) + len(PAYLOAD) + identity_bytes
     budget = Budget(Limits(max_total_bytes=total, max_resources=1))
     assert (
         len(
