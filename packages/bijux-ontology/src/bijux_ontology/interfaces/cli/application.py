@@ -15,6 +15,8 @@ from bijux_ontology.interfaces.cli.inputs import (
     write_output,
 )
 from bijux_ontology.interfaces.cli.rendering import format_report
+from bijux_ontology.interfaces.exports.sarif.conversion import to_sarif
+from bijux_ontology.limits import Budget
 from bijux_ontology.reports import (
     AcceptancePolicy,
     CheckError,
@@ -104,11 +106,40 @@ def main(argv: list[str] | None = None) -> int:
                 ),
             ),
         )
-    structured = report.to_dict(policy=policy)
-    if data is not None:
+    sarif_content = None
+    if options.sarif:
+        try:
+            export_budget = Budget(
+                configured.limits if configured is not None else command_limits(options)
+            )
+            structured = to_sarif(
+                report,
+                artifact_root=options.artifact_root,
+                policy=policy,
+                budget=export_budget,
+            )
+            sarif_content = json.dumps(
+                structured, ensure_ascii=False, separators=(",", ":")
+            )
+            size = len(sarif_content.encode("utf-8")) + 1
+            if size > export_budget.limits.max_bytes:
+                raise LimitExceeded("SARIF output exceeds max_bytes")
+            export_budget.consume("work", len(sarif_content))
+            export_budget.consume("bytes", size)
+        except (InputError, UnicodeError):
+            print(
+                "SARIF export could not complete; native outcome=" + report.outcome,
+                file=sys.stderr,
+            )
+            return 2
+    else:
+        structured = report.to_dict(policy=policy)
+    if data is not None and not options.sarif:
         structured["data"] = data
     content = (
-        json.dumps(structured, ensure_ascii=False, indent=2)
+        sarif_content
+        if sarif_content is not None
+        else json.dumps(structured, ensure_ascii=False, indent=2)
         if options.json
         else (
             format_report(report, limit=options.display_limit, policy=policy)

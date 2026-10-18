@@ -75,7 +75,9 @@ def input_paths(
     paths = [
         value
         for key, value in vars(options).items()
-        if key != "output" and key not in exclude and isinstance(value, Path)
+        if key not in ("output", "artifact_root")
+        and key not in exclude
+        and isinstance(value, Path)
     ]
     for key, value in vars(options).items():
         if key not in exclude and isinstance(value, list):

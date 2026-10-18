@@ -881,3 +881,14 @@ object fillers. Literal values use the selected supported OWL datatype map while
 preserving RDF lexical terms. Results distinguish `contradiction_found`,
 `no_witness_in_selected_scope` and `incomplete`; none is a general consistency
 verdict. Unsupported entailments and stopped work remain explicit.
+
+`to_sarif(report)` and `export_sarif(report, destination)` from
+`bijux_ontology.interfaces.exports.sarif` produce local SARIF 2.1.0 with Errata 01.
+Use `bijux-ontology project project.json --sarif --output findings.sarif` for the
+same report through the CLI; `--artifact-root` qualifies relative artifact paths.
+Native findings, unresolved obligations and failed execution retain separate
+meanings. Policy acceptance never changes invocation completion or raw findings.
+Parser regions retain their qualified column units; unsupported unit conversion
+uses line-only regions and preserves the original span in native properties.
+Actual `ShaclResult` findings and related locations retain their original report
+graph. Python file export requires a new destination; no export uploads data.

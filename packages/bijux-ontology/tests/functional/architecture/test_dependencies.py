@@ -24,6 +24,7 @@ PACKAGES = {
     "interfaces.api",
     "interfaces.cli",
     "interfaces.execution",
+    "interfaces.exports",
     "interfaces.adapters",
     "workflows.projects",
     "workflows.ontology",
