@@ -2,10 +2,11 @@
 
 from collections.abc import Iterable
 from dataclasses import dataclass, fields
+from itertools import chain
 from typing import Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.reports import Issue
+from bijux_ontology.reports import Issue, Report
 
 BudgetKind = Literal["bytes", "resources", "triples", "work", "issues", "states"]
 
@@ -91,3 +92,84 @@ class IssueCollector(list[Issue]):
             super().append(
                 Issue("execution.limit_exceeded", message, location, kind="exhausted")
             )
+
+
+def _report_text(value: str, budget: Budget) -> None:
+    """Bound inherited report text before allocating its UTF-8 representation."""
+    if len(value) > budget.limits.max_bytes:
+        raise LimitExceeded("Adopted report metadata exceeds max_bytes")
+    budget.consume("work", len(value) + 1)
+    try:
+        size = len(value.encode("utf-8"))
+    except UnicodeEncodeError as error:
+        raise InputError("Adopted report metadata requires valid Unicode") from error
+    if size > budget.limits.max_bytes:
+        raise LimitExceeded("Adopted report metadata exceeds max_bytes")
+    budget.consume("bytes", size)
+
+
+def retain_report(report: Report, operation: Budget, issues: IssueCollector) -> None:
+    """Bound adopted report trees without counting inherited diagnostics twice."""
+    pending = [(report, 0)]
+    reports: set[int] = set()
+    retained: set[int] = set()
+    text: str | None
+    while pending:
+        current, depth = pending.pop()
+        operation.consume("work")
+        if depth > operation.limits.max_depth:
+            raise LimitExceeded("Adopted report exceeds max_depth")
+        if id(current) in reports:
+            continue
+        operation.consume("states")
+        reports.add(id(current))
+        for number in (current.checked, current.requested):
+            if number is not None:
+                if number.bit_length() > min(4096, operation.limits.max_bytes):
+                    raise LimitExceeded("Adopted report counter exceeds max_bytes")
+                _report_text(str(number), operation)
+        operation.consume("states", len(current.families) + len(current.exclusions))
+        for text in chain(
+            (current.scope, current.regime), current.families, current.exclusions
+        ):
+            _report_text(text, operation)
+        for issue in current.issues:
+            operation.consume("work")
+            if id(issue) in retained:
+                continue
+            operation.consume("states")
+            retained.add(id(issue))
+            for text in (
+                issue.code,
+                issue.message,
+                issue.location,
+                issue.expected,
+                issue.actual,
+                issue.evidence_json,
+            ):
+                if text is not None:
+                    _report_text(text, operation)
+            if issue.details is not None:
+                details = issue.details
+                for text in (
+                    details.source,
+                    details.term,
+                    details.graph,
+                    details.model,
+                ):
+                    if text is not None:
+                        _report_text(text, operation)
+                operation.consume("states", len(details.path))
+                for value in chain(details.path, (details.branch,)):
+                    if value is None:
+                        continue
+                    if isinstance(value, int) and value.bit_length() > min(
+                        4096, operation.limits.max_bytes
+                    ):
+                        raise LimitExceeded(
+                            "Adopted diagnostic index exceeds max_bytes"
+                        )
+                    _report_text(str(value), operation)
+            issues.append(issue)
+        operation.consume("states", len(current.children))
+        pending.extend((child, depth + 1) for child in current.children)
