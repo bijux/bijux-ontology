@@ -838,6 +838,13 @@ empty graphs survive; union projections and unqualified fidelity remain unknown.
 The same cumulative budget covers host and owned worker bookkeeping; maintained
 isomorphism internals are bounded by the operation's wall-clock deadline.
 
+`rdf.merging.plan_rdf_merge(base, left, right)` records disjoint edits and
+property, connected-list or graph conflicts. Pass that exact plan to
+`apply_rdf_merge`, supplying a `MergeResolution` for every conflict and selected
+before/after contracts. Raw conflicts remain in `.plan.report`; structural
+agreement and application acceptance are separate. Anonymous correspondence
+requires actual owned witnesses, and stale bases cannot apply.
+
 `migrate_values(source, ValueSelection((predicate,)), action, ...)` proposes
 an exact object-position migration within the supplied snapshot's scope.
 `LiteralConversion(source_datatype, target_datatype)` preserves lexical characters
