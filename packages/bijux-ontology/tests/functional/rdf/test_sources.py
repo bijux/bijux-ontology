@@ -255,3 +255,30 @@ def test_resource_selection_retains_dataset_and_rejects_conflicting_choices() ->
     for options in invalid:
         with pytest.raises(InputError):
             RdfSource(source.content, format="trig", **options)
+
+
+def test_native_literal_metadata_obeys_resource_and_shared_byte_limits() -> None:
+    for value in (
+        Literal("1", datatype=URIRef("urn:" + "x" * 1000), normalize=False),
+        Literal("word", lang="en-" + "a" * 1000),
+    ):
+        graph = Graph().add((EX.subject, EX.p, value))
+        with pytest.raises(LimitExceeded, match="max_bytes"):
+            prepare_source(graph, limits=Limits(max_bytes=1000))
+        assert len(graph) == 1
+
+    value = Literal("01", datatype=XSD.integer, normalize=False)
+    graph = Graph().add((EX.subject, EX.p, value))
+    expected_bytes = sum(
+        len(str(node).encode("utf-8"))
+        for node in (EX.subject, EX.p, value, XSD.integer)
+    )
+    budget = Budget(Limits(max_bytes=1000, max_total_bytes=expected_bytes))
+    assert next(prepare_source(graph, budget=budget).graph().objects()) == value
+    assert budget.remaining("bytes") == 0
+    with pytest.raises(LimitExceeded, match="bytes"):
+        prepare_source(graph, budget=budget)
+    with pytest.raises(LimitExceeded, match="bytes"):
+        prepare_source(
+            graph, limits=Limits(max_bytes=1000, max_total_bytes=expected_bytes - 1)
+        )

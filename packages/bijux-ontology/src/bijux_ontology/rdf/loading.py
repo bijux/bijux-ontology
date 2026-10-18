@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import IO
 from typing import Literal as TypingLiteral
 
-from rdflib import ConjunctiveGraph, Dataset, Graph, Literal, URIRef
+from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, Literal, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, Limits
@@ -125,30 +125,40 @@ def _read(content: Payload, max_bytes: int, budget: Budget, *, binary: bool) -> 
 
 
 def _charge_graph(source: Graph, budget: Budget, max_bytes: int) -> None:
-    """Bound supplied graph terms before owned copying or index construction."""
+    """Bound supplied graph terms and literal metadata before owned copying."""
+    size = 0
+
+    def charge(text: str) -> None:
+        """Reserve exact UTF-8 storage before metadata validation or ownership."""
+        nonlocal size
+        if len(text) > max_bytes:
+            raise LimitExceeded("RDF term metadata exceeds max_bytes")
+        amount = len(text.encode("utf-8"))
+        size += amount
+        if size > max_bytes:
+            raise LimitExceeded("RDF graph term text exceeds max_bytes")
+        budget.consume("bytes", amount)
+
     records = (
         source.quads() if isinstance(source, Dataset | ConjunctiveGraph) else source
     )
-    size = 0
     for record in records:
         budget.consume("triples")
         for term in record:
             if isinstance(term, Graph):
                 term = term.identifier
-            text = str(term)
-            if len(text) > max_bytes:
-                raise LimitExceeded("RDF term exceeds max_bytes")
-            amount = len(text.encode("utf-8"))
-            size += amount
-            if size > max_bytes:
-                raise LimitExceeded("RDF graph term text exceeds max_bytes")
-            budget.consume("bytes", amount)
+            if not isinstance(term, URIRef | BNode | Literal):
+                raise InputError("Unsupported RDF term shape")
+            charge(term)
             if isinstance(term, URIRef):
-                absolute_iri(text)
-            if isinstance(term, Literal) and term.datatype:
-                absolute_iri(str(term.datatype))
-            if isinstance(term, Literal) and term.language:
-                language_tag(term.language)
+                absolute_iri(term)
+            if isinstance(term, Literal):
+                if term.datatype is not None:
+                    charge(term.datatype)
+                    absolute_iri(term.datatype)
+                if term.language is not None:
+                    charge(term.language)
+                    language_tag(term.language)
 
 
 @dataclass(frozen=True)
