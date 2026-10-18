@@ -1115,3 +1115,11 @@ become submissions. Cross-record constraints conservatively require declared
 complete primary data and actual complete target inventory/coverage. A partial
 conforming backend result cannot establish that scope. Inspect raw results,
 discovery and exact graph selectors alongside the required aggregate report.
+
+`workflows.upgrades.matrix.check_compatibility_matrix` checks explicit application,
+context and ontology combinations for every required `ConsumerVersion`. Supply
+each consumer's actual `ApplicationVersion` contract/corpus and closed context
+resources. Inspect original single-version checks, exact outputs and deployable
+cells; other known combinations and unused consumers remain visibly untested.
+Missing versions, inputs or representative corpora keep required cells incomplete.
+A passing majority cannot hide a failed or unknown selected obligation.
