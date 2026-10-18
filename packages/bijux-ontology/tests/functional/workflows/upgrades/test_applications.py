@@ -14,7 +14,7 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.corpus.checking import SerializerCase
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
@@ -23,6 +23,7 @@ from bijux_ontology.workflows.upgrades.applications import (
     ApplicationField,
     ApplicationOutput,
     ApplicationVersion,
+    check_application,
     compare_applications,
 )
 
@@ -556,3 +557,24 @@ def test_anonymous_attachments_keep_independent_consumer_roles_and_scope() -> No
     } == {"value"}
     assert not relevant.after_anonymous_uses
     assert relevant.candidate_report.verified
+
+
+def test_single_application_retains_actual_outputs_without_a_baseline() -> None:
+    """The public single-version path shares checks without a synthetic upgrade."""
+    version = _version()
+    budget = Budget()
+    result = check_application(_schema(), version, budget=budget)
+    assert result.report.verified
+    assert result.version is version
+    assert result.samples["sample"].document == {
+        **version.outputs["sample"].document, "@context": version.context
+    }
+    assert "sample" in result.sources
+    assert result.parts["sample/sample"].verified
+    assert budget.remaining("work") < budget.limits.max_work
+    mismatch = check_application(_schema(), _version(str(E.absent)))
+    assert not mismatch.report.verified
+    assert mismatch.samples["sample"].document is not None
+    assert not check_application(_schema(), ApplicationVersion()).report.verified
+    stopped = check_application(_schema(), version, limits=Limits(max_work=1))
+    assert stopped.report.outcome == "exhausted"

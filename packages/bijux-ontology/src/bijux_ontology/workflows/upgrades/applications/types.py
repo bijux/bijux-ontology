@@ -24,6 +24,7 @@ from bijux_ontology.models.emission.serialization import InstanceCheck
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.comparison import VocabularyChanges
@@ -318,3 +319,15 @@ class ApplicationUpgrade:
             and change.after.severity == "error"
             for change in self.contracts
         )
+
+
+@dataclass(frozen=True)
+class ApplicationCheck:
+    """Raw single-release contracts and actual checked representative outputs."""
+
+    version: ApplicationVersion
+    report: Report
+    parts: Mapping[str, Report]
+    samples: Mapping[str, InstanceCheck]
+    sources: Mapping[str, PreparedSource]
+    uses: UseIndex
