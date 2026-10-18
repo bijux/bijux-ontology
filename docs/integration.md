@@ -1478,3 +1478,12 @@ Each obligation retains its actual native result; incomplete work cannot verify.
 The installed command accepts `shex data.ttl schema.json --schema-iri urn:schema
 --binding urn:record urn:shape --schema-import urn:child child.json --json`.
 It uses the same owned native execution and completed-result recovery as Python.
+
+`bijux_ontology.workflows.ontology.obo.check_obo_publication` applies an explicit
+`OboPublicationProfile` to named owned terms in a `Release`. Select ordinary
+annotation contracts, native qualified definition/synonym rules, referenced subset
+metadata and supplied-interval lifecycle policy independently. Imported support
+cannot fill missing local annotations; each release binds its own local imports.
+Explicit term/namespace exclusions remove support terms from the owned selection.
+The result retains scoped records and selected subset witnesses. This finite
+opt-in convention does not certify every OBO Foundry recommendation.
