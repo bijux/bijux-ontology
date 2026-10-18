@@ -799,3 +799,10 @@ semantics nor exact RDF numeric identity. Ordinary array length does not prove
 RDF distinct-value counts. The existing importer accepts the documented finite
 scalar/local-definition subset; general unions and list wrappers remain outside
 that importer's supported scope. Install `[jsonschema]` to request compilation.
+
+Use `author_vocabulary` from `bijux_ontology.vocabulary.authoring` for explicit
+SKOS creation, preferred-label replacement, scheme membership, deprecation or
+annotation edits. Supply typed edits, the exact physical graph and required
+`MigrationCheck` postconditions. The resulting candidate uses the existing
+checked patch/export gates; shared qualified annotations and unrelated facts
+retain their identities. No edit applies to the original source automatically.
