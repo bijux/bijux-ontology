@@ -1,0 +1,437 @@
+package org.bijux.ontology.documents;
+
+import org.bijux.ontology.backend.WorkerProtocol;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.*;
+import javax.xml.transform.sax.SAXSource;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.SchemaFactory;
+import org.obolibrary.obo2owl.OWLAPIOwl2Obo;
+import org.obolibrary.oboformat.model.OBODoc;
+import org.obolibrary.oboformat.model.Frame;
+import org.obolibrary.oboformat.model.Clause;
+import org.obolibrary.oboformat.parser.OBOFormatParser;
+import org.obolibrary.oboformat.writer.OBOFormatWriter;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.formats.*;
+import org.semanticweb.owlapi.io.*;
+import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.profiles.OWLProfileReport;
+import org.semanticweb.owlapi.profiles.OWLProfileViolation;
+import org.w3c.dom.ls.DOMImplementationLS;
+import org.w3c.dom.ls.LSInput;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.XMLFilterImpl;
+import org.semanticweb.owlapi.profiles.OWL2DLProfile;
+import org.semanticweb.owlapi.profiles.violations.UseOfNonAbsoluteIRI;
+
+/** Original native documents, offline maintained parsing and checked writer output. */
+public final class NativeDocuments {
+    private NativeDocuments() {}
+
+    private static OWLDocumentFormat format(String name) throws IOException {
+        switch (name) {
+            case "owlxml": return new OWLXMLDocumentFormat();
+            case "functional": return new FunctionalSyntaxDocumentFormat();
+            case "manchester": return new ManchesterSyntaxDocumentFormat();
+            case "obo": return new OBODocumentFormat();
+            default: throw new IOException("Unsupported native format");
+        }
+    }
+
+    private static final class Document {
+        final Path path;
+        final String effective;
+        final String syntax;
+        Document(Path path, String effective, String syntax) {
+            this.path = path; this.effective = effective; this.syntax = syntax;
+        }
+    }
+
+    /** Only captured streams enter the maintained factory; no URL reader is available. */
+    private static final class OwnedFactory implements OWLOntologyFactory {
+        private final OWLOntologyFactory delegate;
+        private final Map<String,Document> documents;
+        OwnedFactory(OWLOntologyFactory delegate, Map<String,Document> documents) {
+            this.delegate = delegate; this.documents = documents;
+        }
+        @Override public boolean canCreateFromDocumentIRI(IRI iri) {
+            return delegate.canCreateFromDocumentIRI(iri);
+        }
+        @Override public boolean canAttemptLoading(OWLOntologyDocumentSource source) {
+            return documents.containsKey(source.getDocumentIRI().toString());
+        }
+        @Override public OWLOntology createOWLOntology(OWLOntologyManager manager,
+                OWLOntologyID id, IRI iri, OWLOntologyCreationHandler handler)
+                throws OWLOntologyCreationException {
+            return delegate.createOWLOntology(manager, id, iri, handler);
+        }
+        @Override public OWLOntology loadOWLOntology(OWLOntologyManager manager,
+                OWLOntologyDocumentSource source, OWLOntologyCreationHandler handler,
+                OWLOntologyLoaderConfiguration configuration) throws OWLOntologyCreationException {
+            Document document = documents.get(source.getDocumentIRI().toString());
+            if (document == null) throw new OWLOntologyCreationException("Unowned native import");
+            try {
+                if (document.syntax.equals("owlxml")) validateXml(document);
+                try (InputStream input = Files.newInputStream(document.path)) {
+                    return delegate.loadOWLOntology(manager,
+                        new StreamDocumentSource(input, IRI.create(document.effective),
+                            format(document.syntax), null), handler, configuration);
+                }
+            } catch (Exception error) {
+                throw new OWLOntologyCreationException(error);
+            }
+        }
+    }
+
+    /** Official pinned schemas are local, with external DTD/schema retrieval forbidden. */
+    private static void validateXml(Document document) throws Exception {
+        String prefix = "/org/bijux/ontology/documents/";
+        SchemaFactory schemas = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        schemas.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        schemas.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        schemas.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        DOMImplementationLS dom = (DOMImplementationLS) DocumentBuilderFactory.newInstance()
+            .newDocumentBuilder().getDOMImplementation().getFeature("LS", "3.0");
+        schemas.setResourceResolver((type, namespace, publicId, systemId, base) -> {
+            if (!"http://www.w3.org/XML/1998/namespace".equals(namespace)
+                    || !"http://www.w3.org/2001/xml.xsd".equals(systemId))
+                throw new IllegalArgumentException("Unowned schema import");
+            LSInput input = dom.createLSInput();
+            input.setSystemId(systemId);
+            input.setByteStream(NativeDocuments.class.getResourceAsStream(prefix + "xml.xsd"));
+            return input;
+        });
+        try (InputStream schema = NativeDocuments.class.getResourceAsStream(prefix + "owl2-xml.xsd")) {
+            if (schema == null) throw new IOException("Pinned schema unavailable");
+            javax.xml.validation.Validator validator = schemas.newSchema(new StreamSource(schema)).newValidator();
+            validator.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            validator.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            factory.setNamespaceAware(true);
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            XMLReader reader = new IriQualification(factory.newSAXParser().getXMLReader(), document.effective, Files.size(document.path));
+            try (InputStream input = Files.newInputStream(document.path)) {
+                InputSource source = new InputSource(input);
+                source.setSystemId(document.effective);
+                validator.validate(new SAXSource(reader, source));
+            }
+        }
+    }
+
+    /** A finite input qualification on maintained SAX events, never an IRI rewrite. */
+    private static final class IriQualification extends XMLFilterImpl {
+        private boolean explicitBase;
+        private boolean fragmentSeen;
+        private String iriElement;
+        private StringBuilder iriText;
+        private final String effective;
+        private final long maximum;
+        IriQualification(XMLReader reader, String effective, long maximum) {
+            super(reader); this.effective = effective; this.maximum = maximum;
+        }
+        private void absolute(String value) throws SAXException {
+            if (!IRI.create(value).isAbsolute()) throw new SAXException("Relative IRI unsupported");
+        }
+        private void qualifiedIri(String value, boolean allowFragment) throws SAXException {
+            boolean fragment = allowFragment && value.startsWith("#") && !explicitBase
+                && effective.indexOf('#') < 0 && !java.net.URI.create(effective).isOpaque();
+            if (!fragment) absolute(value);
+            else fragmentSeen = true;
+        }
+        @Override public void startElement(String uri, String local, String name, Attributes attributes)
+                throws SAXException {
+            String base = attributes.getValue(XMLConstants.XML_NS_URI, "base");
+            if (base != null) {
+                absolute(base);
+                if (fragmentSeen) throw new SAXException("Fragment with xml:base unsupported");
+                explicitBase = true;
+            }
+            if ("http://www.w3.org/2002/07/owl#".equals(uri)) {
+                // OWL/XML permits exactly one of the full and abbreviated IRI forms.
+                if (attributes.getValue("", "IRI") != null
+                        && attributes.getValue("", "abbreviatedIRI") != null)
+                    throw new SAXException("Ambiguous full/abbreviated IRI");
+                for (String field : Arrays.asList("IRI", "ontologyIRI", "versionIRI", "datatypeIRI")) {
+                    String value = attributes.getValue("", field);
+                    if (value == null) continue;
+                    qualifiedIri(value, field.equals("IRI") && !local.equals("Prefix"));
+                }
+                if (local.equals("Import") || local.equals("IRI")) {
+                    iriElement = local; iriText = new StringBuilder();
+                }
+            }
+            super.startElement(uri, local, name, attributes);
+        }
+        @Override public void characters(char[] chars, int start, int length) throws SAXException {
+            if (iriElement != null) {
+                if (length > maximum - iriText.length())
+                    throw new SAXException("IRI text bound", new WorkerProtocol.OutputLimit());
+                iriText.append(chars, start, length);
+            }
+            super.characters(chars, start, length);
+        }
+        @Override public void endElement(String uri, String local, String name) throws SAXException {
+            if (iriElement != null && "http://www.w3.org/2002/07/owl#".equals(uri) && local.equals(iriElement)) {
+                qualifiedIri(iriText.toString(), local.equals("IRI"));
+                iriElement = null; iriText = null;
+            }
+            super.endElement(uri, local, name);
+        }
+    }
+
+    private static OWLOntology load(List<Document> documents, Map<String,Integer> aliases,
+            int root, int maximum) throws Exception {
+        OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+        Map<String,Document> owned = new HashMap<>();
+        for (Document document : documents) {
+            if (owned.put(document.effective, document) != null)
+                throw new IOException("Ambiguous effective document identity");
+        }
+        OWLOntologyFactory delegate = manager.getOntologyFactories().iterator().next();
+        manager.setOntologyFactories(Collections.singleton(new OwnedFactory(delegate, owned)));
+        manager.getIRIMappers().clear();
+        manager.getIRIMappers().add(iri -> {
+            Integer index = aliases.get(iri.toString());
+            return index == null ? iri : IRI.create(documents.get(index).effective);
+        });
+        OWLOntologyLoaderConfiguration configuration = new OWLOntologyLoaderConfiguration()
+            .clearIgnoredImports().setStrict(true).setRepairIllegalPunnings(false).setEntityExpansionLimit("1000")
+            .setMissingImportHandlingStrategy(MissingImportHandlingStrategy.THROW_EXCEPTION)
+            .setRetriesToAttempt(1).setConnectionTimeout(1).setFollowRedirects(false);
+        OWLOntology ontology = manager.loadOntologyFromOntologyDocument(
+            new IRIDocumentSource(IRI.create(documents.get(root).effective)), configuration);
+        if (manager.getOntologies().size() > maximum) throw new WorkerProtocol.OutputLimit();
+        for (OWLProfileViolation violation : new OWL2DLProfile().checkOntology(ontology).getViolations())
+            if (violation instanceof UseOfNonAbsoluteIRI)
+                throw new IOException("Parsed relative IRI unsupported");
+        for (OWLOntology member : manager.getOntologies()) {
+            if (member.getOntologyID().getOntologyIRI().filter(iri -> !iri.isAbsolute()).isPresent()
+                    || member.getOntologyID().getVersionIRI().filter(iri -> !iri.isAbsolute()).isPresent())
+                throw new IOException("Relative ontology identity unsupported");
+            for (OWLImportsDeclaration declaration : member.getImportsDeclarations())
+                if (!declaration.getIRI().isAbsolute()) throw new IOException("Relative import unsupported");
+            Document owner = owned.get(manager.getOntologyDocumentIRI(member).toString());
+            if (owner == null || !format(owner.syntax).getKey().equals(manager.getOntologyFormat(member).getKey()))
+                throw new IOException("Native parser used an unselected format");
+        }
+        return ontology;
+    }
+
+    private static final class CappedOutput extends FilterOutputStream {
+        private final long cap;
+        private long used;
+        CappedOutput(OutputStream output, long cap) { super(output); this.cap = cap; }
+        @Override public void write(int value) throws IOException {
+            if (++used > cap) throw new WorkerProtocol.OutputLimit();
+            out.write(value);
+        }
+        @Override public void write(byte[] bytes, int start, int length) throws IOException {
+            if (length > cap - used) throw new WorkerProtocol.OutputLimit();
+            used += length; out.write(bytes, start, length);
+        }
+    }
+
+    private static final class ChangeLimit extends IOException {}
+
+    private static void loss(List<Map<String,Object>> changes, String kind, Object value,
+            int cap, int maximum) throws IOException {
+        if (changes.size() >= maximum) throw new ChangeLimit();
+        Map<String,Object> change = new LinkedHashMap<>();
+        change.put("kind", kind);
+        change.put("value", WorkerProtocol.rendering(value, cap));
+        changes.add(change);
+    }
+
+    private static void compare(OWLOntology first, OWLOntology second,
+            List<Map<String,Object>> changes, int cap, int maximum) throws IOException {
+        if (!first.getOntologyID().getOntologyIRI().equals(second.getOntologyID().getOntologyIRI())
+                || !first.getOntologyID().getVersionIRI().equals(second.getOntologyID().getVersionIRI()))
+            loss(changes, "ontology_identity", second.getOntologyID(), cap, maximum);
+        for (OWLAxiom axiom : first.getAxioms())
+            if (!second.containsAxiom(axiom)) loss(changes, "removed_axiom", axiom, cap, maximum);
+        for (OWLAxiom axiom : second.getAxioms())
+            if (!first.containsAxiom(axiom)) loss(changes, "added_axiom", axiom, cap, maximum);
+        for (OWLAnnotation annotation : first.getAnnotations())
+            if (!second.getAnnotations().contains(annotation)) loss(changes, "removed_annotation", annotation, cap, maximum);
+        for (OWLAnnotation annotation : second.getAnnotations())
+            if (!first.getAnnotations().contains(annotation)) loss(changes, "added_annotation", annotation, cap, maximum);
+        if (!first.getImportsDeclarations().equals(second.getImportsDeclarations()))
+            loss(changes, "import_declarations", second.getImportsDeclarations(), cap, maximum);
+    }
+
+    private static void oboFrame(Frame original, Frame restored,
+            List<Map<String,Object>> changes, int cap, int maximum) throws IOException {
+        List<Clause> remaining = restored == null ? new ArrayList<>()
+            : new ArrayList<>(restored.getClauses());
+        for (Clause clause : original.getClauses()) {
+            if (!remaining.remove(clause))
+                loss(changes, "unrepresented_obo_clause", original.getId() + " " + clause, cap, maximum);
+        }
+    }
+
+    /** Native OBO clauses must survive the actual OBO-to-OWL bridge too. */
+    private static void qualifyObo(Document document, OWLOntology ontology,
+            List<Map<String,Object>> changes, int cap, int maximum) throws Exception {
+        if (!document.syntax.equals("obo")) return;
+        OBOFormatParser parser = new OBOFormatParser();
+        parser.setFollowImports(false);
+        OBODoc original;
+        try (Reader reader = Files.newBufferedReader(document.path, StandardCharsets.UTF_8)) {
+            original = parser.parse(reader);
+        }
+        OWLAPIOwl2Obo converter = new OWLAPIOwl2Obo(ontology.getOWLOntologyManager());
+        converter.setDiscardUntranslatable(true);
+        OBODoc restored = converter.convert(ontology);
+        oboFrame(original.getHeaderFrame(), restored.getHeaderFrame(), changes, cap, maximum);
+        for (Frame frame : original.getTermFrames())
+            oboFrame(frame, restored.getTermFrame(frame.getId()), changes, cap, maximum);
+        for (Frame frame : original.getTypedefFrames())
+            oboFrame(frame, restored.getTypedefFrame(frame.getId()), changes, cap, maximum);
+        for (Frame frame : original.getInstanceFrames())
+            oboFrame(frame, restored.getInstanceFrame(frame.getId()), changes, cap, maximum);
+    }
+
+    private static List<Map<String,Object>> profiles(OWLOntology ontology, JsonNode selected,
+            int cap, int maximum) throws IOException {
+        if (!selected.isArray() || selected.size() > 4) throw new IOException("Invalid profile selection");
+        List<Map<String,Object>> records = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (JsonNode item : selected) {
+            String name = WorkerProtocol.text(item, 32);
+            if (!seen.add(name)) throw new IOException("Duplicate profile selection");
+            OWLProfileReport report = WorkerProtocol.profile(name).checkOntology(ontology);
+            Map<String,Object> record = new LinkedHashMap<>();
+            record.put("profile", name);
+            record.put("in_profile", report.isInProfile());
+            List<String> violations = new ArrayList<>();
+            for (OWLProfileViolation violation : report.getViolations()) {
+                if (violations.size() >= maximum) throw new WorkerProtocol.OutputLimit();
+                violations.add(WorkerProtocol.rendering(violation, cap));
+            }
+            record.put("violations", violations);
+            records.add(record);
+        }
+        return records;
+    }
+
+    public static Map<String,Object> evaluate(JsonNode request, Path job, Map<String,Object> result) throws Exception {
+        List<Map<String,Object>> changes = new ArrayList<>();
+        String syntax = WorkerProtocol.text(request.path("format"), 32);
+        result.put("format", syntax);
+        result.put("native_loader_profile", "original-native-strict-offline-schema-qualified");
+        result.put("changes", changes);
+        result.put("qualified", false);
+        try {
+            return convert(request, job, result, changes);
+        } catch (ChangeLimit | WorkerProtocol.OutputLimit exhausted) {
+            result.put("status", "exhausted");
+        } catch (Exception unavailable) {
+            Throwable cause = unavailable;
+            while (cause.getCause() != null && cause.getCause() != cause) cause = cause.getCause();
+            if (cause instanceof WorkerProtocol.OutputLimit) result.put("status", "exhausted");
+        }
+        return result;
+    }
+
+    private static Map<String,Object> convert(JsonNode request, Path job, Map<String,Object> result,
+            List<Map<String,Object>> changes) throws Exception {
+        int cap = WorkerProtocol.positive(request.path("max_bytes"));
+        int maximum = WorkerProtocol.positive(request.path("max_issues"));
+        int resources = WorkerProtocol.positive(request.path("max_resources"));
+        String outputFormat = WorkerProtocol.text(request.path("format"), 32);
+        format(outputFormat);
+        JsonNode inputs = request.path("documents");
+        if (!inputs.isArray() || inputs.size() == 0 || inputs.size() > resources)
+            throw new IOException("Invalid native document inventory");
+        List<Document> documents = new ArrayList<>();
+        for (JsonNode item : inputs) {
+            Path path = Path.of(WorkerProtocol.text(item.path("path"), cap)).toAbsolutePath().normalize();
+            if (!job.equals(path.getParent()) || Files.isSymbolicLink(path) || !Files.isRegularFile(path)
+                    || Files.size(path) > cap) throw new IOException("Unowned native document path");
+            String syntax = WorkerProtocol.text(item.path("format"), 32);
+            format(syntax);
+            String effective = WorkerProtocol.text(item.path("effective_url"), cap);
+            documents.add(new Document(path, effective, syntax));
+        }
+        JsonNode mapping = request.path("aliases");
+        if (!mapping.isObject() || mapping.size() > resources * 4) throw new IOException("Invalid aliases");
+        Map<String,Integer> aliases = new HashMap<>();
+        Iterator<Map.Entry<String,JsonNode>> entries = mapping.fields();
+        while (entries.hasNext()) {
+            Map.Entry<String,JsonNode> entry = entries.next();
+            if (entry.getKey().length() > cap || !entry.getValue().isInt()) throw new IOException("Invalid alias");
+            int index = entry.getValue().intValue();
+            if (index < 0 || index >= documents.size()) throw new IOException("Unowned alias");
+            aliases.put(entry.getKey(), index);
+        }
+        OWLOntology first = load(documents, aliases, 0, resources);
+        for (OWLOntology member : first.getOWLOntologyManager().getOntologies()) {
+            if (member.anonymousIndividuals().findAny().isPresent())
+                throw new IOException("Anonymous individual structural correspondence unavailable");
+            String iri = member.getOWLOntologyManager().getOntologyDocumentIRI(member).toString();
+            for (Document document : documents)
+                if (document.effective.equals(iri)) qualifyObo(document, member, changes, cap, maximum);
+        }
+        Path output = job.resolve("converted.owl");
+        try (OutputStream stream = new CappedOutput(Files.newOutputStream(output, StandardOpenOption.CREATE_NEW), cap)) {
+            if (outputFormat.equals("obo")) {
+                OWLAPIOwl2Obo converter = new OWLAPIOwl2Obo(first.getOWLOntologyManager());
+                converter.setDiscardUntranslatable(true);
+                OBODoc converted = converter.convert(first);
+                for (OWLAxiom axiom : converter.getUntranslatableAxioms())
+                    loss(changes, "untranslatable_axiom", axiom, cap, maximum);
+                Writer writer = new OutputStreamWriter(stream, StandardCharsets.UTF_8);
+                new OBOFormatWriter().write(converted, writer);
+                writer.flush();
+            } else first.getOWLOntologyManager().saveOntology(first, format(outputFormat), stream);
+        }
+        List<Document> updated = new ArrayList<>(documents);
+        updated.set(0, new Document(output, documents.get(0).effective, outputFormat));
+        OWLOntology second = load(updated, aliases, 0, resources);
+        if (second.anonymousIndividuals().findAny().isPresent())
+            throw new IOException("Anonymous individual structural correspondence unavailable");
+        compare(first, second, changes, cap, maximum);
+        List<Map<String,Object>> loaded = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (OWLOntology member : first.getOWLOntologyManager().getOntologies()) {
+            String effective = first.getOWLOntologyManager().getOntologyDocumentIRI(member).toString();
+            int index = -1;
+            for (int i = 0; i < documents.size(); i++)
+                if (documents.get(i).effective.equals(effective)) index = i;
+            if (index < 0 || !seen.add(effective)) throw new IOException("Ambiguous loaded document");
+            Map<String,Object> record = new LinkedHashMap<>();
+            record.put("document", index);
+            record.put("ontology_iri", member.getOntologyID().getOntologyIRI().map(Object::toString).orElse(null));
+            record.put("version_iri", member.getOntologyID().getVersionIRI().map(Object::toString).orElse(null));
+            record.put("axioms", member.getAxiomCount());
+            List<String> imports = new ArrayList<>();
+            for (OWLImportsDeclaration declaration : member.getImportsDeclarations()) {
+                if (imports.size() >= resources) throw new WorkerProtocol.OutputLimit();
+                imports.add(declaration.getIRI().toString());
+            }
+            record.put("imports", imports);
+            loaded.add(record);
+        }
+        result.put("documents", loaded);
+        result.put("changes", changes);
+        result.put("before_profiles", profiles(first, request.path("profiles"), cap, maximum));
+        result.put("after_profiles", profiles(second, request.path("profiles"), cap, maximum));
+        result.put("format", outputFormat);
+        result.put("bytes", Files.size(output));
+        result.put("qualified", true);
+        return result;
+    }
+}

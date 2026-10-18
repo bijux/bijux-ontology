@@ -46,3 +46,18 @@ POSIX process ownership and one physical graph per supplied document. Missing
 imports, unavailable runtimes and exhausted execution cannot pass. Original
 anonymous identities shared across separately loaded documents are unsupported;
 independent equal blank labels stay distinct.
+
+The `documents` API captures original OWL/XML, Functional Syntax, Manchester
+Syntax or OBO with `prepare_owl_document(content, format=...,
+document_iri=..., effective_url=...)`. Call
+`convert_ontology(backend, document, format="functional", imports=offline_map)`
+for a maintained structural roundtrip. Inspect `.content`, `.changes`,
+`.lossless` and `.report`. The default rejects lossy output; `loss="report"`
+returns an explicit projection while retaining findings. Selected `profiles=`
+record actual membership before and after conversion.
+
+Native text uses UTF-8. OWL/XML supports absolute IRIs and qualified fragment
+references; unsupported encodings, relative interpretation and anonymous
+individual correspondence remain unknown. Only captured imports are available.
+Preservation concerns annotated axioms and ontology headers, not original bytes
+or exact RDF lexical identity.
