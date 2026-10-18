@@ -1430,3 +1430,11 @@ Producer scope/backend claims remain descriptive; even a conforming report canno
 certify fresh local execution or omitted coverage. `aggregate_shacl_reports` keeps
 external and local report scopes separate, including equal blank labels, and
 retains required unknowns and externally asserted failures.
+
+`bijux_ontology.models.quantities.prepare_quantities` prepares explicit unit-code
+or IRI bindings for repeated checks with optional `[quantities]`. Use
+`QuantityContract` value/unit paths and Decimal bounds in a declared reference unit.
+The supported atomic names are meter, millimeter, centimeter, kilometer, second,
+minute, hour, kelvin and degree_Celsius. Unsupported or inexact conversions remain
+unknown. `.check(record, contract, convert=True)` exposes a separate `.converted`
+record only after intrinsic rechecks; `.source` preserves the actual input.

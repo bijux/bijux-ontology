@@ -19,6 +19,9 @@ dependencies = [
 bijux-ontology = "bijux_ontology.interfaces.cli:main"
 
 [project.optional-dependencies]
+quantities = [
+    "pint>=0.25.3,<0.26",
+]
 csvw = [
     "csvw>=4.1.0,<5",
 ]

@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "quantity": frozenset(
+        "unit_unverified backend_unverified field_missing dimension_mismatch "
+        "bound_mismatch unverified".split()
+    ),
     "temporal": frozenset(
         "order_unverified value_missing order_violation invalid".split()
     ),
@@ -358,6 +362,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "quantity": (
+        "explicit selected-record quantity contracts",
+        "A quantity differs from its reference-unit contract "
+        "or lacks exact conversion.",
+        "Install bijux-ontology[quantities], supply explicit unit bindings and "
+        "inspect the actual value, dimension and reference-unit bounds.",
+        'prepare_quantities((UnitBinding("mm", "millimeter"),))',
+    ),
     "temporal": (
         "explicit emitted-record calendar contracts",
         "A selected interval or chronology disagrees or lacks a determinate order.",
