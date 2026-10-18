@@ -2,14 +2,15 @@
 
 import json
 import math
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn, cast
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
 
 
 def _string_bytes(value: str) -> int:
@@ -106,6 +107,17 @@ def _invalid_constant(value: str) -> NoReturn:
     raise InputError(f"Non-finite number is not JSON: {value}")
 
 
+@dataclass(frozen=True)
+class _RawNumber:
+    """Retain a maintained decoder's validated numeric token until path resolution."""
+
+    token: str
+    integer: bool
+
+
+_NumberHook = Callable[[str, tuple[str | int, ...], bool], object]
+
+
 def decode_json(
     payload: str | bytes,
     *,
@@ -114,6 +126,22 @@ def decode_json(
     max_depth: int = 128,
 ) -> object:
     """Decode owned JSON text, rejecting ambiguous names at every object depth."""
+    return _decode_json(
+        payload, source=source, max_bytes=max_bytes, max_depth=max_depth
+    )
+
+
+def _decode_json(
+    payload: str | bytes,
+    *,
+    source: str = "",
+    max_bytes: int = 5_000_000,
+    max_depth: int = 128,
+    number_hook: _NumberHook | None = None,
+    key_hook: Callable[[str], None] | None = None,
+    budget: Budget | None = None,
+) -> object:
+    """Decode through shared syntax and optional private scalar/key observation."""
     if not isinstance(payload, (str, bytes)):
         raise InputError("Expected JSON text or bytes", location=source)
     try:
@@ -128,6 +156,12 @@ def decode_json(
                 payload,
                 object_pairs_hook=_ObjectPairs,
                 parse_constant=_invalid_constant,
+                parse_int=(lambda token: _RawNumber(token, True))
+                if number_hook is not None
+                else None,
+                parse_float=(lambda token: _RawNumber(token, False))
+                if number_hook is not None
+                else None,
             ),
         )
     except RecursionError as error:
@@ -139,26 +173,66 @@ def decode_json(
             raise
         raise InputError(str(error), location=source) from error
 
-    def objects(value: object, path: str, depth: int) -> object:
-        """Resolve retained object pairs with an established JSON Pointer path."""
+    def pointer(parts: tuple[str | int, ...]) -> str:
+        """Bound numeric-hook error pointers before escaping their components."""
+        size = 1
+        for part in parts:
+            text = str(part)
+            size += len(text.encode("utf-8")) + text.count("~") + text.count("/") + 1
+            if size > max_bytes:
+                raise LimitExceeded("JSON location exceeds max_bytes", location=source)
+        if budget is not None:
+            budget.consume("work", size)
+            budget.consume("bytes", size)
+        return "/" + "/".join(
+            str(part).replace("~", "~0").replace("/", "~1") for part in parts
+        )
+
+    def objects(
+        value: object, path: str, depth: int, parts: tuple[str | int, ...] = ()
+    ) -> object:
+        """Resolve object pairs with their original source paths."""
+        if budget is not None:
+            budget.consume("work")
+            budget.consume("states")
         if depth > max_depth:
             raise LimitExceeded(
-                "JSON nesting exceeds max_depth", location=source + path
+                "JSON nesting exceeds max_depth",
+                location=source + (path if number_hook is None else pointer(parts)),
             )
         if isinstance(value, _ObjectPairs):
             result: dict[str, object] = {}
             for key, child in value:
-                pointer = path + "/" + key.replace("~", "~0").replace("/", "~1")
+                if key_hook is not None:
+                    key_hook(key)
+                child_parts = (*parts, key) if number_hook is not None else ()
+                child_path = (
+                    path + "/" + key.replace("~", "~0").replace("/", "~1")
+                    if number_hook is None
+                    else ""
+                )
                 if key in result:
                     cause = ValueError(f"Duplicate JSON object name: {key}")
-                    raise InputError(str(cause), location=source + pointer) from cause
-                result[key] = objects(child, pointer, depth + 1)
+                    raise InputError(
+                        str(cause),
+                        location=source
+                        + (child_path if number_hook is None else pointer(child_parts)),
+                    ) from cause
+                result[key] = objects(child, child_path, depth + 1, child_parts)
             return result
         if isinstance(value, list):
             return [
-                objects(child, f"{path}/{index}", depth + 1)
+                objects(
+                    child,
+                    f"{path}/{index}" if number_hook is None else "",
+                    depth + 1,
+                    (*parts, index) if number_hook is not None else (),
+                )
                 for index, child in enumerate(value)
             ]
+        if isinstance(value, _RawNumber):
+            assert number_hook is not None
+            return number_hook(value.token, parts, value.integer)
         return value
 
     return own_json(

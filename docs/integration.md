@@ -815,3 +815,11 @@ transitions. Uninstantiated nested scopes remain unverified. These comparisons
 qualify selected definitions, without claiming compatibility for all documents.
 The same operations are available through `WorkerExecutor` as
 `context_inspection` and `context_definitions`.
+
+`decode_numeric_json` from `bijux_ontology.jsonld.numbers` qualifies original raw
+JSON tokens under an explicit processor, portable-integer or source-exact policy.
+Inspect numeric observations and their pointers before conversion. A requested
+`project_numeric_json` call with `NumericProjection` needs an explicit supported
+datatype and context-free input;
+unsupported projections return no checked output. Already decoded Python floats
+carry no raw-token precision claim. Ordinary JSON decoding remains unchanged.
