@@ -34,22 +34,26 @@ class Closure(Mapping[str, RdfSource]):
 
     def __init__(
         self,
-        manifest: dict[str, object],
+        manifest: dict[str, object] | None,
         files: dict[str, bytes],
         requests: Mapping[str, str],
         http: HttpAcquisition,
     ) -> None:
         self.manifest, self.files, self.requests, self.http = (
-            manifest,
+            {} if manifest is None else manifest,
             files,
             requests,
             http,
         )
         self.budget = http.budget
-        self.config = ProjectConfig(manifest, directory=Path.cwd())
-        self.rdf = object_value(manifest.setdefault("rdf", {}), location="acquisition")
+        self.config = (
+            None if manifest is None else ProjectConfig(manifest, directory=Path.cwd())
+        )
+        self.rdf = object_value(
+            self.manifest.setdefault("rdf", {}), location="acquisition"
+        )
         self.contexts = object_value(
-            manifest.setdefault("contexts", {}), location="acquisition"
+            self.manifest.setdefault("contexts", {}), location="acquisition"
         )
         self.aliases: dict[str, RdfSource] = {}
         self.context_documents: dict[str, object] = {}
@@ -262,6 +266,8 @@ class Closure(Mapping[str, RdfSource]):
 
     def prepare(self) -> bytes:
         """Qualify selected closures, then encode the existing portable archive form."""
+        if self.config is None:
+            raise InputError("Bundle preparation requires a project manifest")
         selected: list[RdfSource] = []
         for name, original in self.config.rdf.items():
             self.budget.consume("work")
