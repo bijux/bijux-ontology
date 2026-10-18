@@ -24,7 +24,7 @@ def shape_conflicts(
     equivalence. Unknown anonymous/dynamic dependencies never prove equality.
     Separate policy deliberately retains both ordinary validation contexts.
     """
-    previous: dict[str, tuple[str, ShapeProfile]] = {}
+    previous: dict[str, list[tuple[str, ShapeProfile]]] = {}
     decisions = []
     for layer in layers:
         if not layer.selected or layer.profile is None or layer.bundle is None:
@@ -79,12 +79,13 @@ def shape_conflicts(
                     timeout=remaining,
                     cancel=budget.cancel,
                 )
-                if root in previous:
-                    before_name, before = previous[root]
+                for before_name, before in previous.get(root, ()):
+                    budget.consume("work")
                     if (
                         manifest.same_shape == "separate"
                         and manifest.severity_changes == "preserve_each"
                     ):
+                        budget.consume("states")
                         decisions.append(ProfileDecision(root, before_name, layer.iri))
                         continue
                     if (
@@ -117,6 +118,6 @@ def shape_conflicts(
                                 "separate/preserve_each policy",
                             )
                         )
-                else:
-                    previous[root] = layer.iri, current
+                budget.consume("states")
+                previous.setdefault(root, []).append((layer.iri, current))
     return tuple(decisions)

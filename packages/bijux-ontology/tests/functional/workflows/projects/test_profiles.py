@@ -409,3 +409,46 @@ def test_executable_bundle_replacement_cannot_drop_or_weaken_required_jobs(
     assert (
         reconstructed.check(tmp_path / "reconstructed").report.outcome == "disagreement"
     )
+
+
+def test_each_prior_named_shape_definition_requires_its_own_conflict_decision(
+    tmp_path: Path,
+) -> None:
+    """A separately retained middle definition cannot disappear from later review."""
+    first = load_profile(
+        _package(tmp_path / "first", "urn:first", shape="urn:Shared", count=1)
+    )
+    middle = load_profile(
+        _package(
+            tmp_path / "middle",
+            "urn:middle",
+            parents=[{"id": first.iri}],
+            shape="urn:Shared",
+            count=2,
+            separate=True,
+        )
+    )
+    path = _package(
+        tmp_path / "last",
+        "urn:last",
+        parents=[{"id": middle.iri}],
+        shape="urn:Shared",
+        count=1,
+    )
+    last = load_profile(path)
+    registry = {first.iri: first, middle.iri: middle}
+    rejected = compose_profile(last, registry)
+    assert not rejected.report.verified
+    assert any(
+        issue.code == "profile.shape_conflict" for issue in rejected.report.issues
+    )
+    raw = json.loads((path / "profile.json").read_text())
+    raw["conflicts"] = {"same_shape": "separate", "severity_changes": "preserve_each"}
+    (path / "profile.json").write_text(json.dumps(raw))
+    separated = compose_profile(load_profile(path), registry)
+    assert separated.report.verified
+    assert {(item.before, item.after) for item in separated.decisions} == {
+        (first.iri, middle.iri),
+        (first.iri, last.iri),
+        (middle.iri, last.iri),
+    }
