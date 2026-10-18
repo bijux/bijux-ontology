@@ -849,3 +849,13 @@ complementary facts. A candidate is returned only after agreement and required
 `ConsolidationCheck` callbacks verify. Contributions retain both document origins;
 independent blank nodes and physical graph partitions remain separate unless an
 explicit union is requested. These are application agreements, not OWL consistency.
+
+RDF/XML input uses a bounded Expat boundary before native RDF parsing. XML 1.0
+UTF-8 and BOM-qualified UTF-16 LE/BE preserve base, language and RDF terms. Safe
+internal general text entities are supported; external/parameter entities and
+other DTD constructs are explicit capability failures. Entity declarations
+combined with RDF XMLLiteral content are unsupported because the qualified native
+parser cannot preserve namespace-entity references inside that literal. Expanded
+content, nesting and normalized bytes share the operation limits. Malformed XML
+retains original parser coordinates; native RDF failures without coordinates
+remain spanless.

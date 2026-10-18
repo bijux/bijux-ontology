@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from json import JSONDecodeError
+from xml.parsers.expat import ExpatError
 
 
 class InputError(ValueError):
@@ -136,6 +137,12 @@ def attach_input_failure(
         elif isinstance(current, JSONDecodeError):
             span = SourceSpan(current.lineno, current.colno)
             break
+        elif isinstance(current, ExpatError):
+            line = getattr(current, "lineno", None)
+            offset = getattr(current, "offset", None)
+            if type(line) is int and line > 0 and type(offset) is int and offset >= 0:
+                span = SourceSpan(line, offset + 1)
+                break
         cause = current.__cause__ or getattr(current, "cause", None)
         current = cause if isinstance(cause, BaseException) else None
     error.failure = InputFailure(document_iri, location, role, import_chain, span)

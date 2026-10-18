@@ -13,6 +13,7 @@ from bijux_ontology.limits import Budget
 from ..errors import InputError, LimitExceeded, ResourceError
 from .terms import oxigraph_term
 from .trig import retain_trig_inventory
+from .xml.preparation import prepare_xml
 
 RdfFormat = TypingLiteral["turtle", "nt", "xml", "trig", "nquads", "json-ld"]
 
@@ -42,16 +43,12 @@ def parse_dataset(
     budget: Budget,
     max_triples: int,
     preserve_literals: bool,
+    max_bytes: int | None = None,
 ) -> ParsedDataset:
     """Parse bounded RDF syntax while retaining shared blank-node relations."""
     dataset = Dataset()
     if syntax == "xml":
-        try:
-            xml = payload.decode("utf-8")
-        except UnicodeError as error:
-            raise InputError("RDF/XML currently requires UTF-8 encoding") from error
-        if "<!DOCTYPE" in xml or "<!ENTITY" in xml:
-            raise InputError("RDF/XML document types and entities are unsupported")
+        payload = prepare_xml(payload, budget=budget, max_bytes=max_bytes).payload
     try:
         parser = ox.parse(input=payload, format=RDF_FORMATS[syntax], base_iri=base)
         nodes: dict[str, BNode] = {}
