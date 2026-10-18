@@ -307,6 +307,7 @@ _CODES = {
         "xl_form_conflict xl_form_unresolved xl_role_conflict xl_role_overlap".split()
     ),
     "terms": frozenset(
+        "slim_root_unverified slim_view_unverified slim_uncovered slim_invalid "
         "relation_projection_unverified relation_source_unverified "
         "relation_path_missing relation_path_invalid relation_candidates_invalid "
         "restriction_malformed restriction_unverified "

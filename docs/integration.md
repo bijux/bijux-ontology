@@ -199,6 +199,14 @@ constraints; its closed selection covers only the supplied view and language.
 For classification, `find_relation_path` permits complete nonmatches: its report
 qualifies search coverage, while `status` records whether a path was found.
 
+Use `vocabulary.slims.assign_slim` with original `SlimAnnotation(record_id, term)`
+occurrences, explicit roots and `policy="all"` or `"nearest"`. The default view
+uses asserted subclass paths; `path` can select the typed relation language.
+Nearest counts typed edges and retains all minimum-distance ties. Every required
+root comparison must finish before selections are final. Counts distinguish
+annotation occurrences from distinct exact record IDs; uncovered and unknown
+remain separate. Original fine terms and partial witnesses stay visible.
+
 Use `read_obo_records(view, term_iri)` for explicitly selected OBO-in-OWL
 definitions and exact/broad/narrow/related synonyms. Records retain original
 literal terms and separate axiom attachments, including cross-references,
