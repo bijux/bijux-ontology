@@ -100,6 +100,12 @@ under both policy choices. Reports list expanded conditions and the chosen basis
 The CLI exposes `--profile` and `--hierarchy-basis`; SKOS project jobs accept
 `profile` and `hierarchy_basis`.
 
+`check_top_concepts(view, TopConceptPolicy(scheme_iri, required=(root_iri,)))`
+checks an opt-in published-root inventory using either SKOS top-concept inverse.
+An optional `allowed` inventory and `broader="forbid-within-scheme"` qualify
+authored broader/narrower assertions; parents with unresolved scheme membership
+remain unverified. These consumer rules leave default SKOS integrity unchanged.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.

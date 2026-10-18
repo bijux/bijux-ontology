@@ -139,6 +139,9 @@ _CODES = {
         "implicit_target_unverified nonconformance sparql_unverified".split()
     ),
     "skos": frozenset(
+        "publication.required_root_missing publication.root_not_allowed "
+        "publication.root_has_broader publication.broader_scope_unverified "
+        "publication.reference_unverified "
         "policy.collection_sequence_mismatch policy.collection_size_mismatch "
         "policy.collection_duplicate_member "
         "collection_member_role_conflict label_role_conflict mapping_conflict "

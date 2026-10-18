@@ -108,6 +108,11 @@ from bijux_ontology.reports import (
 )
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.collections import check_collection_sequence
+from bijux_ontology.skos.publication import (
+    TopConceptCheck,
+    TopConceptPolicy,
+    check_top_concepts,
+)
 from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.collections import (
@@ -242,6 +247,8 @@ __all__ = [
     "SubjectIdentity",
     "TemplateKey",
     "TermDeclaration",
+    "TopConceptCheck",
+    "TopConceptPolicy",
     "TermInfo",
     "Transformation",
     "UpgradeAssessment",
@@ -268,6 +275,7 @@ __all__ = [
     "check_rdf_emission",
     "check_serializer_corpus",
     "check_skos",
+    "check_top_concepts",
     "check_vocabulary",
     "combine_reports",
     "compare_context_usages",
