@@ -1270,6 +1270,14 @@ Modifiers, composed/literal endpoints, extension semantics and unmapped sentinel
 remain unknown; sentinels cannot satisfy required cardinality. The supported TSV
 body excludes hash characters because maintained comment handling can lose data.
 
+`bijux_ontology.vocabulary.mappings.composition.compose_mappings` joins explicit
+intermediate IRIs in two owned mapping sets or raw `MappingRead` results. Supply
+finite `MappingCompositionRule` records: only exactMatch transitivity has a SKOS
+basis; other supported chains require an explicit application policy. Results
+retain every original row, path, qualifier and conflicting target. Uninterpreted
+qualifiers block affected derivations; confidence is never multiplied. Candidates
+establish neither OWL identity nor a newly authored SSSOM mapping set.
+
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing
 owned worker enumerates each selected root once, then validates ordinary Core
