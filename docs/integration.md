@@ -187,6 +187,17 @@ claims no transitive-property entailment. Unsupported alternatives remain in the
 report even when an independent path is found; incomplete coverage cannot prove
 unreachability. Expression components stay in their attachment's source scope.
 
+
+Use `vocabulary.relation_paths.check_relation_path` for explicit typed regular
+languages: compose `RelationStep(predicate, role)` with `RelationSequence`,
+`RelationChoice`, `RelationInverse` and `RelationRepeat`, and select a
+`RelationEndpoint`. Class, SKOS, existential restriction and raw asserted roles
+remain distinct. Witnesses retain original assertions and scopes; inverse means
+navigation only. Cycles terminate, and incomplete traversal cannot prove a
+nonmatch. Missing sources cannot satisfy zero repetition. `relation_enumeration`
+classifies an explicit candidate inventory for ordinary application field
+constraints; its closed selection covers only the supplied view and language.
+
 Use `read_obo_records(view, term_iri)` for explicitly selected OBO-in-OWL
 definitions and exact/broad/narrow/related synonyms. Records retain original
 literal terms and separate axiom attachments, including cross-references,
