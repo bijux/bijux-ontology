@@ -435,6 +435,16 @@ conversion evidence as `input_report`; no re-expansion or remote discovery occur
 Routing capture and report adoption are bounded separately from each project's
 backend limits.
 
+`bijux_ontology.workflows.projects.instantiation` provides `ParameterizedProfile`
+and `instantiate_profile`. Explicit `ConstraintSlot`, `InventorySlot` and
+`ResourceSlot` bindings compile typed RDF terms, integers, enum choices and owned
+vocabulary resources into an ordinary profile in a new directory. A `ProfileShape`
+uses the existing typed SHACL authoring records. The supported baseline is a
+complete ordinary graph with named authored shapes; opaque or unqualified
+representations remain unknown. Parameters retain exact RDF terms and resource
+identities. `instance.report` describes preparation; run `instance.effective.check`
+for actual validation, including every required parent layer.
+
 `load_bundle(..., dependencies=(parent,))` retains owned parent RDF and context
 resources separately from local files. Dependent bundles require explicit
 `materialize(path, local_only=True)` and cannot be exported as standalone archives.

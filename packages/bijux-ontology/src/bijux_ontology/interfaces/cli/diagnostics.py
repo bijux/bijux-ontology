@@ -95,6 +95,7 @@ _CODES = {
     "contract": frozenset("coverage_missing unavailable".split()),
     "project": frozenset(("dependency_unverified",)),
     "profile": frozenset(
+        "instantiation_unverified "
         "routing_unverified record_unverified declaration_missing "
         "declaration_ambiguous declaration_unknown "
         "composition_unverified description_unverified shape_unverified "
