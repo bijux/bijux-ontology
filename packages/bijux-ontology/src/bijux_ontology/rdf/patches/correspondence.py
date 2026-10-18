@@ -354,6 +354,21 @@ def _execute(request: dict[str, object], budget: Budget) -> dict[str, object]:
         pairs[pair[0]] = pair[1]
     if any(token not in left_tokens for token in required):
         raise InputError("Required blank reference is outside the base witness")
+    if not left_tokens and not right_tokens:
+        # Qualified ground terms need no structural blank-node correspondence.
+        count = (
+            len(left.quads) + len(right.quads) + len(left.graphs) + len(right.graphs)
+        )
+        budget.consume("work", count + 2)
+        budget.consume("states", count)
+        budget.consume("bytes", 128 + 64 * count)
+        equal = (
+            left.kind == right.kind
+            and left.graph_selection == right.graph_selection
+            and set(left.graphs) == set(right.graphs)
+            and set(left.quads) == set(right.quads)
+        )
+        return {"status": "result", "equal": equal, "pairs": [], "ambiguous": []}
     left_graph, right_graph = _graph(left, budget), _graph(right, budget)
     first = tuple(pairs)
     second = tuple(pairs.values())
