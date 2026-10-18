@@ -228,7 +228,7 @@ _CODES = {
         "profile_behavior_changed "
         "path_field_unverified "
         "model_shape_unverified "
-        "dataset_scope_unverified "
+        "dataset_scope_unverified incremental_unverified "
         "backend_warning execution_incomplete feature_unverified "
         "path_unverified finding_unverified "
         "function_unavailable function_malformed function_untrusted "

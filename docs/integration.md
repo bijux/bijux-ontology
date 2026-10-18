@@ -384,6 +384,14 @@ selection requires explicit pair mode; findings retain report-local identities.
 
 For repeated datasets, use `with ShaclSession(shapes, ontology=ontology) as session:` from `bijux_ontology.shacl` and call `session.validate(data)`. The session owns its fixed resources and reuses one isolated worker; construct a new session to replace them. `validate_batch(datasets)` retains per-dataset results and explicit pending coverage. Deadlines include worker queueing and startup; cancellation, worker failure and close release owned processes. `scope="records"` preserves local conformance while leaving wider dataset conformance unverified. Sessions use shared platform process ownership; Windows runtime qualification remains pending.
 
+For checked RDF deltas, `prepare_incremental(data, shapes, use_shapes=(shape_iri,))`
+from `bijux_ontology.shacl.incremental` runs an actual baseline. Pass its owned
+`.state` and an exact `DatasetPatch` to `revalidate`. Complete passing local Core
+checks reuse unaffected named focus/shape pairs; target, schema, global and
+complex-path changes require full selected checking. Results retain checked and
+reused counts, raw executions and the checked patch. Unsupported shared anonymous
+identities yield no reusable state.
+
 For supplied SHACL shapes, `ShaclCoverageContract(minimum_focus=1,
 focus_nodes=record_iris, pairs=shape_focus_pairs)` from `bijux_ontology.shacl`
 requires completed root target evaluations when passed as `coverage=` to
