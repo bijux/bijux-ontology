@@ -20,13 +20,14 @@ from bijux_ontology.vocabulary.annotations.graphs.reading import (
     inspect_annotation_graph,
 )
 from bijux_ontology.vocabulary.annotations.graphs.types import (
+    AnnotationLiteralRepair,
     AnnotationPath,
     AnnotationStatement,
 )
 from bijux_ontology.vocabulary.authoring.checking import author_vocabulary
 
 from .checking import check_annotation_hygiene
-from .types import AnnotationLiteralRepair, HygieneCheck
+from .types import HygieneCheck
 
 
 def _same_path(left: AnnotationPath, right: AnnotationPath, operation: Budget) -> bool:

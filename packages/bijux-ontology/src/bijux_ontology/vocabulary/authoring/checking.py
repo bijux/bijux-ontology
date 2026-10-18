@@ -42,8 +42,10 @@ from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationValueEdit
-from bijux_ontology.vocabulary.annotations.hygiene.types import AnnotationLiteralRepair
+from bijux_ontology.vocabulary.annotations.graphs.types import (
+    AnnotationLiteralRepair,
+    AnnotationValueEdit,
+)
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.sources import OwnedSource
 from bijux_ontology.vocabulary.view import Vocabulary

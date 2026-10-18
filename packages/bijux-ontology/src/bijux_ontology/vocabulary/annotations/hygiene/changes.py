@@ -17,8 +17,7 @@ from bijux_ontology.vocabulary.annotations.graphs.reading import (
     _same,
     inspect_annotation_graph,
 )
-
-from .types import AnnotationLiteralRepair
+from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationLiteralRepair
 
 
 def repair_annotation_literal(
