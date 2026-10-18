@@ -438,6 +438,14 @@ use their existing JSON codecs. `project` takes `configuration` and an absolute
 project jobs execute inside that owned worker; the host also enforces their
 configured job timeout, without creating an independent nested SHACL process.
 
+Use `check_project_parallel(configuration, workers=2, artifacts=Path("artifacts/checks"))`
+from `bijux_ontology.workflows.projects.parallel` for independent vocabulary,
+single-document context and SHACL jobs. Captured regular files and separate
+processes keep inputs stable. Disjoint grants share the configured budget; raw
+verified dependencies govern starts and results retain declaration order.
+Inspect `.jobs` and `.report`. Prepared resource revisions and other job profiles
+remain explicit unsupported scopes.
+
 For async hosts, use `async with AsyncChecks(executor, max_running=2, max_queued=8)`
 from `bijux_ontology.interfaces.execution.async_checks`, then await
 `checks.run(checks.prepare(operation, parameters))` or `checks.batch(requests)`.

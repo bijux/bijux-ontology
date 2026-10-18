@@ -130,7 +130,7 @@ _CODES = {
         "query_violation query_empty_scope".split()
     ),
     "contract": frozenset("coverage_missing unavailable".split()),
-    "project": frozenset(("dependency_unverified",)),
+    "project": frozenset("dependency_unverified job_pending input_error".split()),
     "profile": frozenset(
         "instantiation_unverified "
         "routing_unverified record_unverified declaration_missing "
@@ -346,10 +346,10 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "compose_profile(domain, {base.iri: base})",
     ),
     "project": (
-        "required earlier project checks",
-        "A required earlier check did not verify, so its dependent was not started.",
-        "Inspect the named prerequisite reports and resolve their failures or "
-        "missing coverage before rerunning the dependent check.",
+        "declared project jobs and required dependencies",
+        "Selected work is invalid, unavailable or awaiting unverified prerequisites.",
+        "Inspect original inputs, named prerequisite reports and limits before "
+        "rerunning the required scopes.",
         '{"name": "output", "kind": "emission", "depends_on": ["models"]}',
     ),
     "documents": (
