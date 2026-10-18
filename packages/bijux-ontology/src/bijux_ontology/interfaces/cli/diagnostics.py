@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "annotations": frozenset(
+        "minimum_missing maximum_exceeded language_minimum_missing "
+        "language_maximum_exceeded value_kind datatype entity_unresolved".split()
+    ),
     "serialization": frozenset(("coverage_missing",)),
     "selector": frozenset(
         "parent_count_mismatch count_mismatch "
@@ -192,6 +196,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "annotations": (
+        "selected annotation publication requirements",
+        "Selected values violate an explicit shape/count or remain unresolved.",
+        "Inspect the entity, predicate, language mode and owned source scopes; "
+        "select fallback explicitly.",
+        'AnnotationRequirement("urn:label", languages=(LanguageRequirement("en"),))',
+    ),
     "serialization": (
         "required representative serializer coverage",
         "Actual cases do not establish every selected alternative or scenario.",

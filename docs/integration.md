@@ -132,6 +132,13 @@ source-role priority and explicit untagged/other fallback when required.
 `matches_language("en-GB", "en")` is filtering only; it supplies no lookup
 fallback or publication-coverage guarantee.
 
+`check_annotation_coverage(view, requirements, kinds=(class_iri,))` applies
+`AnnotationRequirement` shape/count rules to every selected entity. Per-language
+`LanguageRequirement("en")` uses exact tags; `mode="basic"` can count `en-GB`.
+Fallback is explicit, requires an empty completed primary inventory and never
+fills a nonempty deficit. Original assertions and chosen fallback witnesses stay
+visible; incomplete inventories cannot establish missing minima.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.

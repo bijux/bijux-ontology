@@ -123,6 +123,13 @@ from bijux_ontology.skos.publication import (
     check_scheme_coverage,
     check_top_concepts,
 )
+from bijux_ontology.vocabulary.annotations import (
+    AnnotationCoverage,
+    AnnotationRequirement,
+    LanguageCoverage,
+    LanguageRequirement,
+    check_annotation_coverage,
+)
 from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.collections import (
@@ -178,6 +185,8 @@ __all__ = [
     "ABSENT",
     "Absent",
     "AcceptancePolicy",
+    "AnnotationCoverage",
+    "AnnotationRequirement",
     "ArrayItems",
     "BranchCoverage",
     "Budget",
@@ -219,6 +228,8 @@ __all__ = [
     "JSONLDPreparation",
     "KeyedItems",
     "LabelHomonym",
+    "LanguageCoverage",
+    "LanguageRequirement",
     "LimitExceeded",
     "Limits",
     "Location",
@@ -280,6 +291,7 @@ __all__ = [
     "assess_models",
     "assess_upgrade",
     "canonicalize_rdf",
+    "check_annotation_coverage",
     "check_collection_sequence",
     "check_context",
     "check_contract",
