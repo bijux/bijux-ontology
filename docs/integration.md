@@ -676,6 +676,15 @@ mappings and requirements. Unresolved/custom output shapes remain unverified;
 absent optional fields are explicit sample exclusions. Preparation and checking
 share one operation budget. Success qualifies this output and these options.
 
+For computed Pydantic outputs, `model_declarations(..., field_contracts=...)`
+accepts the public computed member name and retains its serialization alias.
+Use `serializer_contracts={Model: declaration}` for explicitly described whole
+model output, including renamed nested fields and emission conditions. Pass the
+result as `check_instance(..., inventory=extraction, model=declaration.identifier)`
+to check one actual serialization. Whole output subsets without explicit
+`EmissionCoverage` remain unverified; sidecars preserve their independent RDF
+intent when a serializer or context changes.
+
 For LinkML, `interfaces.adapters.linkml.model_declarations(view,
 serializer="rdflib")` qualifies the maintained schema-driven RDFLib dumper.
 The view must be import-free or contain a fully resolved local import closure.

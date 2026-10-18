@@ -1,7 +1,7 @@
 """Real framework aliases and explicit serializer knowledge."""
 
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 import pytest
 from pydantic import BaseModel, Field, computed_field, field_serializer
@@ -224,3 +224,86 @@ def test_sidecars_retain_mapping_conflicts_and_unknown_serializer_output() -> No
         model_declarations(
             {Record: ()}, field_contracts={(Record, "missing"): described}
         )
+
+
+def test_output_registries_preserve_conflicts_and_bounded_prefixes() -> None:
+    from dataclasses import replace
+
+    from bijux_ontology.declarations.types import ModelDeclaration
+    from bijux_ontology.limits import Budget, Limits
+
+    small = RdfField(
+        str(EX.title),
+        (Value("literal", datatype=str(XSD.string)),),
+        output_contract=True,
+    )
+
+    class Prior(BaseModel):
+        title: Annotated[str, small]
+
+    class Oversized(BaseModel):
+        title: Annotated[
+            str,
+            RdfField("urn:" + "x" * 2000, (Value("literal"),), output_contract=True),
+        ]
+
+    operation = Budget(Limits(max_bytes=1000, max_issues=1))
+    result = model_declarations(
+        {Prior: (), Oversized: ()},
+        identifiers={Prior: "prior", Oversized: "large"},
+        field_contracts={(Prior, "title"): replace(small, predicate=str(EX.other))},
+        budget=operation,
+    )
+    assert result.report.outcome == "exhausted"
+    assert any(i.code == "adapter.mapping_conflict" for i in result.report.issues)
+    assert [d.identifier for d in result.declarations] == ["prior"]
+    with pytest.raises(InputError, match="cannot compete"):
+        model_declarations(
+            {Prior: ()},
+            field_contracts={(Prior, "title"): small},
+            serializer_contracts={Prior: ModelDeclaration("prior", ())},
+        )
+    with pytest.raises(InputError, match="identity or RDF types"):
+        model_declarations(
+            {Prior: ()}, serializer_contracts={Prior: ModelDeclaration("wrong", ())}
+        )
+
+    from rdflib import BNode, Literal, URIRef
+
+    changed = replace(small, predicate=str(EX.other))
+    for member in (Literal("title"), BNode("title"), URIRef("title")):
+        for reverse in (False, True):
+            entries = [((Prior, member), changed), ((Prior, "title"), small)]
+            if reverse:
+                entries.reverse()
+            assert len(dict(entries)) == 2
+            with pytest.raises(InputError, match="model/member pairs"):
+                model_declarations({Prior: ()}, field_contracts=dict(entries))
+
+    class DistinctHash(str):
+        def __hash__(self) -> int:
+            return hash(str(self)) + 1
+
+    duplicate: dict[tuple[type[BaseModel], str], RdfField] = {
+        (Prior, DistinctHash("title")): changed,
+        (Prior, "title"): small,
+    }
+    assert len(duplicate) == 2
+    with pytest.raises(InputError, match="after text normalization"):
+        model_declarations({Prior: ()}, field_contracts=duplicate)
+
+    class MemberName(str):
+        pass
+
+    assert model_declarations(
+        {Prior: ()}, field_contracts={(Prior, MemberName("title")): small}
+    ).report.verified
+
+    from pydantic import create_model
+
+    long = create_model("Long", **cast(dict[str, Any], {"f" * 700: (str, ...)}))
+    bounded = model_declarations(
+        {long: ()}, identifiers={long: "i" * 700}, limits=Limits(max_bytes=1000)
+    )
+    assert bounded.report.outcome == "exhausted"
+    assert all(len(i.location.encode()) <= 1000 for i in bounded.report.issues)

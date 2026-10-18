@@ -344,3 +344,338 @@ def test_custom_reference_only_child_does_not_claim_nested_model_coverage() -> N
         issue.code == "adapter.output_unverified" and issue.location == "/items"
         for issue in result.report.issues
     )
+
+
+def test_computed_sidecars_keep_members_aliases_and_actual_output() -> None:
+    from pydantic import computed_field
+
+    from bijux_ontology.interfaces.adapters.contracts import RdfField
+
+    calls: list[object] = []
+    dumps: list[dict[str, Any]] = []
+
+    class Computed(BaseModel):
+        kind: str = Field(default="Item", exclude=True)
+
+        def model_dump(self, **kwargs: Any) -> dict[str, Any]:
+            dumps.append(kwargs)
+            return {"@type": self.kind, **super().model_dump(**kwargs)}
+
+        label: str
+
+        @computed_field(alias="summaryName")
+        def summary(self) -> str:
+            calls.append("computed")
+            return self.label.upper()
+
+    sidecars: dict[tuple[type[BaseModel], str], RdfField] = {
+        (Computed, "label"): RdfField(
+            str(EX.label),
+            (ValueDeclaration("literal", datatype=str(XSD.string)),),
+            output_contract=True,
+        ),
+        (Computed, "summary"): RdfField(
+            str(EX.note),
+            (ValueDeclaration("literal", datatype=str(XSD.string)),),
+            output_contract=True,
+            emission="guaranteed",
+        ),
+    }
+    extraction = model_declarations(
+        {Computed: (str(EX.Item),)},
+        identifiers={Computed: "computed"},
+        field_contracts=sidecars,
+    )
+    assert extraction.report.verified, extraction.report.to_dict()
+    field = extraction.declarations[0].fields[-1]
+    assert field.name == "summary" and field.key == "summaryName"
+    from bijux_ontology.limits import Limits
+
+    stopped = check_instance(
+        Computed(label="Name"),
+        inventory=extraction,
+        model="computed",
+        vocabulary=vocabulary(),
+        context={**CONTEXT, "summaryName": str(EX.note)},
+        options={"mode": "json", "by_alias": True},
+        limits=Limits(max_work=1),
+    )
+    assert stopped.report.outcome == "exhausted"
+    assert not calls and not dumps and stopped.output_json is None
+    assert all(i.code != "input.empty_scope" for i in stopped.report.issues)
+    context = {**CONTEXT, "summaryName": str(EX.note)}
+    instance = Computed(label="Name")
+    actual = check_instance(
+        instance,
+        inventory=extraction,
+        model="computed",
+        vocabulary=vocabulary(),
+        context=context,
+        options={"mode": "json", "by_alias": True},
+    )
+    assert actual.report.verified, actual.report.to_dict()
+    assert actual.output == {"@type": "Item", "label": "Name", "summaryName": "NAME"}
+    assert calls == ["computed"]
+    assert dumps == [{"mode": "json", "by_alias": True}]
+    changed = check_instance(
+        instance,
+        inventory=extraction,
+        model="computed",
+        vocabulary=vocabulary(),
+        context={**context, "summaryName": str(EX.label)},
+        options={"mode": "json", "by_alias": True},
+    )
+    assert any(i.code == "context.mapping_mismatch" for i in changed.report.issues)
+    unowned = model_declarations(
+        {Computed: (str(EX.Item),)},
+        field_contracts={
+            key: value for key, value in sidecars.items() if key[1] != "summary"
+        },
+    )
+    assert any(
+        i.code == "adapter.computed_output_unverified" for i in unowned.report.issues
+    )
+
+    partial = model_declarations(
+        {Computed: (str(EX.Item),)},
+        identifiers={Computed: "computed"},
+        serializer_contracts={Computed: ModelDeclaration("computed", (str(EX.Item),))},
+    )
+    open_result = check_instance(
+        instance,
+        inventory=partial,
+        model="computed",
+        vocabulary=vocabulary(),
+        context=context,
+        options={"mode": "json", "by_alias": True},
+    )
+    assert open_result.report.outcome == "unverified"
+    assert any(i.code == "adapter.output_unverified" for i in open_result.report.issues)
+
+    class Collision(Computed):
+        label: str = Field(serialization_alias="summaryName")
+
+    with pytest.raises(InputError, match="computed serialization alias"):
+        model_declarations({Collision: (str(EX.Item),)})
+
+
+def test_whole_serializer_registry_checks_renamed_children_once() -> None:
+    from bijux_ontology.declarations.types import EmissionCoverage
+
+    calls: list[object] = []
+
+    class ChildOutput(BaseModel):
+        label: str
+
+    class ParentOutput(BaseModel):
+        child: ChildOutput
+        wrong: bool = False
+        missing: bool = False
+
+        @model_serializer
+        def serialized(self) -> dict[str, object]:
+            calls.append("model")
+            child = {"@type": "Item"}
+            if not self.missing:
+                child["label"] = self.child.label
+            return {"@type": "Catalogue", "changed" if self.wrong else "renamed": child}
+
+    child = ModelDeclaration(
+        "child-output",
+        (str(EX.Item),),
+        (
+            FieldDeclaration(
+                "label",
+                str(EX.label),
+                (ValueDeclaration("literal", datatype=str(XSD.string)),),
+                output=OutputRequirement(require_property=True),
+            ),
+        ),
+        coverage=EmissionCoverage(metadata=("@context", "@type")),
+    )
+    parent = ModelDeclaration(
+        "parent-output",
+        (str(EX.Catalogue),),
+        (
+            FieldDeclaration(
+                "child",
+                str(EX.items),
+                (ValueDeclaration("object", model="child-output"),),
+                key="renamed",
+                output=OutputRequirement(require_property=True),
+            ),
+        ),
+        coverage=EmissionCoverage(metadata=("@context", "@type")),
+    )
+    extraction = model_declarations(
+        {ParentOutput: parent.types, ChildOutput: child.types},
+        identifiers={ParentOutput: parent.identifier, ChildOutput: child.identifier},
+        serializer_contracts={ParentOutput: parent, ChildOutput: child},
+    )
+    assert extraction.report.verified
+    assert extraction.declarations == (parent, child)
+    context = {**CONTEXT, "renamed": str(EX.items), "changed": str(EX.changed)}
+    for wrong, missing in ((False, False), (True, False), (False, True)):
+        result = check_instance(
+            ParentOutput(child=ChildOutput(label="Name"), wrong=wrong, missing=missing),
+            inventory=extraction,
+            model=parent.identifier,
+            vocabulary=vocabulary(),
+            context=context,
+            options=OPTIONS,
+        )
+        assert result.report.verified is (not wrong and not missing), (
+            result.report.to_dict()
+        )
+        if not wrong and not missing:
+            assert result.output == {
+                "@type": "Catalogue",
+                "renamed": {"@type": "Item", "label": "Name"},
+            }
+        else:
+            assert any(i.kind == "finding" for i in result.report.issues)
+    assert calls == ["model"] * 3
+    assert parent.fields[0].name == "child" and parent.fields[0].key == "renamed"
+
+
+def test_whole_serializer_conditions_use_actual_emitted_discriminators() -> None:
+    from rdflib import Literal
+
+    from bijux_ontology.declarations.types import (
+        EmissionCondition,
+        EmissionCoverage,
+        EmissionGroup,
+        EmissionScenario,
+    )
+
+    class BranchOutput(BaseModel):
+        mode: str
+        wrong: bool = False
+
+        @model_serializer
+        def serialized(self) -> dict[str, object]:
+            selected = "a" if (self.mode == "left") != self.wrong else "b"
+            return {"@type": "Item", "mode": self.mode, selected: "Name"}
+
+    declaration = ModelDeclaration(
+        "branch-output",
+        (str(EX.Item),),
+        tuple(
+            FieldDeclaration(
+                name,
+                str(EX[name] if name != "mode" else EX.note),
+                (ValueDeclaration("literal", datatype=str(XSD.string)),),
+                emission="optional",
+            )
+            for name in ("mode", "a", "b")
+        ),
+        emission_groups=(
+            EmissionGroup(
+                "choice",
+                ("a", "b"),
+                minimum=1,
+                maximum=1,
+                closed=True,
+                scenarios=(
+                    EmissionScenario(
+                        "left", ("a",), EmissionCondition("mode", Literal("left"))
+                    ),
+                    EmissionScenario(
+                        "right", ("b",), EmissionCondition("mode", Literal("right"))
+                    ),
+                ),
+            ),
+        ),
+        coverage=EmissionCoverage(metadata=("@context", "@type")),
+    )
+    extraction = model_declarations(
+        {BranchOutput: declaration.types},
+        identifiers={BranchOutput: declaration.identifier},
+        serializer_contracts={BranchOutput: declaration},
+    )
+    context = {**CONTEXT, "mode": str(EX.note), "a": str(EX.a), "b": str(EX.b)}
+    graph = vocabulary()
+    for predicate in (EX.a, EX.b):
+        graph.add((predicate, RDF.type, OWL.DatatypeProperty))
+        graph.add((predicate, RDFS.range, XSD.string))
+    for mode, wrong in (("left", False), ("right", False), ("left", True)):
+        result = check_instance(
+            BranchOutput(mode=mode, wrong=wrong),
+            inventory=extraction,
+            model=declaration.identifier,
+            vocabulary=graph,
+            context=context,
+            options=OPTIONS,
+        )
+        assert result.report.verified is not wrong, result.report.to_dict()
+        if wrong:
+            assert any(
+                i.code == "emission.scenario_mismatch" for i in result.report.issues
+            )
+
+
+def test_serializer_failure_metadata_uses_the_bounded_native_boundary() -> None:
+    from bijux_ontology.interfaces.adapters.contracts import RdfField
+    from bijux_ontology.limits import Limits
+
+    formatted: list[bool] = []
+
+    class UnsafeError(Exception):
+        def __str__(self) -> str:
+            formatted.append(True)
+            raise AssertionError("Caller formatting must not execute")
+
+    UnsafeError.__name__ = "x" * 100_000
+
+    class FailedOutput(BaseModel):
+        label: Annotated[
+            str,
+            RdfField(
+                str(EX.label),
+                (ValueDeclaration("literal", datatype=str(XSD.string)),),
+                output_contract=True,
+            ),
+        ] = "declared"
+        problem: ClassVar[Exception] = UnsafeError()
+
+        def model_dump(self, **kwargs: Any) -> dict[str, Any]:
+            raise self.problem
+
+    for error, outcome in (
+        (UnsafeError(), "input_error"),
+        (ValueError("😀" * 1000), "exhausted"),
+    ):
+        FailedOutput.problem = error
+        result = check_instance(
+            FailedOutput(),
+            vocabulary=vocabulary(),
+            options={"mode": "json"},
+            limits=Limits(max_bytes=1000),
+        )
+        assert result.output_json is None and not result.report.verified
+        assert result.report.issues[-1].kind == outcome
+        assert all(len(i.message.encode()) <= 1000 for i in result.report.issues)
+    FailedOutput.problem = UnsafeError()
+    prior = model_declarations(
+        {FailedOutput: (str(EX.Item),)},
+        identifiers={FailedOutput: "failed"},
+        field_contracts={
+            (FailedOutput, "label"): RdfField(
+                str(EX.note),
+                (ValueDeclaration("literal", datatype=str(XSD.string)),),
+                output_contract=True,
+            )
+        },
+    )
+    assert any(i.code == "adapter.mapping_conflict" for i in prior.report.issues)
+    limited = check_instance(
+        FailedOutput(),
+        inventory=prior,
+        vocabulary=vocabulary(),
+        options={"mode": "json"},
+        limits=Limits(max_bytes=1000, max_issues=1),
+    )
+    assert limited.report.outcome == "exhausted"
+    assert any(i.code == "adapter.mapping_conflict" for i in limited.report.issues)
+    assert sum(i.kind != "exhausted" for i in limited.report.issues) == 1
+    assert not formatted
