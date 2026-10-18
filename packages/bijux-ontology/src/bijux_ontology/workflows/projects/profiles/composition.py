@@ -11,7 +11,7 @@ from bijux_ontology.workflows.projects.bundles import PreparedBundle, load_bundl
 
 from .conflicts import shape_conflicts
 from .execution import EffectiveProfile
-from .identity import identities
+from .identity import execution_digest, identities
 from .loading import _items, _qualify_profile, _text
 from .types import ProfileDecision, ProfileLayer, ValidationProfile
 
@@ -145,7 +145,15 @@ def compose_profile(
             names = tuple(_text(job.get("name"), operation) for job in jobs)
             bundles[iri] = bundle
             layers.append(
-                ProfileLayer(iri, profile, bundle, iri in required, True, names)
+                ProfileLayer(
+                    iri,
+                    profile,
+                    bundle,
+                    iri in required,
+                    True,
+                    names,
+                    execution_digest=execution_digest(profile, bundle, operation),
+                )
             )
         decisions = shape_conflicts(tuple(layers), operation, issues)
     except LimitExceeded as error:

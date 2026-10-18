@@ -18,7 +18,7 @@ from bijux_ontology.workflows.projects.contracts import (
 )
 from bijux_ontology.workflows.projects.inputs import ShaclJobInput, capture_job_inputs
 
-from .identity import digest, layer_key
+from .identity import digest, execution_digest, layer_key
 from .loading import _items, _qualify_profile, _text
 from .types import ProfileDecision, ProfileLayer
 
@@ -115,6 +115,16 @@ def _selected_inventory(profile: EffectiveProfile, budget: Budget) -> None:
         if raw.selected:
             if raw.bundle is None:
                 raise InputError("Selected profiles require owned bundles")
+            if (
+                raw.profile is None
+                or not isinstance(raw.execution_digest, str)
+                or len(raw.execution_digest) != 64
+                or execution_digest(raw.profile, raw.bundle, budget)
+                != raw.execution_digest
+            ):
+                raise InputError(
+                    "Profile executable content differs from its composition"
+                )
             actual = tuple(
                 _text(object_value(job, location="profile jobs").get("name"), budget)
                 for job in _items(raw.bundle.configuration.checks(), budget)

@@ -1,6 +1,6 @@
 """Immutable profile metadata and reviewable selected-layer composition."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import Literal
@@ -60,6 +60,7 @@ class ProfileLayer:
     required: bool
     selected: bool
     jobs: tuple[str, ...] = ()
+    execution_digest: str | None = field(default=None, kw_only=True)
 
 
 @dataclass(frozen=True)

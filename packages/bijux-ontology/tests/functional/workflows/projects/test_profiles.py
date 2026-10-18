@@ -10,6 +10,7 @@ import pytest
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
+from bijux_ontology.workflows.projects.bundles import load_bundle
 from bijux_ontology.workflows.projects.profiles import (
     ProfileShapes,
     compose_profile,
@@ -369,4 +370,42 @@ def test_profile_runs_versioned_emission_jobs_and_dependency_truth(
     assert any(
         issue.code == "emission.required_occurrence_missing"
         for issue in failed.report.issues
+    )
+
+
+def test_executable_bundle_replacement_cannot_drop_or_weaken_required_jobs(
+    tmp_path: Path,
+) -> None:
+    """Content witnesses bind composition to exact executable owned resources."""
+    original = load_profile(
+        _package(tmp_path / "original", "urn:profile", shape="urn:Shape", count=2)
+    )
+    effective = compose_profile(original, {})
+    assert effective.report.verified
+    assert not effective.check(tmp_path / "original-run").report.verified
+    for name, shape in (("omitted", None), ("weakened", "urn:Shape")):
+        path = _package(tmp_path / name, "urn:profile", shape=shape, count=0)
+        bundle = load_bundle(path)
+        altered = replace(
+            effective,
+            layers=(
+                replace(
+                    effective.layers[0],
+                    bundle=bundle,
+                    jobs=tuple(
+                        str(job["name"]) for job in bundle.configuration.checks()
+                    ),
+                ),
+            ),
+        )
+        destination = tmp_path / (name + "-run")
+        assert not altered.check(destination).report.verified
+        assert not destination.exists()
+    # Independent reconstruction from identical owned package content is valid.
+    reconstructed = replace(
+        effective,
+        layers=(replace(effective.layers[0], bundle=load_bundle(original.source)),),
+    )
+    assert (
+        reconstructed.check(tmp_path / "reconstructed").report.outcome == "disagreement"
     )
