@@ -28,6 +28,9 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "temporal": frozenset(
+        "order_unverified value_missing order_violation invalid".split()
+    ),
     "csvw": frozenset(
         "cell_invalid duplicate_key extraction_unverified input_invalid".split()
     ),
@@ -349,6 +352,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "temporal": (
+        "explicit emitted-record calendar contracts",
+        "A selected interval or chronology disagrees or lacks a determinate order.",
+        "Inspect the actual field text, declared datatype, timezone and explicit "
+        "clock; keep unsupported precision or calendar arithmetic unknown.",
+        "check_temporal(record, intervals=(interval,))",
+    ),
     "csvw": (
         "explicit CSVW-described table extraction",
         "A selected cell, declared key or required conversion rule is unqualified.",

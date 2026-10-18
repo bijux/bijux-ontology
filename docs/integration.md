@@ -1408,3 +1408,10 @@ exact label integrity and language coverage. Execute the returned components
 with the existing trusted SHACL APIs against the same asserted physical graph.
 Keep the translation report: unsupported rules, XL-dependent combinations and
 unpreserved scope remain untranslated, even when an RDF artifact is available.
+
+`bijux_ontology.models.temporal.check_temporal` checks concrete emitted text fields
+using explicit `TemporalInterval`, `TemporalOrder` and `RelativeTemporal` rules.
+The `[xsd]` extra supplies maintained calendar arithmetic. Supported timezoned
+dates/dateTimes retain calendar months, exact chronology and explicit open ends;
+partial dates, absent timezones and excess precision remain unknown. Only relative
+rules use a supplied clock. Input spellings remain in the returned owned document.
