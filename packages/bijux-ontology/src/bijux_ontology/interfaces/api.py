@@ -262,6 +262,11 @@ from bijux_ontology.vocabulary.templates import (
 )
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
+from bijux_ontology.workflows.projects.building import (
+    ApplicationInput,
+    CorpusDocumentInput,
+    ProjectBuilder,
+)
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig, load_project
 from bijux_ontology.workflows.projects.contracts import (
@@ -319,6 +324,7 @@ __all__ = [
     "plan_rdf_patch",
     "ApplicationDeclarationChange",
     "ApplicationField",
+    "ApplicationInput",
     "ApplicationOutput",
     "ApplicationSampleComparison",
     "ApplicationUpgrade",
@@ -362,6 +368,7 @@ __all__ = [
     "ContractObligation",
     "ContractResult",
     "CorpusBranch",
+    "CorpusDocumentInput",
     "CorpusCheck",
     "CorpusWitness",
     "DataView",
@@ -423,6 +430,7 @@ __all__ = [
     "PreparedUsages",
     "ProbeSample",
     "ProjectConfig",
+    "ProjectBuilder",
     "Property",
     "QueryResult",
     "QueryAnswers",

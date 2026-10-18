@@ -315,6 +315,16 @@ class ProjectResources:
         """Use the operation's explicit offline context resources and budget."""
         return self._contexts
 
+    def context_loader(self, budget: Budget) -> DocumentLoader:
+        """Reuse owned documents with fresh processor caches for one operation."""
+
+        def load(url: str, options: dict[str, object]) -> dict[str, object]:
+            """Acquire raw first-use snapshots under the revision's existing lock."""
+            with self.operation():
+                return self._documents(url, options)
+
+        return ContextResources(load, budget=budget)
+
     @property
     def imports(self) -> Mapping[str, RdfSource]:
         """Resolve only registered logical import IRIs through lazy snapshots."""

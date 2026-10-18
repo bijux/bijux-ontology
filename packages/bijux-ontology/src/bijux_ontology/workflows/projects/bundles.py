@@ -20,7 +20,7 @@ from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
-from bijux_ontology.workflows.projects.jobs import check_kind
+from bijux_ontology.workflows.projects.jobs import check_kind, input_paths
 
 
 class PreparedBundle:
@@ -56,6 +56,20 @@ class PreparedBundle:
         self.context_scope = tuple(contexts)
         self.context_documents = context_documents
         self.resource_paths = tuple(files)
+
+    @property
+    def configuration(self) -> ProjectConfig:
+        """Inspect a fresh configuration without changing this owned bundle."""
+        return ProjectConfig(
+            self._configuration.to_dict(),
+            directory=self._configuration.directory,
+            source=self._configuration.source,
+        )
+
+    @property
+    def files(self) -> Mapping[str, bytes]:
+        """Inspect immutable owned payloads without acquiring external inputs."""
+        return self._files
 
     @property
     def document_loader(self) -> DocumentLoader:
@@ -208,6 +222,8 @@ def load_bundle(
         context_inputs: list[tuple[str, object, str | None]] = []
         for job in config.checks():
             kind = check_kind(job)
+            for _, value in input_paths(job):
+                member(value)
             members = job.get("documents", [])
             if not isinstance(members, list):
                 raise InputError("Context batch documents must be an array")

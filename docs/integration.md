@@ -404,6 +404,21 @@ returns a project configuration. The CLI accepts `project BUNDLE --bundle`.
 Completeness covers the selected RDF closure and exercised context positions;
 it does not establish semantic acceptance or coverage of future scoped contexts.
 
+Project version 2 adds file-backed `emission`, `context-corpus` and `upgrade`
+jobs. `ProjectBuilder(directory=path)` builds the same `ProjectConfig` consumed by
+`bijux-ontology project project.json`; its `emission`, `context_corpus` and
+`upgrade` methods accept explicit input filenames. `CorpusDocumentInput` names
+actual before/after documents and expectations; `ApplicationInput` selects a
+vocabulary and a data-only application record. Emission jobs check supplied
+serialized output through `check_emission`; serializer callbacks stay in ordinary
+Python APIs. Application records use version 1 with `terms`, `models`, `fields`,
+`outputs` and optional context/resources, reusing declaration and usage codecs.
+
+Every job can name earlier required jobs with `depends_on`. A failed or
+unverified prerequisite blocks its dependents while independent jobs retain their
+results. Acceptance exceptions do not turn an unverified prerequisite into truth.
+Version 1 projects retain their existing job schema.
+
 `prove_obligations` answers typed `OntologyObligation` questions independently,
 retaining established, contradicted or unknown status and compact witnesses.
 `assess_models(..., obligations=...)` retains raw `model_report` and requires every

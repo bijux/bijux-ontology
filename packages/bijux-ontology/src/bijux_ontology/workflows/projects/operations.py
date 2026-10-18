@@ -32,6 +32,12 @@ def run_check(
 ) -> Report:
     """Execute one supported check using its operation-owned explicit inputs."""
     config = resources.configuration
+    if kind in ("emission", "context-corpus", "upgrade"):
+        from bijux_ontology.workflows.projects.application_jobs import (
+            run_application_job,
+        )
+
+        return run_application_job(kind, job, resources)
 
     def snapshot(key: str) -> object:
         """Read one explicitly selected bounded JSON input."""

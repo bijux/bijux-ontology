@@ -18,6 +18,14 @@ from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import AcceptancePolicy, IssueSelection, Severity
+from bijux_ontology.workflows.projects.jobs import (
+    APPLICATION_KINDS,
+    check_kind,
+    dependencies,
+)
+from bijux_ontology.workflows.projects.jobs import (
+    input_paths as job_input_paths,
+)
 
 
 class ProjectConfig:
@@ -35,8 +43,11 @@ class ProjectConfig:
             {"version", "rdf", "contexts", "checks", "policy", "limits"},
             location=source,
         )
-        if type(owned.get("version")) is not int or owned["version"] != 1:
-            raise InputError("Project version must be 1", location=source + "/version")
+        if type(owned.get("version")) is not int or owned["version"] not in (1, 2):
+            raise InputError(
+                "Project version must be 1 or 2", location=source + "/version"
+            )
+        self.version = owned["version"]
         self.directory = directory.resolve()
         self.source = source
         self._data = owned
@@ -124,14 +135,28 @@ class ProjectConfig:
                 "A project requires a nonempty checks array",
                 location=source + "/checks",
             )
-        names = set()
+        names: set[str] = set()
         for index, raw in enumerate(checks):
             where = f"{source}/checks/{index}"
             check = object_value(raw, location=where)
             name = text_value(check.get("name"), location=where + "/name")
-            text_value(check.get("kind"), location=where + "/kind")
+            kind = text_value(check.get("kind"), location=where + "/kind")
             if name in names:
                 raise InputError("Check names must be unique", location=where + "/name")
+            if self.version == 1 and (
+                kind in APPLICATION_KINDS or "depends_on" in check
+            ):
+                raise InputError(
+                    "Application jobs and dependencies require project version 2",
+                    location=where,
+                )
+            if self.version == 2:
+                check_kind(check)
+                if set(dependencies(check)) - names:
+                    raise InputError(
+                        "Job dependencies must name earlier declared checks",
+                        location=where,
+                    )
             names.add(name)
 
     def path(self, value: object, *, location: str = "") -> Path:
@@ -146,26 +171,34 @@ class ProjectConfig:
         """Return independently owned selected jobs in their declared order."""
         return tuple(deepcopy(cast(list[dict[str, object]], self._data["checks"])))
 
+    def input_paths(self) -> tuple[Path, ...]:
+        """Return directly declared filenames without acquiring their contents."""
+        paths = [cast(Path, item.content) for item in self.rdf.values()]
+        paths.extend(self.contexts.values())
+        for check in self.checks():
+            paths.extend(self.path(value) for _, value in job_input_paths(check))
+        return tuple(dict.fromkeys(paths))
+
+    def _resolved_check(self, check: dict[str, object]) -> dict[str, object]:
+        """Resolve only known file slots in this independently owned job copy."""
+        for path, value in job_input_paths(check):
+            current: object = check
+            for part in path[:-1]:
+                if isinstance(current, dict) and isinstance(part, str):
+                    current = current.get(part)
+                elif isinstance(current, list) and isinstance(part, int):
+                    current = current[part]
+                else:
+                    raise InputError("Invalid configured input path")
+            key = path[-1]
+            if not isinstance(current, dict) or not isinstance(key, str):
+                raise InputError("Invalid configured input filename")
+            current[key] = str(self.path(value))
+        return check
+
     def explain(self) -> dict[str, object]:
         """Describe only selected resources, paths, limits and acceptance policy."""
-        checks = list(self.checks())
-        for check in checks:
-            members = check.get("documents", [])
-            if not isinstance(members, list):
-                raise InputError("Context batch documents must be an array")
-            jobs = [
-                check,
-                *(object_value(member, location="documents") for member in members),
-            ]
-            for job in jobs:
-                if check["kind"] == "query-rules" and "rules" in job:
-                    job["rules"] = str(self.path(job["rules"]))
-                for key in ("inventory", "declarations", "document", "expectations"):
-                    if (
-                        check["kind"] in ("vocabulary", "models", "context")
-                        and key in job
-                    ):
-                        job[key] = str(self.path(job[key]))
+        checks = [self._resolved_check(check) for check in self.checks()]
         return {
             "source": self.source,
             "directory": str(self.directory),

@@ -1,18 +1,23 @@
 """Reuse explicit local resources while retaining every selected check outcome."""
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from typing import cast
 
 from bijux_ontology._json import known_keys, object_value
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
+from bijux_ontology.rdf.roles.classification import bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Issue, IssueKind, Report, combine_reports
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
-from bijux_ontology.workflows.projects.jobs import check_kind
+from bijux_ontology.workflows.projects.jobs import (
+    APPLICATION_KINDS,
+    check_kind,
+    dependencies,
+)
 from bijux_ontology.workflows.projects.operations import run_check
 from bijux_ontology.workflows.projects.resources import ProjectResources
 
@@ -52,24 +57,79 @@ def _replace_issue(report: Report, before: Issue, after: Issue) -> Report:
     )
 
 
-def _aggregate(scope: str, reports: list[Report], pending: tuple[str, ...]) -> Report:
+def _pending_names(names: Iterable[str], count: int, budget: Budget) -> tuple[str, ...]:
+    """Describe pending scopes only when their complete inventory fits the budget."""
+    try:
+        budget.consume("states", count)
+        selected: list[str] = []
+        size = 0
+        for name in names:
+            bound_text(name, budget)
+            size += len(name.encode("utf-8")) + (2 if selected else 0)
+            if size > budget.limits.max_bytes:
+                raise LimitExceeded("Project pending scope inventory exceeds max_bytes")
+            selected.append(name)
+        budget.consume("bytes", size)
+        budget.consume("work", size)
+        return tuple(selected)
+    except LimitExceeded:
+        return ()
+
+
+def _aggregate(
+    scope: str, reports: list[Report], pending_count: int, pending: tuple[str, ...]
+) -> Report:
     result = combine_reports(scope, *reports)
-    if not pending:
+    if not pending_count:
         return result
     for issue in reversed(result.issues):
         if issue.kind == "exhausted":
             described = replace(
                 issue,
                 message=issue.message
-                + f"; {len(pending)} required scopes were not started",
-                expected=", ".join(pending),
+                + f"; {pending_count} required scopes were not started",
+                expected=", ".join(pending) if pending else None,
             )
             result = _replace_issue(result, issue, described)
             break
     return replace(
         result,
-        requested=(result.requested or 0) + len(pending),
+        requested=(result.requested or 0) + pending_count,
         complete=False,
+    )
+
+
+def _dependency_report(
+    job: dict[str, object], previous: Mapping[str, Report], budget: Budget
+) -> Report | None:
+    """Keep prerequisite truth separate from process-policy acceptance."""
+    missing: list[str] = []
+    size = 0
+    for name in dependencies(job):
+        bound_text(name, budget)
+        report = previous.get(name)
+        if report is None or not report.verified:
+            budget.consume("states")
+            size += len(name.encode("utf-8")) + (2 if missing else 0)
+            missing.append(name)
+    if not missing:
+        return None
+    if size > budget.limits.max_bytes:
+        raise LimitExceeded("Project dependency diagnostic exceeds max_bytes")
+    budget.consume("bytes", size)
+    budget.consume("work", size)
+    return Report(
+        cast(str, job["name"]),
+        requested=1,
+        complete=False,
+        issues=(
+            Issue(
+                "project.dependency_unverified",
+                "Required earlier jobs did not verify; this job was not started",
+                expected=", ".join(missing),
+                kind="unverified",
+            ),
+        ),
     )
 
 
@@ -164,16 +224,32 @@ class PreparedChecks:
                 issue.kind == "exhausted" for issue in report.issues
             ):
                 break
-        pending = tuple(
-            f"{job['name']}/documents/{index}"
-            for index in range(len(reports), len(members))
+        count = len(members) - len(reports)
+        pending = _pending_names(
+            (
+                f"{job['name']}/documents/{index}"
+                for index in range(len(reports), len(members))
+            ),
+            count,
+            work,
         )
-        return _aggregate(str(job["name"]), reports, pending)
+        return _aggregate(str(job["name"]), reports, count, pending)
 
     def check(self, job: dict[str, object]) -> Report:
         """Validate and run one job, retaining lazy context-batch execution."""
         with self._resources.operation():
+            bound_text(
+                cast(str, job.get("name", "")), Budget(self.configuration.limits)
+            )
             kind = check_kind(job)
+            if self.configuration.version == 1 and (
+                kind in APPLICATION_KINDS or "depends_on" in job
+            ):
+                raise InputError(
+                    "Application jobs and dependencies require project version 2"
+                )
+            if dependencies(job):
+                raise InputError("Required job dependencies need project execution")
             if kind == "context" and "documents" in job:
                 return self._context_batch(job)
             return run_check(kind, job, self._resources)
@@ -194,13 +270,33 @@ def check_project(
     reports: list[Report] = []
     remaining = config.limits.max_issues
     work = Budget(config.limits)
+    previous: dict[str, Report] = {}
     jobs = config.checks()
     for index, job in enumerate(jobs):
-        name = cast(str, job["name"])
-        location = f"{config.source}/checks/{index}"
+        name = location = f"project/checks/{index}"
         try:
             work.consume("work")
-            report = replace(prepared.check(job), scope=name)
+            bound_text(config.source, work)
+            bound_text(cast(str, job["name"]), work)
+            candidate_location = f"{config.source}/checks/{index}"
+            bound_text(candidate_location, work)
+            location = candidate_location
+            name = cast(str, job["name"])
+            blocked = _dependency_report(job, previous, work)
+            report = (
+                blocked
+                if blocked is not None
+                else replace(
+                    prepared.check(
+                        {
+                            key: value
+                            for key, value in job.items()
+                            if key != "depends_on"
+                        }
+                    ),
+                    scope=name,
+                )
+            )
         except (OSError, UnicodeError, InputError) as error:
             kind = "exhausted" if isinstance(error, LimitExceeded) else "input_error"
             report = Report(
@@ -218,9 +314,15 @@ def check_project(
                 ),
             )
         remaining, retained = _retain_report(reports, report, remaining)
+        previous[name] = reports[-1]
         if completed is not None:
             completed(reports[-1])
         if not retained or any(issue.kind == "exhausted" for issue in report.issues):
             break
-    pending = tuple(cast(str, job["name"]) for job in jobs[len(reports) :])
-    return _aggregate("project", reports, pending)
+    count = len(jobs) - len(reports)
+    pending = _pending_names(
+        (cast(str, jobs[index]["name"]) for index in range(len(reports), len(jobs))),
+        count,
+        work,
+    )
+    return _aggregate("project", reports, count, pending)
