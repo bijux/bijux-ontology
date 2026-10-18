@@ -762,6 +762,18 @@ be empty after the proposed moves. Exact terms, shared blanks and unrelated
 partitions remain intact. The same before/after contract and explicit export
 gate applies, including actual graph-local constraint failures.
 
+`execute_migration_plan(source, steps, final_checks=...)` runs explicit
+`MigrationStep` operations over independent owned snapshots. Each operation must
+satisfy its named preconditions, native migration report, exact current-base patch,
+returned candidate comparison and postconditions. Final checks run on the actual
+last candidate. A missing, failed or exhausted required gate withholds the final
+source; earlier patches and named failure evidence remain reviewable. Callback
+exceptions propagate, and trusted callbacks keep their ordinary Python lifetime.
+`export_migration_plan(result, accept=True, format="trig")` rechecks the retained
+final witness before serializing. `write_export(..., destination, overwrite=True)`
+publishes complete bytes atomically; failed staging or replacement preserves an
+existing file. Caller-owned binary streams retain ordinary streaming semantics.
+
 `bijux_ontology.workflows.upgrades.replacements.plan_replacements` accepts
 explicit `ApprovedReplacement` mappings, their entity roles and namespace owners.
 One-to-one changes rewrite selected declaration slots and actual RDF occurrences;

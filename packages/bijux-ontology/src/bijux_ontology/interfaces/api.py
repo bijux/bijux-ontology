@@ -304,6 +304,13 @@ from bijux_ontology.workflows.upgrades.corpus import (
     assess_context_corpus,
 )
 from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
+from bijux_ontology.workflows.upgrades.plans import (
+    MigrationPlanResult,
+    MigrationStep,
+    MigrationStepResult,
+    execute_migration_plan,
+    export_migration_plan,
+)
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
@@ -312,6 +319,9 @@ __all__ = [
     "LiteralConversion",
     "MigrationCandidate",
     "MigrationCheck",
+    "MigrationPlanResult",
+    "MigrationStep",
+    "MigrationStepResult",
     "ValueMap",
     "ValueMigrationCandidate",
     "ValueSelection",
@@ -542,6 +552,8 @@ __all__ = [
     "expectations_from_data",
     "export_jsonld",
     "export_rdf",
+    "execute_migration_plan",
+    "export_migration_plan",
     "extract_neighbourhood",
     "flatten_document",
     "frame_document",
