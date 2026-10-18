@@ -32,9 +32,25 @@ from bijux_ontology.shacl.model_shapes import (
 )
 from bijux_ontology.shacl.path_fields import PathFieldProjection, project_path_field
 from bijux_ontology.shacl.paths import ShaclPath
+from bijux_ontology.shacl.profiles import (
+    ProfileCase,
+    ProfileComparison,
+    ProfileExport,
+    ShapeDependency,
+    ShapeProfile,
+    export_profile,
+    extract_profile,
+)
 from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "ProfileCase",
+    "ProfileComparison",
+    "ProfileExport",
+    "ShapeDependency",
+    "ShapeProfile",
+    "export_profile",
+    "extract_profile",
     "PathFieldProjection",
     "project_path_field",
     "ModelShapeBinding",

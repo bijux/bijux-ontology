@@ -278,6 +278,15 @@ without returning partial shapes. It infers no constraints from ontology axioms.
 Use `validate_shapes(data, compiled, preflight=True)` to run maintained
 meta-SHACL and data validation; compilation alone does not establish conformance.
 
+`extract_profile(shapes, (root_iri,), cases=(ProfileCase("valid", data, True),))`
+from `bijux_ontology.shacl` captures finite referenced shapes, paths, lists and
+prefixes. Supply a separate `ontology=` resource when needed. Independent roots
+are omitted; unresolved or dynamic dependencies remain unverified. Inspect
+`structural_report` separately from the actual source/derived case comparisons.
+`export_profile(profile, format="turtle")` exports qualified shapes and ontology
+through faithful RDF serialization. Agreement covers supplied cases only;
+independent role exports cannot preserve shared anonymous constants across roles.
+
 Use `compile_model_shapes(models, bindings)` with explicit `ModelShapeBinding`
 targets to translate supported output declarations into the same typed shapes.
 Asserted model/value types use exact `rdf:type` values; subclass edges do not
@@ -648,8 +657,7 @@ Install `[jsonschema]` to import supported offline JSON Schema 2020-12 contracts
 `bijux_ontology.interfaces.adapters.jsonschema` exposes `SchemaModel`,
 `model_declarations` and `check_instance`. Supply explicit RDF classes and
 `RdfField` mappings for each referenced object variant. The checks invoke the
-real serializer once with
-its supplied options and returns the exact checked output. Set
+real serializer once with its supplied options and return the exact checked output. Set
 `output_schema=True` to check that output against the JSON Schema assertions.
 Schema `required` and `additionalProperties` remain JSON rules; RDF occurrence
 guarantees require explicit `OutputRequirement` records. Missing mappings,
