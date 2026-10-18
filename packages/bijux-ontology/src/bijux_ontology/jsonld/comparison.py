@@ -13,8 +13,8 @@ from rdflib.term import Node
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.roles.classification import bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_text
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report, combine_reports

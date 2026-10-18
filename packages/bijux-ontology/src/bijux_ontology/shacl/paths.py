@@ -7,8 +7,8 @@ from rdflib.term import Node
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.paths import RdfPath as ShaclPath
-from bijux_ontology.rdf.roles.classification import bound_node
 from bijux_ontology.rdf.structure import iter_rdf_list
+from bijux_ontology.rdf.terms import bound_node
 
 __all__ = ["ShaclPath", "decode_path"]
 

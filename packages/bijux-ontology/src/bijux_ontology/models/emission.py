@@ -41,8 +41,7 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.roles.classification import bound_text
-from bijux_ontology.rdf.terms import literal_term, term_key
+from bijux_ontology.rdf.terms import bound_text, literal_term, term_key
 from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.view import Vocabulary
 

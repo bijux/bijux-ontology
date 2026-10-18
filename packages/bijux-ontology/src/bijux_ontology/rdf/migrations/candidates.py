@@ -9,8 +9,8 @@ from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.planning import capture_items, capture_source
 from bijux_ontology.rdf.patches.types import DatasetPatch
-from bijux_ontology.rdf.roles.classification import bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.reports import Issue, Report
 

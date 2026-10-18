@@ -10,10 +10,9 @@ from bijux_ontology.errors import LimitExceeded
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.roles.classification import bound_node
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.rdf.terms import term_key
+from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.checking import ShaclResult
 from bijux_ontology.shacl.refinement.normalization import (
     Branch,

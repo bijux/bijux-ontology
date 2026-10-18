@@ -8,14 +8,10 @@ from rdflib import BNode, Graph, Literal, URIRef
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.roles.classification import (
-    bound_node,
-    bound_text,
-    classify_statement,
-)
+from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import Statement
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import literal_datatype, term_key
+from bijux_ontology.rdf.terms import bound_node, bound_text, literal_datatype, term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.loading import load_vocabulary

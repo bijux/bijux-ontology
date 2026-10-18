@@ -11,8 +11,8 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.execution import checkpoint
 from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.roles.classification import bound_node
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.authoring.compiling import _Compiler
 from bijux_ontology.shacl.authoring.types import ShaclCount, ShaclPropertyShape

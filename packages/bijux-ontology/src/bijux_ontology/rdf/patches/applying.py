@@ -9,9 +9,8 @@ from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.roles.classification import bound_text
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.terms import literal_term
+from bijux_ontology.rdf.terms import bound_text, literal_term
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.reports import Issue
 

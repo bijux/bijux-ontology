@@ -25,7 +25,7 @@ from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget
 from bijux_ontology.models.codecs import usages_from_data
 from bijux_ontology.models.emission import check_emission
-from bijux_ontology.rdf.roles.classification import bound_text
+from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 from bijux_ontology.workflows.projects.jobs import VocabularySelection, strings
 from bijux_ontology.workflows.projects.resources import ProjectResources

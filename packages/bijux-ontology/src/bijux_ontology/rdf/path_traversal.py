@@ -9,8 +9,7 @@ from rdflib.term import Node
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.paths import RdfPath
-from bijux_ontology.rdf.roles.classification import bound_node
-from bijux_ontology.rdf.terms import literal_term, term_key
+from bijux_ontology.rdf.terms import bound_node, literal_term, term_key
 
 
 class PathIdentityUnavailable(InputError):

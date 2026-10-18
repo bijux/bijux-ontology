@@ -20,9 +20,8 @@ from bijux_ontology.rdf.path_traversal import (
     path_values,
 )
 from bijux_ontology.rdf.paths import capture_path
-from bijux_ontology.rdf.roles.classification import bound_node, bound_text
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.terms import term_key
+from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
 from bijux_ontology.reports import Issue, Report
 
 from .types import TopologyRecord

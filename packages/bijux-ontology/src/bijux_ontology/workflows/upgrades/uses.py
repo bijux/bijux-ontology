@@ -17,7 +17,7 @@ from bijux_ontology.jsonld.observations import (
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.roles.classification import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
 
 UseRole = Literal["term", "class", "predicate", "datatype", "concept", "individual"]

@@ -7,7 +7,7 @@ from rdflib import BNode, URIRef
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.roles.classification import bound_node
+from bijux_ontology.rdf.terms import bound_node
 
 
 def _resource(value: object, budget: Budget) -> None:

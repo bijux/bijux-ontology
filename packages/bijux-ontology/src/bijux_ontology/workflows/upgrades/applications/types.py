@@ -24,7 +24,7 @@ from bijux_ontology.models.emission import ModelUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.models.serialization import InstanceCheck
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.roles.classification import bound_text
+from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.comparison import VocabularyChanges
 from bijux_ontology.workflows.upgrades.anonymous import AnonymousAffectedUse

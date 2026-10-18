@@ -19,9 +19,9 @@ from bijux_ontology.jsonld.resources import (
 )
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.loading import prepare_input
-from bijux_ontology.rdf.roles.classification import bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig

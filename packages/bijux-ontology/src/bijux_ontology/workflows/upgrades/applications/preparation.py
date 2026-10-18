@@ -24,8 +24,8 @@ from bijux_ontology.models.serialization import (
     check_instance,
     check_serialized,
 )
-from bijux_ontology.rdf.roles.classification import bound_node, bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary

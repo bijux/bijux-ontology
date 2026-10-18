@@ -7,9 +7,8 @@ from rdflib.term import Node
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.roles.classification import bound_node
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import literal_datatype
+from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.reports import Issue, Report
 
 from .loading import _qualify_profile, _text

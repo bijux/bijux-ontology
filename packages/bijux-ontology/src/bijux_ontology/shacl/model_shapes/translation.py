@@ -18,8 +18,7 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.application_values import retain_enumeration_report
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.roles.classification import bound_node, bound_text
-from bijux_ontology.rdf.terms import literal_term
+from bijux_ontology.rdf.terms import bound_node, bound_text, literal_term
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (

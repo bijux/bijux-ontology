@@ -17,10 +17,9 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.roles.classification import bound_node
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import read_rdf_list
-from bijux_ontology.rdf.terms import term_key
+from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.view import Vocabulary

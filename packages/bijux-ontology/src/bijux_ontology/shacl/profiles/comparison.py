@@ -11,8 +11,8 @@ from bijux_ontology.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.correspondence import Operation, compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.roles.classification import bound_node, bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.checking import ShaclResult
 from bijux_ontology.shacl.coverage import ShaclCoverageContract

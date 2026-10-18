@@ -12,7 +12,7 @@ from bijux_ontology.documents.archive import bundle_reader, resource_path
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.roles.classification import bound_text
+from bijux_ontology.rdf.terms import bound_text
 
 from .types import ProfileArtifact, ProfileParent, ProfileShapes, ValidationProfile
 
