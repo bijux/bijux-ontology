@@ -60,13 +60,13 @@ def _framing(text: str, operation: Operation) -> str:
     return "\n".join(header)
 
 
-def _metadata_keys(header: str, operation: Operation) -> None:
+def _metadata_keys(header: str, operation: Operation) -> frozenset[str]:
     """Qualify maintained YAML nodes for loss hazards, without reading fields."""
     import yaml  # type: ignore[import-untyped]
 
     root = yaml.compose(header, Loader=yaml.SafeLoader)
     if root is None:
-        return
+        return frozenset()
     if not isinstance(root, yaml.MappingNode):
         raise _Unsupported("SSSOM metadata requires a simple mapping")
     pending = [(root, 0, False)]
@@ -114,6 +114,9 @@ def _metadata_keys(header: str, operation: Operation) -> None:
             pending.extend((value, depth + 1, False) for value in node.value)
         else:
             raise _Unsupported("Unsupported YAML metadata node")
+    operation.consume("work", len(root.value))
+    operation.consume("states", len(root.value))
+    return frozenset(key.value for key, _value in root.value)
 
 
 def _capture(frame: Any, operation: Operation) -> tuple[list[str], list[list[str]]]:
@@ -190,7 +193,7 @@ def _prepare(request: dict[str, Any], operation: Operation) -> dict[str, object]
     operation.consume("bytes", len(content))
     text = content.decode("utf-8")
     header = _framing(text, operation)
-    _metadata_keys(header, operation)
+    authored_keys = _metadata_keys(header, operation)
     supplied = {}
     for key in ("mapping_set_id", "license"):
         value = request.get(key)
@@ -214,6 +217,8 @@ def _prepare(request: dict[str, Any], operation: Operation) -> dict[str, object]
                 strict=False,
                 meta=dict(supplied),
             )
+            if authored_keys - {"curie_map"} - parsed.metadata.keys():
+                raise _Unsupported("Maintained SSSOM parsing omitted authored metadata")
             if any(
                 parsed.metadata.get(key) != value for key, value in supplied.items()
             ):

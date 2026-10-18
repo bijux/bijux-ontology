@@ -304,6 +304,16 @@ def test_lexical_parser_hazards_and_fabricated_defaults_never_pass() -> None:
     """Body hash/undefined prefixes/warnings cannot hide dropped row data."""
     if importlib.util.find_spec("sssom") is None:
         pytest.skip("Actual malformed-schema cases require the maintained backend")
+    for scalar in ("false", "0", "[]", "{}", "null"):
+        text = HEADER.replace("# curie_map:", "# other: " + scalar + "\n# curie_map:")
+        result = read_sssom(
+            (text + _row()).encode(), mapping_set_id=ID, license=LICENSE
+        )
+        assert result.mapping_set is None and result.report.outcome == "unverified"
+    retained = _read(
+        HEADER.replace("# curie_map:", "# other: 'false'\n# curie_map:") + _row()
+    )
+    assert json.loads(retained.metadata_json)["other"] == "false"
     for text in (
         "# mapping_set_id: urn:discarded\n" + HEADER + _row(),
         HEADER.replace(
