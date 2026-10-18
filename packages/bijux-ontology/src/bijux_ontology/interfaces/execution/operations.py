@@ -102,6 +102,8 @@ def execute_operation(
     parameters: dict[str, object],
     limits: Limits,
     completed: Callable[[Report], None],
+    *,
+    job_deadline: Callable[[float | None], None] | None = None,
 ) -> tuple[Report, object]:
     """Execute one supported public contract using owned resources and limits."""
     if operation not in OPERATIONS:
@@ -120,7 +122,12 @@ def execute_operation(
         project = ProjectConfig(
             config, directory=Path(string_value(parameters.get("directory")))
         )
-        return check_project(project, completed=completed), None
+        return check_project(
+            project,
+            completed=completed,
+            _owned_worker=job_deadline is not None,
+            _job_deadline=job_deadline,
+        ), None
     if operation == "vocabulary":
         known_keys(
             parameters,

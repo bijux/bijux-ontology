@@ -1,5 +1,7 @@
 """Reuse explicit local resources while retaining every selected check outcome."""
 
+import math
+import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from typing import cast
@@ -238,7 +240,11 @@ class PreparedChecks:
         return _aggregate(str(job["name"]), reports, count, pending)
 
     def check(
-        self, job: dict[str, object], *, shacl_input: ShaclJobInput | None = None
+        self,
+        job: dict[str, object],
+        *,
+        shacl_input: ShaclJobInput | None = None,
+        _owned_worker: bool = False,
     ) -> Report:
         """Validate and run one job, retaining lazy context-batch execution."""
         with self._resources.operation():
@@ -258,7 +264,13 @@ class PreparedChecks:
                 raise InputError("Required job dependencies need project execution")
             if kind == "context" and "documents" in job:
                 return self._context_batch(job)
-            return run_check(kind, job, self._resources, shacl_input=shacl_input)
+            return run_check(
+                kind,
+                job,
+                self._resources,
+                shacl_input=shacl_input,
+                _owned_worker=_owned_worker,
+            )
 
 
 def check_project(
@@ -266,6 +278,8 @@ def check_project(
     *,
     completed: Callable[[Report], None] | None = None,
     job_inputs: Mapping[str, ShaclJobInput] | None = None,
+    _owned_worker: bool = False,
+    _job_deadline: Callable[[float | None], None] | None = None,
 ) -> Report:
     """Retain completed sibling evidence when a required independent input fails."""
     prepared = (
@@ -298,6 +312,25 @@ def check_project(
             location = candidate_location
             name = cast(str, job["name"])
             blocked = _dependency_report(job, previous, work)
+            timeout = job.get("timeout", 30.0)
+            if (
+                _job_deadline is not None
+                and blocked is None
+                and job.get("kind") == "shacl"
+            ):
+                if timeout is not None and (
+                    type(timeout) not in (float, int)
+                    or not math.isfinite(cast(float, timeout))
+                    or cast(float, timeout) <= 0
+                ):
+                    raise InputError(
+                        "SHACL timeout must be positive and finite or None"
+                    )
+                _job_deadline(
+                    time.monotonic() + cast(float, timeout)
+                    if timeout is not None
+                    else None
+                )
             report = (
                 blocked
                 if blocked is not None
@@ -309,6 +342,7 @@ def check_project(
                             if key != "depends_on"
                         },
                         shacl_input=runtime.get(name),
+                        _owned_worker=_owned_worker,
                     ),
                     scope=name,
                 )
@@ -330,6 +364,8 @@ def check_project(
                     ),
                 ),
             )
+        if _job_deadline is not None:
+            _job_deadline(None)
         remaining, retained = _retain_report(reports, report, remaining)
         previous[name] = reports[-1]
         if completed is not None:

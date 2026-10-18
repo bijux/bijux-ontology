@@ -7,7 +7,10 @@ from typing import cast
 
 from bijux_ontology._json import decode_json, object_value, string_value
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.interfaces.execution.checkpoints import retain_completed
+from bijux_ontology.interfaces.execution.checkpoints import (
+    retain_completed,
+    retain_deadline,
+)
 from bijux_ontology.limits import Limits
 from bijux_ontology.reports import Issue, Location, Report
 
@@ -53,6 +56,7 @@ def execute(path: Path, cap: int) -> None:
             ),
             limits,
             completed,
+            job_deadline=lambda value: retain_deadline(value, path.parent),
         )
     except (InputError, OSError, MemoryError) as error:
         exhausted = isinstance(error, (LimitExceeded, MemoryError))
