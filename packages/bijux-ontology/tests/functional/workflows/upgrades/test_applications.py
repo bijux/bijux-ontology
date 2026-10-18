@@ -144,6 +144,7 @@ def test_actual_serializer_once_with_owned_options_and_resources() -> None:
     single = check_application(_schema(), version)
     assert single.report.verified
     assert calls == [(version.cases[0].instance, True)]
+    assert result.samples[0].before is not None
     assert single.samples["sample"].document == result.samples[0].before.document
 
 
@@ -571,8 +572,10 @@ def test_single_application_retains_actual_outputs_without_a_baseline() -> None:
     result = check_application(_schema(), version, budget=budget)
     assert result.report.verified
     assert result.version is version
+    original = version.outputs["sample"].document
+    assert isinstance(original, dict)
     assert result.samples["sample"].document == {
-        **version.outputs["sample"].document,
+        **original,
         "@context": version.context,
     }
     assert "sample" in result.sources
