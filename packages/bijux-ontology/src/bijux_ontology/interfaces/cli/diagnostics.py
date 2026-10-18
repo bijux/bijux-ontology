@@ -77,6 +77,9 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "key_absent key_multiple key_collision key_binding_unverified "
+        "key_path_unverified key_normalization_unverified "
+        "key_comparison_unverified key_corpus_unverified key_projection_unverified "
         "disjoint_conflict expression_unverified asserted_type_missing "
         "datatype_conflict datatype_unverified property_unverified property_conflict "
         "type_unverified query_kind_mismatch query_answer_mismatch "

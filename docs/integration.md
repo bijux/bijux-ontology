@@ -189,6 +189,19 @@ a sequence is available only for complete, fully ordered membership. Mixed or
 unordered membership supplies no total order. `nested="retain"` keeps child
 collections atomic; cycles, unresolved roles and exhausted bounds remain visible.
 
+Use `check_record_keys(records, KeyContract(name, components), complete=True)`
+for application uniqueness over an explicitly supplied corpus. `KeyRecord` binds
+each identifier and subject to an owned source and graph; `KeyComponent` accepts
+finite predicate, sequence and inverse RDFLib paths. Absence and multiplicity
+are explicit policies. Default equality is exact RDF identity; string business
+normalization and named semantic regimes require an explicit choice. Partial
+corpora and lossy literal preparation remain unverified; collisions retain their
+original values and source associations without implying OWL identity.
+`project_record_key` exports QueryRules and SHACL-SPARQL for supported exact
+singleton keys and named records in one graph. Keep its projection report
+alongside backend results, select the same graph, and use `trusted_sparql=True`
+for SHACL validation. Unsupported policies never acquire a verified projection.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model

@@ -2,6 +2,12 @@
 
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.data.compatibility import check_data_compatibility
+from bijux_ontology.data.keys import (
+    KeyProjection,
+    KeyRecord,
+    check_record_keys,
+    project_record_key,
+)
 from bijux_ontology.data.query_rules.checking import run_query_rules
 from bijux_ontology.data.query_rules.loading import (
     load_query_rules,
@@ -19,6 +25,7 @@ from bijux_ontology.declarations.codecs import (
     terms_from_data,
 )
 from bijux_ontology.declarations.enumerations import ValueEnumeration
+from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.declarations.resource_roles import ResourceRole, RoleBridge
 from bijux_ontology.declarations.types import (
     EmissionCondition,
@@ -241,6 +248,12 @@ from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
+    "KeyComponent",
+    "KeyContract",
+    "KeyProjection",
+    "KeyRecord",
+    "check_record_keys",
+    "project_record_key",
     "ABSENT",
     "Absent",
     "AcceptancePolicy",

@@ -3,6 +3,7 @@
 from bijux_ontology.absence import ABSENT, Absent
 
 from .enumerations import ValueEnumeration
+from .keys import KeyComponent, KeyContract
 from .types import (
     Emission,
     EmissionCondition,
@@ -20,6 +21,8 @@ from .types import (
 from .value_constraints import ValueConstraints
 
 __all__ = [
+    "KeyComponent",
+    "KeyContract",
     "ABSENT",
     "Absent",
     "Emission",
