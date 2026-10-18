@@ -1415,3 +1415,11 @@ The `[xsd]` extra supplies maintained calendar arithmetic. Supported timezoned
 dates/dateTimes retain calendar months, exact chronology and explicit open ends;
 partial dates, absent timezones and excess precision remain unknown. Only relative
 rules use a supplied clock. Input spellings remain in the returned owned document.
+
+`bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled` composes
+selected subsets and explicit enumerations with union, intersection and difference.
+Open-set absence cannot establish exclusion. `compile_bindings` prepares finite
+text-discriminator cases; `select_binding` captures an actual record without a
+fallback. Reuse its owned `.document`, or retain ordinary emission conditions and
+SHACL `hasValue` trait guards when checking other records. An enumeration alone
+does not reselect a changed trait. `closed_values()` requires complete evidence.
