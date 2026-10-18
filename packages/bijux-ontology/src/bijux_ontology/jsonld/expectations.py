@@ -175,12 +175,12 @@ def compare_usage(
                 )
             )
         traits = item.traits
-        comparisons.extend(
-            [
-                ("index_mismatch", expectation.index, traits.index),
-                ("list_index_mismatch", expectation.list_index, item.list_index),
-            ]
-        )
+        if expectation.index is not None:
+            comparisons.append(("index_mismatch", expectation.index, traits.index))
+        if expectation.list_index is not None:
+            comparisons.append(
+                ("list_index_mismatch", expectation.list_index, item.list_index)
+            )
         comparisons.extend(
             [
                 (
