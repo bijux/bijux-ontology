@@ -318,6 +318,14 @@ an explicit `ContainerContract("sequence")` or `ContainerContract("bag")`.
 `expected_values`; a bag also needs explicit numbered ordering. Original
 container data remains intact. Selected migration checks gate final export.
 
+The opt-in `rdf.triple_terms` API uses the explicit
+`TRIPLE_TERM_CONTRACT` for the RDF 1.2 April 2026 Candidate Recommendation and
+PyOxigraph 0.5.11. Call `prepare_triple_terms(RdfSource(...), contract=...)`,
+then inspect its `.snapshot` or `export_triple_terms(snapshot, format="nt-1.2")`.
+This graph-only snapshot retains actual nested terms and exact literals without
+asserting described triples. RDF 1.1 export, canonicalization, SHACL and
+reasoning APIs reject it; broader RDF 1.2 compatibility is not implied.
+
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
 `jsonld.html.extract_html_jsonld(content, document_url)` extracts JSON-LD
