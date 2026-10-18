@@ -590,3 +590,16 @@ unverified. `EmissionCondition(field, equals=literal_or_iri)` compares one exact
 RDF discriminator. Missing, multiple or unresolved terms remain unknown.
 Source presence/null requirements remain separate. Declaration compatibility and
 actual source/entity/native RDF checking preserve their respective scopes.
+
+
+`compare_applications(old_vocabulary, new_vocabulary, before=old, after=new)`
+checks separate `ApplicationVersion` declarations and actual outputs. Stable map
+keys and sample IDs establish consumer correspondence. `ApplicationField` binds
+an actual model field to explicit sample source paths; `ApplicationOutput`
+requires explicit `ModelUsage` bindings, while `SerializerCase` invokes the real
+callback once with its exact options. Inspect `candidate_report`, failure
+`contracts`, declaration changes, field representation, mapping and RDF dataset
+comparisons separately. Changed predicates remain visible even when both versions
+pass. Missing identities, ambiguous source ownership and unavailable baseline
+checks remain unverified; no matching is inferred from IRIs or diagnostic prose.
+Anonymous attachment impacts retain independent before/after use roles.

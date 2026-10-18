@@ -246,6 +246,16 @@ from bijux_ontology.workflows.projects.contracts import (
     check_contract,
 )
 from bijux_ontology.workflows.upgrades.anonymous import AnonymousAffectedUse
+from bijux_ontology.workflows.upgrades.applications import (
+    ApplicationDeclarationChange,
+    ApplicationField,
+    ApplicationOutput,
+    ApplicationSampleComparison,
+    ApplicationUpgrade,
+    ApplicationValueChange,
+    ApplicationVersion,
+    compare_applications,
+)
 from bijux_ontology.workflows.upgrades.assessment import (
     UpgradeAssessment,
     assess_upgrade,
@@ -261,6 +271,14 @@ from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
+    "ApplicationDeclarationChange",
+    "ApplicationField",
+    "ApplicationOutput",
+    "ApplicationSampleComparison",
+    "ApplicationUpgrade",
+    "ApplicationValueChange",
+    "ApplicationVersion",
+    "compare_applications",
     "IntermediateRequirement",
     "PathFieldDeclaration",
     "PathFieldUsage",

@@ -211,6 +211,8 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "application_unverified application_declaration_changed "
+        "application_value_changed "
         "fact_impact_unverified "
         "child_model_unavailable usage_unavailable deprecation_unverified "
         "corpus_baseline_missing corpus_candidate_missing "
