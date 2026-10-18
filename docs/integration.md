@@ -1106,3 +1106,12 @@ Physical graph pins remain scoped; explicit unions are flattened. For blank
 graph names, pass the actual returned `graph_name` to snapshot/check operations.
 Unsupported datatypes, unresolved imports and incomplete closure yield no checked
 derived/effective artifact. This finite rule closure does not certify OWL 2 DL.
+
+`bijux_ontology.shacl.partitions.check_partitions` takes a `PartitionPlan`
+selecting primary records and read-only support graphs from one owned dataset.
+Every `PartitionObligation` chooses `primary` or `merged` effective assertions;
+primary output fields cannot borrow support assertions. Support subjects do not
+become submissions. Cross-record constraints conservatively require declared
+complete primary data and actual complete target inventory/coverage. A partial
+conforming backend result cannot establish that scope. Inspect raw results,
+discovery and exact graph selectors alongside the required aggregate report.
