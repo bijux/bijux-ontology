@@ -407,9 +407,16 @@ The resulting `selected_facts` retains graph ownership, original RDF terms and
 per-position roles alongside categorized changes. Custom endpoint roles require
 explicit `subject_role`/`object_role` choices. Upgrade `role_uses` accepts explicit
 `RoleUse` contracts; `fact_uses` distinguishes direct from uncertain role joins.
-Anonymous comparisons preserve joint sharing through maintained RDF comparison;
-changed anonymous ownership remains unverified. Incomplete inventories establish
-no missing facts, and graph selectors never pair foreign blank labels.
+Anonymous comparisons preserve joint sharing through maintained RDF comparison.
+`VocabularyChanges.anonymous` retains complete original neighborhoods and their
+named subject attachments, including shared owners and actual graph provenance.
+`UpgradeAssessment.anonymous_uses` identifies affected supplied fields and named
+hierarchy dependencies. Relevant or unowned changes retain scoped uncertainty;
+complete unused attachments leave unrelated finite asserted checks complete.
+`change_qualification` explains this required consumer scope while the original
+selected-fact report remains available. Attachment attribution establishes no
+internal blank-node bijection or arbitrary OWL consequences. Incomplete
+inventories establish no missing facts; foreign blank labels establish no pairing.
 
 Use `ValueDeclaration("iri", role=ResourceRole("class", punning="allow"))`
 to select class identifiers explicitly. Concept and instance roles remain

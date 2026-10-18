@@ -173,6 +173,11 @@ from bijux_ontology.vocabulary.annotations import (
     LanguageRequirement,
     check_annotation_coverage,
 )
+from bijux_ontology.vocabulary.anonymous import (
+    AnonymousChange,
+    AnonymousDifferences,
+    NamedAttachment,
+)
 from bijux_ontology.vocabulary.browsing import (
     VocabularyCursor,
     VocabularyPage,
@@ -240,6 +245,7 @@ from bijux_ontology.workflows.projects.contracts import (
     ContractResult,
     check_contract,
 )
+from bijux_ontology.workflows.upgrades.anonymous import AnonymousAffectedUse
 from bijux_ontology.workflows.upgrades.assessment import (
     UpgradeAssessment,
     assess_upgrade,
@@ -338,6 +344,7 @@ __all__ = [
     "OboAttachment",
     "OboRecord",
     "OboRecords",
+    "NamedAttachment",
     "NamespaceContribution",
     "ModelUsage",
     "ObligationResult",
@@ -392,6 +399,9 @@ __all__ = [
     "ValueEnumeration",
     "ValueTraits",
     "Vocabulary",
+    "AnonymousAffectedUse",
+    "AnonymousChange",
+    "AnonymousDifferences",
     "AnonymousFactComparison",
     "FactAffectedUse",
     "FactGraph",

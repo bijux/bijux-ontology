@@ -28,12 +28,17 @@ from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.results import Deprecation
 from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.workflows.upgrades.anonymous import (
+    AnonymousAffectedUse,
+    anonymous_uses,
+)
 from bijux_ontology.workflows.upgrades.facts import (
     FactAffectedUse,
     change_roles,
     role_matches,
     selected_fact_uses,
 )
+from bijux_ontology.workflows.upgrades.qualification import consumer_change_report
 from bijux_ontology.workflows.upgrades.uses import Use, UseIndex, index_uses
 
 
@@ -80,6 +85,8 @@ class UpgradeAssessment:
     after: tuple[Report, ...]
     report: Report
     fact_uses: tuple[FactAffectedUse, ...] = field(default=(), kw_only=True)
+    anonymous_uses: tuple[AnonymousAffectedUse, ...] = field(default=(), kw_only=True)
+    change_qualification: Report | None = field(default=None, kw_only=True)
 
 
 def _key(issue: Issue) -> tuple[object, ...]:
@@ -178,7 +185,7 @@ def _affected_uses(
     *,
     role_aware: bool = False,
     fact_selection: FactSelection | None = None,
-) -> None:
+) -> dict[tuple[str, str], set[str]]:
     """Join actual references and role-specific named dependency paths."""
     by_iri: dict[str, list[Use]] = defaultdict(list)
     for use in uses.entries:
@@ -289,6 +296,7 @@ def _affected_uses(
                     budget.consume("states")
                     visited.add(child)
                     queue.append((child, (*path, iri)))
+    return children
 
 
 def _used_deprecations(
@@ -394,6 +402,7 @@ def assess_upgrade(
         differences = compare_vocabularies(
             before, after, scopes=scopes, fact_selection=fact_selection, budget=budget
         )
+        qualified_changes = consumer_change_report(differences, budget)
     except LimitExceeded as error:
         preparation_failed = True
         failed = IssueCollector(budget)
@@ -404,7 +413,8 @@ def assess_upgrade(
                 "vocabulary.changes", issues=tuple(failed), requested=1, complete=False
             ),
         )
-    list.extend(issues, (*uses.report.issues, *differences.report.issues))
+        qualified_changes = differences.report
+    list.extend(issues, (*uses.report.issues, *qualified_changes.issues))
     pairs: list[tuple[str, Report, Report]] = []
     deltas: list[ContractChange] = []
     affected: list[AffectedUse] = []
@@ -412,6 +422,7 @@ def assess_upgrade(
     complete = not preparation_failed
     checked = 0
     fact_uses: list[FactAffectedUse] = []
+    anonymous_impacts: list[AnonymousAffectedUse] = []
     views: tuple[VocabularyView, VocabularyView] | None = None
     try:
         references = tuple(
@@ -517,7 +528,7 @@ def assess_upgrade(
                     budget=budget if fact_selection is not None else None,
                 ),
             )
-        _affected_uses(
+        dependency_children = _affected_uses(
             differences,
             uses,
             views,
@@ -534,7 +545,16 @@ def assess_upgrade(
         _used_deprecations(
             uses, *views, replacement_predicates, budget, issues, deprecated
         )
-        if any(change.kind == "anonymous" for change in differences.changes):
+        if differences.anonymous is not None:
+            anonymous_uses(
+                differences.anonymous,
+                uses,
+                budget,
+                issues,
+                anonymous_impacts,
+                dependency_children=dependency_children,
+            )
+        elif any(change.kind == "anonymous" for change in differences.changes):
             issues.append(
                 Issue(
                     "upgrade.anonymous_impact_unverified",
@@ -599,7 +619,7 @@ def assess_upgrade(
         for delta in deltas
     )
     unverified = (
-        not complete or not uses.report.complete or not differences.report.complete
+        not complete or not uses.report.complete or not qualified_changes.complete
     )
     unverified |= any(issue.kind != "finding" for issue in issues)
     verdict: Literal[
@@ -637,9 +657,11 @@ def assess_upgrade(
             regime="finite-consumer-contracts",
             children=(
                 uses.report,
-                differences.report,
+                qualified_changes,
                 *(report for _, old, new in pairs for report in (old, new)),
             ),
         ),
         fact_uses=tuple(fact_uses),
+        anonymous_uses=tuple(anonymous_impacts),
+        change_qualification=qualified_changes,
     )
