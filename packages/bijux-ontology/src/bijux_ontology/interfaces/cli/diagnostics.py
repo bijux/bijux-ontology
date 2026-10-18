@@ -75,6 +75,9 @@ _CODES = {
         "structure_mismatch binding_unverified".split()
     ),
     "adapter": frozenset(
+        "shape_binding_unverified shape_constraint_untranslated "
+        "shape_list_unverified shape_output_backend_unavailable "
+        "shape_representation_unverified shape_source_scope_unverified "
         "bioregistry_unverified bioregistry_input_error "
         "schema_unverified schema_mismatch "
         "alias_unverified class_mapping_unverified computed_output_unverified "
@@ -183,6 +186,7 @@ _CODES = {
         "value_unverified".split()
     ),
     "owl": frozenset(
+        "conversion_loss conversion_unverified "
         "assertion_contradiction assertion_unverified backend_unavailable "
         "loader_unverified profile_unverified profile_violation".split()
     ),
