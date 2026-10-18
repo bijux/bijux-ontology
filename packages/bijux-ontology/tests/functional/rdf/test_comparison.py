@@ -1,5 +1,8 @@
 """RDF identity preserves blank-node structure, lexical values and graph scope."""
 
+import threading
+import time
+
 import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.collection import Collection
@@ -107,7 +110,7 @@ def test_ground_datasets_compare_without_starting_a_correspondence_worker(
         raise AssertionError("Ground comparison must not start a worker")
 
     monkeypatch.setattr(
-        "bijux_ontology.rdf.comparison.subprocess.Popen", unexpected_worker
+        "bijux_ontology.rdf.comparison.execute_worker", unexpected_worker
     )
     left = Dataset()
     right = Dataset()
@@ -188,3 +191,38 @@ def test_intrinsic_literal_aliases_have_set_semantics_without_lexical_coercion()
         )
         single.add((subject, EX.p, Literal("1", datatype=XSD.integer, normalize=False)))
         assert compare_rdf(aliases, single).outcome == "disagreement"
+
+
+def test_cancelled_comparison_is_incomplete_and_a_fresh_call_recovers() -> None:
+    """Cancellation cannot turn empty, ground or blank identity into agreement."""
+    cancel = threading.Event()
+    cancel.set()
+    for graph in (
+        Graph(),
+        Graph().add((EX.A, EX.p, EX.B)),
+        Graph().add((EX.A, EX.p, BNode())),
+    ):
+        report = compare_rdf(graph, graph, cancel=cancel)
+        assert report.outcome == "exhausted" and not report.complete
+        assert report.checked == 0
+    cancel.clear()
+    assert compare_rdf(graph, graph, cancel=cancel).verified
+
+
+def test_active_blank_comparison_cancels_before_its_worker_deadline() -> None:
+    """A live cancellation interrupts the maintained correspondence process."""
+    graph = Graph()
+    nodes = [BNode() for _ in range(100)]
+    for index, node in enumerate(nodes):
+        graph.add((node, EX.p, nodes[(index + 1) % len(nodes)]))
+    cancel = threading.Event()
+    timer = threading.Timer(0.05, cancel.set)
+    timer.start()
+    start = time.monotonic()
+    try:
+        report = compare_rdf(graph, graph, timeout_seconds=10, cancel=cancel)
+    finally:
+        timer.cancel()
+        timer.join()
+    assert report.outcome == "exhausted" and not report.complete
+    assert time.monotonic() - start < 2
