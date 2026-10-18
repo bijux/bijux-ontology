@@ -128,6 +128,9 @@ from .interfaces.api import (
     TermRoleOccurrence,
     TopConceptCheck,
     TopConceptPolicy,
+    TopologyContract,
+    TopologyRecord,
+    TopologyRelation,
     Transformation,
     UpgradeAssessment,
     UseIndex,
@@ -163,6 +166,7 @@ from .interfaces.api import (
     check_project,
     check_rdf_emission,
     check_record_keys,
+    check_record_topology,
     check_resource_roles,
     check_scheme_coverage,
     check_serializer_corpus,
@@ -223,6 +227,10 @@ from .interfaces.api import (
 )
 
 __all__ = [
+    "TopologyContract",
+    "TopologyRelation",
+    "TopologyRecord",
+    "check_record_topology",
     "KeyComponent",
     "KeyContract",
     "KeyProjection",

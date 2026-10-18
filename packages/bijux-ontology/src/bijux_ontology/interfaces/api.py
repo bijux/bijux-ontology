@@ -19,6 +19,7 @@ from bijux_ontology.data.query_rules.types import (
     QueryRuleResult,
 )
 from bijux_ontology.data.rules import DataView, run_rules
+from bijux_ontology.data.topology import TopologyRecord, check_record_topology
 from bijux_ontology.data.usage import check_data_usage
 from bijux_ontology.declarations.codecs import (
     models_from_data,
@@ -27,6 +28,7 @@ from bijux_ontology.declarations.codecs import (
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.declarations.resource_roles import ResourceRole, RoleBridge
+from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
 from bijux_ontology.declarations.types import (
     EmissionCondition,
     EmissionCoverage,
@@ -248,6 +250,10 @@ from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
+    "TopologyContract",
+    "TopologyRelation",
+    "TopologyRecord",
+    "check_record_topology",
     "KeyComponent",
     "KeyContract",
     "KeyProjection",

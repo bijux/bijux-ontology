@@ -202,6 +202,16 @@ singleton keys and named records in one graph. Keep its projection report
 alongside backend results, select the same graph, and use `trusted_sparql=True`
 for SHACL validation. Unsupported policies never acquire a verified projection.
 
+Use `check_record_topology(source, records, contract, roots=record_ids,
+complete=True, closure="closed")` for explicit application reachability,
+ownership and cycle rules. `TopologyRelation` selects each path's policy roles;
+references become containment only when declared. `TopologyRecord` binds a
+named or owned blank subject and optional known output location. Roots are
+exempt from minimum ownership, and explicit `shared_targets` from its maximum.
+The selected graph supplies all record and path support. Open or partial
+external scope retains unresolved absence; witnessed cycles and excess owners
+remain findings. This operation makes no OWL consistency claim.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model

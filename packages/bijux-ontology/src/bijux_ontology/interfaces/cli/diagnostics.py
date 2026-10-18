@@ -77,6 +77,11 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "topology_binding_unverified topology_corpus_unverified topology_cycle "
+        "topology_owners topology_path_unverified topology_record_missing "
+        "topology_reference_missing topology_reference_unverified "
+        "topology_roots_unverified topology_scope_unverified "
+        "topology_target_invalid topology_unreachable "
         "key_absent key_multiple key_collision key_binding_unverified "
         "key_path_unverified key_normalization_unverified "
         "key_comparison_unverified key_corpus_unverified key_projection_unverified "
