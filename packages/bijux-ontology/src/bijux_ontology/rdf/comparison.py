@@ -78,18 +78,27 @@ def _records(
 
 
 def _isomorphic(
-    payload: bytes, timeout_seconds: float, cancel: threading.Event | None
+    payload: bytes,
+    timeout_seconds: float,
+    cancel: threading.Event | None,
+    *,
+    _owned_worker: bool = False,
 ) -> bool:
     """Use the shared bounded transport to own cancellation and worker lifetime."""
     if timeout_seconds <= 0:
         raise LimitExceeded("RDF operation exceeded its wall-clock deadline")
-    output = execute_worker(
-        "bijux_ontology.rdf._comparison_worker",
-        payload,
-        cap=max(len(payload), 6),
-        timeout=timeout_seconds,
-        cancel=cancel,
-    )
+    if _owned_worker:
+        from bijux_ontology.rdf._comparison_worker import process_request
+
+        output = process_request(payload, max(len(payload), 6))
+    else:
+        output = execute_worker(
+            "bijux_ontology.rdf._comparison_worker",
+            payload,
+            cap=max(len(payload), 6),
+            timeout=timeout_seconds,
+            cancel=cancel,
+        )
     if output not in (b"true\n", b"false\n"):
         raise InputError("RDF comparison worker did not return a valid result")
     return output == b"true\n"
@@ -104,6 +113,7 @@ def compare_rdf(
     timeout_seconds: float = 10.0,
     ignore_empty_graphs: bool = False,
     cancel: threading.Event | None = None,
+    _owned_worker: bool = False,
 ) -> Report:
     """Compare exact RDF structure, dataset membership and blank-node identity.
 
@@ -114,9 +124,13 @@ def compare_rdf(
     wall-clock deadline because RDFLib exposes no internal work/state allowance.
     Capture and worker execution share that deadline and support cancellation;
     the owned worker process group is reaped before returning.
+    Internal owned-worker execution reuses the native protocol inline; its outer
+    process owns the hard deadline and cleanup, avoiding detached grandchildren.
     Implicit RDF 1.1 string datatypes and language-tag case denote the same term.
     Numeric lexical forms stay distinct; OWL entailment is never evaluated.
     """
+    if type(_owned_worker) is not bool:
+        raise InputError("Owned RDF comparison selection must be a boolean")
     if type(ignore_empty_graphs) is not bool:
         raise InputError("ignore_empty_graphs must be a boolean")
     if (
@@ -175,7 +189,12 @@ def compare_rdf(
         ):
             equal = set(left) == set(right)
         else:
-            equal = _isomorphic(payload, deadline - time.monotonic(), cancel)
+            equal = _isomorphic(
+                payload,
+                deadline - time.monotonic(),
+                cancel,
+                _owned_worker=_owned_worker,
+            )
         checkpoint(deadline, cancel)
         checked = 1
         if not equal:

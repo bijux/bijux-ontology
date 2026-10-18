@@ -196,7 +196,10 @@ def test_required_aliases_reject_conflicting_requested_sources_without_reading_u
     assert (EX.Document, RDF.type, OWL.Ontology) in view.imports[0]
 
 
-def test_required_graph_aliases_use_blank_node_aware_agreement() -> None:
+@pytest.mark.parametrize("owned_worker", (False, True))
+def test_required_graph_aliases_use_blank_node_aware_agreement(
+    owned_worker: bool,
+) -> None:
     root = Graph().add((EX.Root, OWL.imports, EX.A))
     root.add((EX.Root, OWL.imports, EX.B))
     left = Graph().add((EX.Class, EX.metadata, BNode("left")))
@@ -204,6 +207,7 @@ def test_required_graph_aliases_use_blank_node_aware_agreement() -> None:
     view = load_vocabulary(
         root,
         imports={str(EX.A): RdfSource(left, effective_url=str(EX.B)), str(EX.B): right},
+        _owned_worker=owned_worker,
     )
     assert len(view.imports) == 1
     changed = Graph().add((EX.OtherClass, EX.metadata, BNode("right")))
@@ -214,6 +218,7 @@ def test_required_graph_aliases_use_blank_node_aware_agreement() -> None:
                 str(EX.A): RdfSource(left, effective_url=str(EX.B)),
                 str(EX.B): changed,
             },
+            _owned_worker=owned_worker,
         )
 
 
