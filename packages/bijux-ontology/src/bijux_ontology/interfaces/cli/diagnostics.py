@@ -176,7 +176,9 @@ _CODES = {
     ),
     "literal": frozenset(
         "conversion_unverified datatype_unverified "
-        "lexical_invalid lexical_unverified value_unverified".split()
+        "lexical_invalid lexical_unverified value_unverified "
+        "json_invalid json_mismatch json_unverified "
+        "json_schema_mismatch json_schema_unverified".split()
     ),
     "models": frozenset(
         "direction_unverified contextual_direction_unverified "

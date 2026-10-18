@@ -1306,3 +1306,11 @@ verify their closed file revision; restart rechecks content hashes and inventory
 `materialize_snapshot(..., max_triples=...)` explicitly bounds other consumers'
 in-memory projections. Nonempty-only graph inventory cannot prove empty named
 graph coverage, and unsupported physical graph identities cannot be collapsed.
+
+`rdf.literal_values.json.check_json_literal(literal, JsonLiteralContract(...))`
+checks opaque `rdf:JSON` values with explicit `JsonRequirement` paths, kinds,
+exact Decimal bounds and ordered array requirements. Duplicate keys, nonfinite
+numbers and malformed JSON are invalid; nested diagnostics use JSON pointers.
+The original RDF literal stays unchanged: parsed value equality proves no RDF
+term equality. Optional `jsonschema` checks require an explicit finite JSON Schema
+2020-12 dialect and resource identity; unsupported schema features remain unknown.
