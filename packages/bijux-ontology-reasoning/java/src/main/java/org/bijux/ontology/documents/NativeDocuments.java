@@ -1,6 +1,7 @@
 package org.bijux.ontology.documents;
 
 import org.bijux.ontology.backend.WorkerProtocol;
+import static org.bijux.ontology.backend.WorkerProtocol.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.*;
@@ -21,6 +22,7 @@ import org.obolibrary.oboformat.writer.OBOFormatWriter;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.formats.*;
 import org.semanticweb.owlapi.io.*;
+import org.semanticweb.owlapi.formats.TurtleDocumentFormat;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.profiles.OWLProfileReport;
 import org.semanticweb.owlapi.profiles.OWLProfileViolation;
@@ -230,6 +232,166 @@ public final class NativeDocuments {
         return ontology;
     }
 
+    /** One operation's actual owned parse; no public live-JVM Python proxy. */
+    public static final class Loaded {
+        public final OWLOntology ontology;
+        public final Map<String,Integer> owners;
+        public final List<Map<String,Object>> loaders;
+        private final List<Document> documents;
+        private final Map<String,Integer> aliases;
+        private Loaded(OWLOntology ontology, List<Document> documents,
+                Map<String,Integer> aliases, Map<String,Integer> owners,
+                List<Map<String,Object>> loaders) {
+            this.ontology = ontology; this.documents = documents; this.aliases = aliases;
+            this.owners = Collections.unmodifiableMap(owners);
+            this.loaders = Collections.unmodifiableList(loaders);
+        }
+
+        /** Preserve the native format bridge's original-clause qualification. */
+        public void qualifyOriginals(List<Map<String,Object>> changes, int cap, int maximum)
+                throws Exception {
+            if (documents == null) return;
+            OWLOntology first = ontology;
+            for (OWLOntology member : first.getOWLOntologyManager().getOntologies()) {
+                if (member.anonymousIndividuals().findAny().isPresent())
+                    throw new IOException("Anonymous individual structural correspondence unavailable");
+                String iri = member.getOWLOntologyManager().getOntologyDocumentIRI(member).toString();
+                for (Document document : documents)
+                    if (document.effective.equals(iri)) qualifyObo(document, member, changes, cap, maximum);
+            }
+
+        }
+
+        /** Actual selected native ontology headers, separate from RDF metadata. */
+        public List<Map<String,Object>> records(int resources) throws Exception {
+            if (documents == null) throw new IOException("Native records require native input");
+            OWLOntology first = ontology;
+            List<Map<String,Object>> loaded = new ArrayList<>();
+            Set<String> seen = new HashSet<>();
+            for (OWLOntology member : first.getOWLOntologyManager().getOntologies()) {
+                String effective = first.getOWLOntologyManager().getOntologyDocumentIRI(member).toString();
+                int index = -1;
+                for (int i = 0; i < documents.size(); i++)
+                    if (documents.get(i).effective.equals(effective)) index = i;
+                if (index < 0 || !seen.add(effective)) throw new IOException("Ambiguous loaded document");
+                Map<String,Object> record = new LinkedHashMap<>();
+                record.put("document", index);
+                record.put("ontology_iri", member.getOntologyID().getOntologyIRI().map(Object::toString).orElse(null));
+                record.put("version_iri", member.getOntologyID().getVersionIRI().map(Object::toString).orElse(null));
+                record.put("axioms", member.getAxiomCount());
+                List<String> imports = new ArrayList<>();
+                for (OWLImportsDeclaration declaration : member.getImportsDeclarations()) {
+                    if (imports.size() >= resources) throw new WorkerProtocol.OutputLimit();
+                    imports.add(declaration.getIRI().toString());
+                }
+                record.put("imports", imports);
+                loaded.add(record);
+            }
+            return loaded;
+        }
+    }
+
+    /** The existing staged RDF parser policy and its actual loader metadata. */
+    public static Loaded loadRdfRequest(JsonNode request, Path job) throws Exception {
+        int cap = positive(request.path("max_bytes"));
+        int maximum = positive(request.path("max_issues"));
+        int resourceCap = positive(request.path("max_resources"));
+        JsonNode documents = request.path("documents");
+        if (!documents.isArray() || documents.size() == 0 || documents.size() > resourceCap) throw new IOException("Invalid document inventory");
+        List<Path> paths = new ArrayList<>();
+        List<String> identifiers = new ArrayList<>();
+        Map<String,Integer> owners = new HashMap<>();
+        for (JsonNode document : documents) {
+            String id = text(document.path("id"), cap);
+            Path path = Path.of(text(document.path("path"), cap)).toAbsolutePath().normalize();
+            if (!path.getParent().equals(job) || Files.isSymbolicLink(path) || !Files.isRegularFile(path) || Files.size(path) > cap) throw new IOException("Unowned document path");
+            if (identifiers.contains(id) || owners.put(path.toUri().toString(), paths.size()) != null) throw new IOException("Duplicate document identity");
+            identifiers.add(id);
+            paths.add(path);
+        }
+        Map<String,Integer> aliases = new HashMap<>();
+        JsonNode supplied = request.path("aliases");
+        if (!supplied.isObject() || supplied.size() > resourceCap * 4) throw new IOException("Invalid import map");
+        Iterator<Map.Entry<String,JsonNode>> fields = supplied.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String,JsonNode> field = fields.next();
+            if (field.getKey().length() > cap || !field.getValue().isInt()) throw new IOException("Invalid import alias");
+            int index = field.getValue().intValue();
+            if (index < 0 || index >= paths.size()) throw new IOException("Unowned import target");
+            aliases.put(field.getKey(), index);
+        }
+        int root = request.path("root").asInt(-1);
+        if (!request.path("root").isInt() || root < 0 || root >= paths.size()) throw new IOException("Unowned root");
+        OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+        Path absent = job.resolve("unmapped-import");
+        manager.getIRIMappers().clear();
+        manager.getIRIMappers().add(iri -> IRI.create(aliases.containsKey(iri.toString()) ? paths.get(aliases.get(iri.toString())).toUri() : absent.toUri()));
+        OWLOntologyLoaderConfiguration configuration = new OWLOntologyLoaderConfiguration()
+            .setStrict(false).setRepairIllegalPunnings(false)
+            .setMissingImportHandlingStrategy(MissingImportHandlingStrategy.THROW_EXCEPTION)
+            .setRetriesToAttempt(1).setConnectionTimeout(1).setFollowRedirects(false);
+        OWLOntology ontology;
+        try (InputStream stream = Files.newInputStream(paths.get(root))) {
+            ontology = manager.loadOntologyFromOntologyDocument(new StreamDocumentSource(stream, IRI.create(paths.get(root).toUri()), new TurtleDocumentFormat(), null), configuration);
+        }
+        List<Map<String,Object>> loaders = new ArrayList<>();
+        Set<Integer> observed = new HashSet<>();
+        for (OWLOntology member : manager.getOntologies()) {
+            Integer owner = owners.get(manager.getOntologyDocumentIRI(member).toString());
+            if (owner == null || !observed.add(owner)) throw new IOException("Unowned or duplicate loaded document");
+            Map<String,Object> item = new LinkedHashMap<>();
+            item.put("document", owner);
+            OWLDocumentFormat format = manager.getOntologyFormat(member);
+            Optional<OWLOntologyLoaderMetaData> metadata = format == null ? Optional.empty() : format.getOntologyLoaderMetaData();
+            item.put("present", metadata.isPresent());
+            if (metadata.isPresent()) {
+                OWLOntologyLoaderMetaData data = metadata.get();
+                item.put("unparsed", data.getUnparsedTriples().limit((long) maximum + 1).count());
+                item.put("guessed", data.getGuessedDeclarations().size());
+                item.put("triples", data.getTripleCount());
+                item.put("header", data.getHeaderState().toString());
+            }
+            loaders.add(item);
+        }
+        if (observed.size() != paths.size()) throw new IOException("Required document was not loaded");
+        return new Loaded(ontology, null, null, owners, loaders);
+    }
+
+    /** Capture and load only supplied original native streams. */
+    public static Loaded loadRequest(JsonNode request, Path job) throws Exception {
+        int cap = WorkerProtocol.positive(request.path("max_bytes"));
+        int resources = WorkerProtocol.positive(request.path("max_resources"));
+        JsonNode inputs = request.path("documents");
+        if (!inputs.isArray() || inputs.size() == 0 || inputs.size() > resources)
+            throw new IOException("Invalid native document inventory");
+        List<Document> documents = new ArrayList<>();
+        for (JsonNode item : inputs) {
+            Path path = Path.of(WorkerProtocol.text(item.path("path"), cap)).toAbsolutePath().normalize();
+            if (!job.equals(path.getParent()) || Files.isSymbolicLink(path) || !Files.isRegularFile(path)
+                    || Files.size(path) > cap) throw new IOException("Unowned native document path");
+            String syntax = WorkerProtocol.text(item.path("format"), 32);
+            format(syntax);
+            String effective = WorkerProtocol.text(item.path("effective_url"), cap);
+            documents.add(new Document(path, effective, syntax));
+        }
+        JsonNode mapping = request.path("aliases");
+        if (!mapping.isObject() || mapping.size() > resources * 4) throw new IOException("Invalid aliases");
+        Map<String,Integer> aliases = new HashMap<>();
+        Iterator<Map.Entry<String,JsonNode>> entries = mapping.fields();
+        while (entries.hasNext()) {
+            Map.Entry<String,JsonNode> entry = entries.next();
+            if (entry.getKey().length() > cap || !entry.getValue().isInt()) throw new IOException("Invalid alias");
+            int index = entry.getValue().intValue();
+            if (index < 0 || index >= documents.size()) throw new IOException("Unowned alias");
+            aliases.put(entry.getKey(), index);
+        }
+        OWLOntology first = load(documents, aliases, 0, resources);
+        Map<String,Integer> owners = new HashMap<>();
+        for (int index = 0; index < documents.size(); index++)
+            owners.put(documents.get(index).effective, index);
+        return new Loaded(first, documents, aliases, owners, Collections.emptyList());
+    }
+
     private static final class CappedOutput extends FilterOutputStream {
         private final long cap;
         private long used;
@@ -353,38 +515,11 @@ public final class NativeDocuments {
         int resources = WorkerProtocol.positive(request.path("max_resources"));
         String outputFormat = WorkerProtocol.text(request.path("format"), 32);
         format(outputFormat);
-        JsonNode inputs = request.path("documents");
-        if (!inputs.isArray() || inputs.size() == 0 || inputs.size() > resources)
-            throw new IOException("Invalid native document inventory");
-        List<Document> documents = new ArrayList<>();
-        for (JsonNode item : inputs) {
-            Path path = Path.of(WorkerProtocol.text(item.path("path"), cap)).toAbsolutePath().normalize();
-            if (!job.equals(path.getParent()) || Files.isSymbolicLink(path) || !Files.isRegularFile(path)
-                    || Files.size(path) > cap) throw new IOException("Unowned native document path");
-            String syntax = WorkerProtocol.text(item.path("format"), 32);
-            format(syntax);
-            String effective = WorkerProtocol.text(item.path("effective_url"), cap);
-            documents.add(new Document(path, effective, syntax));
-        }
-        JsonNode mapping = request.path("aliases");
-        if (!mapping.isObject() || mapping.size() > resources * 4) throw new IOException("Invalid aliases");
-        Map<String,Integer> aliases = new HashMap<>();
-        Iterator<Map.Entry<String,JsonNode>> entries = mapping.fields();
-        while (entries.hasNext()) {
-            Map.Entry<String,JsonNode> entry = entries.next();
-            if (entry.getKey().length() > cap || !entry.getValue().isInt()) throw new IOException("Invalid alias");
-            int index = entry.getValue().intValue();
-            if (index < 0 || index >= documents.size()) throw new IOException("Unowned alias");
-            aliases.put(entry.getKey(), index);
-        }
-        OWLOntology first = load(documents, aliases, 0, resources);
-        for (OWLOntology member : first.getOWLOntologyManager().getOntologies()) {
-            if (member.anonymousIndividuals().findAny().isPresent())
-                throw new IOException("Anonymous individual structural correspondence unavailable");
-            String iri = member.getOWLOntologyManager().getOntologyDocumentIRI(member).toString();
-            for (Document document : documents)
-                if (document.effective.equals(iri)) qualifyObo(document, member, changes, cap, maximum);
-        }
+        Loaded input = loadRequest(request, job);
+        List<Document> documents = input.documents;
+        Map<String,Integer> aliases = input.aliases;
+        OWLOntology first = input.ontology;
+        input.qualifyOriginals(changes, cap, maximum);
         Path output = job.resolve("converted.owl");
         try (OutputStream stream = new CappedOutput(Files.newOutputStream(output, StandardOpenOption.CREATE_NEW), cap)) {
             if (outputFormat.equals("obo")) {
@@ -404,28 +539,7 @@ public final class NativeDocuments {
         if (second.anonymousIndividuals().findAny().isPresent())
             throw new IOException("Anonymous individual structural correspondence unavailable");
         compare(first, second, changes, cap, maximum);
-        List<Map<String,Object>> loaded = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        for (OWLOntology member : first.getOWLOntologyManager().getOntologies()) {
-            String effective = first.getOWLOntologyManager().getOntologyDocumentIRI(member).toString();
-            int index = -1;
-            for (int i = 0; i < documents.size(); i++)
-                if (documents.get(i).effective.equals(effective)) index = i;
-            if (index < 0 || !seen.add(effective)) throw new IOException("Ambiguous loaded document");
-            Map<String,Object> record = new LinkedHashMap<>();
-            record.put("document", index);
-            record.put("ontology_iri", member.getOntologyID().getOntologyIRI().map(Object::toString).orElse(null));
-            record.put("version_iri", member.getOntologyID().getVersionIRI().map(Object::toString).orElse(null));
-            record.put("axioms", member.getAxiomCount());
-            List<String> imports = new ArrayList<>();
-            for (OWLImportsDeclaration declaration : member.getImportsDeclarations()) {
-                if (imports.size() >= resources) throw new WorkerProtocol.OutputLimit();
-                imports.add(declaration.getIRI().toString());
-            }
-            record.put("imports", imports);
-            loaded.add(record);
-        }
-        result.put("documents", loaded);
+        result.put("documents", input.records(resources));
         result.put("changes", changes);
         result.put("before_profiles", profiles(first, request.path("profiles"), cap, maximum));
         result.put("after_profiles", profiles(second, request.path("profiles"), cap, maximum));

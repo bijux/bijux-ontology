@@ -9,10 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.formats.TurtleDocumentFormat;
-import org.semanticweb.owlapi.io.OWLOntologyLoaderMetaData;
-import org.semanticweb.owlapi.io.StreamDocumentSource;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.profiles.*;
 
@@ -48,65 +44,11 @@ public final class ProfileWorker {
         if (!mode.equals("profile")) throw new IOException("Unsupported operation");
         int cap = positive(request.path("max_bytes"));
         int maximum = positive(request.path("max_issues"));
-        int resourceCap = positive(request.path("max_resources"));
-        JsonNode documents = request.path("documents");
-        if (!documents.isArray() || documents.size() == 0 || documents.size() > resourceCap) throw new IOException("Invalid document inventory");
-        List<Path> paths = new ArrayList<>();
-        List<String> identifiers = new ArrayList<>();
-        Map<String,Integer> owners = new HashMap<>();
-        for (JsonNode document : documents) {
-            String id = text(document.path("id"), cap);
-            Path path = Path.of(text(document.path("path"), cap)).toAbsolutePath().normalize();
-            if (!path.getParent().equals(job) || Files.isSymbolicLink(path) || !Files.isRegularFile(path) || Files.size(path) > cap) throw new IOException("Unowned document path");
-            if (identifiers.contains(id) || owners.put(path.toUri().toString(), paths.size()) != null) throw new IOException("Duplicate document identity");
-            identifiers.add(id);
-            paths.add(path);
-        }
-        Map<String,Integer> aliases = new HashMap<>();
-        JsonNode supplied = request.path("aliases");
-        if (!supplied.isObject() || supplied.size() > resourceCap * 4) throw new IOException("Invalid import map");
-        Iterator<Map.Entry<String,JsonNode>> fields = supplied.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String,JsonNode> field = fields.next();
-            if (field.getKey().length() > cap || !field.getValue().isInt()) throw new IOException("Invalid import alias");
-            int index = field.getValue().intValue();
-            if (index < 0 || index >= paths.size()) throw new IOException("Unowned import target");
-            aliases.put(field.getKey(), index);
-        }
-        int root = request.path("root").asInt(-1);
-        if (!request.path("root").isInt() || root < 0 || root >= paths.size()) throw new IOException("Unowned root");
-        OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-        Path absent = job.resolve("unmapped-import");
-        manager.getIRIMappers().clear();
-        manager.getIRIMappers().add(iri -> IRI.create(aliases.containsKey(iri.toString()) ? paths.get(aliases.get(iri.toString())).toUri() : absent.toUri()));
-        OWLOntologyLoaderConfiguration configuration = new OWLOntologyLoaderConfiguration()
-            .setStrict(false).setRepairIllegalPunnings(false)
-            .setMissingImportHandlingStrategy(MissingImportHandlingStrategy.THROW_EXCEPTION)
-            .setRetriesToAttempt(1).setConnectionTimeout(1).setFollowRedirects(false);
-        OWLOntology ontology;
-        try (InputStream stream = Files.newInputStream(paths.get(root))) {
-            ontology = manager.loadOntologyFromOntologyDocument(new StreamDocumentSource(stream, IRI.create(paths.get(root).toUri()), new TurtleDocumentFormat(), null), configuration);
-        }
-        List<Map<String,Object>> loaders = new ArrayList<>();
-        Set<Integer> observed = new HashSet<>();
-        for (OWLOntology member : manager.getOntologies()) {
-            Integer owner = owners.get(manager.getOntologyDocumentIRI(member).toString());
-            if (owner == null || !observed.add(owner)) throw new IOException("Unowned or duplicate loaded document");
-            Map<String,Object> item = new LinkedHashMap<>();
-            item.put("document", owner);
-            OWLDocumentFormat format = manager.getOntologyFormat(member);
-            Optional<OWLOntologyLoaderMetaData> metadata = format == null ? Optional.empty() : format.getOntologyLoaderMetaData();
-            item.put("present", metadata.isPresent());
-            if (metadata.isPresent()) {
-                OWLOntologyLoaderMetaData data = metadata.get();
-                item.put("unparsed", data.getUnparsedTriples().limit((long) maximum + 1).count());
-                item.put("guessed", data.getGuessedDeclarations().size());
-                item.put("triples", data.getTripleCount());
-                item.put("header", data.getHeaderState().toString());
-            }
-            loaders.add(item);
-        }
-        if (observed.size() != paths.size()) throw new IOException("Required document was not loaded");
+        NativeDocuments.Loaded input = NativeDocuments.loadRdfRequest(request, job);
+        OWLOntology ontology = input.ontology;
+        OWLOntologyManager manager = ontology.getOWLOntologyManager();
+        Map<String,Integer> owners = input.owners;
+        List<Map<String,Object>> loaders = input.loaders;
         String selected = text(request.path("profile"), 32);
         OWLProfileReport checked = profile(selected).checkOntology(ontology);
         result.put("profile", selected);
