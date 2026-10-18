@@ -38,7 +38,9 @@ _CODES = {
     ),
     "obo": frozenset(
         "attachment_shape attachment_unverified base_missing "
-        "synonym_type_shape value_kind".split()
+        "synonym_type_shape value_kind "
+        "subset_undefined subset_definition_kind subset_membership_kind "
+        "subset_unverified".split()
     ),
     "annotations": frozenset(
         "minimum_missing maximum_exceeded language_minimum_missing "

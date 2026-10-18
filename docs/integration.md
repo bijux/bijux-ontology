@@ -749,3 +749,10 @@ real serializer once with its supplied options and return the exact checked outp
 Schema `required` and `additionalProperties` remain JSON rules; RDF occurrence
 guarantees require explicit `OutputRequirement` records. Missing mappings,
 unavailable offline references and unsupported applicators remain unverified.
+
+`bijux_ontology.vocabulary.obo.subsets.read_obo_subsets(view, closed=True)` reads
+explicit OBO-in-OWL subset definitions and their original membership assertions.
+Use `.select(subset_iri)` as `ValueConstraints(enumeration=...)` in ordinary model
+checks. Only a complete closed inventory establishes absence; open, undefined or
+anonymous membership remains explicit in the returned reports. Subsets do not
+imply SKOS schemes or logical ontology modules.
