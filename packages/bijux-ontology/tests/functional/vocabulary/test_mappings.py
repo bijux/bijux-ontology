@@ -287,6 +287,29 @@ def test_direction_and_uninterpreted_predicates_modifiers_remain_distinct() -> N
     )
     assert result.report.outcome == "unverified"
     assert any(i.code == "mapping.semantics_unverified" for i in result.report)
+    qualifier = "custom:qualifier=uninterpreted"
+    for text in (
+        HEADER.replace("\tcomment\n", "\tcomment\tother\n")
+        + _row().rstrip("\n")
+        + "\t"
+        + qualifier
+        + "\n",
+        HEADER.replace("# curie_map:", "# other: " + qualifier + "\n# curie_map:")
+        + _row(),
+    ):
+        qualified = _read(text)
+        qualified_report = check_mappings(
+            qualified,
+            subject_vocabulary=view,
+            object_vocabulary=view,
+            policy=MappingPolicy(
+                (str(SKOS.closeMatch),), subjects=(str(E.A),), minimum_targets=1
+            ),
+        ).report
+        assert qualified_report.outcome == "unverified"
+        assert any(i.code == "mapping.semantics_unverified" for i in qualified_report)
+        assert not any(i.code == "mapping.minimum_missing" for i in qualified_report)
+        assert qualifier in qualified.source.decode()
     other = _read((HEADER + _row()).replace("skos:closeMatch", "owl:equivalentClass"))
     assert other.rows[0].predicate == str(OWL.equivalentClass)
     assert (
