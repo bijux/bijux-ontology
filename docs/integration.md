@@ -164,6 +164,15 @@ languages, exact literal-form comparisons, asserted/either orientation or
 forbidden relations. Equal forms preserve distinct label resources; missing
 forms remain unverified. Subrelations inherit no implicit reverse assertion.
 
+Use `skos.label_projection.project_xl_labels` on one prepared physical graph to
+produce plain SKOS label consequences. Original equal-form label resources stay
+distinct; correspondence and omitted metadata or relations remain explicit.
+`promote_labels` adds XL assertions from exact `LabelIdentity` assignments with
+fresh distinct IRIs, including checks against existing datatype IRIs. Plain
+labels remain. Both operations require explicit consumer `after_checks` and
+selected native label integrity. Export accepted candidates through
+`export_migration`; plain projection does not claim a lossless round trip.
+
 `negotiate_annotations(view, iri, predicates=(label_iri,), ranges=("fr-CA",))`
 uses [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647.html) lookup, preserving
 tied annotations and their original terms. Select basic/extended filtering,
