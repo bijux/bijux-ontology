@@ -73,6 +73,8 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "disjoint_conflict expression_unverified asserted_type_missing "
+        "datatype_conflict datatype_unverified property_unverified property_conflict "
         "type_unverified query_kind_mismatch query_answer_mismatch "
         "query_variables_mismatch query_answer_unexpected query_answer_missing "
         "query_violation query_empty_scope".split()
@@ -270,9 +272,10 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         '{"@context":{"label":"https://example.org/label"},"label":"Colour"}',
     ),
     "data": (
-        "supplied RDF data and asserted query obligations",
+        "supplied RDF data, named ontology contracts and query obligations",
         "The selected data condition disagrees or cannot be established.",
-        "Inspect selected types, actual query bindings and the explicit "
+        "Inspect selected graphs, named contracts, actual types and query bindings, "
+        "and the explicit "
         "consumer obligation.",
         "<https://example.org/item> a <https://example.org/Image> .",
     ),

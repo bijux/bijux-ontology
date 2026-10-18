@@ -342,6 +342,16 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
 
+Use `check_data_compatibility(data, vocabulary)` for finite actual RDF checks
+of named domain/range consequences, explicit disjoint types, property kinds and
+supported literal range membership. Select the data `graph_name` or `union` and
+ontology source `scopes` explicitly. The default `mode="inferred"` includes named
+endpoint consequences; `mode="asserted"` examines supplied types. Neither mode
+claims global OWL consistency or complete reasoning. Unsupported expressions
+remain unverified. `asserted_types="required"` adds a separate application
+validation report requiring exact type assertions; open-world consequences do
+not count as missing fields. Raw ontology evidence is retained in `children[0]`.
+
 `compare_literal_values(left, right, regime=...)` returns the original RDF
 literals and an `equal`, `different` or `indeterminate` relation. Choose
 `sparql-1.1` numeric promotion or `owl2-datatype-map` data-value identity;

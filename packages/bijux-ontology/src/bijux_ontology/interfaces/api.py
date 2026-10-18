@@ -1,6 +1,7 @@
 """Supported structural checks for RDF vocabularies and application declarations."""
 
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.data.compatibility import check_data_compatibility
 from bijux_ontology.data.query_rules.checking import run_query_rules
 from bijux_ontology.data.query_rules.loading import (
     load_query_rules,
@@ -360,6 +361,7 @@ __all__ = [
     "check_collection_sequence",
     "check_context",
     "check_contract",
+    "check_data_compatibility",
     "check_data_usage",
     "check_document_form",
     "check_emission",
