@@ -14,12 +14,8 @@ from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import EntityKey, object_key
 from bijux_ontology.jsonld.entities import source_entity as source_record
-from bijux_ontology.jsonld.observations import (
-    ObservedOccurrence,
-    SourcePath,
-    at_path,
-    location,
-)
+from bijux_ontology.jsonld.observations import ObservedOccurrence
+from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.models.emission.bindings import (

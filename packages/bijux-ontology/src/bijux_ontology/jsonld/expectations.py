@@ -6,14 +6,14 @@ from typing import Literal, cast
 
 from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.paths import SourcePath, bound_pointer_text, location
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.reports import Issue
 
 from ..errors import InputError
 from .lists import ExpectedList, compare_lists
-from .observations import ObservedUsage, SourcePath, location
-from .selectors import _text_metadata
 from .values import ValueKind
 
 ContainerKind = Literal["list", "unordered"]
@@ -129,7 +129,7 @@ def compare_usage(
     """
     for value in (expectation.index, expectation.list_index):
         if isinstance(value, str):
-            _text_metadata(value, budget)
+            bound_pointer_text(value, budget)
     where = location(expectation.path)
     if expectation.lists is not None:
         yield from compare_lists(expectation.lists, usage, budget=budget)

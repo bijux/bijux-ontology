@@ -12,7 +12,7 @@ from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.observations import location
+from bijux_ontology.jsonld.paths import location
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.emission.application import retain_enumeration_report

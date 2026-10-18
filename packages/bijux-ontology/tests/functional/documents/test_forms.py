@@ -11,7 +11,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.selectors import (
+from bijux_ontology.jsonld.selectors.types import (
     ArrayItems,
     EntitySelector,
     KeyedItems,

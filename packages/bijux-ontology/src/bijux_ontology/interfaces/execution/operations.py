@@ -20,7 +20,7 @@ from bijux_ontology.jsonld.comparison import compare_serializations
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.flattening import flatten_document
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.jsonld.selector_codecs import selector_from_data
+from bijux_ontology.jsonld.selectors.codecs import selector_from_data
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.codecs import usages_from_data
 from bijux_ontology.models.emission.checking import check_emission

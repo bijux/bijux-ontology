@@ -12,7 +12,7 @@ from rdflib.term import Node
 
 from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.selectors import _bounded_location, _number_metadata
+from bijux_ontology.jsonld.paths import bound_index, bounded_location
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.path_traversal import (
     PathIdentityUnavailable,
@@ -82,8 +82,8 @@ def _place(record: TopologyRecord, budget: Budget) -> str:
         if value is not None:
             bound_text(value, budget)
     if location.branch is not None:
-        _number_metadata(location.branch, budget)
-    pointer = _bounded_location(location.path, budget)
+        bound_index(location.branch, budget)
+    pointer = bounded_location(location.path, budget)
     size = len(location.source) + len(pointer)
     if size > budget.limits.max_bytes:
         raise LimitExceeded("Topology output location exceeds max_bytes")
@@ -326,7 +326,7 @@ def check_record_topology(
             raise InputError("Topology roots and shared targets must be unique")
         for value in (contract.min_owners, contract.max_owners):
             if value is not None:
-                _number_metadata(value, operation)
+                bound_index(value, operation)
         scope, scope_size = _context(source, graph_name, union, operation)
         selected_name = (
             source.graph_name if source.graph_name is not None else graph_name

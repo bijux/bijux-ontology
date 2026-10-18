@@ -16,8 +16,8 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.observations import ObservedUsage, SourcePath
-from bijux_ontology.jsonld.selectors import _path_metadata
+from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.paths import SourcePath, bound_path
 from bijux_ontology.limits import Budget
 from bijux_ontology.models.corpus.checking import SerializerCase
 from bijux_ontology.models.emission.serialization import InstanceCheck
@@ -123,7 +123,7 @@ class ApplicationField:
                 raise InputError(
                     "Application field samples require nonempty source paths"
                 )
-            _path_metadata(path, budget)
+            bound_path(path, budget)
         object.__setattr__(self, "model", str(self.model))
         object.__setattr__(self, "field", str(self.field))
         object.__setattr__(self, "samples", captured)

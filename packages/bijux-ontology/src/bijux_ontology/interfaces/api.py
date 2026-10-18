@@ -86,7 +86,7 @@ from bijux_ontology.jsonld.resources import (
     OfflineDocumentLoader,
     context_document_loader,
 )
-from bijux_ontology.jsonld.selectors import (
+from bijux_ontology.jsonld.selectors.types import (
     ArrayItems,
     EntitySelector,
     KeyedItems,

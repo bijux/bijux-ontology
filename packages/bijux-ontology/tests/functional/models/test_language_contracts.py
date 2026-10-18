@@ -350,7 +350,11 @@ def test_native_named_scope_and_physical_counts_preserve_opposite_directions() -
 def test_selected_map_keys_require_explicit_coverage() -> None:
     from bijux_ontology.jsonld.checking import prepare_usages
     from bijux_ontology.jsonld.expectations import ContextExpectation
-    from bijux_ontology.jsonld.selectors import KeyedItems, Property, SourceSelector
+    from bijux_ontology.jsonld.selectors.types import (
+        KeyedItems,
+        Property,
+        SourceSelector,
+    )
 
     context = {"label": {"@id": str(EX.label), "@container": "@language"}}
     selector = SourceSelector(

@@ -7,7 +7,7 @@ import pytest
 
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.selectors import ArrayItems, Property, SourceSelector
+from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector
 from bijux_ontology.limits import Limits
 
 EX = "https://example.org/"

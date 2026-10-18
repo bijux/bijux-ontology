@@ -8,7 +8,7 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.entities import object_key
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.observations import SourcePath, at_path, location
+from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.models.emission.bindings import same_contribution
 from bijux_ontology.models.emission.counts import check_occurrences
 from bijux_ontology.models.emission.coverage import source_properties

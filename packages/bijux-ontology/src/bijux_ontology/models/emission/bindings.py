@@ -4,7 +4,8 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.entities import EntityKey
 from bijux_ontology.jsonld.entities import source_entity as establish_source_entity
-from bijux_ontology.jsonld.observations import ObservedOccurrence, SourcePath
+from bijux_ontology.jsonld.observations import ObservedOccurrence
+from bijux_ontology.jsonld.paths import SourcePath
 from bijux_ontology.jsonld.values import ValueTraits, identifier_kind
 from bijux_ontology.limits import Budget
 

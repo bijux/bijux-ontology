@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.selectors import EntitySelector, SourceSelector
+from bijux_ontology.jsonld.selectors.types import EntitySelector, SourceSelector
 from bijux_ontology.limits import Budget
 from bijux_ontology.reports import Report
 
