@@ -259,6 +259,7 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "replacement_unverified replacement_kind_mismatch "
         "application_unverified application_declaration_changed "
         "application_value_changed "
         "fact_impact_unverified "

@@ -748,6 +748,18 @@ be empty after the proposed moves. Exact terms, shared blanks and unrelated
 partitions remain intact. The same before/after contract and explicit export
 gate applies, including actual graph-local constraint failures.
 
+`bijux_ontology.workflows.upgrades.replacements.plan_replacements` accepts
+explicit `ApprovedReplacement` mappings, their entity roles and namespace owners.
+One-to-one changes rewrite selected declaration slots and actual RDF occurrences;
+joining identities requires `merge=True`. A split requires an explicit discriminator
+on the original snapshot. Multiple candidates, unknown roles and replacement hints
+alone leave the proposal unresolved. Generic property approvals preserve known
+object, datatype and annotation property kinds. Required `ReplacementCheck`
+callbacks inspect the updated declarations and fresh candidate data; missing,
+empty or failed after checks block acceptance and export. Existing exact patches,
+selected graph scope and `export_migration(..., accept=True)` remain the artifact
+boundary. Trusted callbacks retain their ordinary Python execution lifetime.
+
 Install `[jsonschema]` to import supported offline JSON Schema 2020-12 contracts.
 `bijux_ontology.interfaces.adapters.jsonschema` exposes `SchemaModel`,
 `model_declarations` and `check_instance`. Supply explicit RDF classes and
