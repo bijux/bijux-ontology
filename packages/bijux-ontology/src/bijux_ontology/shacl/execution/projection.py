@@ -9,6 +9,7 @@ from rdflib.term import Node
 from bijux_ontology._json import decode_json
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.limits import IssueCollector
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.reports import Issue, IssueKind, Report, Severity, combine_reports
 from bijux_ontology.shacl.capabilities import (
@@ -93,6 +94,9 @@ def _project_result(
     if any(not isinstance(source, ShaclSource) for source in sources):
         raise InputError("Expected explicit prepared SHACL source usages")
     metadata = _metadata(plan, focus)
+    if plan.budget is not None:
+        plan.budget.consume("bytes", len(raw))
+        plan.budget.consume("work", len(raw))
     response = decode_json(raw, max_bytes=selected.max_total_bytes)
     if not isinstance(response, dict):
         raise ResourceError("SHACL process returned an invalid protocol object")
@@ -157,7 +161,9 @@ def _project_result(
     ):
         raise ResourceError("SHACL process returned invalid validation warnings")
     metadata["shapes_count"] = shapes_count
-    report_graph = prepare_source(raw_report, format="nt", limits=selected).graph()
+    report_graph = prepare_source(
+        raw_report, format="nt", limits=selected, budget=plan.budget
+    ).graph()
     reports = tuple(report_graph.subjects(RDF.type, SH.ValidationReport))
     if len(reports) != 1:
         raise ResourceError("SHACL process did not return one RDF ValidationReport")
@@ -188,52 +194,62 @@ def _project_result(
         ),
         union=correlation_union or isinstance(correlation_graph, BNode),
         limits=selected,
+        budget=plan.budget,
     )
-    issues = []
+    issues = IssueCollector(plan.budget) if plan.budget is not None else []
     severity_names: dict[Node | None, Severity] = {
         SH.Info: "info",
         SH.Warning: "warning",
     }
-    for finding in findings:
-        severity = severity_names.get(finding.severity, "error")
-        message = (
-            "; ".join(map(str, finding.messages))
-            or "Supplied data does not conform to the shape"
-        )
-        issues.append(
-            Issue(
-                "shacl.nonconformance",
-                message,
-                str(finding.focus_node or ""),
-                severity=severity,
-                details=(
-                    finding.locations[0]
-                    if finding.location_status == "matched"
-                    and len(finding.locations) == 1
-                    else None
-                ),
-                evidence_json=finding.evidence_json,
+    try:
+        for finding in findings:
+            severity = severity_names.get(finding.severity, "error")
+            message = (
+                "; ".join(map(str, finding.messages))
+                or "Supplied data does not conform to the shape"
             )
-        )
-    if not findings_complete:
-        issues.append(
-            Issue(
-                "shacl.finding_unverified",
-                "Result projection is incomplete; inspect the retained raw RDF report",
-                kind="unverified",
+            issues.append(
+                Issue(
+                    "shacl.nonconformance",
+                    message,
+                    str(finding.focus_node or ""),
+                    severity=severity,
+                    details=(
+                        finding.locations[0]
+                        if finding.location_status == "matched"
+                        and len(finding.locations) == 1
+                        else None
+                    ),
+                    evidence_json=finding.evidence_json,
+                )
             )
-        )
-    for warning in warnings:
-        issues.append(Issue("shacl.backend_warning", str(warning), kind="unverified"))
-    if not shapes_count and not allow_empty:
-        issues.append(
-            Issue(
-                "input.empty_scope",
-                "The supplied shapes graph contains no discovered SHACL shapes",
-                "shapes",
-                kind="input_error",
+        if not findings_complete:
+            issues.append(
+                Issue(
+                    "shacl.finding_unverified",
+                    "Result projection is incomplete; inspect the retained "
+                    "raw RDF report",
+                    kind="unverified",
+                )
             )
-        )
+        for warning in warnings:
+            issues.append(
+                Issue("shacl.backend_warning", str(warning), kind="unverified")
+            )
+        if not shapes_count and not allow_empty:
+            issues.append(
+                Issue(
+                    "input.empty_scope",
+                    "The supplied shapes graph contains no discovered SHACL shapes",
+                    "shapes",
+                    kind="input_error",
+                )
+            )
+    except LimitExceeded:
+        if not isinstance(issues, IssueCollector):
+            raise
+        issues.exhausted("SHACL result projection exhausted its shared budget")
+        findings_complete = False
     report = Report(
         "shacl",
         int(shapes_count > 0),
@@ -247,13 +263,18 @@ def _project_result(
     )
     evaluated_coverage = (
         read_coverage(
-            response.get("coverage"), coverage or ShaclCoverageContract(), selected
+            response.get("coverage"),
+            coverage or ShaclCoverageContract(),
+            selected,
+            budget=plan.budget,
         )
         if coverage is not None or required_constraints
         else None
     )
     constraint_report = (
-        constraint_execution(required_constraints, evaluated_coverage)
+        constraint_execution(
+            required_constraints, evaluated_coverage, budget=plan.budget
+        )
         if required_constraints and evaluated_coverage is not None
         else None
     )

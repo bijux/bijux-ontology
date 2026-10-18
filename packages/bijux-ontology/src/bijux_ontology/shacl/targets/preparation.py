@@ -155,6 +155,7 @@ def prepare_targets(
     enabled: bool,
     limits: Limits,
     enabled_functions: frozenset[URIRef] = frozenset(),
+    budget: Budget | None = None,
 ) -> CapabilityPlan:
     """Return selected target capabilities without executing a data query.
 
@@ -185,7 +186,7 @@ def prepare_targets(
                 ),
             ),
         )
-    budget = Budget(limits)
+    budget = budget if budget is not None else Budget(limits)
     issues = IssueCollector(budget)
     definitions: set[Node] = set()
     normalized: list[tuple[Node, URIRef, Literal]] = []

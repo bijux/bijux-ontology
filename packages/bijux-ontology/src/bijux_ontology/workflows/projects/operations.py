@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from typing import Literal, cast
 
-from bijux_ontology._json import optional_string_value, read_json, text_value
+from bijux_ontology._json import optional_string_value, text_value
 from bijux_ontology.declarations.codecs import (
     models_from_data,
     terms_from_data,
@@ -12,6 +12,7 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.conversion import DirectionPolicy
+from bijux_ontology.limits import Budget
 from bijux_ontology.models.checking import check_models
 from bijux_ontology.rdf.literals import Regime as ModelRegime
 from bijux_ontology.reports import Report
@@ -34,9 +35,13 @@ def run_check(
     resources: ProjectResources,
     *,
     shacl_input: ShaclJobInput | None = None,
+    budget: Budget | None = None,
+    _owned_worker: bool = False,
 ) -> Report:
     """Execute one supported check using its operation-owned explicit inputs."""
     config = resources.configuration
+    if budget is not None and kind not in ("vocabulary", "context", "shacl"):
+        raise InputError("Shared project budgets support vocabulary, context and SHACL")
     if shacl_input is not None and kind != "shacl":
         raise InputError("Runtime SHACL inputs require a SHACL job")
     if kind in ("emission", "context-corpus", "upgrade"):
@@ -48,13 +53,13 @@ def run_check(
 
     def snapshot(key: str) -> object:
         """Read one explicitly selected bounded JSON input."""
-        return read_json(config.path(job.get(key), location=key), config.limits)
+        return resources.read_json(config.path(job.get(key), location=key))
 
     if kind == "context":
         base = job.get("base")
         if base is not None:
             base = text_value(base, location="base")
-        return check_context(
+        report = check_context(
             snapshot("document"),
             expectations_from_data(
                 snapshot("expectations"),
@@ -64,11 +69,18 @@ def run_check(
             document_loader=resources.document_loader,
             allowed_drops=frozenset(strings(job.get("allowed_drops", []))),
             limits=config.limits,
-        ).with_source(str(config.path(job.get("document"))))
+            budget=budget,
+        )
+        # Native issue identities already belong to the shared operation. A
+        # presentation-only source clone must not consume another logical slot.
+        return (
+            report
+            if budget is not None
+            else report.with_source(str(config.path(job.get("document"))))
+        )
     if kind == "shacl":
         from rdflib import URIRef
 
-        from bijux_ontology.limits import Budget
         from bijux_ontology.shacl.checking import validate_shapes
         from bijux_ontology.shacl.coverage import ShaclCoverageContract
 
@@ -78,10 +90,10 @@ def run_check(
                 raise InputError("Routed SHACL jobs require actual execution")
             if any(not isinstance(node, URIRef) for node in shacl_input.focus_nodes):
                 raise InputError("Runtime pair coverage requires named focus nodes")
-            budget = Budget(config.limits)
+            operation = budget if budget is not None else Budget(config.limits)
             count = len(shacl_input.focus_nodes) * len(shacl_input.use_shapes)
-            budget.consume("states", count)
-            budget.consume("work", count)
+            operation.consume("states", count)
+            operation.consume("work", count)
             coverage = ShaclCoverageContract(
                 pairs=tuple(
                     (str(shape), str(focus))
@@ -120,6 +132,8 @@ def run_check(
             timeout=cast(float | None, job.get("timeout", 30.0)),
             limits=config.limits,
             allow_empty=boolean(job.get("allow_empty", False)),
+            budget=budget,
+            _owned_worker=_owned_worker,
         ).report
     if kind == "query-rules":
         from bijux_ontology.data.query_rules.checking import run_query_rules
@@ -204,6 +218,7 @@ def run_check(
             lint=boolean(job.get("lint", False)),
             allow_empty=boolean(job.get("allow_empty", False)),
             limits=config.limits,
+            budget=budget,
         )
     if kind == "ontology":
         from bijux_ontology.workflows.ontology.checking import check_ontology

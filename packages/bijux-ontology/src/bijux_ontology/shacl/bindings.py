@@ -23,12 +23,19 @@ def resolve_terms(
     *,
     shapes: bool = False,
     limits: Limits,
+    budget: Budget | None = None,
 ) -> tuple[URIRef | BNode | Literal, ...]:
     """Bind blanks by owned term objects, never by equal foreign labels."""
     if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
         raise InputError("RDF term selections require a finite sequence")
     if len(values) > limits.max_states:
         raise LimitExceeded("RDF term selections exceed max_states")
+    owned: set[int] = set()
+    if budget is not None:
+        budget.consume("work", 3 * len(graph))
+        budget.consume("states", 3 * len(graph))
+        budget.consume("work", len(values))
+        budget.consume("states", len(values))
     owned = {id(node) for triple in graph for node in triple if isinstance(node, BNode)}
     result: list[URIRef | BNode | Literal] = []
     for value in values:
@@ -56,6 +63,7 @@ def transport_roles(
     limits: Limits,
     *,
     anchors: Mapping[URIRef, tuple[str, BNode]] | None = None,
+    budget: Budget | None = None,
 ) -> Dataset:
     """Standardize independent role blanks apart and carry exact bound endpoints.
 
@@ -65,7 +73,7 @@ def transport_roles(
     transport graph and never become assertions in the effective data graph.
     """
     dataset = Dataset()
-    budget = Budget(limits)
+    budget = budget if budget is not None else Budget(limits)
     parents: dict[tuple[str, BNode], tuple[str, BNode]] = {}
     witnesses: dict[int, tuple[str, BNode]] = {}
     blanks: dict[tuple[str, BNode], BNode] = {}

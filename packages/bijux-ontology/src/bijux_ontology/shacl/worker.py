@@ -28,6 +28,7 @@ def target_coverage(
     limits: Limits,
     *,
     validation_complete: bool,
+    budget: Budget | None = None,
 ) -> dict[str, object]:
     """Enumerate the completed backend run's root targets on its effective graph."""
     from pyshacl import Validator
@@ -44,7 +45,7 @@ def target_coverage(
         effective = validator.mix_in_ontology()  # type: ignore[no-untyped-call]
     focus = {URIRef(iri) for iri in focus_nodes}
     graph = Graph()
-    budget = Budget(limits)
+    budget = budget if budget is not None else Budget(limits)
     complete = validation_complete
     exhausted = False
     message = "" if complete else "Backend warnings prevent completed target coverage"
@@ -79,23 +80,28 @@ def target_coverage(
     }
 
 
-def _roles(request: dict[str, Any]) -> Dataset:
+def _roles(request: dict[str, Any], budget: Budget | None = None) -> Dataset:
     """Parse bounded role quads; fixed protocol roles supply empty graph identity.
 
     No source graph-declaration inventory is needed for these private datasets.
-    Its separate parser work must not consume constraint or target allowances.
+    Standalone parsing retains its transport ceiling; an owning shared operation
+    also charges this preparation to its original cumulative allowance.
     """
     limits = Limits(**request["limits"])
+    transport = replace(
+        limits,
+        max_triples=limits.max_triples * 5
+        + request.get("binding_count", 0)
+        + request.get("anchor_count", 0),
+        max_bytes=limits.max_total_bytes,
+    )
     return prepare_rdf(
         request["graphs"],
         format="nquads",
-        limits=replace(
-            limits,
-            max_triples=limits.max_triples * 5
-            + request.get("binding_count", 0)
-            + request.get("anchor_count", 0),
-            max_bytes=limits.max_total_bytes,
-        ),
+        limits=limits if budget is not None else transport,
+        budget=budget,
+        max_triples=transport.max_triples,
+        max_bytes=transport.max_bytes,
     ).dataset()
 
 
@@ -105,6 +111,7 @@ def _prepare_shapes(
     shapes: Graph,
     roots: tuple[Any, ...],
     backend: str,
+    budget: Budget | None = None,
 ) -> dict[str, Any] | None:
     """Check fixed authored identities and meta-shapes before job targeting."""
     import pyshacl
@@ -112,6 +119,9 @@ def _prepare_shapes(
     from pyshacl.shapes_graph import ShapesGraph
 
     if request["selected_shapes"]:
+        if budget is not None:
+            budget.consume("work", len(authored) + len(roots))
+            budget.consume("states", len(authored) + len(roots))
         discovered = {shape.node for shape in ShapesGraph(authored).shapes}
         parameters = set(ALL_CONSTRAINT_PARAMETERS)
         discovered.update(
@@ -146,7 +156,11 @@ def _prepare_shapes(
 
 
 def execute(
-    request: dict[str, Any], *, supplied: Dataset | None = None, prepared: bool = False
+    request: dict[str, Any],
+    *,
+    supplied: Dataset | None = None,
+    prepared: bool = False,
+    budget: Budget | None = None,
 ) -> dict[str, Any]:
     """Execute only supplied graph objects, never URLs or backend file loaders."""
     try:
@@ -163,7 +177,11 @@ def execute(
     except ImportError:
         return {"status": "unavailable", "message": "Install bijux-ontology[shacl]"}
     limits = Limits(**request["limits"])
-    dataset = supplied if supplied is not None else _roles(request)
+    dataset = supplied if supplied is not None else _roles(request, budget)
+    if budget is not None:
+        bindings = dataset.graph("urn:bijux:shacl:bindings")
+        budget.consume("work", len(bindings))
+        budget.consume("states", len(bindings))
     focus_terms, roots = read_bindings(dataset)
     data = dataset.graph("urn:bijux:shacl:data")
     shapes = dataset.graph("urn:bijux:shacl:shapes")
@@ -177,10 +195,17 @@ def execute(
         with warnings.catch_warnings(record=True) as observed:
             warnings.simplefilter("always")
             if not prepared:
-                problem = _prepare_shapes(request, authored, shapes, roots, backend)
+                problem = _prepare_shapes(
+                    request, authored, shapes, roots, backend, budget
+                )
                 if problem is not None:
                     return problem
             if request.get("pair_mode"):
+                if budget is not None:
+                    count = len(roots) * len(focus_terms)
+                    budget.consume("work", count)
+                    budget.consume("triples", count)
+                    budget.consume("states", count)
                 for root in roots:
                     for node in focus_terms:
                         shapes.add((root, SH.targetNode, node))
@@ -189,9 +214,10 @@ def execute(
                 request.get("functions", ()),
                 data,
                 limits,
+                budget=budget,
             ) as function_calls:
                 if request.get("trusted_targets"):
-                    materialize_targets(data, shapes, ontology, limits)
+                    materialize_targets(data, shapes, ontology, limits, budget=budget)
                 conforms, report, _ = pyshacl.validate(
                     data,
                     shacl_graph=shapes,
@@ -245,6 +271,7 @@ def execute(
                 request["focus_nodes"],
                 limits,
                 validation_complete=not result["warnings"],
+                budget=budget,
             )
         return result
     except LimitExceeded as error:
