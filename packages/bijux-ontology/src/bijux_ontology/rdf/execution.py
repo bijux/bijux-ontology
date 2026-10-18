@@ -1,4 +1,4 @@
-"""Bounded owned-process transport for local RDF engine workers."""
+"""Bounded owned-process transport for RDF engines and resource preparation."""
 
 import math
 import os
@@ -26,6 +26,7 @@ WorkerModule = Literal[
     "bijux_ontology.rdf.queries.worker",
     "bijux_ontology.rdf.canonical.worker",
     "bijux_ontology.rdf.patches.correspondence",
+    "bijux_ontology.workflows.projects.acquisition.worker",
 ]
 
 
@@ -46,6 +47,7 @@ def execute_worker(
         "bijux_ontology.rdf.queries.worker",
         "bijux_ontology.rdf.canonical.worker",
         "bijux_ontology.rdf.patches.correspondence",
+        "bijux_ontology.workflows.projects.acquisition.worker",
     ):
         raise InputError("Unsupported RDF worker module")
     if not isinstance(payload, bytes) or type(cap) is not int or cap <= 0:

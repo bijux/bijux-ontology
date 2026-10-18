@@ -28,6 +28,7 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "acquisition": frozenset("resource_failed unavailable".split()),
     "schema": frozenset(
         "translation_invalid translation_unverified "
         "output_invalid output_unverified".split()
@@ -286,6 +287,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "acquisition": (
+        "explicit offline resource preparation",
+        "A selected acquisition closure failed or could not be qualified.",
+        "Inspect exact origins, redirect/media/size limits and missing resources; "
+        "keep ordinary checks offline and retain the original project inputs.",
+        "acquire_bundle(source, requests=requests, policy=policy, destination=archive)",
+    ),
     "schema": (
         "explicit serialized JSON output contracts",
         "A selected JSON assertion fails or an RDF obligation lacks translation.",

@@ -3,7 +3,7 @@
 import json
 from collections.abc import Callable, Mapping
 from copy import deepcopy
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import cast
 from urllib.parse import urljoin
@@ -39,11 +39,28 @@ def _consume_work(value: object, budget: Budget) -> None:
             stack.extend(current)
 
 
+@dataclass(frozen=True)
+class DocumentLocation:
+    """Explicit remote response identities retained independently of raw JSON."""
+
+    effective_url: str | None = None
+    context_url: str | None = None
+
+
+@dataclass(frozen=True)
+class OfflineDocument:
+    """A supplied JSON document or path with explicit response metadata."""
+
+    document: object
+    effective_url: str | None = None
+    context_url: str | None = None
+
+
 class OfflineDocumentLoader:
     """Resolve only supplied documents, retaining their logical document URLs.
 
-    Values are parsed JSON documents or paths to UTF-8 JSON snapshots. A URL
-    alias needing a distinct effective URL can use a caller-supplied loader.
+    Values are parsed JSON documents, paths to UTF-8 JSON snapshots, or explicit
+    OfflineDocument records retaining effective URLs and context-link metadata.
     """
 
     def __init__(
@@ -62,7 +79,22 @@ class OfflineDocumentLoader:
         if len(documents) > self._limits.max_resources:
             raise LimitExceeded("Too many supplied context documents")
         self._documents = {}
+        self._locations = {}
+        metadata = Budget(self._limits)
         for url, document in documents.items():
+            bound_text(url, metadata)
+            absolute_iri(url)
+            location = DocumentLocation()
+            if isinstance(document, OfflineDocument):
+                location = DocumentLocation(
+                    document.effective_url, document.context_url
+                )
+                document = document.document
+            for value in (location.effective_url, location.context_url):
+                if value is not None:
+                    bound_text(value, metadata)
+                    absolute_iri(value)
+            self._locations[url] = location
             self._documents[url] = (
                 document
                 if isinstance(document, Path)
@@ -116,7 +148,12 @@ class OfflineDocumentLoader:
                 max_bytes=self._max_bytes,
                 max_depth=self._limits.max_depth,
             )
-            return {"contextUrl": None, "documentUrl": url, "document": document}
+            location_metadata = self._locations[url]
+            return {
+                "contextUrl": location_metadata.context_url,
+                "documentUrl": location_metadata.effective_url or url,
+                "document": document,
+            }
         except InputError as error:
             attach_input_failure(error, document_iri=url, location=location)
             raise

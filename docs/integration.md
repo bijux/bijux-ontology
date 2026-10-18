@@ -1004,3 +1004,22 @@ subjects remain ambiguous; a duplicate alias assertion never selects a winner.
 Labels and replacement hints do not establish aliases. Missing or incomplete
 inventories remain unknown, and exhaustion keeps observed candidates with
 incomplete status. Resolution proposes identities without rewriting caller data.
+
+Use `bijux_ontology.workflows.projects.acquisition.acquire_bundle` for explicit
+HTTP resource preparation. Supply `AcquisitionRequest(member, url)`, an
+`AcquisitionPolicy` with exact allowed origins and a new ZIP destination. The
+ordinary project bundle skeleton declares resource identities, graph selections
+and unchanged check jobs. Redirects, transitive imports, observed context links,
+media and compressed/expanded sizes remain bounded; requested and effective URLs
+stay distinct. Inspect `result.report`, `result.resources` and `result.archive`.
+Preparation proves selected resource availability; run ordinary bundle checks to
+qualify the application. Existing checks never acquire missing resources.
+
+The console equivalent is `bijux-ontology acquire project-directory --request
+ontology.ttl https://example.org/ontology --origin https://example.org
+--destination resources.zip --timeout 30 --json`. Repeat `--request` and `--origin`
+explicitly. Native RDF works in core; JSON-LD context processing uses `[jsonld]`.
+Directory input aliases, including missing declared members, reject before HTTP.
+Fetch/closure and final ordinary bundle validation retain separate documented
+Limits boundaries inside the owned worker deadline. Host capture/report adoption
+are separately bounded; filesystem I/O keeps its ordinary OS execution boundary.

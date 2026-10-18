@@ -12,6 +12,8 @@ from bijux_ontology.documents.archive import bundle_reader, resource_path
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.resources import (
     DocumentLoader,
+    DocumentLocation,
+    OfflineDocument,
     OfflineDocumentLoader,
     context_resources,
 )
@@ -45,6 +47,7 @@ class PreparedBundle:
         *,
         imports: Mapping[str, RdfSource] | None = None,
         context_payloads: Mapping[str, bytes] | None = None,
+        context_metadata: Mapping[str, DocumentLocation] | None = None,
         context_scope: tuple[str, ...] | None = None,
         has_dependencies: bool = False,
     ) -> None:
@@ -61,6 +64,7 @@ class PreparedBundle:
             }
         )
         self._context_payloads = MappingProxyType(dict(context_payloads or {}))
+        self._context_metadata = MappingProxyType(dict(context_metadata or {}))
         self._has_dependencies = has_dependencies
         self._contexts = OfflineDocumentLoader(contexts, limits=configuration.limits)
         self.rdf_scope = tuple(rdf)
@@ -143,6 +147,7 @@ class _Availability:
         self.budget = budget
         self.imports: dict[str, RdfSource] = {}
         self.contexts: dict[str, bytes] = {}
+        self.context_metadata: dict[str, DocumentLocation] = {}
 
     def payload(self, iri: str, payload: object) -> bytes:
         """Bound logical metadata and raw bytes before comparing or retaining."""
@@ -163,11 +168,15 @@ class _Availability:
         self.budget.consume("work", len(left))
         return left == right
 
-    def dual_role(self, iri: str, source: RdfSource, payload: bytes) -> None:
+    def dual_role(
+        self, iri: str, source: RdfSource, payload: bytes, metadata: DocumentLocation
+    ) -> None:
         """Allow only exact bytes and the same effective base across RDF/JSON roles."""
         if (
             source.compression is not None
-            or (source.effective_url or source.document_iri) != iri
+            or (source.effective_url or source.document_iri)
+            != (metadata.effective_url or iri)
+            or metadata.context_url is not None
             or not isinstance(source.content, bytes)
             or not self.equal_bytes(source.content, payload)
         ):
@@ -196,7 +205,7 @@ class _Availability:
         if iri not in (source.document_iri, source.effective_url):
             raise InputError("Dependency RDF aliases require exact document identities")
         if iri in self.contexts:
-            self.dual_role(iri, source, self.contexts[iri])
+            self.dual_role(iri, source, self.contexts[iri], self.context_metadata[iri])
         before = self.imports.get(iri)
         if before is not None:
             fields = (
@@ -218,17 +227,30 @@ class _Availability:
         self.retain(payload)
         self.imports[iri] = source
 
-    def context(self, iri: str, raw: bytes) -> None:
+    def context(
+        self, iri: str, raw: bytes, metadata: DocumentLocation | None = None
+    ) -> None:
         """Retain exact context payloads by their logical document identity."""
         payload = self.payload(iri, raw)
+        metadata = metadata or DocumentLocation()
+        for value in (metadata.effective_url, metadata.context_url):
+            if value is not None:
+                bound_text(value, self.budget)
+                absolute_iri(value)
         if iri in self.imports:
-            self.dual_role(iri, self.imports[iri], payload)
+            self.dual_role(iri, self.imports[iri], payload, metadata)
         if iri in self.contexts:
-            if not self.equal_bytes(self.contexts[iri], payload):
+            before = self.context_metadata[iri]
+            if (
+                (before.effective_url or iri) != (metadata.effective_url or iri)
+                or before.context_url != metadata.context_url
+                or not self.equal_bytes(self.contexts[iri], payload)
+            ):
                 raise InputError("Conflicting bundle logical binding", location=iri)
             return
         self.retain(payload)
         self.contexts[iri] = payload
+        self.context_metadata[iri] = metadata
 
 
 def load_bundle(
@@ -313,7 +335,13 @@ def load_bundle(
                 availability.rdf(dependency_iri, descriptor)
             for dependency_iri, raw in dependency._context_payloads.items():
                 ownership.consume("work")
-                availability.context(dependency_iri, raw)
+                availability.context(
+                    dependency_iri,
+                    raw,
+                    dependency._context_metadata.get(
+                        dependency_iri, DocumentLocation()
+                    ),
+                )
         rdf = {}
         logical: dict[str, str] = {}
         rdf_bindings: dict[str, tuple[str, str | None, str | None, bool]] = {}
@@ -371,9 +399,10 @@ def load_bundle(
         for iri, value in object_value(
             manifest.get("contexts", {}), location="contexts"
         ).items():
-            path, payload = member(value)
+            context_path = value.get("path") if isinstance(value, dict) else value
+            path, payload = member(context_path)
             bind(iri, path)
-            availability.context(iri, payload)
+            availability.context(iri, payload, config.context_metadata[iri])
             local_contexts[iri] = payload
         context_inputs: list[tuple[str, object, str | None]] = []
         for job in config.checks():
@@ -413,8 +442,15 @@ def load_bundle(
                             )
                         )
     contexts = {
-        iri: decode_json(
-            payload, source=iri, max_bytes=capped.max_bytes, max_depth=capped.max_depth
+        iri: OfflineDocument(
+            decode_json(
+                payload,
+                source=iri,
+                max_bytes=capped.max_bytes,
+                max_depth=capped.max_depth,
+            ),
+            effective_url=availability.context_metadata[iri].effective_url,
+            context_url=availability.context_metadata[iri].context_url,
         )
         for iri, payload in availability.contexts.items()
     }
@@ -426,6 +462,7 @@ def load_bundle(
         tuple(path for path, _, _ in context_inputs),
         imports=availability.imports,
         context_payloads=availability.contexts,
+        context_metadata=availability.context_metadata,
         context_scope=tuple(local_contexts),
         has_dependencies=dependency_count > 0,
     )

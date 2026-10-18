@@ -15,11 +15,13 @@ from rdflib import Namespace
 from bijux_ontology.declarations import TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.expansion import expand_document
+from bijux_ontology.jsonld.resources import OfflineDocument
 from bijux_ontology.limits import Limits
 from bijux_ontology.vocabulary import check_vocabulary
 from bijux_ontology.workflows.projects.bundles import load_bundle
 from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
+from bijux_ontology.workflows.projects.resources import ProjectResources
 
 EX = Namespace("https://example.org/")
 
@@ -366,3 +368,72 @@ def test_dependency_conflicts_and_child_limits_do_not_depend_on_parent_order(
         load_bundle(
             child_path, dependencies=(large_parent,), limits=Limits(max_bytes=5000)
         )
+
+
+def test_redirected_context_metadata_survives_bundle_move_and_revision(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = bundle_directory(tmp_path / "source")
+    manifest_path = source / "project.json"
+    manifest = json.loads(manifest_path.read_text())
+    effective = str(EX["redirect/context"])
+    imported = str(EX["redirect/base-context"])
+    manifest["contexts"][str(EX.context)] = {
+        "path": "context.json",
+        "effective_url": effective,
+    }
+    manifest["contexts"][imported] = manifest["contexts"].pop(str(EX["base-context"]))
+    manifest_path.write_text(json.dumps(manifest))
+
+    def offline(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Supplied contexts must remain offline")
+
+    monkeypatch.setattr(socket, "socket", offline)
+    prepared = load_bundle(source)
+    response = prepared.document_loader(str(EX.context), {})
+    assert response["documentUrl"] == effective
+    assert response["document"] == {"@context": {"@import": "base-context"}}
+    archive = tmp_path / "owned.zip"
+    prepared.write_archive(archive)
+    source.rename(tmp_path / "unavailable")
+    relocated = load_bundle(archive).materialize(tmp_path / "relocated")
+    assert check_project(relocated).verified
+    resources = ProjectResources(relocated)
+    assert expand_document(
+        {"@context": str(EX.context), "name": "original"},
+        document_loader=resources.document_loader,
+    ) == [{str(EX.name): [{"@value": "original"}]}]
+    revised = resources.replace_resources(
+        rdf={},
+        contexts={
+            imported: OfflineDocument({"@context": {"name": str(EX.changed)}}),
+        },
+    )
+    assert revised.document_loader(str(EX.context), {})["documentUrl"] == effective
+    assert expand_document(
+        {"@context": str(EX.context), "name": "revised"},
+        document_loader=revised.document_loader,
+    ) == [{str(EX.changed): [{"@value": "revised"}]}]
+    assert expand_document(
+        {"@context": str(EX.context), "name": "old reader"},
+        document_loader=resources.document_loader,
+    ) == [{str(EX.name): [{"@value": "old reader"}]}]
+
+
+def test_conflicting_context_response_metadata_is_not_hidden_by_equal_payloads(
+    tmp_path: Path,
+) -> None:
+    left = bundle_directory(tmp_path / "left")
+    right = bundle_directory(tmp_path / "right")
+    manifest_path = right / "project.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["contexts"][str(EX.context)] = {
+        "path": "context.json",
+        "effective_url": str(EX["redirect/context"]),
+    }
+    # Both resources exist, so the failure must concern their conflicting bases.
+    manifest["contexts"][str(EX["redirect/base-context"])] = "base-context.json"
+    manifest_path.write_text(json.dumps(manifest))
+    dependency = load_bundle(left)
+    with pytest.raises(InputError, match="Conflicting bundle logical binding"):
+        load_bundle(right, dependencies=(dependency,))

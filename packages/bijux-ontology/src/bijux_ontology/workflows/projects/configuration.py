@@ -14,6 +14,7 @@ from bijux_ontology._json import (
     text_value,
 )
 from bijux_ontology.errors import InputError
+from bijux_ontology.jsonld.resources import DocumentLocation
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources import RdfSource
@@ -123,11 +124,32 @@ class ProjectConfig:
         contexts = object_value(
             owned.get("contexts", {}), location=source + "/contexts"
         )
-        self.contexts: Mapping[str, Path] = MappingProxyType(
-            {
-                absolute_iri(iri): self.path(path, location=source + "/contexts/" + iri)
-                for iri, path in contexts.items()
-            }
+        context_paths = {}
+        context_metadata = {}
+        for iri, value in contexts.items():
+            where = source + "/contexts/" + iri
+            absolute_iri(iri)
+            metadata = DocumentLocation()
+            if isinstance(value, dict):
+                entry = object_value(value, location=where)
+                known_keys(
+                    entry, {"path", "effective_url", "context_url"}, location=where
+                )
+                fields = {}
+                for key in ("effective_url", "context_url"):
+                    field = entry.get(key)
+                    if field is not None:
+                        field = absolute_iri(
+                            text_value(field, location=where + "/" + key)
+                        )
+                    fields[key] = field
+                metadata = DocumentLocation(**fields)
+                value = entry.get("path")
+            context_paths[iri] = self.path(value, location=where)
+            context_metadata[iri] = metadata
+        self.contexts: Mapping[str, Path] = MappingProxyType(context_paths)
+        self.context_metadata: Mapping[str, DocumentLocation] = MappingProxyType(
+            context_metadata
         )
         checks = owned.get("checks")
         if not isinstance(checks, list) or not checks:
@@ -213,7 +235,16 @@ class ProjectConfig:
                 }
                 for name, item in self.rdf.items()
             },
-            "contexts": {iri: str(path) for iri, path in self.contexts.items()},
+            "contexts": {
+                iri: str(path)
+                if self.context_metadata[iri] == DocumentLocation()
+                else {
+                    "path": str(path),
+                    "effective_url": self.context_metadata[iri].effective_url,
+                    "context_url": self.context_metadata[iri].context_url,
+                }
+                for iri, path in self.contexts.items()
+            },
             "checks": checks,
             "policy": {
                 "strict": self.policy.strict,
