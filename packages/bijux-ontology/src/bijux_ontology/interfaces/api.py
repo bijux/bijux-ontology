@@ -108,6 +108,12 @@ from bijux_ontology.vocabulary.comparison import (
 )
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.registry import (
+    IdentifierRegistry,
+    NamespaceContribution,
+    RegistryMerge,
+    merge_identifier_registry,
+)
 from bijux_ontology.vocabulary.results import TermInfo
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
@@ -159,6 +165,7 @@ __all__ = [
     "FieldDeclaration",
     "FlatNode",
     "FlattenedDocument",
+    "IdentifierRegistry",
     "InputError",
     "InstanceCheck",
     "Issue",
@@ -171,6 +178,7 @@ __all__ = [
     "ModelAssessment",
     "ModelDeclaration",
     "OutputRequirement",
+    "NamespaceContribution",
     "ModelUsage",
     "ObligationResult",
     "ObservedOccurrence",
@@ -194,6 +202,7 @@ __all__ = [
     "RDFExport",
     "RdfModelUsage",
     "RdfSource",
+    "RegistryMerge",
     "Report",
     "ResourceError",
     "Selection",
@@ -244,6 +253,7 @@ __all__ = [
     "load_query_rules",
     "load_catalog",
     "load_vocabulary",
+    "merge_identifier_registry",
     "merge_sources",
     "models_from_data",
     "prepare_jsonld",

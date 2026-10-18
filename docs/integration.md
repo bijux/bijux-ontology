@@ -13,6 +13,13 @@ owned_namespaces=("http://bia/",))` for local membership; add
 `require_coverage=True` and `coverage_terms=selected_owned_iris` for reverse coverage.
 Ownership and accepted RDF kinds are explicit caller contracts.
 
+Compose explicit namespaces with `merge_identifier_registry(contributions)`,
+where each `NamespaceContribution(namespace, canonical_prefix, owner, aliases)`
+retains ownership. Conflicting aliases never produce a partial registry;
+competing canonical spellings require an explicit `canonical_prefixes` choice.
+The immutable registry separates `.iri(value)` from `.expand_curie(value)` and
+uses the longest namespace in `.compact_iri(value)` without guessing intent.
+
 Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
 `graph_name="@default"`, or `union=True`. Imports, lookup resources and prepared
 SHACL inputs retain that selection. `prepared.dataset()` still exports every

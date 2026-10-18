@@ -164,7 +164,8 @@ _CODES = {
     "vocabulary": frozenset(
         "coverage_gap coverage_source_missing declaration_conflict "
         "entity_kind_mismatch fact_changed reference_kind_mismatch reference_missing "
-        "term_missing unknown_reserved_term".split()
+        "term_missing unknown_reserved_term "
+        "registry_alias_conflict registry_canonical_conflict".split()
     ),
 }
 
@@ -359,6 +360,16 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
         "The selected function dependency closure contains unsupported recursion.",
         "Supply an acyclic supported catalog; do not bypass dependency checking.",
         "double(x) calls multiply(x, 2), with no dependency back to double.",
+    ),
+    "vocabulary.registry_alias_conflict": (
+        "A contributed prefix identifies different exact namespaces.",
+        "Choose distinct permitted aliases; canonical spelling cannot remap an alias.",
+        "NamespaceContribution(namespace, canonical_prefix, owner, aliases)",
+    ),
+    "vocabulary.registry_canonical_conflict": (
+        "Owners prefer different canonical prefixes for the same exact namespace.",
+        "Supply one explicit canonical choice from the contributed permitted aliases.",
+        'merge_identifier_registry(items, canonical_prefixes={namespace: "ex"})',
     ),
     "vocabulary.term_missing": (
         "The exact declared term is absent from the selected vocabulary evidence.",
