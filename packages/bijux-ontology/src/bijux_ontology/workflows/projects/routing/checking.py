@@ -126,9 +126,10 @@ def _execute(
     """Pass exact actual data into the ordinary profile/project/SHACL runner."""
     from bijux_ontology.workflows.projects.inputs import ShaclJobInput
 
-    iri = _text(plan.profile.iri, budget, iri=True)
+    iri = ""
     result = None
     try:
+        iri = _text(plan.profile.iri, budget, iri=True)
         selected = bindings(plan, budget)
         if not present:
             raise Unavailable(

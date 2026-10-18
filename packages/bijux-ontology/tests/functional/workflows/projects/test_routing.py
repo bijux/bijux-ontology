@@ -190,6 +190,22 @@ def test_unknown_missing_weaker_and_multiple_declarations_cannot_skip_baselines(
     assert {issue.code for issue in routed.records[2].applicability.issues} == {
         "profile.declaration_missing"
     }
+    malformed = replace(weak, profile=replace(weak.profile, iri="relative"))
+    retained = check_profile_routes(
+        prepare_rdf(graph),
+        (EX.a,),
+        predicates=(EX.profile,),
+        registry={},
+        baseline=(baseline, malformed),
+        require_declaration=False,
+        destination=tmp_path / "malformed-later-plan",
+    )
+    assert len(retained.records) == 1 and len(retained.records[0].plans) == 2
+    assert retained.records[0].plans[0].report.outcome == "disagreement"
+    assert retained.records[0].plans[0].result is not None
+    assert retained.records[0].plans[1].report.outcome == "unverified"
+    assert retained.records[0].plans[1].result is None
+    assert not retained.report.verified and not retained.pending
     graph.add((EX.a, EX.profile, EX.baseline)).add((EX.a, EX.label, Literal("value")))
     selected = prepare_rdf(graph)
     for policy, expected in (("reject", 1), ("all", 3)):
