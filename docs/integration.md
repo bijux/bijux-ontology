@@ -56,6 +56,12 @@ it does not validate or resolve an RDF IRI. Custom datatype relations stay unkno
 
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
+Use `check_rdf_stream(path, vocabulary)` from `bijux_ontology.data.streams` for
+plain N-Triples/N-Quads statement-local checks. Parsing, local checks and requested
+global obligations have separate reports; explicit excluded IRIs remain visible.
+A sealed disk vocabulary requires an explicit `vocabulary_scope=QueryScope(...)`.
+Rows that pass are discarded; retained findings keep exact statement occurrences.
+
 For caller-managed Pyoxigraph stores, use `prepare_external_store` and
 `query_external` from `bijux_ontology.rdf.stores.external`, or
 `check_external_terms` from `bijux_ontology.vocabulary.external`. Each operation
