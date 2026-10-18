@@ -47,6 +47,7 @@ _CODES = {
         "subset_unverified".split()
     ),
     "annotations": frozenset(
+        "attachment_shape graph_unverified comparison_unverified "
         "minimum_missing maximum_exceeded language_minimum_missing "
         "language_maximum_exceeded value_kind datatype entity_unresolved".split()
     ),
@@ -311,9 +312,10 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
     ),
     "annotations": (
         "selected annotation publication requirements",
-        "Selected values violate an explicit shape/count or remain unresolved.",
+        "Selected values violate an explicit shape/count, or exact annotation "
+        "attachments and their correspondence remain unresolved.",
         "Inspect the entity, predicate, language mode and owned source scopes; "
-        "select fallback explicitly.",
+        "select fallback explicitly and retain original attachment witnesses.",
         'AnnotationRequirement("urn:label", languages=(LanguageRequirement("en"),))',
     ),
     "serialization": (

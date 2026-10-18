@@ -859,3 +859,13 @@ parser cannot preserve namespace-entity references inside that literal. Expanded
 content, nesting and normalized bytes share the operation limits. Malformed XML
 retains original parser coordinates; native RDF failures without coordinates
 remain spanless.
+
+`inspect_annotation_graph` from `bijux_ontology.vocabulary.annotations.graphs`
+reads selected direct, axiom and recursively qualified annotations from one owned
+physical graph. It retains exact RDF terms, attachment paths and shared blank
+identities. `compare_annotation_graphs` compares the joint selected graph and
+attributes changes where correspondence is established. `adapt_obo_record`
+requires the original complete OBO attachment inventory. `AnnotationValueEdit`
+uses `author_vocabulary` with explicit after checks to replace an exclusively
+owned leaf qualifier; shared, ambiguous or nonleaf edits remain unverified.
+Referenced resource bodies stay opaque, and export still requires acceptance.
