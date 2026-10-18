@@ -56,6 +56,13 @@ it does not validate or resolve an RDF IRI. Custom datatype relations stay unkno
 
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
+For caller-managed Pyoxigraph stores, use `prepare_external_store` and
+`query_external` from `bijux_ontology.rdf.stores.external`, or
+`check_external_terms` from `bijux_ontology.vocabulary.external`. Each operation
+uses one native read transaction; later calls may observe later commits. Selected
+declarations require no whole-store copy. Hard deadlines and named-scope presence
+checks are unavailable for this borrowed in-process profile.
+
 `run_query_rules(source, load_query_rules(Path("rules.json")))` checks named
 consumer obligations over asserted RDF. The JSON array contains each rule's
 `name`, either `query` text or a relative `query_file`, and an explicit

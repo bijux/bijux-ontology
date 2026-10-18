@@ -99,7 +99,7 @@ def execute(
     return response
 
 
-def failure(error: InputError, operation: Operation, scope: str) -> Report:
+def failure(error: InputError, operation: Budget, scope: str) -> Report:
     """Keep unsupported, invalid and exhausted work distinct from native findings."""
     issues = IssueCollector(operation)
     if isinstance(error, LimitExceeded):
