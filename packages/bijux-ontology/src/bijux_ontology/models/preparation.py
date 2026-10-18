@@ -14,6 +14,7 @@ from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -48,6 +49,7 @@ class PreparedModels:
     _context_json: str | None
     _loader: OfflineDocumentLoader
     _base: str | None
+    _rdf_direction: DirectionPolicy | None
 
     def __init__(
         self,
@@ -59,7 +61,10 @@ class PreparedModels:
         base: str | None = None,
         limits: Limits | None = None,
         regime: Regime = "application",
+        rdf_direction: DirectionPolicy | None = None,
     ) -> None:
+        if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
+            raise InputError("Unsupported RDF direction policy")
         selected = limits if limits is not None else Limits()
         operation = Budget(selected)
         if isinstance(cast(object, models), (str, bytes)) or not isinstance(
@@ -97,7 +102,13 @@ class PreparedModels:
             else load_vocabulary(vocabulary, budget=operation)
         )
         reader = owned._read(budget=operation)
-        report = check_models(declarations, owned, regime=regime, budget=operation)
+        report = check_models(
+            declarations,
+            owned,
+            regime=regime,
+            rdf_direction=rdf_direction,
+            budget=operation,
+        )
         revision = uuid4().hex
         names = ["declarations", *(name for name, _ in reader.scopes)]
         if context_json is not None:
@@ -105,6 +116,8 @@ class PreparedModels:
         if base is not None:
             names.append("base")
         names.extend(f"jsonld:{url}" for url in sorted(snapshots))
+        if rdf_direction is not None:
+            names.append("rdf_direction")
         object.__setattr__(self, "models", declarations)
         object.__setattr__(self, "declaration_report", report)
         object.__setattr__(self, "limits", selected)
@@ -121,6 +134,7 @@ class PreparedModels:
             self, "_loader", OfflineDocumentLoader(snapshots, limits=selected)
         )
         object.__setattr__(self, "_base", base)
+        object.__setattr__(self, "_rdf_direction", rdf_direction)
 
     def _document(self, document: object, operation: Budget) -> object:
         """Apply only the explicitly owned external context, preserving conflicts."""
@@ -185,6 +199,7 @@ class PreparedModels:
                 usages,
                 base=self._base,
                 document_loader=self._loader,
+                rdf_direction=self._rdf_direction,
                 budget=operation,
             )
         except InputError as error:
@@ -213,6 +228,7 @@ class PreparedModels:
                 usages,
                 graph_name=graph_name,
                 union=union,
+                rdf_direction=self._rdf_direction,
                 budget=operation,
             )
         except InputError as error:

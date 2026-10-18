@@ -12,6 +12,7 @@ from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.reports import Issue, Report, combine_reports
@@ -172,6 +173,7 @@ def check_serializer_corpus(
     max_cases: int = 128,
     limits: Limits | None = None,
     budget: Budget | None = None,
+    rdf_direction: DirectionPolicy | None = None,
 ) -> CorpusCheck:
     """Check actual calls once each and account for explicitly required witnesses.
 
@@ -179,6 +181,8 @@ def check_serializer_corpus(
     caller callbacks execute in process with caller-owned lifetimes. Coverage is
     representative only; each case's correctness remains independently visible.
     """
+    if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
+        raise InputError("Unsupported RDF direction policy")
     if type(max_cases) is not int or max_cases <= 0:
         raise InputError("max_cases requires a positive integer")
     if budget is not None and limits is not None and budget.limits != limits:
@@ -230,6 +234,7 @@ def check_serializer_corpus(
                 document_loader=document_loader,
                 budget=operation,
                 _corpus=evidence,
+                rdf_direction=rdf_direction,
             )
             results.append((case.identifier, result))
             pending_cases -= 1

@@ -249,7 +249,9 @@ compare exactly. Model and serializer checks accept `rdf_direction="i18n-datatyp
 or `"compound-literal"` to qualify supported directional output. Physical RDF
 datatypes and resource kinds still govern range checks. Ambiguous compound
 resources, unsupported encodings and unresolved source-to-RDF counts remain
-unverified.
+unverified. `PreparedModels(..., rdf_direction=...)` freezes that policy for
+its fresh checks. Pydantic sample checks and serializer corpus checks accept the
+same keyword separately from actual serializer options.
 
 For ordinary nested Pydantic models, an authoritative context can supply the RDF
 mappings without duplicate primitive declarations:

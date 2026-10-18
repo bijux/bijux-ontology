@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from dataclasses import asdict
 from pathlib import Path
+from typing import cast
 
 from bijux_ontology._json import (
     boolean_value,
@@ -16,6 +17,7 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.comparison import compare_serializations
+from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.flattening import flatten_document
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.selector_codecs import selector_from_data
@@ -136,13 +138,17 @@ def execute_operation(
     if operation == "emission":
         known_keys(
             parameters,
-            common | {"models", "usages"},
+            common | {"models", "usages", "rdf_direction"},
             location="worker request",
         )
         return check_emission(
             document,
             models_from_data(parameters.get("models")),
             usages_from_data(parameters.get("usages")),
+            rdf_direction=cast(
+                DirectionPolicy | None,
+                optional_string_value(parameters.get("rdf_direction")),
+            ),
             base=base,
             document_loader=loader,
             limits=limits,

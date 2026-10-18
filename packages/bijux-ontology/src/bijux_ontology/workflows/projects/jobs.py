@@ -54,7 +54,7 @@ def check_kind(job: Mapping[str, object]) -> CheckKind:
             "lint",
             "allow_empty",
         },
-        "models": {"declarations", "regime"},
+        "models": {"declarations", "regime", "rdf_direction"},
         "context": {
             "document",
             "expectations",
