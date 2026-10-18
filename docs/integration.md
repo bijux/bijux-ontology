@@ -335,6 +335,13 @@ reasoning APIs reject it; broader RDF 1.2 compatibility is not implied.
 
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
+`jsonld.composition.compose_contexts(modules, resolution="retain-required")`
+processes caller-ordered `ContextModule` values as a JSON-LD context array.
+Every module supplies nonempty representative `ContextCase` usages and
+`ContextExpectation` obligations. Independent and composite checks must both
+pass before `.context` is returned. Protection, nullification and scoped
+contexts use maintained processing; qualification covers the declared cases.
+
 `jsonld.html.extract_html_jsonld(content, document_url)` extracts JSON-LD
 scripts through the maintained HTML processor and returns `.scripts` locations,
 independently owned `.document`, effective `.base` and prepared RDF `.source`.
