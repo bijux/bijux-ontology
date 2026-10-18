@@ -32,6 +32,7 @@ from bijux_ontology.vocabulary.view import Vocabulary
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report, combine_reports
+from .application_values import retain_enumeration_report
 from .constraints import _emission_issues, _field_issues, _value_contract_issues
 from .direction import project_direction
 from .propagation import ModelContracts
@@ -69,6 +70,7 @@ def check_models(
     )
     registry: dict[str, ModelDeclaration] = {}
     issues = IssueCollector(budget)
+    enumeration_reports: dict[tuple[int, bool], Report] = {}
     checked = 0
     complete = True
     try:
@@ -83,6 +85,12 @@ def check_models(
                 location = field.location or f"{model.identifier}.{field.name}"
                 for index, branch in enumerate(field.values):
                     budget.consume("work")
+                    retain_enumeration_report(
+                        branch.constraints,
+                        enumeration_reports,
+                        budget=budget,
+                        issues=issues,
+                    )
                     branch_location = f"{location}[{index}]"
                     issues.extend(_value_contract_issues(branch, branch_location))
                     for sample_index, sample in enumerate(branch.samples):
@@ -297,6 +305,7 @@ def check_models(
         "models",
         checked,
         tuple(issues),
+        children=tuple(enumeration_reports.values()),
         allow_empty=allow_empty,
         complete=complete,
         regime=regime,

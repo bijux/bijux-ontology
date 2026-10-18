@@ -9,11 +9,13 @@ from rdflib import Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
+from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
 from bijux_ontology.rdf.terms import term_key
+from bijux_ontology.reports import Report
 
 _PATTERN_MEMORY = 65_536
 
@@ -134,23 +136,45 @@ def application_matches(
     if not isinstance(constraints, ValueConstraints):
         raise InputError("Expected explicit application value constraints")
     budget.consume("work")
-    if constraints.enumeration == ():
+    if constraints.enumeration == () or (
+        isinstance(constraints.enumeration, ValueEnumeration)
+        and constraints.enumeration.qualified
+        and not constraints.enumeration.values
+    ):
         return False
     if actual is None:
         return True if constraints == ValueConstraints() else None
     actual_key = _term(actual, budget)
     results: list[bool | None] = []
     if constraints.enumeration is not None:
-        count = len(constraints.enumeration)
-        if count > budget.limits.max_states:
-            raise LimitExceeded("Value enumeration exceeds max_states")
+        enumeration = constraints.enumeration
+        allowed = (
+            enumeration.values
+            if isinstance(enumeration, ValueEnumeration)
+            else enumeration
+        )
+        forbidden = (
+            enumeration.excluded if isinstance(enumeration, ValueEnumeration) else ()
+        )
+        qualified = (
+            enumeration.qualified if isinstance(enumeration, ValueEnumeration) else True
+        )
         found = False
-        for index in range(count):
-            budget.consume("work")
-            budget.consume("states")
-            if _term(constraints.enumeration[index], budget) == actual_key:
-                found = True
-        results.append(found)
+        excluded = False
+        for terms, is_excluded in ((allowed, False), (forbidden, True)):
+            if len(terms) > budget.limits.max_states:
+                raise LimitExceeded("Value enumeration exceeds max_states")
+            for index in range(len(terms)):
+                budget.consume("work")
+                budget.consume("states")
+                if _term(terms[index], budget) == actual_key:
+                    if is_excluded:
+                        excluded = True
+                    else:
+                        found = True
+        results.append(
+            False if excluded else True if found else False if qualified else None
+        )
     if constraints.minimum is not None or constraints.maximum is not None:
         for bound in (constraints.minimum, constraints.maximum):
             if bound is not None:
@@ -207,3 +231,32 @@ def application_matches(
                 found = True
         results.append(found)
     return False if False in results else None if None in results else True
+
+
+def retain_enumeration_report(
+    constraints: ValueConstraints | None,
+    reports: dict[tuple[int, bool], Report],
+    *,
+    budget: Budget,
+    issues: IssueCollector,
+) -> None:
+    """Preserve each required selection report once in this checking operation.
+
+    Retain child diagnostics with the current allowance before attaching the
+    entire immutable report. A limit keeps proved finding prefixes and prevents
+    a large externally prepared report from bypassing this operation's budget.
+    """
+    enumeration = constraints.enumeration if constraints is not None else None
+    if not isinstance(enumeration, ValueEnumeration):
+        return
+    key = (
+        id(enumeration.report) if enumeration.report is not None else id(enumeration),
+        enumeration.closed,
+    )
+    if key in reports:
+        return
+    budget.consume("work")
+    budget.consume("states")
+    report = enumeration.qualification_report()
+    issues.extend(report.issues)
+    reports[key] = report

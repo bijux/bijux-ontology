@@ -451,7 +451,7 @@ def test_json_contracts_preserve_exact_enum_lexicals_and_decimal_bound_text() ->
     before = deepcopy(data)
     models = models_from_data(data)
     constraints = models[0].fields[0].values[0].constraints
-    assert constraints is not None and constraints.enumeration is not None
+    assert constraints is not None and isinstance(constraints.enumeration, tuple)
     assert str(constraints.enumeration[0]) == "01" and constraints.minimum == Decimal(
         "1.00"
     )

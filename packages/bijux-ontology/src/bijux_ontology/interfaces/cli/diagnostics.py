@@ -143,6 +143,7 @@ _CODES = {
         "implicit_target_unverified nonconformance sparql_unverified".split()
     ),
     "skos": frozenset(
+        "subset.scope_unverified subset.lifecycle_unverified "
         "xl_relation.endpoint_not_resource xl_relation.form_shape "
         "xl_relation.form_conflict xl_relation.role_conflict "
         "xl_relation.forbidden xl_relation.policy_mismatch "

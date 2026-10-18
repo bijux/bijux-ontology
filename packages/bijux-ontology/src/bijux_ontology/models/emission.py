@@ -44,7 +44,7 @@ from bijux_ontology.rdf.terms import literal_term, term_key
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
-from .application_values import application_matches
+from .application_values import application_matches, retain_enumeration_report
 from .bindings import (
     candidate_paths,
     same_contribution,
@@ -328,6 +328,7 @@ def check_emission(
     selected = limits or (budget.limits if budget is not None else Limits())
     budget = budget if budget is not None else Budget(selected)
     issues = IssueCollector(budget)
+    enumeration_reports: dict[tuple[int, bool], Report] = {}
     checked = 0
     complete = True
     native_literals: dict[str, Literal] = {}
@@ -339,6 +340,12 @@ def check_emission(
             for field in declaration.fields:
                 for index, branch in enumerate(field.values):
                     budget.consume("work")
+                    retain_enumeration_report(
+                        branch.constraints,
+                        enumeration_reports,
+                        budget=budget,
+                        issues=issues,
+                    )
                     if branch.model is not None and branch.model not in registry:
                         issues.append(
                             Issue(
@@ -1368,6 +1375,7 @@ def check_emission(
         "model-emission",
         checked,
         tuple(issues),
+        children=tuple(enumeration_reports.values()),
         complete=complete,
         families=("representative-serialization", "literal-values"),
         requested=max(checked, len(usages)),

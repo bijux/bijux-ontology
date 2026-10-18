@@ -147,6 +147,15 @@ reads after cancellation or exhaustion. They are opaque in-process objects.
 Term and lexical ordering are prepared lazily and shared by compatible views;
 ordinary inspection and statement paging reuse the existing index.
 
+Use `select_concepts(view, scheme=iri, closed=True)` or `collection=iri` to
+bind an explicit controlled set with `subset.bind(field)`. Scheme selections
+accept interior `roots` and authored hierarchy policies. Choose deprecation
+`allow`, `exclude` (the default), or `require-active`; the last requires explicit
+nondeprecated metadata. Known members and definite exclusions retain their
+witnesses. Open or incomplete selections cannot prove outsider exclusion or
+complete coverage, and their original reports remain required by output checks.
+Binding preserves other predicates and rejects an existing enumeration.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.

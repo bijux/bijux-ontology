@@ -11,6 +11,8 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 
+from .enumerations import ValueEnumeration
+
 
 @dataclass(frozen=True)
 class ValueConstraints:
@@ -21,7 +23,7 @@ class ValueConstraints:
     spelling prefixes. No predicate normalizes or replaces a supplied RDF term.
     """
 
-    enumeration: tuple[URIRef | RDFLiteral, ...] | None = None
+    enumeration: tuple[URIRef | RDFLiteral, ...] | ValueEnumeration | None = None
     minimum: Decimal | None = None
     maximum: Decimal | None = None
     minimum_inclusive: bool = True
@@ -34,7 +36,9 @@ class ValueConstraints:
 
     def __post_init__(self) -> None:
         """Require finite immutable inventories and exact finite numeric bounds."""
-        if self.enumeration is not None:
+        if self.enumeration is not None and not isinstance(
+            self.enumeration, ValueEnumeration
+        ):
             if (
                 type(self.enumeration) is not tuple
                 or len(self.enumeration) > Limits().max_states

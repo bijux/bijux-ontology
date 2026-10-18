@@ -17,6 +17,7 @@ from bijux_ontology.declarations.codecs import (
     models_from_data,
     terms_from_data,
 )
+from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.types import (
     EmissionCondition,
     EmissionCoverage,
@@ -124,6 +125,7 @@ from bijux_ontology.skos.publication import (
     check_scheme_coverage,
     check_top_concepts,
 )
+from bijux_ontology.skos.subsets import ConceptSubset, select_concepts
 from bijux_ontology.vocabulary.annotations import (
     AnnotationCoverage,
     AnnotationRequirement,
@@ -208,6 +210,7 @@ __all__ = [
     "ContextExpectation",
     "ContextInputError",
     "ContextProbe",
+    "ConceptSubset",
     "ContractObligation",
     "ContractResult",
     "CorpusBranch",
@@ -289,6 +292,7 @@ __all__ = [
     "UseIndex",
     "ValueConstraints",
     "ValueDeclaration",
+    "ValueEnumeration",
     "ValueTraits",
     "Vocabulary",
     "VocabularyChanges",
@@ -357,6 +361,7 @@ __all__ = [
     "run_rules",
     "run_query_rules",
     "search_page",
+    "select_concepts",
     "statements_page",
     "terms_page",
     "terms_from_data",
