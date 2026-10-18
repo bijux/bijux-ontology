@@ -185,7 +185,7 @@ def test_serializer_checks_share_a_cumulative_operation_budget() -> None:
     document = {"@context": {"@vocab": str(EX)}, "@type": "Record", "name": "Name"}
     owned = load_vocabulary(vocabulary())
     usages = [ModelUsage("record")]
-    limits = Limits(max_work=50)
+    limits = Limits(max_work=80)
     assert check_models([model], owned, limits=limits).verified
     assert check_emission(document, [model], usages, limits=limits).verified
     exhausted = check_instance(
@@ -207,6 +207,6 @@ def test_serializer_checks_share_a_cumulative_operation_budget() -> None:
         usages,
         vocabulary=owned,
         options={},
-        limits=Limits(max_work=100),
+        limits=Limits(max_work=120),
     )
     assert fresh.report.verified, fresh.report.to_dict()

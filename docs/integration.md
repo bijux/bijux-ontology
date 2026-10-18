@@ -342,6 +342,16 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
 
+`check_document_form(document_or_prepared, requirements, expectations=...)`
+checks explicit source representation with `FormRequirement` selectors for
+object/array/scalar shape, exact required/allowed keys and reference/inline
+embedding. Selections require source occurrences. Unrequested forms remain
+unrestricted. `form_report` records representation, `semantic_report` requires
+maintained conversion and selected `ContextExpectation` meanings, and `report`
+requires both. RDF-equivalent flat and nested documents can have different form
+outcomes. Reused `PreparedUsages` pins its snapshot, resources and shared budget;
+applied source omissions cannot witness original form.
+
 Use `compile_context(probes, type_scoped=False)` to generate mappings from
 explicit `ContextProbe` model/field intent. Supported forward/reverse fields,
 IRI coercions, datatypes, languages and list/set containers are checked by the

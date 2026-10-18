@@ -33,6 +33,11 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.documents.compaction import export_jsonld
 from bijux_ontology.documents.export import RDFExport, export_rdf, write_export
+from bijux_ontology.documents.forms import (
+    DocumentFormCheck,
+    FormRequirement,
+    check_document_form,
+)
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.interfaces.execution.executor import ExecutionResult, WorkerExecutor
@@ -231,6 +236,7 @@ __all__ = [
     "CorpusCheck",
     "CorpusWitness",
     "DataView",
+    "DocumentFormCheck",
     "EntitySelector",
     "ExecutionResult",
     "ExpectedList",
@@ -241,6 +247,7 @@ __all__ = [
     "FieldDeclaration",
     "FlatNode",
     "FlattenedDocument",
+    "FormRequirement",
     "IdentifierBatch",
     "IdentifierRecognition",
     "IdentifierRecord",
@@ -330,6 +337,7 @@ __all__ = [
     "check_context",
     "check_contract",
     "check_data_usage",
+    "check_document_form",
     "check_emission",
     "check_instance",
     "check_label_collisions",

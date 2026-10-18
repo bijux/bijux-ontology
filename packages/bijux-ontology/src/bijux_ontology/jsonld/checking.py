@@ -19,7 +19,14 @@ from .resources import (
     context_resources,
 )
 from .selection import UsageIndex
-from .selectors import EntitySelector, Selection, SourceSelector, resolve_selection
+from .selectors import (
+    EntitySelector,
+    Selection,
+    SourceSelector,
+    _bounded_location,
+    _path_metadata,
+    resolve_selection,
+)
 from .values import ValueTraits, value_traits
 
 
@@ -137,11 +144,12 @@ class PreparedUsages:
             )
         ):
             raise ContextInputError("Expected a nonempty key/index usage selector")
+        _path_metadata(path, self._budget)
         try:
             return self._index.select(path)
         except (KeyError, IndexError) as error:
             raise ContextInputError(
-                "No supplied usage", location=location(path)
+                "No supplied usage", location=_bounded_location(path, self._budget)
             ) from error
 
     def observe_many(self, paths: Sequence[SourcePath]) -> tuple[ObservedUsage, ...]:
@@ -163,6 +171,7 @@ class PreparedUsages:
                 )
             ):
                 raise ContextInputError("Expected nonempty key/index usage selectors")
+            _path_metadata(path, self._budget)
         self._index.prepare_many(selected)
         return tuple(self.observe(path) for path in selected)
 
@@ -190,6 +199,8 @@ class PreparedUsages:
         try:
             issues.extend(self._omission_issues)
             issues.extend(_drop_issues(self._dropped, self._allowed_drops))
+            for expectation in expectations:
+                _path_metadata(expectation.path, self._budget)
             self._index.prepare_many(
                 tuple(
                     expectation.path
@@ -208,7 +219,7 @@ class PreparedUsages:
                     excluded += 1
                     requested -= 1
                     continue
-                where = location(expectation.path)
+                where = _bounded_location(expectation.path, self._budget)
                 if expectation.predicate.startswith(
                     "@"
                 ) and expectation.predicate not in {

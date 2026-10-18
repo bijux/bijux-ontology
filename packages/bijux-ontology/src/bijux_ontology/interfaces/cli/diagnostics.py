@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "documents": frozenset(
+        "form_shape form_key_missing form_key_unexpected form_embedding "
+        "form_binding_unverified form_scope_unverified".split()
+    ),
     "obo": frozenset(
         "attachment_shape attachment_unverified base_missing "
         "synonym_type_shape value_kind".split()
@@ -203,6 +207,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "documents": (
+        "selected JSON-LD source representation",
+        "A selected source occurrence violates its explicit form or lacks a binding.",
+        "Inspect the original source paths and requested keys, shapes or embedding; "
+        "retain the independent semantic report.",
+        'FormRequirement(SourceSelector(()), required_keys=("@graph",))',
+    ),
     "obo": (
         "selected OBO annotation records",
         "The selected native OBO annotation convention is not established.",
