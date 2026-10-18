@@ -331,6 +331,14 @@ character. Word boundaries are explicit; `boundary="substring"` also permits
 embedded hits. Unicode composition is unchanged. Keep the returned report:
 interrupted extraction retains complete mentions but cannot prove their absence.
 
+`vocabulary.obo.cross_references.check_cross_references(view, terms, registry,
+rules=...)` checks original term, definition and synonym dbxrefs with the existing
+identifier policies. Optional `LocalCatalogue` inventories resolve exact IRIs;
+only explicitly closed catalogue coverage can prove a dangling reference.
+External references remain external, and alternate spellings establish no IRI
+equivalence. Native OBO annotation records remain separate evidence; the required
+report covers xref capture, attachment, accession and selected resolution policy.
+
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
 `rdf.skolem.skolemize(source, caller_owned_base)` names blank resources with

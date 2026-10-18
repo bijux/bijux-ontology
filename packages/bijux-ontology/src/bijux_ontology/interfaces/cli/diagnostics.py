@@ -77,6 +77,7 @@ _CODES = {
         "patch_rebinding_unverified".split()
     ),
     "obo": frozenset(
+        "xref_invalid xref_unverified xref_input_error "
         "publication_text publication_qualification publication_definition_xref "
         "publication_synonym_type publication_unverified "
         "alternative_id_unverified alternative_id_ambiguous "
