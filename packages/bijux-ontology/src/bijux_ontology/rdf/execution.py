@@ -24,6 +24,7 @@ def checkpoint(deadline: float, cancel: threading.Event | None) -> None:
 
 WorkerModule = Literal[
     "bijux_ontology.rdf._comparison_worker",
+    "bijux_ontology.rdf.stores.worker",
     "bijux_ontology.rdf.queries.worker",
     "bijux_ontology.rdf.canonical.worker",
     "bijux_ontology.rdf.patches.correspondence",
@@ -49,6 +50,7 @@ def execute_worker(
     """
     if module not in (
         "bijux_ontology.rdf._comparison_worker",
+        "bijux_ontology.rdf.stores.worker",
         "bijux_ontology.rdf.queries.worker",
         "bijux_ontology.rdf.canonical.worker",
         "bijux_ontology.rdf.patches.correspondence",

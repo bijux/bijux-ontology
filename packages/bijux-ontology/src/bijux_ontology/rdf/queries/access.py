@@ -212,7 +212,12 @@ def _request(
 
 
 def _result(
-    raw: bytes, scope: QueryScope, limits: Limits, max_rows: int
+    raw: bytes,
+    scope: QueryScope,
+    limits: Limits,
+    max_rows: int,
+    *,
+    budget: Budget | None = None,
 ) -> QueryResult:
     """Validate peer output before constructing a completed typed public answer."""
     response = decode_json(
@@ -289,7 +294,8 @@ def _result(
         raise ResourceError("Invalid local SELECT row scope")
     blanks: dict[str, BNode] = {}
     rows = []
-    budget = Budget(limits)
+    budget = budget if budget is not None else Budget(limits)
+    budget.consume("states", len(variables))
     for row in supplied:
         budget.consume("states", len(variables))
         if not isinstance(row, list) or len(row) != len(variables):

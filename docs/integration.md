@@ -1123,3 +1123,13 @@ resources. Inspect original single-version checks, exact outputs and deployable
 cells; other known combinations and unused consumers remain visibly untested.
 Missing versions, inputs or representative corpora keep required cells incomplete.
 A passing majority cannot hide a failed or unknown selected obligation.
+
+`bijux_ontology.rdf.stores` creates/reopens sealed native disk snapshots from
+local N-Triples/N-Quads. `query_snapshot` runs bounded local ASK/SELECT with an
+explicit `QueryScope`; `vocabulary.storage` inspects selected terms and checks
+used declarations without copying the entire dataset. Native lexical changes,
+such as integer `01` normalization, are required unsupported. Snapshot reads
+verify their closed file revision; restart rechecks content hashes and inventory.
+`materialize_snapshot(..., max_triples=...)` explicitly bounds other consumers'
+in-memory projections. Nonempty-only graph inventory cannot prove empty named
+graph coverage, and unsupported physical graph identities cannot be collapsed.
