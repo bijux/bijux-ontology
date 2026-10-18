@@ -330,6 +330,7 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "lifecycle_violation lifecycle_unverified lifecycle_input_error "
         "identifier_changed identifier_unverified identifier_input_error "
         "matrix_unverified "
         "value_inadmissible value_unverified value_scope_unverified "

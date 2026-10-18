@@ -1438,3 +1438,11 @@ The supported atomic names are meter, millimeter, centimeter, kilometer, second,
 minute, hour, kelvin and degree_Celsius. Unsupported or inexact conversions remain
 unknown. `.check(record, contract, convert=True)` exposes a separate `.converted`
 record only after intrinsic rechecks; `.source` preserves the actual input.
+
+`bijux_ontology.workflows.upgrades.lifecycle.check_lifecycle` checks explicit
+ordered `Release` snapshots and selected IRIs under a `LifecyclePolicy`. Supply
+`HistoryCoverage` for the exact interval and optional `Tombstone` records.
+Reserved logical predicates and occurrence positions are caller policy; retained
+assertions and prohibited reactivation are distinct from ordinary label changes.
+Raw observations and adjacent differences remain available. Missing history or
+anonymous attribution cannot certify permanent identifier stability.
