@@ -1,5 +1,7 @@
 """Assess JSON-LD preservation and convert through the maintained RDF processor."""
 
+import json
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from typing import Literal, cast
 
@@ -12,7 +14,7 @@ from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
 from .expansion import _drop_issues, _validate_allowed_drops, expand_document
-from .observations import location
+from .observations import location, occurrences
 from .resources import (
     ContextInputError,
     DocumentLoader,
@@ -46,6 +48,7 @@ def preservation_issues(
     *,
     direction: DirectionPolicy | None,
     collector: IssueCollector | None = None,
+    on_direction: Callable[[], None] | None = None,
 ) -> tuple[Issue, ...]:
     """Find contributions the chosen standard RDF conversion cannot retain.
 
@@ -82,6 +85,8 @@ def preservation_issues(
             return
         node = cast(dict[str, object], value)
         if "@value" in node:
+            if node.get("@direction") is not None and on_direction is not None:
+                on_direction()
             if node.get("@direction") is not None and direction is None:
                 issues.append(
                     Issue(
@@ -195,6 +200,74 @@ def literal_preservation_issues(
                 )
 
 
+def _direction_identity_issues(
+    expanded: object, budget: Budget, collector: IssueCollector
+) -> None:
+    """Qualify direction-distinct sibling identity using maintained equality.
+
+    Expansion-local owner/graph tokens never become converted blank identifiers.
+    List positions remain separate; only unordered values on the same RDF edge
+    can encounter the processor's direction-insensitive node-map deduplication.
+    """
+    seen: dict[tuple[object, ...], dict[str | None, dict[str, object]]] = {}
+    reported: set[tuple[object, ...]] = set()
+    compare = processor().JsonLdProcessor.compare_values
+    for item in occurrences(expanded, budget=budget):
+        budget.consume("work")
+        raw = item.value
+        if (
+            item.container != "unordered"
+            or not isinstance(raw, dict)
+            or "@value" not in raw
+            or raw.get("@type") == "@json"
+        ):
+            continue
+        base = {key: value for key, value in raw.items() if key != "@direction"}
+        spelling = json.dumps(base, ensure_ascii=False, sort_keys=True)
+        budget.consume("bytes", len(spelling.encode("utf-8")))
+        key = (
+            item.subject,
+            item.subject_identity,
+            item.graph,
+            item.graph_identity,
+            item.anonymous_graph,
+            item.predicate,
+            item.reverse,
+            spelling,
+        )
+        if key in reported:
+            continue
+        direction = raw.get("@direction")
+        direction = direction if isinstance(direction, str) else None
+        if key not in seen:
+            budget.consume("states")
+            seen[key] = {}
+        previous = seen[key]
+        if direction in previous:
+            continue
+        for prior in previous.values():
+            budget.consume("work")
+            if compare(prior, raw):
+                collector.append(
+                    Issue(
+                        "context.rdf_direction_unverified",
+                        "Maintained conversion does not distinguish "
+                        "directional sibling literal identities",
+                        item.subject or "",
+                        kind="unverified",
+                        evidence_json=json.dumps(
+                            {"predicate": item.predicate, "graph": item.graph}
+                        ),
+                    )
+                )
+                budget.consume("states")
+                reported.add(key)
+                break
+        if key not in reported:
+            budget.consume("states")
+            previous[direction] = raw
+
+
 def _convert_to_rdf_dataset(
     document: object,
     *,
@@ -223,6 +296,13 @@ def _convert_to_rdf_dataset(
     operation = resources.budget
     dropped: list[str | None] = []
     issues = IssueCollector(operation)
+    directional = False
+
+    def observed_direction() -> None:
+        """Retain only whether the existing preservation walk saw a direction."""
+        nonlocal directional
+        directional = True
+
     try:
         expanded = expand_document(
             document,
@@ -230,7 +310,14 @@ def _convert_to_rdf_dataset(
             document_loader=resources,
             on_property_dropped=dropped.append,
         )
-        preservation_issues(expanded, direction=direction, collector=issues)
+        preservation_issues(
+            expanded,
+            direction=direction,
+            collector=issues,
+            on_direction=observed_direction,
+        )
+        if directional and direction is not None:
+            _direction_identity_issues(expanded, operation, issues)
         issues.extend(_drop_issues(dropped, allowed_drops))
     except LimitExceeded as error:
         issues.exhausted(str(error))

@@ -4,6 +4,8 @@ import json
 from dataclasses import dataclass
 from typing import cast
 
+from bijux_ontology.limits import Budget
+
 from .values import ValueTraits, value_traits
 
 SourcePath = tuple[str | int, ...]
@@ -119,16 +121,30 @@ def _nodes(value: object) -> list[object]:
     return cast(list[object], value) if isinstance(value, list) else [value]
 
 
-def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
+def occurrences(
+    expanded: object, *, budget: Budget | None = None
+) -> tuple[ObservedOccurrence, ...]:
     """Collect expanded contributions while assigning reversal to each edge."""
     result: list[ObservedOccurrence] = []
     list_count = 0
     identities: dict[int, int] = {}
 
+    def retain(item: ObservedOccurrence) -> None:
+        """Bound retained observations before allocation enters the inventory."""
+        if budget is not None:
+            budget.consume("work")
+            budget.consume("states")
+            budget.consume("bytes", len(item.value_json.encode("utf-8")))
+        result.append(item)
+
     def identity(node: object) -> int:
         """Name an implicit node only within this owned expansion."""
         key = id(node)
-        return identities.setdefault(key, len(identities))
+        if key not in identities:
+            if budget is not None:
+                budget.consume("states")
+            identities[key] = len(identities)
+        return identities[key]
 
     def walk(
         value: object,
@@ -151,7 +167,7 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
         subject = subject if isinstance(subject, str) else None
         subject_identity = identity(node) if subject is None else None
         if subject is not None:
-            result.append(
+            retain(
                 ObservedOccurrence(
                     "@id",
                     _json(subject),
@@ -163,7 +179,7 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                 )
             )
         for node_type in _nodes(node.get("@type", [])):
-            result.append(
+            retain(
                 ObservedOccurrence(
                     "@type",
                     _json(node_type),
@@ -232,7 +248,7 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
             if listed:
                 list_count += 1
             if listed and not members:
-                result.append(
+                retain(
                     ObservedOccurrence(
                         predicate,
                         "[]",
@@ -250,7 +266,7 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                     )
                 )
             for index, member in enumerate(members):
-                result.append(
+                retain(
                     ObservedOccurrence(
                         predicate,
                         _json(member),
