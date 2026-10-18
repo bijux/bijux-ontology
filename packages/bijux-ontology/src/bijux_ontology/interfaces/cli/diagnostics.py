@@ -150,6 +150,8 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "patch_unverified patch_precondition_failed patch_removal_missing "
+        "patch_postcondition_failed "
         "literal_conversion_unverified "
         "canonicalization_literal_scope_unverified "
         "canonicalization_graph_scope_unverified canonicalization_empty_graph_loss "

@@ -13,6 +13,7 @@ from bijux_ontology.limits import Budget
 
 from ..errors import InputError, LimitExceeded
 from .identifiers import absolute_iri
+from .roles.classification import bound_node, bound_text
 from .terms import validate_node, validate_triple
 
 GraphSelection = URIRef | BNode | str
@@ -275,7 +276,9 @@ class PreparedSource:
                 raise InputError("Choose a graph name or union, not both")
             if graph_name != "@default":
                 absolute_iri(graph_name, location="graph_name")
-        self.graph_name = graph_name
+        self.graph_name = (
+            str(graph_name) if isinstance(graph_name, URIRef) else graph_name
+        )
         self.union = union
         self.graph_fidelity = graph_fidelity
         self._dataset = copy_dataset(dataset, max_triples) if copy else dataset
@@ -291,13 +294,23 @@ class PreparedSource:
         """Export an independent dataset, retaining graph and blank-node relations."""
         return copy_dataset(self._dataset, self._max_triples, standardize_apart=False)
 
-    def _graph_names(self, *, budget: Budget | None = None) -> Iterator[URIRef | BNode]:
-        """Read owned named identifiers without exporting storage or a new cache."""
-        default = self._dataset.default_graph.identifier
-        for graph in self._dataset.graphs():
+    def _owned_contexts(self, budget: Budget | None) -> Iterator[Graph]:
+        """Qualify names before maintained dataset default-graph comparisons.
+
+        Dataset.graphs compares identifiers before yielding them. The public
+        superclass context iterator lets this boundary bound existing names first.
+        """
+        for graph in ConjunctiveGraph.contexts(self._dataset):
             if budget is not None:
                 budget.consume("work")
                 budget.consume("states")
+                bound_node(graph.identifier, budget)
+            yield graph
+
+    def _graph_names(self, *, budget: Budget | None = None) -> Iterator[URIRef | BNode]:
+        """Read owned named identifiers without exporting storage or a new cache."""
+        default = self._dataset.default_graph.identifier
+        for graph in self._owned_contexts(budget):
             if graph.identifier != default:
                 yield cast(URIRef | BNode, graph.identifier)
 
@@ -346,9 +359,7 @@ class PreparedSource:
                 yield "named", name, selected
             return
         default = self._dataset.default_graph.identifier
-        for context in self._dataset.graphs():
-            budget.consume("work")
-            budget.consume("states")
+        for context in self._owned_contexts(budget):
             if context.identifier == default:
                 yield "default", None, _read_graph(context)
             else:
@@ -373,6 +384,10 @@ class PreparedSource:
         """
         if type(union) is not bool:
             raise InputError("union must be a boolean")
+        if graph_name is not None and budget is not None:
+            bound_text(graph_name, budget)
+        if isinstance(graph_name, URIRef):
+            graph_name = str(graph_name)
         if self.graph_name is not None or self.union:
             if (graph_name is not None or union) and (
                 graph_name != self.graph_name or union != self.union

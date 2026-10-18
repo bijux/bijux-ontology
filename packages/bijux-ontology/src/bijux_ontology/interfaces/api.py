@@ -124,6 +124,20 @@ from bijux_ontology.rdf.datatype_evaluators import (
     DatatypeEvaluator,
     DatatypeRegistry,
 )
+from bijux_ontology.rdf.patches import (
+    BlankNodePair,
+    DatasetPatch,
+    PatchBlank,
+    PatchBlankBinding,
+    PatchLiteral,
+    PatchPlan,
+    PatchQuad,
+    SnapshotWitness,
+    apply_rdf_patch,
+    patch_from_data,
+    patch_to_data,
+    plan_rdf_patch,
+)
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
 from bijux_ontology.rdf.roles import TermRoleOccurrence, classify_statement
 from bijux_ontology.rdf.snapshots import PreparedSource
@@ -271,6 +285,18 @@ from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
+    "BlankNodePair",
+    "DatasetPatch",
+    "PatchBlank",
+    "PatchBlankBinding",
+    "PatchLiteral",
+    "PatchPlan",
+    "PatchQuad",
+    "SnapshotWitness",
+    "apply_rdf_patch",
+    "patch_from_data",
+    "patch_to_data",
+    "plan_rdf_patch",
     "ApplicationDeclarationChange",
     "ApplicationField",
     "ApplicationOutput",

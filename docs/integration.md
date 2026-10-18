@@ -603,3 +603,17 @@ comparisons separately. Changed predicates remain visible even when both version
 pass. Missing identities, ambiguous source ownership and unavailable baseline
 checks remain unverified; no matching is inferred from IRIs or diagnostic prose.
 Anonymous attachment impacts retain independent before/after use roles.
+
+
+`plan_rdf_patch(base, target)` proposes a portable exact `DatasetPatch` with
+explicit base and target witnesses, quad edits and named-graph inventory changes.
+Use `patch_to_data`/`patch_from_data` for JSON transport and `apply_rdf_patch`
+for transactional application. Changed anonymous content needs explicit owned
+`BlankNodePair` bindings and created/removed-node inventories. Affected base
+references must resolve uniquely or have jointly checked `PatchBlankBinding`
+witnesses. Canonical labels establish no historical correspondence. Wrong bases,
+absent removals, ambiguous bindings and failed identity-preserving postconditions
+return no candidate. Exact numeric lexical forms, shared blanks and selected
+empty graphs survive; union projections and unqualified fidelity remain unknown.
+The same cumulative budget covers host and owned worker bookkeeping; maintained
+isomorphism internals are bounded by the operation's wall-clock deadline.
