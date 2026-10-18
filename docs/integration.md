@@ -97,6 +97,13 @@ explicitly joins their facts. Unsupplied references remain unknown unless
 `closed=True` requires a local description. Identity checks perform no OWL
 equality, inequality or classification.
 
+Use `ContextExpectation(path, lists=(ExpectedList((first, second)),))` to
+check complete RDF lists. Outer list occurrences are unordered; each list keeps
+its own member order and duplicates. Explicit expanded literal objects and
+absolute `@id` references express exact RDF terms. Anonymous member identity
+stays unverified. JSON expectation files accept `lists: [[first, second]]`;
+the existing `ordered_values` contract still describes one complete list.
+
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
 
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.

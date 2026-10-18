@@ -48,6 +48,7 @@ from bijux_ontology.jsonld.flattening import (
     FlattenedDocument,
     flatten_document,
 )
+from bijux_ontology.jsonld.lists import ExpectedList
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.preparation import JSONLDPreparation, prepare_jsonld
 from bijux_ontology.jsonld.resources import (
@@ -165,6 +166,7 @@ __all__ = [
     "DataView",
     "EntitySelector",
     "ExecutionResult",
+    "ExpectedList",
     "EmissionCondition",
     "EmissionCoverage",
     "EmissionGroup",

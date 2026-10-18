@@ -15,6 +15,7 @@ from bijux_ontology._json import (
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.expectations import ContainerKind, ContextExpectation
+from bijux_ontology.jsonld.lists import ExpectedList
 from bijux_ontology.jsonld.values import ValueKind as ContextValueKind
 
 
@@ -49,6 +50,7 @@ def expectations_from_data(
                     "direction",
                     "identifier_kind",
                     "ordered_values",
+                    "lists",
                 },
                 location="",
                 message="Unknown declaration keys",
@@ -84,6 +86,12 @@ def expectations_from_data(
                     identifier_kind=cast(
                         Literal["iri", "blank", "relative"] | None,
                         optional_string_value(data.get("identifier_kind")),
+                    ),
+                    lists=None
+                    if data.get("lists") is None
+                    else tuple(
+                        ExpectedList(tuple(array_value(item)))
+                        for item in array_value(data["lists"])
                     ),
                     ordered_values=None
                     if data.get("ordered_values") is None

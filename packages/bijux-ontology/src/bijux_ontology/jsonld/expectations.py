@@ -11,6 +11,7 @@ from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.reports import Issue
 
 from ..errors import InputError
+from .lists import ExpectedList, compare_lists
 from .observations import ObservedUsage, SourcePath, location
 from .values import ValueKind
 
@@ -24,6 +25,8 @@ class ContextExpectation:
     Paths name a field value, including array indexes where needed. Containers
     describe expanded list versus unordered values, not raw context spelling.
     ordered_values describes one complete list, never concatenated collections.
+    lists describes an unordered collection of complete ordered RDF member lists;
+    an outer ordering contract requires separate explicit per-list source paths.
     """
 
     path: SourcePath
@@ -38,6 +41,7 @@ class ContextExpectation:
     direction: Literal["ltr", "rtl"] | Absent | None = None
     identifier_kind: Literal["iri", "blank", "relative"] | None = None
     ordered_values: tuple[object, ...] | None = None
+    lists: tuple[ExpectedList, ...] | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -92,6 +96,13 @@ class ContextExpectation:
                 raise InputError("types must be a tuple of absolute IRIs")
             for iri in self.types:
                 absolute_iri(iri)
+        if self.lists is not None:
+            if not isinstance(self.lists, tuple) or any(
+                not isinstance(item, ExpectedList) for item in self.lists
+            ):
+                raise InputError("lists must be a tuple of ExpectedList values")
+            if self.ordered_values is not None:
+                raise InputError("Choose lists or ordered_values, not both")
         if self.ordered_values is not None:
             if not isinstance(self.ordered_values, tuple):
                 raise InputError(
@@ -114,6 +125,8 @@ def compare_usage(
     the budget; orchestration and report completeness remain the caller's concern.
     """
     where = location(expectation.path)
+    if expectation.lists is not None:
+        yield from compare_lists(expectation.lists, usage, budget=budget)
     groups = {item.list_id for item in usage.occurrences}
     selected_length = sum(not item.empty for item in usage.occurrences)
     complete_list = (
