@@ -19,6 +19,9 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.models.emission.application import retain_enumeration_report
+from bijux_ontology.models.emission.direction import project_direction
+from bijux_ontology.models.emission.matching import trait_matches
 from bijux_ontology.owl.classes import ClassContracts
 from bijux_ontology.owl.obligations import (
     ObligationResult,
@@ -33,12 +36,9 @@ from bijux_ontology.vocabulary.view import Vocabulary
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report, combine_reports
-from .application_values import retain_enumeration_report
 from .constraints import _emission_issues, _field_issues, _value_contract_issues
-from .direction import project_direction
 from .propagation import ModelContracts
 from .registry import index_models
-from .value_matching import trait_matches
 
 
 def check_models(

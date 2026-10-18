@@ -17,13 +17,13 @@ from bijux_ontology.jsonld.selectors import (
 )
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.models.checking import check_models
-from bijux_ontology.models.emission import ModelUsage
-from bijux_ontology.models.resource_roles.checking import check_resource_roles
-from bijux_ontology.models.serialization import (
+from bijux_ontology.models.emission.serialization import (
     InstanceCheck,
     check_instance,
     check_serialized,
 )
+from bijux_ontology.models.emission.types import ModelUsage
+from bijux_ontology.models.resource_roles.checking import check_resource_roles
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report

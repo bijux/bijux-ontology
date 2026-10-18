@@ -19,7 +19,7 @@ from bijux_ontology.jsonld.selectors import (
     _bounded_location,
 )
 from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.models.coverage import source_properties
+from bijux_ontology.models.emission.coverage import source_properties
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.terms import bound_text

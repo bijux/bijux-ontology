@@ -27,9 +27,8 @@ from bijux_ontology.models.corpus.checking import (
     check_serializer_corpus,
 )
 from bijux_ontology.models.corpus.types import BranchCoverage
-from bijux_ontology.models.emission import ModelUsage
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.models.rdf_emission import RdfModelUsage
 from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 

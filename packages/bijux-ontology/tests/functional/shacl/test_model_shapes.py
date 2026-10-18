@@ -22,7 +22,8 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.reports import Issue, Report

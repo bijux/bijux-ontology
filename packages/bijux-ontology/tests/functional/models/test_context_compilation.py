@@ -21,8 +21,8 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.context_compilation import CompiledContext, compile_context
 from bijux_ontology.models.context_probes import ContextProbe, ProbeSample
-from bijux_ontology.models.emission import ModelUsage
-from bijux_ontology.models.serialization import check_instance
+from bijux_ontology.models.emission.serialization import check_instance
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.reports import Report
 
 EX = Namespace("https://example.org/compiler/")

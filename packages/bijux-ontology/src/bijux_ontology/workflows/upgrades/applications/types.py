@@ -20,9 +20,9 @@ from bijux_ontology.jsonld.observations import ObservedUsage, SourcePath
 from bijux_ontology.jsonld.selectors import _path_metadata
 from bijux_ontology.limits import Budget
 from bijux_ontology.models.corpus.checking import SerializerCase
-from bijux_ontology.models.emission import ModelUsage
+from bijux_ontology.models.emission.serialization import InstanceCheck
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
-from bijux_ontology.models.serialization import InstanceCheck
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report

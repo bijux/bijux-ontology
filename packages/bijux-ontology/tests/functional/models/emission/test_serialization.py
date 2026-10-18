@@ -19,7 +19,7 @@ from bijux_ontology import (
 )
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
-from bijux_ontology.models.serialization import check_instance
+from bijux_ontology.models.emission.serialization import check_instance
 
 EX = Namespace("https://example.org/")
 

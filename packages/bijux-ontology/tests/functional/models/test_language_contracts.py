@@ -23,9 +23,10 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.models.checking import check_models
-from bijux_ontology.models.emission import ModelUsage, check_emission
-from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
-from bijux_ontology.models.serialization import check_instance
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.serialization import check_instance
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 
 EX = Namespace("https://language.example/")
 DIRECTION = URIRef(str(RDF) + "direction")

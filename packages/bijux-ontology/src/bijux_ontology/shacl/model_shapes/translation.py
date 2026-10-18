@@ -15,7 +15,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.models.application_values import retain_enumeration_report
+from bijux_ontology.models.emission.application import retain_enumeration_report
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.terms import bound_node, bound_text, literal_term

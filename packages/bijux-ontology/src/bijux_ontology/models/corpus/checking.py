@@ -15,12 +15,12 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.models.emission.serialization import InstanceCheck, check_instance
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.view import Vocabulary
 
-from ..emission import ModelUsage
 from ..registry import index_models
-from ..serialization import InstanceCheck, check_instance
 from .types import (
     BranchCoverage,
     ScenarioCoverage,

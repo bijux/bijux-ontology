@@ -13,8 +13,9 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.checking import check_models
-from bijux_ontology.models.emission import ModelUsage, check_emission
-from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.datatype_evaluators import DatatypeEvaluator, DatatypeRegistry
 
 EX = Namespace("https://finding-budget.example/")

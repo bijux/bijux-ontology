@@ -16,7 +16,7 @@ from bijux_ontology.interfaces.adapters.jsonschema import (
     model_declarations,
 )
 from bijux_ontology.limits import Limits
-from bijux_ontology.models.emission import ModelUsage
+from bijux_ontology.models.emission.types import ModelUsage
 
 
 class _CheckOptions(TypedDict):

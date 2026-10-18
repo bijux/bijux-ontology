@@ -107,12 +107,13 @@ from bijux_ontology.models.corpus import (
     SerializerCase,
     check_serializer_corpus,
 )
-from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.serialization import InstanceCheck, check_instance
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
 from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
 from bijux_ontology.models.resource_roles import RoleUse, check_resource_roles
-from bijux_ontology.models.serialization import InstanceCheck, check_instance
 from bijux_ontology.owl.obligations import (
     ObligationResult,
     OntologyObligation,

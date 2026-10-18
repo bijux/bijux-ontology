@@ -16,16 +16,16 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 
-from .checking import check_models
-from .emission import ModelUsage, check_emission
-
 if TYPE_CHECKING:
-    from .corpus.types import _CorpusEvidence
+    from bijux_ontology.models.corpus.types import _CorpusEvidence
 
 
 @dataclass(frozen=True)

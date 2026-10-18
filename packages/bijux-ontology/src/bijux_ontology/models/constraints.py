@@ -24,6 +24,8 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget
+from bijux_ontology.models.emission.groups import declaration_states, group_limitation
+from bijux_ontology.models.emission.matching import matches_value
 from bijux_ontology.owl.classes import ClassContracts
 from bijux_ontology.owl.properties import PropertyContract
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
@@ -32,9 +34,7 @@ from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 
 from ..reports import Issue
-from .emission_groups import declaration_states, group_limitation
 from .propagation import ModelContracts
-from .value_matching import matches_value
 
 
 def _class_comparison(

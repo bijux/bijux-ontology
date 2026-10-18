@@ -17,6 +17,9 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import Regime
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
@@ -25,8 +28,6 @@ from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 
 from .checking import check_models
-from .emission import ModelUsage, check_emission
-from .rdf_emission import RdfModelUsage, check_rdf_emission
 
 
 @dataclass(frozen=True, init=False)

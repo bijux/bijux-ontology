@@ -18,9 +18,10 @@ from bijux_ontology.declarations.resource_roles import ResourceRole
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.checking import check_models
-from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.vocabulary.loading import load_vocabulary

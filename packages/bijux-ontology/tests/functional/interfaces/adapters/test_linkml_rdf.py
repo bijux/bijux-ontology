@@ -22,7 +22,8 @@ from bijux_ontology.interfaces.adapters.linkml_rdf import (
     check_instance,
 )
 from bijux_ontology.limits import Limits
-from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import RdfModelUsage
 
 EX = Namespace("https://linkml.example/")
 SCHEMA = """

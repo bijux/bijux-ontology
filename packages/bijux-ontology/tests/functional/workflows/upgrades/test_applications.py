@@ -16,7 +16,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.corpus.checking import SerializerCase
-from bijux_ontology.models.emission import ModelUsage
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.vocabulary.facts.types import FactPredicate, FactSelection
 from bijux_ontology.workflows.upgrades.applications import (
