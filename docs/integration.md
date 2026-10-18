@@ -634,3 +634,12 @@ missing, empty or incomplete after checks cannot qualify acceptance. Callbacks
 are ordinary caller-owned Python code. Inspect the candidate, then explicitly
 call `export_migration(candidate, accept=True, format="trig")` to request an
 export through the existing faithful serialization boundary.
+
+`migrate_graphs(source, (GraphRoute(old_graph, new_graph),), ...)` routes original
+quad memberships simultaneously. Routes may select subjects and predicates;
+`None` denotes the default graph and blank selectors require owned terms.
+Competing partition contributions require `merge=True`. Graph creation and
+removal use explicit `added_graphs` and `removed_graphs`; a removed graph must
+be empty after the proposed moves. Exact terms, shared blanks and unrelated
+partitions remain intact. The same before/after contract and explicit export
+gate applies, including actual graph-local constraint failures.

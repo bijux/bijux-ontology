@@ -60,6 +60,7 @@ from .interfaces.api import (
     FlatNode,
     FlattenedDocument,
     FormRequirement,
+    GraphRoute,
     HierarchyStep,
     IdentifierBatch,
     IdentifierRecognition,
@@ -234,6 +235,7 @@ from .interfaces.api import (
     matches_language,
     merge_identifier_registry,
     merge_sources,
+    migrate_graphs,
     migrate_values,
     models_from_data,
     negotiate_annotations,
@@ -263,6 +265,8 @@ from .interfaces.api import (
 )
 
 __all__ = [
+    "GraphRoute",
+    "migrate_graphs",
     "LiteralConversion",
     "MigrationCandidate",
     "MigrationCheck",

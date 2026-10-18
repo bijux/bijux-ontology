@@ -126,6 +126,7 @@ from bijux_ontology.rdf.datatype_evaluators import (
     DatatypeRegistry,
 )
 from bijux_ontology.rdf.migrations import MigrationCandidate, MigrationCheck
+from bijux_ontology.rdf.migrations.graphs import GraphRoute, migrate_graphs
 from bijux_ontology.rdf.migrations.values import (
     LiteralConversion,
     ValueMap,
@@ -294,6 +295,8 @@ from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
+    "GraphRoute",
+    "migrate_graphs",
     "LiteralConversion",
     "MigrationCandidate",
     "MigrationCheck",
