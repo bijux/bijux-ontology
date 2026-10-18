@@ -100,6 +100,13 @@ under both policy choices. Reports list expanded conditions and the chosen basis
 The CLI exposes `--profile` and `--hierarchy-basis`; SKOS project jobs accept
 `profile` and `hierarchy_basis`.
 
+Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
+expected=(first_iri, second_iri), unique_members=True)` for authored list order.
+`minimum_size`/`maximum_size` count every position; duplicates remain visible.
+`collection_members(view, iri, ordered=True)` exposes each immutable member's
+zero-based `position`; direct `skos:member` assertions have no position. Missing
+or ambiguous lists remain unverified, and proved violations survive bad tails.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model

@@ -107,6 +107,7 @@ from bijux_ontology.reports import (
     combine_reports,
 )
 from bijux_ontology.skos.checking import check_skos
+from bijux_ontology.skos.collections import check_collection_sequence
 from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.comparison import (
@@ -248,6 +249,7 @@ __all__ = [
     "assess_models",
     "assess_upgrade",
     "canonicalize_rdf",
+    "check_collection_sequence",
     "check_context",
     "check_contract",
     "check_data_usage",

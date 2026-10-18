@@ -137,6 +137,8 @@ _CODES = {
         "implicit_target_unverified nonconformance sparql_unverified".split()
     ),
     "skos": frozenset(
+        "policy.collection_sequence_mismatch policy.collection_size_mismatch "
+        "policy.collection_duplicate_member "
         "collection_member_role_conflict label_role_conflict mapping_conflict "
         "mapping_target_kind mapping_target_unresolved "
         "policy.collection_member_shape policy.cross_scheme_hierarchy "

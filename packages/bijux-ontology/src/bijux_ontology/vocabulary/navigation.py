@@ -1,8 +1,8 @@
 """Cycle-safe navigation over chosen asserted relationships, without inference."""
 
 from collections import deque
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Iterator, Sequence
+from dataclasses import KW_ONLY, dataclass
 from typing import Literal
 
 from rdflib import URIRef
@@ -11,7 +11,7 @@ from rdflib.term import Node
 
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.structure import read_rdf_list
+from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.results import Edge, Selection
 
@@ -55,6 +55,8 @@ class Membership:
     member: Node
     assertion: Edge
     implied: bool = False
+    _: KW_ONLY
+    position: int | None = None
 
 
 def _depth(view: VocabularyView, maximum: int | None) -> int:
@@ -367,25 +369,41 @@ def scheme_members(
 
 
 def collection_members(
-    view: VocabularyView, collection: str, *, ordered: bool = False
+    view: VocabularyView,
+    collection: str,
+    *,
+    ordered: bool = False,
+    budget: Budget | None = None,
 ) -> Selection[Membership]:
-    """Expose direct or list-implied membership separately from hierarchy."""
-    budget = Budget(view.limits)
-    selected = view.relationships(
-        collection,
-        predicates=(str(SKOS.memberList if ordered else SKOS.member),),
-        budget=budget,
-    )
+    """Expose direct members or list positions; direct assertions have no position."""
+    operation = budget if budget is not None else Budget(view.limits)
     if not ordered:
+        selected = view.relationships(
+            collection, predicates=(str(SKOS.member),), budget=operation
+        )
         return Selection(
             tuple(Membership(edge.object, edge) for edge in selected.items),
             selected.report,
         )
-    issues = IssueCollector(budget)
-    items: list[Membership] = []
-    complete = selected.report.complete
+    issues = IssueCollector(operation)
+    items = tuple(_ordered_collection_members(view, collection, operation, issues))
+    return Selection(items, _report("terms.collection", len(items), issues, not issues))
+
+
+def _ordered_collection_members(
+    view: VocabularyView,
+    collection: str,
+    budget: Budget,
+    issues: IssueCollector,
+) -> Iterator[Membership]:
+    """Share proved list positions between navigation and streaming constraints."""
+    selected = view.relationships(
+        collection, predicates=(str(SKOS.memberList),), budget=budget
+    )
+    list.extend(issues, selected.report.issues)
+    if not selected.report.complete:
+        return
     try:
-        list.extend(issues, selected.report.issues)
         if len(selected.items) != 1:
             issues.append(
                 Issue(
@@ -395,21 +413,24 @@ def collection_members(
                     kind="unverified",
                 )
             )
-            complete = False
-        else:
-            graph = view._read()
-            edge = selected.items[0]
-            members = read_rdf_list(graph, edge.object, max_items=view.limits.max_work)
-            for member in members:
-                budget.consume("work")
-                budget.consume("states")
-                items.append(Membership(member, edge, True))
+            return
+        edge = selected.items[0]
+        for position, member in enumerate(
+            iter_rdf_list(
+                view._read(),
+                edge.object,
+                max_items=budget.limits.max_work,
+                budget=budget,
+            )
+        ):
+            budget.consume("states")
+            yield Membership(member, edge, True, position=position)
     except LimitExceeded as error:
         issues.exhausted(str(error), location=collection)
-        complete = False
     except InputError as error:
-        issues.append(Issue("terms.collection_list_malformed", str(error), collection))
-        complete = False
-    return Selection(
-        tuple(items), _report("terms.collection", len(items), issues, complete)
-    )
+        try:
+            issues.append(
+                Issue("terms.collection_list_malformed", str(error), collection)
+            )
+        except LimitExceeded as exhausted:
+            issues.exhausted(str(exhausted), location=collection)
