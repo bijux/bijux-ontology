@@ -232,6 +232,17 @@ an identity witness. RDF preservation does not promise original JSON shape.
 
 Keep findings and unsupported comparisons visible. Apply narrow code/location exceptions through `AcceptancePolicy`; they do not change verification truth. Retain application validation, reference checks and any existing reasoning gate. Supplied-shapes validation is an optional additional operation, not general OWL consistency checking.
 
+Author explicit application shapes with `ShaclNodeShape`, `ShaclPropertyShape`
+and `compile_shapes` from `bijux_ontology.shacl`. Constraints include value and
+count rules, cross-property comparisons, qualified counts and logical shape
+references. Property paths accept RDFLib paths such as `~ex.owner / ex.name`;
+construction captures their intent before later caller mutation. References must
+resolve to supplied definitions; recursion remains an RDF link. Compilation
+returns an owned `PreparedSource` and raises on unsupported or exhausted input
+without returning partial shapes. It infers no constraints from ontology axioms.
+Use `validate_shapes(data, compiled, preflight=True)` to run maintained
+meta-SHACL and data validation; compilation alone does not establish conformance.
+
 SHACL findings retain report-local identities, nested details and finite typed
 property paths in `result.findings` and each generic issue’s `evidence`.
 Supply `ShaclSource(prepared_usages, paths, source=...)` through `source_usages=`

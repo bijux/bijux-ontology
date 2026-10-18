@@ -1,5 +1,17 @@
 """Optional supplied-shapes validation with preserved backend evidence."""
 
+from bijux_ontology.shacl.authoring import (
+    ShaclComparison,
+    ShaclConstraint,
+    ShaclCount,
+    ShaclLogical,
+    ShaclNodeShape,
+    ShaclPropertyShape,
+    ShaclQualifiedCount,
+    ShaclShapeRef,
+    ShaclValue,
+    compile_shapes,
+)
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import ShaclFinding, ShaclResult, validate_shapes
 from bijux_ontology.shacl.coverage import (
@@ -17,6 +29,16 @@ from bijux_ontology.shacl.paths import ShaclPath
 from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "ShaclComparison",
+    "ShaclConstraint",
+    "ShaclCount",
+    "ShaclLogical",
+    "ShaclNodeShape",
+    "ShaclPropertyShape",
+    "ShaclQualifiedCount",
+    "ShaclShapeRef",
+    "ShaclValue",
+    "compile_shapes",
     "ShaclBatchResult",
     "ShaclConstraintRequirement",
     "ShaclCoverage",
