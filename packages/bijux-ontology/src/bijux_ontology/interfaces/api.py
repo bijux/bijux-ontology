@@ -29,6 +29,7 @@ from bijux_ontology.declarations.types import (
     TermDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.documents.compaction import export_jsonld
 from bijux_ontology.documents.export import RDFExport, export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
@@ -279,6 +280,7 @@ __all__ = [
     "Transformation",
     "UpgradeAssessment",
     "UseIndex",
+    "ValueConstraints",
     "ValueDeclaration",
     "ValueTraits",
     "Vocabulary",

@@ -38,6 +38,9 @@ templates = [
 xsd = [
     "elementpath>=5.1.4,<6",
 ]
+patterns = [
+    "google-re2>=1.1.20251105,<2",
+]
 
 [tool.hatch.build.targets.wheel]
 core-metadata-version = "2.4"

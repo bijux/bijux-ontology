@@ -299,6 +299,14 @@ unverified. `PreparedModels(..., rdf_direction=...)` freezes that policy for
 its fresh checks. Pydantic sample checks and serializer corpus checks accept the
 same keyword separately from actual serializer options.
 
+Pass `ValueDeclaration(..., constraints=ValueConstraints(...))` for actual
+emitted values. Enumerations preserve exact RDF terms; finite `Decimal` bounds
+compare qualified integer/decimal values. Lengths count original Unicode code
+points, and `iri_namespaces` uses exact IRI prefixes. Install
+`bijux-ontology[patterns]` for RE2 UTF-8 patterns with explicit `fullmatch` or
+`search` mode. Unsupported syntax or conversions remain unverified; constraints
+never rewrite RDF identity or assert ontology inconsistency.
+
 For ordinary nested Pydantic models, an authoritative context can supply the RDF
 mappings without duplicate primitive declarations:
 

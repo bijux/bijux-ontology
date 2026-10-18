@@ -7,6 +7,7 @@ from dataclasses import KW_ONLY, dataclass, replace
 from typing import TYPE_CHECKING, cast
 
 from rdflib import RDF, Literal, URIRef
+from rdflib.term import Node
 
 from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
@@ -43,6 +44,7 @@ from bijux_ontology.rdf.terms import literal_term, term_key
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
+from .application_values import application_matches
 from .bindings import (
     candidate_paths,
     same_contribution,
@@ -115,6 +117,10 @@ def _matches(
     registry: dict[str, ModelDeclaration],
     inventory: EntityInventory | None = None,
     rdf_direction: DirectionPolicy | None = None,
+    *,
+    budget: Budget,
+    native_literals: dict[str, Literal],
+    lexical_valid: bool | None = None,
 ) -> bool | None:
     """Resolve actual joined descriptions before shared scalar contract matching."""
     traits = occurrence.traits
@@ -140,8 +146,32 @@ def _matches(
                     + traits.direction
                 ),
             )
-    return matches_value(
+    matched = matches_value(
         value, traits, registry, container=occurrence.container, empty=occurrence.empty
+    )
+    if matched is False or value.constraints is None or occurrence.empty:
+        return matched
+    term: Node | None = None
+    if occurrence.traits.direction is None:
+        if traits.identifier_kind == "iri" and traits.identifier is not None:
+            term = URIRef(traits.identifier)
+        elif traits.kind == "literal":
+            raw = occurrence.value
+            if isinstance(raw, dict) and isinstance(raw.get("@value"), str):
+                term = literal_term(
+                    raw["@value"], datatype=traits.datatype, language=traits.language
+                )
+            else:
+                term = native_literals.get(occurrence.value_json)
+    application = application_matches(
+        value.constraints, term, budget=budget, lexical_valid=lexical_valid
+    )
+    return (
+        False
+        if application is False
+        else None
+        if matched is None or application is None
+        else True
     )
 
 
@@ -301,6 +331,7 @@ def check_emission(
     checked = 0
     complete = True
     native_literals: dict[str, Literal] = {}
+    literal_valid: bool | None = None
     direction_check = DirectionCheck(rdf_direction)
     try:
         registry = index_models(models, budget, issues)
@@ -608,9 +639,24 @@ def check_emission(
                     )
                 for fact in facts:
                     budget.consume("work", 1 + len(field.values))
+                    literal_valid = None
+                    if fact.traits.kind == "literal":
+                        result = _literal_result(
+                            fact, field_where, budget, native_literals, direction_check
+                        )
+                        checked += result.checked
+                        issues.extend(result.issues)
+                        literal_valid = result.verified
                     matches = tuple(
                         _matches(
-                            value, fact, registry, prepared.entities, rdf_direction
+                            value,
+                            fact,
+                            registry,
+                            prepared.entities,
+                            rdf_direction,
+                            budget=budget,
+                            native_literals=native_literals,
+                            lexical_valid=literal_valid,
                         )
                         for value in field.values
                     )
@@ -633,19 +679,19 @@ def check_emission(
                                 kind="unverified" if None in matches else "finding",
                             )
                         )
-                    if fact.traits.kind == "literal":
-                        result = _literal_result(
-                            fact, field_where, budget, native_literals, direction_check
-                        )
-                        checked += result.checked
-                        issues.extend(result.issues)
                     budget.consume("work", len(field.values))
                     targets = {
                         value.model
                         for value in field.values
                         if value.model is not None
                         and _matches(
-                            value, fact, registry, prepared.entities, rdf_direction
+                            value,
+                            fact,
+                            registry,
+                            prepared.entities,
+                            rdf_direction,
+                            budget=budget,
+                            native_literals=native_literals,
                         )
                         is not False
                     }
@@ -855,6 +901,7 @@ def check_emission(
                     # Nested contributions are checked by their own explicit binding.
                     if occurrence.depth != minimum_depth:
                         continue
+                    literal_valid = None
                     if not occurrence.empty and occurrence.traits.kind == "literal":
                         result = _literal_result(
                             occurrence,
@@ -865,6 +912,7 @@ def check_emission(
                         )
                         checked += result.checked
                         issues.extend(result.issues)
+                        literal_valid = result.verified
                     matches = tuple(
                         _matches(
                             value,
@@ -872,6 +920,9 @@ def check_emission(
                             registry,
                             prepared.entities,
                             rdf_direction,
+                            budget=budget,
+                            native_literals=native_literals,
+                            lexical_valid=literal_valid,
                         )
                         for value in field.values
                     )
@@ -930,6 +981,8 @@ def check_emission(
                             registry,
                             prepared.entities,
                             rdf_direction,
+                            budget=budget,
+                            native_literals=native_literals,
                         )
                         is not False
                     }
@@ -1179,9 +1232,28 @@ def check_emission(
                             continue
                         budget.consume("work", 1 + len(field.values))
                         field_where = f"{location(binding.path)}.{field.name}"
+                        literal_valid = None
+                        if fact.traits.kind == "literal":
+                            result = _literal_result(
+                                fact,
+                                field_where,
+                                budget,
+                                native_literals,
+                                direction_check,
+                            )
+                            checked += result.checked
+                            issues.extend(result.issues)
+                            literal_valid = result.verified
                         matches = tuple(
                             _matches(
-                                value, fact, registry, prepared.entities, rdf_direction
+                                value,
+                                fact,
+                                registry,
+                                prepared.entities,
+                                rdf_direction,
+                                budget=budget,
+                                native_literals=native_literals,
+                                lexical_valid=literal_valid,
                             )
                             for value in field.values
                         )
@@ -1205,22 +1277,18 @@ def check_emission(
                                     kind="unverified" if None in matches else "finding",
                                 )
                             )
-                        if fact.traits.kind == "literal":
-                            result = _literal_result(
-                                fact,
-                                field_where,
-                                budget,
-                                native_literals,
-                                direction_check,
-                            )
-                            checked += result.checked
-                            issues.extend(result.issues)
                         targets = {
                             value.model
                             for value in field.values
                             if value.model is not None
                             and _matches(
-                                value, fact, registry, prepared.entities, rdf_direction
+                                value,
+                                fact,
+                                registry,
+                                prepared.entities,
+                                rdf_direction,
+                                budget=budget,
+                                native_literals=native_literals,
                             )
                             is not False
                         }

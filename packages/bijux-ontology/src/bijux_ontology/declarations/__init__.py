@@ -16,6 +16,7 @@ from .types import (
     ValueDeclaration,
     ValueKind,
 )
+from .value_constraints import ValueConstraints
 
 __all__ = [
     "ABSENT",
@@ -30,6 +31,7 @@ __all__ = [
     "OutputRequirement",
     "SubjectIdentity",
     "TermDeclaration",
+    "ValueConstraints",
     "ValueDeclaration",
     "ValueKind",
 ]

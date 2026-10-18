@@ -21,6 +21,7 @@ from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
 
+from .application_values import application_matches
 from .coverage import predicate_issues
 from .direction import project_direction
 from .emission_groups import TermKey, check_groups
@@ -389,6 +390,31 @@ def check_rdf_emission(
                             if any(branch.kind == "literal" for branch in field.values)
                             else (False, None)
                         )
+                        literal_valid: bool | None = None
+                        if isinstance(node, Literal) and not empty:
+                            literal = (
+                                Report("literal", 1)
+                                if projected is not None
+                                else check_literal(node, location=field_where)
+                            )
+                            literal_valid = literal.verified
+                            checked += literal.checked
+                            issues.extend(literal.issues)
+                            if source.literal_fidelity not in {
+                                "source_terms",
+                                "supplied_terms",
+                            }:
+                                exact_values = False
+                                issues.append(
+                                    Issue(
+                                        "literal.lexical_unverified",
+                                        "Preparation did not retain "
+                                        "exact source literal identity",
+                                        field_where,
+                                        kind="unverified",
+                                        actual=source.literal_fidelity,
+                                    )
+                                )
                         matches = tuple(
                             None
                             if recognized
@@ -410,6 +436,28 @@ def check_rdf_emission(
                             )
                             for branch in field.values
                         )
+                        if not empty:
+                            constrained: list[bool | None] = []
+                            for branch, matched in zip(
+                                field.values, matches, strict=True
+                            ):
+                                if matched is False or branch.constraints is None:
+                                    constrained.append(matched)
+                                    continue
+                                application = application_matches(
+                                    branch.constraints,
+                                    node,
+                                    budget=budget,
+                                    lexical_valid=literal_valid,
+                                )
+                                constrained.append(
+                                    False
+                                    if application is False
+                                    else None
+                                    if matched is None or application is None
+                                    else True
+                                )
+                            matches = tuple(constrained)
                         if True not in matches:
                             issues.append(
                                 Issue(
@@ -438,29 +486,6 @@ def check_rdf_emission(
                                         "literal.lexical_unverified",
                                         "Preparation did not retain "
                                         "exact component literals",
-                                        field_where,
-                                        kind="unverified",
-                                        actual=source.literal_fidelity,
-                                    )
-                                )
-                        if isinstance(node, Literal) and not empty:
-                            literal = (
-                                Report("literal", 1)
-                                if projected is not None
-                                else check_literal(node, location=field_where)
-                            )
-                            checked += literal.checked
-                            issues.extend(literal.issues)
-                            if source.literal_fidelity not in {
-                                "source_terms",
-                                "supplied_terms",
-                            }:
-                                exact_values = False
-                                issues.append(
-                                    Issue(
-                                        "literal.lexical_unverified",
-                                        "Preparation did not retain "
-                                        "exact source literal identity",
                                         field_where,
                                         kind="unverified",
                                         actual=source.literal_fidelity,
