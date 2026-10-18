@@ -617,3 +617,20 @@ return no candidate. Exact numeric lexical forms, shared blanks and selected
 empty graphs survive; union projections and unqualified fidelity remain unknown.
 The same cumulative budget covers host and owned worker bookkeeping; maintained
 isomorphism internals are bounded by the operation's wall-clock deadline.
+
+`migrate_values(source, ValueSelection((predicate,)), action, ...)` proposes
+an exact object-position migration within the supplied snapshot's scope.
+`LiteralConversion(source_datatype, target_datatype)` preserves lexical characters
+for supported string-to-integer and decimal/integer-family interpretations.
+`ValueMap(((old_term, new_term),))` declares explicit exact rewrites, including
+repairs; language changes and value collapse require their separate permissions.
+Unsupported conversions and rejected selected samples expose no partial source.
+The `ValueMigrationCandidate` retains an exact patch and separate inventory counts.
+
+Supply named `MigrationCheck` callbacks through `before_checks` and `after_checks`
+to retain actual application contracts on independent authorized snapshots.
+Baseline failures remain visible when a repair passes its after contracts;
+missing, empty or incomplete after checks cannot qualify acceptance. Callbacks
+are ordinary caller-owned Python code. Inspect the candidate, then explicitly
+call `export_migration(candidate, accept=True, format="trig")` to request an
+export through the existing faithful serialization boundary.

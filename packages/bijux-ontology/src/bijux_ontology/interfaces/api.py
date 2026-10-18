@@ -53,6 +53,7 @@ from bijux_ontology.documents.forms import (
     FormRequirement,
     check_document_form,
 )
+from bijux_ontology.documents.migrations import export_migration
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.interfaces.execution.executor import ExecutionResult, WorkerExecutor
@@ -123,6 +124,14 @@ from bijux_ontology.rdf.datatype_evaluators import (
     DatatypeConversion,
     DatatypeEvaluator,
     DatatypeRegistry,
+)
+from bijux_ontology.rdf.migrations import MigrationCandidate, MigrationCheck
+from bijux_ontology.rdf.migrations.values import (
+    LiteralConversion,
+    ValueMap,
+    ValueMigrationCandidate,
+    ValueSelection,
+    migrate_values,
 )
 from bijux_ontology.rdf.patches import (
     BlankNodePair,
@@ -285,6 +294,14 @@ from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
+    "LiteralConversion",
+    "MigrationCandidate",
+    "MigrationCheck",
+    "ValueMap",
+    "ValueMigrationCandidate",
+    "ValueSelection",
+    "export_migration",
+    "migrate_values",
     "BlankNodePair",
     "DatasetPatch",
     "PatchBlank",

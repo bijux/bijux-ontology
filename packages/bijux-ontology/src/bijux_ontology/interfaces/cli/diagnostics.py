@@ -150,6 +150,9 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "migration_contracts_unverified migration_acceptance_unverified "
+        "value_migration_rejected value_migration_collision "
+        "value_migration_unverified "
         "patch_unverified patch_precondition_failed patch_removal_missing "
         "patch_postcondition_failed "
         "literal_conversion_unverified "
