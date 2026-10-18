@@ -186,6 +186,7 @@ _CODES = {
         "value_unverified".split()
     ),
     "owl": frozenset(
+        "axiom_input_loss axiom_input_unverified axiom_unsupported axioms_unverified "
         "conversion_loss conversion_unverified "
         "assertion_contradiction assertion_unverified backend_unavailable "
         "loader_unverified profile_unverified profile_violation".split()

@@ -61,3 +61,11 @@ references; unsupported encodings, relative interpretation and anonymous
 individual correspondence remain unknown. Only captured imports are available.
 Preservation concerns annotated axioms and ontology headers, not original bytes
 or exact RDF lexical identity.
+
+Use `axioms.inspect_axioms(backend, source, axiom_types=None)` for bounded,
+immutable typed observations of original native documents or selected prepared
+RDF. Restrictions, object/data expressions and nested annotations retain their
+roles. `.unsupported` records actual selected axioms outside the finite model;
+`.exclusions` records families explicitly omitted by the caller. Missing input
+structure or incomplete execution prevents a verified complete projection.
+Inspection makes no consistency, satisfiability or entailment claim.
