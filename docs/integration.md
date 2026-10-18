@@ -139,6 +139,14 @@ Fallback is explicit, requires an empty completed primary inventory and never
 fills a nonempty deficit. Original assertions and chosen fallback witnesses stay
 visible; incomplete inventories cannot establish missing minima.
 
+Use `terms_page`, `statements_page` and `search_page` to browse an immutable
+`VocabularyView` with `page_size` and its returned `next_cursor`. A page report
+covers that page; only `enumeration_complete` certifies the whole selection.
+Cursors bind to the actual snapshot, filters and ordering, and support resumed
+reads after cancellation or exhaustion. They are opaque in-process objects.
+Term and lexical ordering are prepared lazily and shared by compatible views;
+ordinary inspection and statement paging reuse the existing index.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.

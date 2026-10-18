@@ -52,6 +52,8 @@ class VocabularyView:
         self.limits = limits if limits is not None else source.limits
         self._reader = source._read(scopes, limits=self.limits, budget=budget)
         index = source._inspect(self._reader, budget)
+        self._vocabulary = source
+        self._index = index
         self._scopes = self._reader.scopes
         self._edges = index.edges
         self._outgoing = index.outgoing

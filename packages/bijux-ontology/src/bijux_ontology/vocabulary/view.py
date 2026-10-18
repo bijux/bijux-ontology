@@ -18,6 +18,79 @@ from bijux_ontology.rdf.snapshots import _read_graph, bind_namespaces, copy_grap
 from .results import Edge, TermInfo
 
 
+@dataclass(frozen=True, slots=True)
+class _LexicalCandidate:
+    """Reuse owned RDF terms until a matched page needs plain text evidence."""
+
+    term: TermInfo
+    field: str
+    value: str
+    language: str | None
+    scope: str
+
+
+def _ordered_terms(index: "_VocabularyIndex", budget: Budget) -> tuple[TermInfo, ...]:
+    """Prepare a shared native order, charging vector and sort allowances first."""
+    count = len(index.kinds)
+    budget.consume("work", len(index.terms) + count * max(1, count.bit_length()))
+    budget.consume("states", count)
+    # References and sort workspace only: TermInfo and its strings stay shared.
+    budget.consume("bytes", 128 + 64 * count)
+    result = tuple(
+        sorted(
+            (term for term in index.terms.values() if term.status == "declared"),
+            key=lambda term: term.iri,
+        )
+    )
+    budget.consume("work", 0)
+    return result
+
+
+def _lexical_candidates(
+    index: "_VocabularyIndex", terms: tuple[TermInfo, ...], budget: Budget
+) -> tuple[_LexicalCandidate, ...]:
+    """Prepare query-independent lexical positions without retained text copies."""
+    values: list[_LexicalCandidate] = []
+    for term in terms:
+        budget.consume("work")
+        for scope in term.scopes:
+            budget.consume("work")
+            budget.consume("states")
+            budget.consume("bytes", 256)
+            values.append(_LexicalCandidate(term, "iri", term.iri, None, scope))
+        for edge in index.outgoing.get(URIRef(term.iri), ()):
+            budget.consume("work")
+            if isinstance(edge.object, Literal):
+                budget.consume("states")
+                # Slotted record/vector/sort-key allowance, including temporary
+                # Unicode sort keys. Retained values reuse immutable RDF terms.
+                budget.consume(
+                    "bytes", 256 + 4 * (len(edge.predicate) + len(edge.object))
+                )
+                values.append(
+                    _LexicalCandidate(
+                        term,
+                        edge.predicate,
+                        edge.object,
+                        edge.object.language,
+                        edge.scope,
+                    )
+                )
+    count = len(values)
+    budget.consume("work", count * max(1, count.bit_length()))
+    values.sort(
+        key=lambda value: (
+            value.term.iri,
+            str(value.field),
+            value.language or "",
+            str(value.value),
+            value.scope,
+        )
+    )
+    budget.consume("work", 0)
+    return tuple(values)
+
+
 @dataclass(frozen=True)
 class _VocabularyIndex:
     """One immutable role selection shared by compatible internal consumers."""
@@ -140,6 +213,8 @@ class Vocabulary:
         self._reads: dict[tuple[str, ...], _VocabularyRead] = {}
         self._indexes: dict[tuple[str, ...], _VocabularyIndex] = {}
         self._kinds: dict[tuple[str, ...], Mapping[str, frozenset[str]]] = {}
+        self._term_pages: dict[tuple[str, ...], tuple[TermInfo, ...]] = {}
+        self._lexical_pages: dict[tuple[str, ...], tuple[_LexicalCandidate, ...]] = {}
         self._read_lock = Lock()
 
     @classmethod
@@ -215,6 +290,30 @@ class Vocabulary:
                 self._indexes[key] = index
                 self._kinds[key] = index.kinds
             return self._indexes[key]
+
+    def _browse_terms(
+        self, reader: _VocabularyRead, index: _VocabularyIndex, budget: Budget
+    ) -> tuple[TermInfo, ...]:
+        """Publish one complete ordered derivative per owned role selection."""
+        key = tuple(scope for scope, _ in reader.scopes)
+        with self._read_lock:
+            if key not in self._term_pages:
+                self._term_pages[key] = _ordered_terms(index, budget)
+            return self._term_pages[key]
+
+    def _browse_lexical(
+        self, reader: _VocabularyRead, index: _VocabularyIndex, budget: Budget
+    ) -> tuple[_LexicalCandidate, ...]:
+        """Share lexical preparation only when lexical browsing is requested."""
+        key = tuple(scope for scope, _ in reader.scopes)
+        with self._read_lock:
+            if key not in self._term_pages:
+                self._term_pages[key] = _ordered_terms(index, budget)
+            if key not in self._lexical_pages:
+                self._lexical_pages[key] = _lexical_candidates(
+                    index, self._term_pages[key], budget
+                )
+            return self._lexical_pages[key]
 
     def _declared(self, iri: str, scopes: Sequence[str]) -> frozenset[str]:
         """Reuse exact targeted type lookups without scanning unrelated triples."""

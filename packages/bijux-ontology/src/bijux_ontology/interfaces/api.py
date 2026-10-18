@@ -131,6 +131,13 @@ from bijux_ontology.vocabulary.annotations import (
     LanguageRequirement,
     check_annotation_coverage,
 )
+from bijux_ontology.vocabulary.browsing import (
+    VocabularyCursor,
+    VocabularyPage,
+    search_page,
+    statements_page,
+    terms_page,
+)
 from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.collections import (
@@ -285,6 +292,8 @@ __all__ = [
     "ValueTraits",
     "Vocabulary",
     "VocabularyChanges",
+    "VocabularyCursor",
+    "VocabularyPage",
     "VocabularyView",
     "WorkerExecutor",
     "XLRelation",
@@ -347,6 +356,9 @@ __all__ = [
     "remap_iris",
     "run_rules",
     "run_query_rules",
+    "search_page",
+    "statements_page",
+    "terms_page",
     "terms_from_data",
     "write_export",
 ]

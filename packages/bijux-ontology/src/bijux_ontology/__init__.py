@@ -103,6 +103,8 @@ from .interfaces.api import (
     ValueTraits,
     Vocabulary,
     VocabularyChanges,
+    VocabularyCursor,
+    VocabularyPage,
     VocabularyView,
     WorkerExecutor,
     XLRelation,
@@ -165,7 +167,10 @@ from .interfaces.api import (
     remap_iris,
     run_query_rules,
     run_rules,
+    search_page,
+    statements_page,
     terms_from_data,
+    terms_page,
     write_export,
 )
 
@@ -272,6 +277,8 @@ __all__ = [
     "ValueTraits",
     "Vocabulary",
     "VocabularyChanges",
+    "VocabularyCursor",
+    "VocabularyPage",
     "VocabularyView",
     "WorkerExecutor",
     "XLRelation",
@@ -334,6 +341,9 @@ __all__ = [
     "remap_iris",
     "run_rules",
     "run_query_rules",
+    "search_page",
+    "statements_page",
+    "terms_page",
     "terms_from_data",
     "write_export",
 ]
