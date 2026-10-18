@@ -94,6 +94,10 @@ _CODES = {
     ),
     "contract": frozenset("coverage_missing unavailable".split()),
     "project": frozenset(("dependency_unverified",)),
+    "profile": frozenset(
+        "composition_unverified description_unverified shape_unverified "
+        "shape_conflict".split()
+    ),
     "emission": frozenset(
         "path_mapping_unverified path_intermediate_count_mismatch "
         "path_intermediate_mismatch path_ownership_mismatch "
@@ -248,6 +252,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "profile": (
+        "explicit offline validation profiles",
+        "Selected profile resources or obligations conflict or lack qualification.",
+        "Inspect required parents, exact resource identities and named shape "
+        "definitions; retain every mandatory validation when resolving conflicts.",
+        "compose_profile(domain, {base.iri: base})",
+    ),
     "project": (
         "required earlier project checks",
         "A required earlier check did not verify, so its dependent was not started.",

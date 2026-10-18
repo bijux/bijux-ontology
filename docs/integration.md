@@ -404,6 +404,20 @@ returns a project configuration. The CLI accepts `project BUNDLE --bundle`.
 Completeness covers the selected RDF closure and exercised context positions;
 it does not establish semantic acceptance or coverage of future scoped contexts.
 
+`bijux_ontology.workflows.projects.profiles` provides `load_profile`,
+`compose_profile`, `profile_to_prof` and `read_prof`. A `profile.json` sidecar names
+required parents from an explicit offline registry beside ordinary `project.json`.
+`compose_profile(domain, registry).check(new_directory)` retains every selected
+layer's jobs and raw reports. Optionality applies only to declared parent layers;
+conflicting named shapes require an explicit policy retaining both checks.
+Composition and materialization inventories are bounded; execution and report
+limits apply separately per project. PROF interchange describes resources and
+parents without manufacturing executable checks.
+
+`load_bundle(..., dependencies=(parent,))` retains owned parent RDF and context
+resources separately from local files. Dependent bundles require explicit
+`materialize(path, local_only=True)` and cannot be exported as standalone archives.
+
 Project version 2 adds file-backed `emission`, `context-corpus` and `upgrade`
 jobs. `ProjectBuilder(directory=path)` builds the same `ProjectConfig` consumed by
 `bijux-ontology project project.json`; its `emission`, `context_corpus` and
