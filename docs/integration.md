@@ -806,3 +806,12 @@ annotation edits. Supply typed edits, the exact physical graph and required
 `MigrationCheck` postconditions. The resulting candidate uses the existing
 checked patch/export gates; shared qualified annotations and unrelated facts
 retain their identities. No edit applies to the original source automatically.
+
+`inspect_context` and `compare_context_definitions` from
+`bijux_ontology.jsonld.contexts` expose bounded effective definitions, including
+unused terms and defaults. Supply the processing mode, base, offline resources
+and inherited context explicitly; `ContextScope` selects finite property/type
+transitions. Uninstantiated nested scopes remain unverified. These comparisons
+qualify selected definitions, without claiming compatibility for all documents.
+The same operations are available through `WorkerExecutor` as
+`context_inspection` and `context_definitions`.
