@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "obo": frozenset(
+        "attachment_shape attachment_unverified base_missing "
+        "synonym_type_shape value_kind".split()
+    ),
     "annotations": frozenset(
         "minimum_missing maximum_exceeded language_minimum_missing "
         "language_maximum_exceeded value_kind datatype entity_unresolved".split()
@@ -197,6 +201,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "obo": (
+        "selected OBO annotation records",
+        "The selected native OBO annotation convention is not established.",
+        "Inspect literal roles, exact source/property/target anchors and their "
+        "base assertions in the original source scope; retain opaque qualifiers.",
+        'read_obo_records(view, "https://example.org/term")',
+    ),
     "annotations": (
         "selected annotation publication requirements",
         "Selected values violate an explicit shape/count or remain unresolved.",

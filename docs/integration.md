@@ -139,6 +139,15 @@ Fallback is explicit, requires an empty completed primary inventory and never
 fills a nonempty deficit. Original assertions and chosen fallback witnesses stay
 visible; incomplete inventories cannot establish missing minima.
 
+Use `read_obo_records(view, term_iri)` for explicitly selected OBO-in-OWL
+definitions and exact/broad/narrow/related synonyms. Records retain original
+literal terms and separate axiom attachments, including cross-references,
+synonym types and opaque qualifiers. Attachments require exact anchors and a
+matching assertion in the same source scope; malformed or ambiguous structures
+remain visible. Attachment `complete` describes its outgoing structure, while
+`status` and `assertions` establish the association. Ordinary RDF and SKOS
+annotations remain outside this selected convention.
+
 Use `terms_page`, `statements_page` and `search_page` to browse an immutable
 `VocabularyView` with `page_size` and its returned `next_cursor`. A page report
 covers that page; only `enumeration_complete` certifies the whole selection.

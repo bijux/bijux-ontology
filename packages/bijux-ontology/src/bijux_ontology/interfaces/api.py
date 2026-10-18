@@ -155,6 +155,12 @@ from bijux_ontology.vocabulary.comparison import (
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.languages import matches_language, negotiate_annotations
 from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.obo import (
+    OboAttachment,
+    OboRecord,
+    OboRecords,
+    read_obo_records,
+)
 from bijux_ontology.vocabulary.registry import (
     IdentifierRegistry,
     NamespaceContribution,
@@ -247,6 +253,9 @@ __all__ = [
     "ModelAssessment",
     "ModelDeclaration",
     "OutputRequirement",
+    "OboAttachment",
+    "OboRecord",
+    "OboRecords",
     "NamespaceContribution",
     "ModelUsage",
     "ObligationResult",
@@ -356,6 +365,7 @@ __all__ = [
     "query_rdf",
     "query_rules_from_data",
     "prove_obligations",
+    "read_obo_records",
     "recheck_transformation",
     "remap_iris",
     "run_rules",
