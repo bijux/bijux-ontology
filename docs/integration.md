@@ -342,6 +342,13 @@ Every module supplies nonempty representative `ContextCase` usages and
 pass before `.context` is returned. Protection, nullification and scoped
 contexts use maintained processing; qualification covers the declared cases.
 
+`jsonld.publication.check_context_publication(context, PublicationContract(...))`
+checks selected root protection, vocabulary/base and local version promises.
+Supply retained `ContextCase` usages and actual `ContextOverride` scenarios for
+each `PublishedTerm`. Legal extensions must preserve retained mappings; blocked
+overrides require the processor's precise protected-definition rejection, which
+remains visible as raw evidence. These policies apply only when requested.
+
 `jsonld.html.extract_html_jsonld(content, document_url)` extracts JSON-LD
 scripts through the maintained HTML processor and returns `.scripts` locations,
 independently owned `.document`, effective `.base` and prepared RDF `.source`.
