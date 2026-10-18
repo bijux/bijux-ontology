@@ -1,5 +1,6 @@
 """Finite named-endpoint mapping policies over supplied vocabulary scopes."""
 
+import json
 from itertools import chain
 
 from rdflib import URIRef
@@ -16,6 +17,25 @@ from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources import source_role
 
 from .types import MappingCheck, MappingPolicy, MappingSet, _iri, _iris
+
+
+def _cardinality_evidence(
+    requirement: str, endpoint: str, limit: int, observed: int, budget: Budget
+) -> str:
+    """Expose exact obligation roles without requiring diagnostic prose parsing."""
+    bound_text(endpoint, budget)
+    budget.consume("work", len(endpoint) + 1)
+    budget.consume("bytes", 256 + 12 * len(endpoint))
+    return json.dumps(
+        {
+            "requirement": requirement,
+            "endpoint": endpoint,
+            "limit": limit,
+            "observed": observed,
+        },
+        sort_keys=True,
+    )
+
 
 _SUPPORTED = frozenset(
     str(predicate)
@@ -342,6 +362,13 @@ def check_mappings(
                             "Subject exceeds the declared distinct-target maximum",
                             where,
                             actual=row.subject,
+                            evidence_json=_cardinality_evidence(
+                                "maximum_targets",
+                                row.subject,
+                                policy.maximum_targets,
+                                len(outgoing),
+                                operation,
+                            ),
                         )
                     )
                 if (
@@ -355,6 +382,13 @@ def check_mappings(
                             "Object exceeds the declared distinct-source maximum",
                             where,
                             actual=row.object,
+                            evidence_json=_cardinality_evidence(
+                                "maximum_sources",
+                                row.object,
+                                policy.maximum_sources,
+                                len(incoming),
+                                operation,
+                            ),
                         )
                     )
             checked += 1
@@ -378,6 +412,13 @@ def check_mappings(
                         "Selected subject lacks the required mapping count",
                         "coverage",
                         actual=subject,
+                        evidence_json=_cardinality_evidence(
+                            "minimum_targets",
+                            subject,
+                            policy.minimum_targets,
+                            len(targets.get(subject, ())),
+                            operation,
+                        ),
                     )
                 )
             checked += 1
