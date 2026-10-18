@@ -133,9 +133,10 @@ def test_valid_interoperability_limits_stay_distinct_from_malformed_input() -> N
             "@type": "http://www.w3.org/2001/XMLSchema#token",
         }
     }
-    unsupported = compare_serializations(token, token)
-    assert not unsupported.verified
-    assert all(issue.kind != "input_error" for issue in unsupported.issues)
+    exact = compare_serializations(token, token)
+    assert exact.verified
+    normalized = {EX + "p": {"@value": "a b", "@type": token[EX + "p"]["@type"]}}
+    assert compare_serializations(token, normalized).outcome == "disagreement"
     malformed = compare_serializations({EX + "p": object()}, {EX + "p": "Text"})
     assert malformed.outcome == "input_error"
     empty_graph = {"@id": EX + "empty", "@graph": []}
