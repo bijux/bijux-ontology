@@ -41,6 +41,7 @@ _CODES = {
         "form_binding_unverified form_scope_unverified".split()
     ),
     "obo": frozenset(
+        "alternative_id_unverified alternative_id_ambiguous "
         "attachment_shape attachment_unverified base_missing "
         "synonym_type_shape value_kind "
         "subset_undefined subset_definition_kind subset_membership_kind "

@@ -968,3 +968,13 @@ URL, Integer, Number and Float; unsupported datatype encodings, list/container
 expectations, inherited-only property hints and missing class proof stay unknown.
 These are selected application rules, with no OWL consistency claim. Anonymous
 subjects require actual witnesses from the supplied `PreparedSource`.
+
+`bijux_ontology.vocabulary.obo.resolve_alternative_ids(view, identifiers)` reads
+only asserted `oboInOwl:hasAlternativeId` aliases in the selected inventory.
+Choose exact literal matching, absolute IRI interpretation, or CURIE expansion
+with an explicit `IdentifierRegistry`. Each request retains all canonical
+candidates, original assertions and deprecation state. Different canonical
+subjects remain ambiguous; a duplicate alias assertion never selects a winner.
+Labels and replacement hints do not establish aliases. Missing or incomplete
+inventories remain unknown, and exhaustion keeps observed candidates with
+incomplete status. Resolution proposes identities without rewriting caller data.
