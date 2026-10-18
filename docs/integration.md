@@ -313,6 +313,13 @@ retain their identities even when their described triples match.
 
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
+`jsonld.html.extract_html_jsonld(content, document_url)` extracts JSON-LD
+scripts through the maintained HTML processor and returns `.scripts` locations,
+independently owned `.document`, effective `.base` and prepared RDF `.source`.
+Choose an exact `script_id`, media-type `profile`, first or all scripts, and
+`html_base="honor"` or `"ignore"`. Selected duplicate JSON keys and missing
+scripts fail; contexts still require the ordinary supplied offline loader.
+
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.
 Its report checks RDF preservation, including named empty graphs; its owned
 `document` and graph-qualified `nodes` support `node = result.bind(record_iri,
