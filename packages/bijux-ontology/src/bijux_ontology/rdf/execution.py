@@ -1,7 +1,6 @@
 """Bounded owned-process transport for RDF engines and resource preparation."""
 
 import math
-import os
 import subprocess
 import sys
 import threading
@@ -9,7 +8,7 @@ import time
 from typing import BinaryIO, Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.processes import stop_owned_process
+from bijux_ontology.processes.ownership import spawn_owned_process, stop_owned_process
 
 _reap = stop_owned_process
 
@@ -72,15 +71,12 @@ def execute_worker(
         raise InputError("RDF cancellation requires a threading.Event")
     deadline = time.monotonic() + timeout
     checkpoint(deadline, cancel)
-    if os.name != "posix":
-        raise ResourceError("Local RDF process-group isolation is unavailable")
     try:
-        process = subprocess.Popen(
+        process = spawn_owned_process(
             [sys.executable, "-m", module, str(cap)],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            start_new_session=True,
         )
     except OSError as error:
         raise ResourceError("Local RDF worker could not be started") from error

@@ -8,7 +8,7 @@ from contextlib import suppress
 from typing import BinaryIO
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.processes import stop_owned_process
+from bijux_ontology.processes.ownership import spawn_owned_process, stop_owned_process
 
 _stop_group = stop_owned_process
 
@@ -16,7 +16,7 @@ _stop_group = stop_owned_process
 def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes:
     """Drain both streams while writing input, and reap every started process."""
     try:
-        process = subprocess.Popen(
+        process = spawn_owned_process(
             [sys.executable, "-m", "bijux_ontology.shacl.worker", str(cap)],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -60,6 +60,7 @@ def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes
         threading.Thread(target=read, args=(process.stderr, stderr), daemon=True),
     ]
     started = time.monotonic()
+    failure: BaseException | None = None
     try:
         for thread in threads:
             thread.start()
@@ -74,15 +75,12 @@ def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes
                 process.wait(timeout=0.02)
             except subprocess.TimeoutExpired:
                 continue
+    except BaseException as error:
+        failure = error
+        raise
     finally:
         try:
-            if process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=1)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait()
+            _stop_group(process, failure=failure)
         finally:
             for thread in threads:
                 if thread.ident is not None:
@@ -181,12 +179,8 @@ class SessionBackend:
             raise LimitExceeded("SHACL process exceeded requested wall-clock deadline")
 
     def _start(self) -> None:
-        import os
-
-        if os.name != "posix":
-            raise ResourceError("SHACL session process-group isolation is unavailable")
         try:
-            process = subprocess.Popen(
+            process = spawn_owned_process(
                 [
                     sys.executable,
                     "-m",
@@ -197,7 +191,6 @@ class SessionBackend:
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                start_new_session=True,
             )
         except OSError as error:
             raise ResourceError("SHACL worker could not be started") from error

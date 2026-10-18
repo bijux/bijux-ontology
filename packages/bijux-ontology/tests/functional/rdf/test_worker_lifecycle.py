@@ -15,7 +15,7 @@ from typing import Any, cast
 import pytest
 from rdflib import Graph
 
-import bijux_ontology.processes as processes
+import bijux_ontology.processes.ownership as processes
 from bijux_ontology.interfaces.execution.transport import stop_process
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf import execution as rdf_execution
@@ -323,3 +323,53 @@ time.sleep(30)
             process.wait(timeout=1)
         job.join(timeout=2)
         session.close()
+
+
+def test_one_shot_shacl_timeout_reaps_its_real_nested_worker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The one-shot boundary owns descendants even after its leader exits."""
+    from bijux_ontology.errors import LimitExceeded
+
+    ready = tmp_path / "descendant.pid"
+    child = (
+        "import os,signal,time;from pathlib import Path;"
+        "signal.signal(signal.SIGTERM,signal.SIG_IGN);"
+        f"Path({str(ready)!r}).write_text(str(os.getpid()));time.sleep(30)"
+    )
+    program = (
+        "import subprocess,sys,time;"
+        f"subprocess.Popen([sys.executable,'-c',{child!r}]);time.sleep(30)"
+    )
+    original = subprocess.Popen
+    owned: list[subprocess.Popen[bytes]] = []
+
+    def launch(args: Sequence[str], **kwargs: Any) -> subprocess.Popen[bytes]:
+        process = original([sys.executable, "-c", program], **kwargs)
+        owned.append(process)
+        deadline = time.monotonic() + 3
+        while not ready.exists():
+            assert time.monotonic() < deadline
+            time.sleep(0.005)
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", launch)
+    try:
+        with pytest.raises(LimitExceeded):
+            shacl_transport.execute_backend(b"input", cap=4096, timeout=0.05)
+        monkeypatch.setattr(subprocess, "Popen", original)
+        child_pid = int(ready.read_text())
+        status = subprocess.run(
+            ["ps", "-o", "stat=", "-p", str(child_pid)],
+            check=False,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        assert not status or status.startswith("Z")
+        assert all(process.poll() is not None for process in owned)
+    finally:
+        monkeypatch.setattr(subprocess, "Popen", original)
+        for process in owned:
+            with suppress(ProcessLookupError, PermissionError):
+                os.killpg(process.pid, signal.SIGKILL)
+            process.wait(timeout=2)

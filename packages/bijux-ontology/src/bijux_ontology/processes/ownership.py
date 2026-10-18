@@ -3,6 +3,7 @@
 import os
 import signal
 import subprocess
+import sys
 
 from bijux_ontology.errors import InputError, ResourceError
 
@@ -33,8 +34,9 @@ def stop_owned_process(
     """Reap an owned child; POSIX callers must have created its isolated session.
 
     Always escalate the group after leader exit: descendants may still own pipes.
-    Non-POSIX callers terminate the direct worker. Persistent cleanup errors cannot
-    certify success. With an existing failure, attach cleanup evidence to it;
+    Windows terminates the supervisor, closing its descendant-owning Job.
+    Persistent cleanup errors cannot certify success. With an existing failure,
+    attach cleanup evidence to it;
     the caller retains responsibility for propagating that failed outcome.
     """
     failures: list[str] = []
@@ -71,3 +73,45 @@ def stop_owned_process(
                 failure.add_note(str(cleanup_error))
             return
         raise cleanup_error
+
+
+def spawn_owned_process(
+    command: list[str],
+    *,
+    stdin: int | None = None,
+    stdout: int | None = None,
+    stderr: int | None = None,
+) -> subprocess.Popen[bytes]:
+    """Launch one supported owned command with platform descendant guarantees.
+
+    POSIX uses an isolated process group. Windows uses a supervisor owning an
+    atomic kill-on-close Job assignment and the exact caller process lifetime.
+    The supervisor shares only the requested binary standard streams with the
+    actual command. Unsupported ownership guarantees fail before semantic work.
+    """
+    if not command or any(not isinstance(value, str) for value in command):
+        raise InputError("Owned processes require a nonempty argument list")
+    if os.name == "nt":
+        from .windows import parent_identity
+
+        parent, created = parent_identity()
+        command = [
+            sys.executable,
+            "-I",
+            "-B",
+            "-m",
+            "bijux_ontology.processes.windows",
+            str(parent),
+            str(created),
+            "--",
+            *command,
+        ]
+    elif os.name != "posix":
+        raise ResourceError("Owned descendant cleanup is unavailable on this platform")
+    return subprocess.Popen(
+        command,
+        stdin=stdin,
+        stdout=stdout,
+        stderr=stderr,
+        start_new_session=os.name == "posix",
+    )

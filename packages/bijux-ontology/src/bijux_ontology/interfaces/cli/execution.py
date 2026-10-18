@@ -2,7 +2,6 @@
 
 import json
 import math
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -16,6 +15,7 @@ from bijux_ontology.interfaces.cli.protocol import report_from_data
 from bijux_ontology.interfaces.cli.results import CommandResult
 from bijux_ontology.interfaces.execution.transport import stop_process
 from bijux_ontology.limits import Limits
+from bijux_ontology.processes.ownership import spawn_owned_process
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
@@ -55,7 +55,7 @@ def execute_bounded(
             ),
             encoding="utf-8",
         )
-        process = subprocess.Popen(
+        process = spawn_owned_process(
             [
                 sys.executable,
                 "-m",
@@ -64,7 +64,6 @@ def execute_bounded(
             ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
-            start_new_session=os.name == "posix",
         )
         error_output = bytearray()
 

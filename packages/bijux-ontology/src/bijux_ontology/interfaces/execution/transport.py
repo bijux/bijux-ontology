@@ -1,13 +1,13 @@
 """Bounded owned worker lifetime and process-group cancellation."""
 
 import contextlib
-import os
 import subprocess
 import time
 from threading import Event, Thread
 
 from bijux_ontology.errors import ResourceError
-from bijux_ontology.processes import stop_owned_process as stop_process
+from bijux_ontology.processes.ownership import spawn_owned_process
+from bijux_ontology.processes.ownership import stop_owned_process as stop_process
 
 __all__ = ["run_worker", "stop_process"]
 
@@ -16,11 +16,10 @@ def run_worker(
     command: list[str], *, timeout: float, cap: int, cancellation: Event | None
 ) -> tuple[int | None, str, str]:
     """Drain bounded diagnostics and interrupt deadlines, cancellation or overflow."""
-    process = subprocess.Popen(
+    process = spawn_owned_process(
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        start_new_session=os.name == "posix",
     )
     output = bytearray()
     overflow = Event()
