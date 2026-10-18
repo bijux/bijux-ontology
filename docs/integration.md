@@ -415,6 +415,13 @@ resources and returns a raw `report`. Supported operations also include
 use their existing JSON codecs. `project` takes `configuration` and an absolute
 `directory`, retaining completed scopes on cancellation or deadline.
 
+For async hosts, use `async with AsyncChecks(executor, max_running=2, max_queued=8)`
+from `bijux_ontology.interfaces.execution.async_checks`, then await
+`checks.run(checks.prepare(operation, parameters))` or `checks.batch(requests)`.
+Requests own JSON inputs; each worker retains its ordinary limits. Batch collection
+has a separate cumulative host budget. Cancellation returns incomplete execution
+evidence after owned cleanup; session exit drains admitted work.
+
 The trusted worker interpreter must already contain the package and requested
 extras. No environment installation occurs. `memory_bytes=` requests the platform
 address-space limit and fails explicitly when unavailable; cancellation accepts a
