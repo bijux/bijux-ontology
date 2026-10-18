@@ -913,3 +913,27 @@ and datatype. Attachment and lexical checks always rerun; collision, language
 and other publication obligations use ordinary `MigrationCheck` callbacks.
 Missing checks, shared ownership and anonymous identity correspondence that
 cannot be established prevent approval. Export requires explicit acceptance.
+
+`bijux_ontology.interfaces.adapters.sdrf` connects the maintained SDRF ontology
+validator to prepared local RDF terminology. Declare `SdrfOntology` resources with
+explicit accession and label/synonym predicates, then use
+`prepare_sdrf_terminology` and `check_sdrf(parsed_table, effective_schema, terminology)`.
+Inputs are actual `SDRFDataFrame` and effective `SchemaDefinition` instances,
+including ordinary registry composition. Native diagnostics retain original
+cells and physical ordinals. The local provider performs no network requests.
+
+Install the separately qualified optional consumer with all dependencies:
+
+```sh
+uv pip install 'sdrf-pipelines[ontology] @ git+https://github.com/bigbio/sdrf-pipelines.git@4ba20f5778b0b52055b71bad0a7654cc60dacbe6'
+```
+
+This qualifies version `0.1.7.dev72`; other versions remain unsupported. Core-only
+installations can prepare terminology; requesting the absent consumer raises a
+resource error with the installation requirement. No consumer runtime is mandatory.
+An explicitly closed, completely indexed catalogue can establish absence. Raw
+unqualified imports and imports in selected lookup resources retain uncertainty;
+observed positive ancestry remains usable. Partial indexes cannot establish
+unique accession identity. Custom ontology validators and unsupported policies
+stay unverified. Native in-process validators retain their ordinary execution
+boundary; adapter budgets do not preempt arbitrary consumer code.

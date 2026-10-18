@@ -52,6 +52,7 @@ _CODES = {
         "minimum_missing maximum_exceeded language_minimum_missing "
         "language_maximum_exceeded value_kind datatype entity_unresolved".split()
     ),
+    "sdrf": frozenset("unverified semantic_mismatch consumer".split()),
     "serialization": frozenset(("coverage_missing",)),
     "selector": frozenset(
         "parent_count_mismatch count_mismatch "
@@ -319,6 +320,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Inspect the entity, predicate, language mode and owned source scopes; "
         "select fallback explicitly and retain original attachment witnesses.",
         'AnnotationRequirement("urn:label", languages=(LanguageRequirement("en"),))',
+    ),
+    "sdrf": (
+        "selected local SDRF ontology checks",
+        "The maintained consumer reports a mismatch or local evidence is incomplete.",
+        "Inspect original cells, effective schema obligations and qualified local "
+        "ontology resources; incomplete catalogues cannot prove absence.",
+        "check_sdrf(parsed_table, effective_schema, terminology)",
     ),
     "serialization": (
         "required representative serializer coverage",

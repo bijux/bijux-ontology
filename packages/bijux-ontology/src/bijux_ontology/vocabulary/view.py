@@ -248,10 +248,10 @@ class Vocabulary:
 
     @property
     def required_imports_qualified(self) -> bool:
-        """Whether loading validated every required import against supplied resources.
+        """Whether loading validated the local resource and required import closure.
 
         Raw graph construction supplies ownership without import qualification.
-        This records loader provenance, not ontology consistency.
+        Lookup resources are excluded. This records provenance, not consistency.
         """
         return self._required_imports_qualified
 
