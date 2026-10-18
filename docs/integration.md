@@ -1045,3 +1045,14 @@ Required consumer checks validate the actual SKOS result. Competing preferred
 labels and unrepresented selected expressions block publication until exact
 source-label choices or explicit omission policies resolve them. Original
 assertions, identity bindings and omission witnesses remain inspectable.
+
+`bijux_ontology.workflows.upgrades.shapes.assess_shape_upgrade` compares two
+selected `ShapeProfile` releases on the same owned `ShapeSample` data. Inspect
+introduced/resolved/persistent/uncertain finding groups and completed target
+changes alongside both original `ShaclResult` objects and their raw RDF reports.
+Named shape renames can use explicit `ShapeCorrespondence`; exact failing values
+and severities retain distinct identities. Pure anonymous shape/path-label churn
+can qualify through bounded RDF isomorphism; edited anonymous attribution stays
+unknown. Lost targets cannot resolve prior failures or certify compatibility.
+Comparison agreement is finite representative evidence, separate from raw data
+conformance and universal profile refinement.
