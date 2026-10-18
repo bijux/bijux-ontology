@@ -134,6 +134,7 @@ class DeclarationReader:
         graph = Graph(bind_namespaces="none")
         for iri in selected:
             self.budget.consume("work")
+            bound_text(iri, self.budget)
             subject = URIRef(absolute_iri(iri))
             for quad in self._store.quads_for_pattern(
                 ox.NamedNode(str(subject)),
