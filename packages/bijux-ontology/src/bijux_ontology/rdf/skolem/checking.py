@@ -12,7 +12,12 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.patches.types import BlankNodePair
-from bijux_ontology.rdf.skolem.types import SkolemBinding, SkolemMap, SkolemResult
+from bijux_ontology.rdf.skolem.types import (
+    SkolemBinding,
+    SkolemMap,
+    SkolemResult,
+    _SnapshotMetadata,
+)
 from bijux_ontology.rdf.snapshots import PreparedSource, _read_graph
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.rdf.transforms import (
@@ -157,6 +162,16 @@ def _report(issues: IssueCollector, completed: bool) -> Report:
     )
 
 
+def _qualified_map(mapping: SkolemMap, budget: Budget) -> None:
+    """Reject changed snapshot scope or fidelity before reusing owned identities."""
+    original = _SnapshotMetadata.capture(mapping.original, budget)
+    output = _SnapshotMetadata.capture(mapping.output, budget)
+    if not mapping._original_metadata.same_scope(
+        original
+    ) or not mapping._output_metadata.same_scope(output):
+        raise InputError("Skolem map snapshot metadata changed after map creation")
+
+
 def _shared(
     shared: SkolemMap | None,
     pairs: Sequence[BlankNodePair],
@@ -176,6 +191,7 @@ def _shared(
         return {}
     if not isinstance(shared, SkolemMap):
         raise InputError("Shared correspondence requires a factory-owned Skolem map")
+    _qualified_map(shared, budget)
     bound_text(shared.base, budget)
     if shared.base != base:
         raise InputError("Shared maps require the same explicit Skolem base")
@@ -283,7 +299,9 @@ def skolemize(
             replacements[node] = iri
             bindings.append(SkolemBinding(node, iri))
         candidate = _copy(source, contexts, replacements, operation)
-        mapping = SkolemMap._from_owned(source, candidate, base, token, tuple(bindings))
+        mapping = SkolemMap._from_owned(
+            source, candidate, base, token, tuple(bindings), operation
+        )
         output = candidate
         completed = True
     except LimitExceeded as error:
@@ -315,6 +333,7 @@ def deskolemize(
     try:
         if not isinstance(mapping, SkolemMap) or source is not mapping.output:
             raise InputError("Reversal requires the map's exact output snapshot object")
+        _qualified_map(mapping, operation)
         contexts = _contexts(source, operation)
         _, _, iris = _inventory(contexts, operation)
         original, _, _ = _inventory(_contexts(mapping.original, operation), operation)

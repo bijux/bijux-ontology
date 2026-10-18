@@ -253,3 +253,61 @@ def test_input_triple_limits_stop_capture_and_union_does_not_build_a_cache() -> 
     result = skolemize(union, BASE, limits=Limits(max_states=1))
     assert result.report.outcome == "exhausted" and result.source is None
     assert not union._readers
+
+
+def test_map_rejects_mutated_snapshot_scope_origin_and_fidelity() -> None:
+    """Object identity cannot authorize a later narrowed or reinterpreted owner."""
+    other = URIRef(EX + "other")
+    changes = (
+        ("graph_name", str(G)),
+        ("union", True),
+        ("is_dataset", False),
+        ("document_iri", EX + "changed-document"),
+        ("effective_url", EX + "changed-effective"),
+        ("literal_fidelity", "normalisation_allowed"),
+        ("graph_fidelity", "nonempty-only"),
+    )
+    for owner in ("original", "output"):
+        for name, changed in changes:
+            data = Dataset()
+            shared = BNode()
+            data.graph(G).add((A, P, shared))
+            data.graph(other).add((shared, P, A))
+            original = prepare_source(data)
+            named = skolemize(original, BASE)
+            assert named.source is not None and named.mapping is not None
+            assert deskolemize(named.source, named.mapping).report.verified
+            prior_blank = named.mapping.bindings[0].original
+            selected = getattr(named.mapping, owner)
+            setattr(selected, name, changed)
+            rejected = deskolemize(named.source, named.mapping)
+            assert rejected.source is None and rejected.report.outcome == "unverified"
+            next_source = prepare_source(Graph().add((BNode(), P, A)))
+            reused = skolemize(
+                next_source,
+                BASE,
+                shared=named.mapping,
+                blank_pairs=(BlankNodePair(prior_blank, _blank(next_source)),),
+            )
+            assert reused.source is None and reused.mapping is None
+            assert reused.report.outcome == "unverified"
+            assert {g.identifier for g in original.dataset().graphs()} >= {G, other}
+    for owner in ("original", "output"):
+        source = prepare_source(Graph().add((BNode(), P, A)))
+        named = skolemize(source, BASE)
+        assert named.source is not None and named.mapping is not None
+        selected = getattr(named.mapping, owner)
+        selected.effective_url = "x" * 100000
+        bounded = deskolemize(
+            named.source, named.mapping, limits=Limits(max_bytes=1000)
+        )
+        assert bounded.source is None and bounded.report.outcome == "exhausted"
+        future = prepare_source(Graph().add((BNode(), P, A)))
+        reused = skolemize(
+            future, BASE, shared=named.mapping, limits=Limits(max_bytes=1000)
+        )
+        assert reused.source is None and reused.report.outcome == "exhausted"
+        assert all(
+            len(issue.message) < 1000
+            for issue in (*bounded.report.issues, *reused.report.issues)
+        )
