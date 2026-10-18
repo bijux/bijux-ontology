@@ -892,3 +892,9 @@ Parser regions retain their qualified column units; unsupported unit conversion
 uses line-only regions and preserves the original span in native properties.
 Actual `ShaclResult` findings and related locations retain their original report
 graph. Python file export requires a new destination; no export uploads data.
+
+RDF extraction, IRI remapping and transformation rechecks honor the prepared
+source's physical graph or explicit union. Hidden partitions cannot introduce
+mapping collisions or enter callback snapshots. Renamed graph selections and
+selected empty graphs remain explicit. Successful syntactic checks do not grant
+ontology or publication approval; required after checks remain separate.

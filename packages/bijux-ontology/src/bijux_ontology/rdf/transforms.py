@@ -33,7 +33,11 @@ def _budget(limits: Limits | None, budget: Budget | None) -> Budget:
 
 
 def _owned(
-    dataset: Dataset, original: PreparedSource, budget: Budget
+    dataset: Dataset,
+    original: PreparedSource,
+    budget: Budget,
+    *,
+    graph_name: str | None = None,
 ) -> PreparedSource:
     return PreparedSource(
         dataset,
@@ -43,15 +47,20 @@ def _owned(
         literal_fidelity=original.literal_fidelity,
         graph_fidelity=original.graph_fidelity,
         max_triples=budget.limits.max_triples,
+        graph_name=original.graph_name if graph_name is None else graph_name,
+        union=original.union,
     )
 
 
-def _report(scope: str, checked: int, issues: IssueCollector) -> Report:
+def _report(
+    scope: str, checked: int, issues: IssueCollector, *, allow_empty: bool = False
+) -> Report:
     return Report(
         scope,
         checked,
         tuple(issues),
-        requested=max(checked, 1),
+        requested=checked if allow_empty else max(checked, 1),
+        allow_empty=allow_empty,
         complete=not any(issue.kind == "exhausted" for issue in issues),
         regime="syntactic-transformation",
         families=(scope,),
@@ -98,22 +107,31 @@ def extract_neighbourhood(
     operation = _budget(limits, budget)
     seeds: set[URIRef] = set()
     edges: set[URIRef] = set()
-    for values, selected in ((terms, seeds), (predicates, edges)):
-        for value in values:
-            operation.consume("states")
-            selected.add(URIRef(absolute_iri(value)))
     issues = IssueCollector(operation)
     result = Dataset()
     checked = 0
     try:
+        for values, selected in ((terms, seeds), (predicates, edges)):
+            for value in values:
+                operation.consume("states")
+                bound_text(value, operation)
+                selected.add(URIRef(absolute_iri(value)))
         _fidelity(source, issues)
-        dataset = source.dataset()
-        bind_namespaces(result, dataset)
-        for graph in dataset.graphs():
+        bound_namespaces = False
+        for name, graph in _authorized_contexts(source, operation):
             operation.consume("work")
+            if not bound_namespaces:
+                _bind(result, (graph,), operation)
+                bound_namespaces = True
+            operation.consume("states", len(seeds))
+            operation.consume("bytes", 16 * len(seeds))
             pending: deque[Node] = deque(seeds)
             seen: set[Node] = set()
-            target: Graph | None = None
+            target: Graph | None = (
+                result.graph(name)
+                if source.graph_name is not None and name is not None
+                else None
+            )
             while pending:
                 subject = pending.popleft()
                 if subject in seen:
@@ -122,33 +140,28 @@ def extract_neighbourhood(
                 seen.add(subject)
                 for triple in graph.triples((subject, None, None)):
                     operation.consume("work")
+                    for term in triple:
+                        bound_node(term, operation)
                     if subject in seeds and triple[1] not in edges:
                         continue
                     if target is None:
                         target = (
-                            result.default_graph
-                            if graph.identifier == dataset.default_graph.identifier
-                            else result.graph(graph.identifier)
+                            result.default_graph if name is None else result.graph(name)
                         )
                     operation.consume("triples")
                     target.add(triple)
                     checked += 1
                     if include_blank_nodes and isinstance(triple[2], BNode):
+                        operation.consume("states")
+                        operation.consume("bytes", 16)
                         pending.append(triple[2])
-        issues.append(
-            Issue(
-                "rdf.extraction_scope",
-                "Only selected seed predicates and requested blank closure are copied",
-                severity="info",
-                actual=f"{checked} triples; {len(seeds)} seed terms",
-            )
-        )
         candidate = _owned(result, source, operation)
     except LimitExceeded as error:
         issues.exhausted(str(error))
         candidate = None
-    report = _report("rdf.extraction", checked, issues)
-    return Transformation(candidate, replace(report, allow_empty=True))
+    return Transformation(
+        candidate, _report("rdf.extraction", checked, issues, allow_empty=True)
+    )
 
 
 def _datatype(term: Literal) -> URIRef:
@@ -175,29 +188,37 @@ def remap_iris(
         raise InputError("IRI remapping requires a nonempty explicit mapping")
     operation = _budget(limits, budget)
     replacements: dict[URIRef, URIRef] = {}
-    for old, new in mapping.items():
-        operation.consume("states")
-        replacements[URIRef(absolute_iri(old))] = URIRef(absolute_iri(new))
     issues = IssueCollector(operation)
     result = Dataset()
-    changed = 0
+    try:
+        for old, new in mapping.items():
+            operation.consume("states")
+            bound_text(old, operation)
+            bound_text(new, operation)
+            replacements[URIRef(absolute_iri(old))] = URIRef(absolute_iri(new))
+    except LimitExceeded as error:
+        issues.exhausted(str(error))
+        return Transformation(None, _report("rdf.remapping", len(replacements), issues))
     try:
         _fidelity(source, issues)
-        dataset = source.dataset()
         iris: set[URIRef] = set()
-        for graph in dataset.graphs():
-            if graph.identifier != dataset.default_graph.identifier and isinstance(
-                graph.identifier, URIRef
-            ):
-                iris.add(graph.identifier)
+        for name, graph in _authorized_contexts(source, operation):
+            if isinstance(name, URIRef):
+                operation.consume("states")
+                iris.add(name)
             for triple in graph:
                 operation.consume("work")
                 for term in triple:
+                    bound_node(term, operation)
+                    operation.consume("states")
                     if isinstance(term, URIRef):
                         iris.add(term)
                     elif isinstance(term, Literal):
                         iris.add(_datatype(term))
         identities: dict[URIRef, URIRef] = {}
+        operation.consume(
+            "work", sum(len(iri) for iri in iris) * max(1, len(iris).bit_length())
+        )
         for iri in sorted(iris):
             operation.consume("states")
             target = replacements.get(iri, iri)
@@ -217,13 +238,9 @@ def remap_iris(
 
         def remap(term: Node) -> Node:
             """Preserve lexical text even when a caller maps the datatype IRI."""
-            nonlocal changed
             if isinstance(term, URIRef):
-                target = replacements.get(term, term)
-                changed += target != term
-                return target
+                return replacements.get(term, term)
             if isinstance(term, Literal) and _datatype(term) in replacements:
-                changed += 1
                 return literal_term(
                     str(term),
                     datatype=str(replacements[_datatype(term)]),
@@ -231,26 +248,25 @@ def remap_iris(
                 )
             return term
 
-        bind_namespaces(result, dataset)
-        for graph in dataset.graphs():
+        bound_namespaces = False
+        for name, graph in _authorized_contexts(source, operation):
             operation.consume("work")
+            if not bound_namespaces:
+                _bind(result, (graph,), operation)
+                bound_namespaces = True
             target_graph = (
                 result.default_graph
-                if graph.identifier == dataset.default_graph.identifier
-                else result.graph(cast(URIRef | BNode, remap(graph.identifier)))
+                if name is None
+                else result.graph(cast(URIRef | BNode, remap(name)))
             )
             for triple in graph:
                 operation.consume("triples")
+                operation.consume("work")
                 target_graph.add((remap(triple[0]), remap(triple[1]), remap(triple[2])))
-        candidate = _owned(result, source, operation)
-        issues.append(
-            Issue(
-                "rdf.remap_scope",
-                "Applied only the supplied exact IRI mapping",
-                severity="info",
-                actual=f"{changed} changed RDF positions",
-            )
-        )
+        selection = source.graph_name
+        if selection is not None and selection != "@default":
+            selection = str(replacements.get(URIRef(selection), URIRef(selection)))
+        candidate = _owned(result, source, operation, graph_name=selection)
     except LimitExceeded as error:
         issues.exhausted(str(error))
         candidate = None
@@ -265,7 +281,7 @@ def remap_iris(
     )
 
 
-def _merge_contexts(
+def _authorized_contexts(
     source: PreparedSource, budget: Budget
 ) -> Iterator[tuple[URIRef | BNode | None, Graph]]:
     """Read only authorized partitions without exporting a second input dataset."""
@@ -280,6 +296,20 @@ def _merge_contexts(
     else:
         for _, name, graph in source._contexts(budget=budget):
             yield name, graph
+
+
+def _bind(target: Dataset, sources: Sequence[Graph], budget: Budget) -> None:
+    """Bound retained namespace metadata and sorting before copying its bindings."""
+    count = size = 0
+    for graph in sources:
+        for prefix, namespace in graph.namespaces():
+            budget.consume("states")
+            bound_text(prefix, budget)
+            bound_text(str(namespace), budget)
+            count += 1
+            size += len(prefix) + len(namespace) + 1
+    budget.consume("work", size * max(1, count.bit_length()))
+    bind_namespaces(target, *sources)
 
 
 def merge_sources(
@@ -320,7 +350,7 @@ def merge_sources(
                 return term
 
             namespace_source: Graph | None = None
-            for name, graph in _merge_contexts(source, operation):
+            for name, graph in _authorized_contexts(source, operation):
                 operation.consume("work")
                 if namespace_source is None:
                     namespace_source = graph
@@ -339,16 +369,7 @@ def merge_sources(
                         bound_node(term, operation)
                     target.add((own(triple[0]), own(triple[1]), own(triple[2])))
             checked += 1
-        binding_count = binding_text = 0
-        for graph in namespace_sources:
-            for prefix, namespace in graph.namespaces():
-                operation.consume("states")
-                bound_text(prefix, operation)
-                bound_text(str(namespace), operation)
-                binding_count += 1
-                binding_text += len(prefix) + len(namespace) + 1
-        operation.consume("work", binding_text * max(1, binding_count.bit_length()))
-        bind_namespaces(result, *namespace_sources)
+        _bind(result, namespace_sources, operation)
         candidate = PreparedSource(
             result,
             is_dataset=not union
@@ -391,7 +412,24 @@ def recheck_transformation(
     for name, check in checks.items():
         for role, source in (("before", original), ("after", candidate)):
             operation.consume("work")
-            owned = _owned(source.dataset(), source, operation)
+            dataset = Dataset()
+            bound_namespaces = False
+            for graph_name, graph in _authorized_contexts(source, operation):
+                if not bound_namespaces:
+                    _bind(dataset, (graph,), operation)
+                    bound_namespaces = True
+                target = (
+                    dataset.default_graph
+                    if graph_name is None
+                    else dataset.graph(graph_name)
+                )
+                for triple in graph:
+                    operation.consume("work")
+                    operation.consume("triples")
+                    for term in triple:
+                        bound_node(term, operation)
+                    target.add(triple)
+            owned = _owned(dataset, source, operation)
             report = check(owned)
             if not isinstance(report, Report):
                 raise InputError("Transformation checks must return Report")
