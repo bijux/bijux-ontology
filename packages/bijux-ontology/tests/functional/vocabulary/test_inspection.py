@@ -1,7 +1,9 @@
 """Exact identities, source scopes, multilingual evidence and owned inspection."""
 
+import tracemalloc
+
 import pytest
-from rdflib import Graph, Literal, Namespace
+from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
 from bijux_ontology.errors import InputError
@@ -95,3 +97,21 @@ def test_nonmatching_search_and_filtered_iteration_still_obey_work_limits() -> N
     search = view.search("absent")
     assert not search.items and search.report.outcome == "exhausted"
     assert not search.report.verified
+
+
+def test_predicate_selection_does_not_copy_large_unselected_iris() -> None:
+    unselected = URIRef("urn:" + "x" * 1_000_000)
+    graph = Graph().add((EX.A, unselected, EX.C))
+    graph.add((EX.A, RDFS.subClassOf, EX.B))
+    view = inspect_vocabulary(graph)
+    tracemalloc.start()
+    try:
+        selected = view.relationships(str(EX.A), predicates=(str(RDFS.subClassOf),))
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert selected.report.verified
+    assert [(edge.predicate, edge.object) for edge in selected.items] == [
+        (RDFS.subClassOf, EX.B)
+    ]
+    assert peak < 100_000
