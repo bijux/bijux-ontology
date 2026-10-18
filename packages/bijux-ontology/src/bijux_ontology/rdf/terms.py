@@ -7,8 +7,9 @@ from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from ..errors import InputError, LimitExceeded
+from ..errors import InputError
 from ..limits import Budget
+from ..limits import bound_text as bound_text
 from .identifiers import absolute_iri, language_tag
 
 
@@ -65,22 +66,6 @@ def validate_node(node: Node) -> None:
             language_tag(node.language)
     elif not isinstance(node, BNode):
         raise InputError("Unsupported RDF term shape")
-
-
-def bound_text(text: str, budget: Budget) -> None:
-    """Qualify text before encoding, formatting, hashing or diagnostic retention."""
-    if not isinstance(text, str):
-        raise InputError("Role metadata must be text")
-    if len(text) > budget.limits.max_bytes:
-        raise LimitExceeded("Role metadata exceeds max_bytes")
-    budget.consume("work", len(text) + 1)
-    try:
-        size = len(text.encode("utf-8"))
-    except UnicodeEncodeError as error:
-        raise InputError("Role metadata requires valid Unicode") from error
-    if size > budget.limits.max_bytes:
-        raise LimitExceeded("Role metadata exceeds max_bytes")
-    budget.consume("bytes", size)
 
 
 def bound_node(node: Node, budget: Budget) -> None:
