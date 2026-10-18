@@ -6,17 +6,17 @@ from typing import cast
 from rdflib import BNode, Dataset, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.errors import InputError, LimitExceeded, attach_input_failure
 from bijux_ontology.jsonld.conversion import DirectionPolicy, _convert_to_rdf_dataset
 from bijux_ontology.jsonld.resources import (
     DocumentLoader,
     context_resources,
 )
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.terms import bound_text, literal_term
+from bijux_ontology.reports import Issue, Location, Report
 
 
 @dataclass(frozen=True)
@@ -113,9 +113,16 @@ def prepare_jsonld(
     """
     resources = context_resources(document_loader, limits=limits, budget=budget)
     operation = resources.budget
-    if document_iri is not None:
-        absolute_iri(document_iri)
+    qualified_document = None
     try:
+        if document_iri is not None:
+            bound_text(document_iri, operation)
+            absolute_iri(document_iri)
+            qualified_document = document_iri
+        elif isinstance(document, str):
+            bound_text(document, operation)
+            absolute_iri(document)
+            qualified_document = document
         converted = _convert_to_rdf_dataset(
             document,
             base=base,
@@ -138,11 +145,31 @@ def prepare_jsonld(
             ),
         )
     except InputError as error:
+        issues = IssueCollector(operation)
+        try:
+            bound_text(str(error), operation)
+            attach_input_failure(error, document_iri=qualified_document)
+            failure = Report(
+                "jsonld.source",
+                requested=1,
+                complete=False,
+                issues=(
+                    Issue(
+                        "context.input_error",
+                        str(error),
+                        kind="input_error",
+                        details=Location.from_error(error),
+                    ),
+                ),
+            )
+            retain_report(failure, operation, issues)
+        except LimitExceeded as stopped:
+            issues.exhausted(str(stopped))
         return JSONLDPreparation(
             None,
             Report(
                 "jsonld.source",
-                issues=(Issue("context.input_error", str(error), kind="input_error"),),
+                issues=tuple(issues),
                 requested=1,
                 complete=False,
                 regime="jsonld_to_rdf",

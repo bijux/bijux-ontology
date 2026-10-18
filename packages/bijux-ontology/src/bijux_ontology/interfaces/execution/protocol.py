@@ -4,8 +4,34 @@ import json
 from typing import cast
 
 from bijux_ontology._json import object_value
-from bijux_ontology.errors import InputError
+from bijux_ontology.errors import InputError, InputFailure, SourceSpan
 from bijux_ontology.reports import Issue, IssueKind, Location, Report, Severity
+
+
+def _input_failure(value: object) -> InputFailure | None:
+    """Reconstruct typed content evidence without interpreting parser messages."""
+    if value is None:
+        return None
+    data = object_value(value, location="worker input failure")
+    chain = data.get("import_chain", [])
+    if not isinstance(chain, list):
+        raise InputError("Worker import chains require arrays")
+    span = None
+    if data.get("span") is not None:
+        raw = object_value(data["span"], location="worker parser span")
+        span = SourceSpan(
+            cast(int | None, raw.get("start_line")),
+            cast(int | None, raw.get("start_column")),
+            cast(int | None, raw.get("end_line")),
+            cast(int | None, raw.get("end_column")),
+        )
+    return InputFailure(
+        cast(str | None, data.get("document_iri")),
+        cast(str, data.get("location", "")),
+        cast(str, data.get("role", "input")),
+        tuple(chain),
+        span,
+    )
 
 
 def report_from_data(value: object) -> Report:
@@ -31,6 +57,7 @@ def report_from_data(value: object) -> Report:
                 graph=cast(str | None, part.get("graph")),
                 model=cast(str | None, part.get("model")),
                 branch=cast(int | None, part.get("branch")),
+                failure=_input_failure(part.get("input_failure")),
             )
         issues.append(
             Issue(

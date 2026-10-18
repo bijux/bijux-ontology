@@ -1,6 +1,6 @@
 """Explicit RDF content descriptors with independent logical resource identities."""
 
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 from pathlib import Path
 from typing import IO, Literal
 
@@ -35,8 +35,17 @@ class RdfSource:
     graph_name: str | None = None
     union: bool = False
     compression: Compression | None = None
+    _: KW_ONLY
+    location: str = ""
+    role: str = "input"
 
     def __post_init__(self) -> None:
+        if (
+            not isinstance(self.location, str)
+            or not isinstance(self.role, str)
+            or not self.role
+        ):
+            raise InputError("RDF sources require a location string and nonempty role")
         if self.compression is not None:
             if self.compression != "gzip":
                 raise InputError("Unsupported RDF compression; choose gzip explicitly")

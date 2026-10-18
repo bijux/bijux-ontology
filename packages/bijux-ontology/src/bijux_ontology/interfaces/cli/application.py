@@ -20,6 +20,7 @@ from bijux_ontology.reports import (
     CheckError,
     Issue,
     IssueSelection,
+    Location,
     Report,
     Severity,
 )
@@ -96,6 +97,7 @@ def main(argv: list[str] | None = None) -> int:
                     if isinstance(error, LimitExceeded)
                     else "input.invalid",
                     str(error),
+                    details=Location.from_error(error),
                     kind="exhausted"
                     if isinstance(error, LimitExceeded)
                     else "input_error",

@@ -265,6 +265,12 @@ descriptions expose `expanded_paths` into expanded input, not compact source
 pointers. Blank-node or anonymous-graph correspondence remains unverified without
 an identity witness. RDF preservation does not promise original JSON shape.
 
+Loading errors expose `InputError.failure` from `bijux_ontology.errors`: the
+logical document IRI, supplied location and role, known import chain, and any
+parser-provided span. Pass `location=` and `role=` on `RdfSource` when available.
+Reports retain these as `Issue.details.failure`, independently of the job's
+configuration location; absent parser coordinates remain absent.
+
 Keep findings and unsupported comparisons visible. Apply narrow code/location exceptions through `AcceptancePolicy`; they do not change verification truth. Retain application validation, reference checks and any existing reasoning gate. Supplied-shapes validation is an optional additional operation, not general OWL consistency checking.
 
 Author explicit application shapes with `ShaclNodeShape`, `ShaclPropertyShape`

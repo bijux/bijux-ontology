@@ -13,7 +13,7 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 
-from ..errors import InputError, ResourceError
+from ..errors import InputError, ResourceError, attach_input_failure
 from .sources import OwnedSource
 
 
@@ -84,9 +84,11 @@ def required_imports(
     }
     requested: set[str] = set()
     loaded: list[OwnedSource] = []
-    pending = [local.selected]
+    pending: list[tuple[Graph, tuple[str, ...]]] = [
+        (local.selected, (prepared.document_iri,) if prepared.document_iri else ())
+    ]
     while pending:
-        graph = pending.pop()
+        graph, chain = pending.pop()
         for reference in sorted(graph.objects(None, OWL.imports), key=str):
             budget.consume("work")
             if not isinstance(reference, URIRef):
@@ -99,22 +101,37 @@ def required_imports(
             if supplied is None or iri not in supplied:
                 if existing is not None:
                     continue
-                raise ResourceError(
-                    "Required import has no supplied source", location=iri
+                raise attach_input_failure(
+                    ResourceError(
+                        "Required import has no supplied source", location=iri
+                    ),
+                    document_iri=iri,
+                    role="import",
+                    import_chain=chain,
                 )
             raw = supplied[iri]
             document = (
-                replace(raw, document_iri=raw.document_iri or iri)
+                replace(raw, document_iri=raw.document_iri or iri, role="import")
                 if isinstance(raw, RdfSource)
-                else RdfSource(raw, document_iri=iri)
+                else RdfSource(raw, document_iri=iri, role="import")
             )
-            resource = prepare_source(
-                document,
-                limits=budget.limits,
-                budget=budget,
-                preserve_literals=preserve_literals,
-                document_loader=document_loader,
-            )
+            try:
+                resource = prepare_source(
+                    document,
+                    limits=budget.limits,
+                    budget=budget,
+                    preserve_literals=preserve_literals,
+                    document_loader=document_loader,
+                )
+            except InputError as error:
+                attach_input_failure(
+                    error,
+                    document_iri=document.document_iri,
+                    location=document.location,
+                    role="import",
+                    import_chain=chain,
+                )
+                raise
             candidate = _Binding(OwnedSource(resource, resource._read(budget=budget)))
             names = {
                 value
@@ -136,7 +153,8 @@ def required_imports(
                 representative = candidate
                 imported = candidate.selected
                 loaded.append(candidate.source)
-                pending.append(imported)
+                budget.consume("states", len(chain) + 1)
+                pending.append((imported, chain + (resource.document_iri or iri,)))
             for name in names:
                 aliases[name] = representative
     return tuple(loaded)

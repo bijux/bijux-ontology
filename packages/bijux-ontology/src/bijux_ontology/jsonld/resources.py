@@ -3,6 +3,7 @@
 import json
 from collections.abc import Callable, Mapping
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
 from urllib.parse import urljoin
@@ -10,8 +11,9 @@ from urllib.parse import urljoin
 from bijux_ontology._json import decode_json, own_json
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.rdf.terms import bound_text
 
-from ..errors import InputError, LimitExceeded
+from ..errors import InputError, LimitExceeded, attach_input_failure
 
 DocumentLoader = Callable[[str, dict[str, object]], dict[str, object]]
 
@@ -74,39 +76,50 @@ class OfflineDocumentLoader:
 
     def __call__(self, url: str, options: dict[str, object]) -> dict[str, object]:
         """Return the PyLD loader response without invoking a network loader."""
-        if url not in self._documents:
-            raise ContextInputError(f"No supplied JSON-LD document for {url}")
-        document = self._documents[url]
-        if isinstance(document, Path):
-            try:
-                with document.open("rb") as handle:
-                    payload = handle.read(self._max_bytes + 1)
-                if len(payload) > self._max_bytes:
-                    raise LimitExceeded(f"JSON-LD document exceeds byte limit: {url}")
-            except (OSError, UnicodeError) as error:
-                raise ContextInputError(
-                    f"Cannot load JSON-LD document {url}: {error}"
-                ) from error
-            try:
-                document = decode_json(
-                    payload,
-                    source=url,
-                    max_bytes=self._max_bytes,
-                    max_depth=self._limits.max_depth,
-                )
-            except LimitExceeded:
-                raise
-            except (ValueError, RecursionError) as error:
-                raise ContextInputError(
-                    f"Cannot load JSON-LD document {url}: {error}"
-                ) from error
-        document = own_json(
-            document,
-            source=url,
-            max_bytes=self._max_bytes,
-            max_depth=self._limits.max_depth,
-        )
-        return {"contextUrl": None, "documentUrl": url, "document": document}
+        metadata = Budget(replace(self._limits, max_bytes=self._max_bytes))
+        bound_text(url, metadata)
+        supplied = self._documents.get(url)
+        location = str(supplied) if isinstance(supplied, Path) else ""
+        bound_text(location, metadata)
+        try:
+            if url not in self._documents:
+                raise ContextInputError(f"No supplied JSON-LD document for {url}")
+            document = self._documents[url]
+            if isinstance(document, Path):
+                try:
+                    with document.open("rb") as handle:
+                        payload = handle.read(self._max_bytes + 1)
+                    if len(payload) > self._max_bytes:
+                        raise LimitExceeded(
+                            f"JSON-LD document exceeds byte limit: {url}"
+                        )
+                except (OSError, UnicodeError) as error:
+                    raise ContextInputError(
+                        f"Cannot load JSON-LD document {url}: {error}"
+                    ) from error
+                try:
+                    document = decode_json(
+                        payload,
+                        source=url,
+                        max_bytes=self._max_bytes,
+                        max_depth=self._limits.max_depth,
+                    )
+                except LimitExceeded:
+                    raise
+                except (ValueError, RecursionError) as error:
+                    raise ContextInputError(
+                        f"Cannot load JSON-LD document {url}: {error}"
+                    ) from error
+            document = own_json(
+                document,
+                source=url,
+                max_bytes=self._max_bytes,
+                max_depth=self._limits.max_depth,
+            )
+            return {"contextUrl": None, "documentUrl": url, "document": document}
+        except InputError as error:
+            attach_input_failure(error, document_iri=url, location=location)
+            raise
 
 
 def _absolutise_imports(context: object, base: str) -> None:
