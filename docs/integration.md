@@ -139,6 +139,15 @@ Fallback is explicit, requires an empty completed primary inventory and never
 fills a nonempty deficit. Original assertions and chosen fallback witnesses stay
 visible; incomplete inventories cannot establish missing minima.
 
+Use `project_restrictions(view, class_iri, inherited=True)` for finite asserted
+OWL restriction records. Some/all/value quantifiers remain distinct; supported
+intersections and named superclass paths retain original source/list witnesses.
+`existential_path(view, source, target, properties=(property_iri,))` follows only
+selected `someValuesFrom` projections. It creates no RDF relation triples and
+claims no transitive-property entailment. Unsupported alternatives remain in the
+report even when an independent path is found; incomplete coverage cannot prove
+unreachability. Expression components stay in their attachment's source scope.
+
 Use `read_obo_records(view, term_iri)` for explicitly selected OBO-in-OWL
 definitions and exact/broad/narrow/related synonyms. Records retain original
 literal terms and separate axiom attachments, including cross-references,

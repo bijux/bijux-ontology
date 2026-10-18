@@ -167,6 +167,12 @@ from bijux_ontology.vocabulary.registry import (
     RegistryMerge,
     merge_identifier_registry,
 )
+from bijux_ontology.vocabulary.restrictions import (
+    RestrictionPath,
+    RestrictionProjection,
+    existential_path,
+    project_restrictions,
+)
 from bijux_ontology.vocabulary.results import TermInfo
 from bijux_ontology.vocabulary.templates import (
     IdentifierBatch,
@@ -283,6 +289,8 @@ __all__ = [
     "RegistryMerge",
     "Report",
     "ResourceError",
+    "RestrictionPath",
+    "RestrictionProjection",
     "ScenarioCoverage",
     "Selection",
     "SourceSelector",
@@ -340,6 +348,7 @@ __all__ = [
     "compare_vocabularies",
     "context_document_loader",
     "convert_to_rdf",
+    "existential_path",
     "expand_collection",
     "expand_document",
     "expectations_from_data",
@@ -362,6 +371,7 @@ __all__ = [
     "prepare_source",
     "prepare_usages",
     "probe_context",
+    "project_restrictions",
     "query_rdf",
     "query_rules_from_data",
     "prove_obligations",

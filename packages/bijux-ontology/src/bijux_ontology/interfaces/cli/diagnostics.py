@@ -177,6 +177,7 @@ _CODES = {
         "xl_form_conflict xl_form_unresolved xl_role_conflict xl_role_overlap".split()
     ),
     "terms": frozenset(
+        "restriction_malformed restriction_unverified "
         "collection_member_invalid collection_member_unverified "
         "collection_root_unverified collection_containment_cycle "
         "collection_list_ambiguous collection_list_malformed "
