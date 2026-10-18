@@ -28,6 +28,12 @@ the original spelling and checks only unmodified slots separated by reserved
 literals, strict single decoding and exact re-expansion. Ambiguous or unsupported
 inverse profiles return no guessed record.
 
+Pass `compression="gzip"` with an explicit RDF `format` for paths, bytes or
+binary streams in `RdfSource` or `prepare_source`. `max_compressed_bytes` bounds
+input bytes; `max_bytes` bounds expanded bytes, and both consume the shared byte
+budget. All gzip members and trailers are checked before RDF is published.
+Caller streams remain open; individual compressed documents are not archives.
+
 Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
 `graph_name="@default"`, or `union=True`. Imports, lookup resources and prepared
 SHACL inputs retain that selection. `prepared.dataset()` still exports every

@@ -7,7 +7,7 @@ from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_input, prepare_native
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
+from bijux_ontology.rdf.sources import Compression, Payload, RdfSource
 
 
 def prepare_source(
@@ -15,6 +15,8 @@ def prepare_source(
     *,
     format: str | None = None,
     base: str | None = None,
+    compression: Compression | None = None,
+    max_compressed_bytes: int | None = None,
     max_bytes: int | None = None,
     max_triples: int | None = None,
     limits: Limits | None = None,
@@ -25,6 +27,8 @@ def prepare_source(
 ) -> PreparedSource:
     """Prepare supplied RDF without resource fetching or global parser changes.
 
+    Gzip is explicit; max_compressed_bytes bounds its input and max_bytes its
+    expansion. Both consume the shared cumulative byte budget.
     Parsed RDFLib graphs preserve their supplied terms, but cannot recover lexical
     forms already normalised before this call. File/text parsing preserves terms
     only when conversion can retain them; unsupported loss raises ``InputError``.
@@ -36,6 +40,8 @@ def prepare_source(
         source,
         format=format,
         base=base,
+        compression=compression,
+        max_compressed_bytes=max_compressed_bytes,
         max_bytes=max_bytes,
         max_triples=max_triples,
         limits=limits,

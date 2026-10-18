@@ -2,13 +2,15 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import IO
+from typing import IO, Literal
 
 from rdflib import BNode, Graph
 
 from bijux_ontology.errors import InputError
 
 from .identifiers import absolute_iri
+
+Compression = Literal["gzip"]
 
 Payload = Path | str | bytes | Graph | IO[str] | IO[bytes]
 
@@ -22,6 +24,8 @@ class RdfSource:
     ``effective_url`` supplies the retrieval base after an intentional alias.
     Dataset resources select an IRI graph, ``@default``, or an explicit union.
     Blank graph names are usable only on their owned prepared snapshot.
+    Gzip compression is explicit and requires a declared RDF format, even for
+    paths. Only bytes, paths and binary streams can carry compressed content.
     """
 
     content: Payload
@@ -30,8 +34,16 @@ class RdfSource:
     effective_url: str | None = None
     graph_name: str | None = None
     union: bool = False
+    compression: Compression | None = None
 
     def __post_init__(self) -> None:
+        if self.compression is not None:
+            if self.compression != "gzip":
+                raise InputError("Unsupported RDF compression; choose gzip explicitly")
+            if isinstance(self.content, str | Graph):
+                raise InputError(
+                    "Compressed RDF requires bytes, a path or binary stream"
+                )
         if self.format is not None and (
             not isinstance(self.format, str) or not self.format.strip()
         ):

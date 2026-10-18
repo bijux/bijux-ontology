@@ -217,6 +217,7 @@ class ProjectResources:
             self._rdf[name] = replace(
                 resource,
                 content=content,
+                compression=None,
                 format=before.syntax,
                 document_iri=before.document_iri,
                 effective_url=before.effective_url,

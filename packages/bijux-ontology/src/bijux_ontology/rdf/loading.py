@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import IO
 from typing import Literal as TypingLiteral
 
 from rdflib import ConjunctiveGraph, Dataset, Graph, Literal, URIRef
@@ -9,10 +10,11 @@ from rdflib import ConjunctiveGraph, Dataset, Graph, Literal, URIRef
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, Limits
 
+from .compression import decode_gzip
 from .identifiers import absolute_iri, language_tag
 from .parsing import RDF_FORMATS, parse_dataset
 from .snapshots import PreparedSource, bind_namespaces, copy_dataset, copy_graph
-from .sources import Payload, RdfSource
+from .sources import Compression, Payload, RdfSource
 
 _ALIASES = {
     "ttl": "turtle",
@@ -35,6 +37,8 @@ _ALIASES = {
 
 def _format(source: RdfSource) -> str:
     supplied = source.format
+    if supplied is None and source.compression is not None:
+        raise InputError("Compressed RDF requires an explicit format")
     if supplied is None and isinstance(source.content, Path):
         supplied = source.content.suffix.removeprefix(".")
     if not supplied:
@@ -45,16 +49,61 @@ def _format(source: RdfSource) -> str:
     return supplied
 
 
-def _read(content: Payload, max_bytes: int) -> bytes:
+def _stream_bytes(
+    stream: IO[str] | IO[bytes],
+    max_bytes: int,
+    budget: Budget,
+    *,
+    binary: bool,
+) -> bytes:
+    """Read bounded chunks through EOF, including valid short-read streams."""
+    payload = bytearray()
+    while True:
+        budget.consume("work")
+        size = min(65_536, max_bytes + 1 - len(payload))
+        try:
+            data = stream.read(size)
+        except (OSError, ValueError) as error:
+            raise ResourceError("Cannot read RDF source stream") from error
+        except TypeError as error:
+            raise InputError("RDF stream must support bounded read(size)") from error
+        if not isinstance(data, str | bytes) or binary and not isinstance(data, bytes):
+            raise InputError(
+                "Compressed RDF streams must return bytes"
+                if binary
+                else "RDF stream must return text or bytes"
+            )
+        if not data:
+            return bytes(payload)
+        if len(data) > size:
+            raise LimitExceeded("RDF stream exceeded its bounded read size")
+        try:
+            chunk = data.encode("utf-8") if isinstance(data, str) else data
+        except UnicodeError as error:
+            raise InputError("RDF stream text is not valid UTF-8 content") from error
+        if len(payload) + len(chunk) > max_bytes:
+            raise LimitExceeded(
+                "Compressed RDF exceeds max_compressed_bytes"
+                if binary
+                else "RDF resource exceeds max_bytes"
+            )
+        budget.consume("bytes", len(chunk))
+        payload.extend(chunk)
+
+
+def _read(content: Payload, max_bytes: int, budget: Budget, *, binary: bool) -> bytes:
+    """Own finite source bytes without closing caller-provided streams."""
     if isinstance(content, Path):
         try:
             with content.open("rb") as stream:
-                payload = stream.read(max_bytes + 1)
+                return _stream_bytes(stream, max_bytes, budget, binary=binary)
         except OSError as error:
             raise ResourceError(f"Cannot read RDF source: {content}") from error
-    elif isinstance(content, bytes):
+    if isinstance(content, bytes):
         payload = content
     elif isinstance(content, str):
+        if binary:
+            raise InputError("Compressed RDF requires binary content")
         if len(content) > max_bytes:
             raise LimitExceeded("RDF text exceeds max_bytes")
         try:
@@ -64,20 +113,14 @@ def _read(content: Payload, max_bytes: int) -> bytes:
     elif isinstance(content, Graph):
         raise InputError("Parsed graphs are not byte streams")
     else:
-        try:
-            data = content.read(max_bytes + 1)
-        except (OSError, ValueError) as error:
-            raise ResourceError("Cannot read RDF source stream") from error
-        except TypeError as error:
-            raise InputError("RDF stream must support bounded read(size)") from error
-        if not isinstance(data, str | bytes):
-            raise InputError("RDF stream must return text or bytes")
-        try:
-            payload = data.encode("utf-8") if isinstance(data, str) else data
-        except UnicodeError as error:
-            raise InputError("RDF stream text is not valid UTF-8 content") from error
+        return _stream_bytes(content, max_bytes, budget, binary=binary)
     if len(payload) > max_bytes:
-        raise LimitExceeded("RDF resource exceeds max_bytes")
+        raise LimitExceeded(
+            "Compressed RDF exceeds max_compressed_bytes"
+            if binary
+            else "RDF resource exceeds max_bytes"
+        )
+    budget.consume("bytes", len(payload))
     return payload
 
 
@@ -120,12 +163,22 @@ class SourcePreparation:
     budget: Budget
     preserve_literals: bool
     require_complete_graphs: bool
+    max_compressed_bytes: int
 
     def read(self) -> bytes:
-        """Read bounded source bytes and charge them to the shared budget."""
-        payload = _read(self.resource.content, self.limits.max_bytes)
-        self.budget.consume("bytes", len(payload))
-        return payload
+        """Read RDF bytes; compressed and expanded bytes share the operation budget."""
+        compressed = self.resource.compression is not None
+        payload = _read(
+            self.resource.content,
+            self.max_compressed_bytes if compressed else self.limits.max_bytes,
+            self.budget,
+            binary=compressed,
+        )
+        return (
+            decode_gzip(payload, max_bytes=self.limits.max_bytes, budget=self.budget)
+            if compressed
+            else payload
+        )
 
 
 def prepare_input(
@@ -133,6 +186,8 @@ def prepare_input(
     *,
     format: str | None = None,
     base: str | None = None,
+    compression: Compression | None = None,
+    max_compressed_bytes: int | None = None,
     max_bytes: int | None = None,
     max_triples: int | None = None,
     limits: Limits | None = None,
@@ -140,7 +195,12 @@ def prepare_input(
     preserve_literals: bool = True,
     require_complete_graphs: bool = False,
 ) -> SourcePreparation:
-    """Resolve one source and budget without reading or parsing its content."""
+    """Resolve one source and budget without reading or parsing its content.
+
+    max_bytes bounds expanded RDF. max_compressed_bytes independently bounds
+    gzip input and defaults to max_bytes. Both representations consume the same
+    cumulative byte budget; compression is never inferred from content or names.
+    """
     if type(require_complete_graphs) is not bool:
         raise InputError("require_complete_graphs must be a boolean")
     if type(preserve_literals) is not bool:
@@ -156,14 +216,23 @@ def prepare_input(
         selected = replace(selected, max_bytes=max_bytes)
     if max_triples is not None:
         selected = replace(selected, max_triples=max_triples)
+    compressed_cap = (
+        selected.max_bytes if max_compressed_bytes is None else max_compressed_bytes
+    )
+    if type(compressed_cap) is not int or compressed_cap <= 0:
+        raise InputError("max_compressed_bytes must be a positive integer")
     operation = budget if budget is not None else Budget(selected)
     max_bytes = selected.max_bytes
     max_triples = selected.max_triples
     operation.consume("resources")
     resource = (
-        source if isinstance(source, RdfSource) else RdfSource(source, format, base)
+        source
+        if isinstance(source, RdfSource)
+        else RdfSource(source, format, base, compression=compression)
     )
     if isinstance(source, RdfSource):
+        if compression is not None and resource.compression not in (None, compression):
+            raise InputError("Conflicting RDF source compression declarations")
         if format is not None and resource.format not in (None, format):
             raise InputError("Conflicting RDF source format declarations")
         if base is not None and resource.document_iri not in (None, base):
@@ -171,6 +240,7 @@ def prepare_input(
         resource = replace(
             resource,
             format=resource.format or format,
+            compression=resource.compression or compression,
             document_iri=resource.document_iri or base,
         )
     document = resource.document_iri
@@ -190,6 +260,7 @@ def prepare_input(
         operation,
         preserve_literals,
         require_complete_graphs,
+        compressed_cap,
     )
 
 
@@ -256,6 +327,8 @@ def prepare_rdf(
     *,
     format: str | None = None,
     base: str | None = None,
+    compression: Compression | None = None,
+    max_compressed_bytes: int | None = None,
     max_bytes: int | None = None,
     max_triples: int | None = None,
     limits: Limits | None = None,
@@ -269,6 +342,8 @@ def prepare_rdf(
             source,
             format=format,
             base=base,
+            compression=compression,
+            max_compressed_bytes=max_compressed_bytes,
             max_bytes=max_bytes,
             max_triples=max_triples,
             limits=limits,
