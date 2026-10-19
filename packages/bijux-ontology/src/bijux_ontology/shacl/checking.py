@@ -11,23 +11,22 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.evidence import findings, results
-from bijux_ontology.shacl.execution.bindings import TermSelection, transport_roles
-from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
-from bijux_ontology.shacl.execution.planning import (
-    _metadata,
-    _options,
-    _prepare_data,
-    _prepare_plan,
-    _role_graphs,
-)
-from bijux_ontology.shacl.execution.projection import (
-    _incomplete,
-    _project_result,
-    _retained_result,
-)
+from bijux_ontology.shacl.execution.planning import _prepare_plan
 from bijux_ontology.shacl.execution.transport import execute_backend
 from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.validation.adoption import (
+    adopt_result,
+    incomplete_result,
+    retain_result,
+)
+from bijux_ontology.shacl.validation.bindings import TermSelection, transport_roles
+from bijux_ontology.shacl.validation.contracts import (
+    ShaclConstraintRequirement,
+    request_options,
+    selection_metadata,
+)
+from bijux_ontology.shacl.validation.roles import prepare_data, role_graphs
 
 
 def validate_shapes(
@@ -123,7 +122,7 @@ def validate_shapes(
         else (budget.limits if budget is not None else Limits()),
         budget=budget,
     )
-    dg, focus = _prepare_data(
+    dg, focus = prepare_data(
         data, plan, focus_nodes, graph_name=graph_name, union=union
     )
     if plan.features:
@@ -136,13 +135,13 @@ def validate_shapes(
                 complete=False,
                 families=plan.families,
             ),
-            **_metadata(plan, focus),
+            **selection_metadata(plan, focus),
         )
-        return _retained_result(result, budget)
+        return retain_result(result, budget)
     import json
 
     roles = transport_roles(
-        {"data": dg, **_role_graphs(plan)},
+        {"data": dg, **role_graphs(plan)},
         focus,
         plan.roots,
         plan.limits,
@@ -155,7 +154,7 @@ def validate_shapes(
         from bijux_ontology.execution.protocol import json_bound
         from bijux_ontology.shacl.execution.backend import execute
 
-        response = execute(_options(plan, focus), supplied=roles, budget=budget)
+        response = execute(request_options(plan, focus), supplied=roles, budget=budget)
         if budget is not None:
             budget.consume("bytes", json_bound(response, budget))
         raw = json.dumps(response, ensure_ascii=True).encode()
@@ -163,7 +162,7 @@ def validate_shapes(
             raise LimitExceeded("SHACL response exceeds max_total_bytes")
     else:
         payload = json.dumps(
-            {"graphs": roles.serialize(format="nquads"), **_options(plan, focus)}
+            {"graphs": roles.serialize(format="nquads"), **request_options(plan, focus)}
         ).encode()
         if budget is not None:
             budget.consume("bytes", len(payload))
@@ -175,8 +174,8 @@ def validate_shapes(
                 payload, cap=plan.limits.max_total_bytes, timeout=timeout
             )
         except (LimitExceeded, ResourceError) as error:
-            return _retained_result(_incomplete(plan, error, focus), budget)
-    result = _project_result(
+            return retain_result(incomplete_result(plan, error, focus), budget)
+    result = adopt_result(
         raw,
         plan,
         data,
@@ -186,4 +185,4 @@ def validate_shapes(
         union=union,
         source_usages=source_usages,
     )
-    return _retained_result(result, budget)
+    return retain_result(result, budget)

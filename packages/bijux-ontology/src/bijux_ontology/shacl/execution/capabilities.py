@@ -9,36 +9,16 @@ from rdflib.namespace import SH
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import LimitExceeded
-from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.snapshots import copy_graph
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.shacl.sparql.queries import check_function_dependencies
-from bijux_ontology.shacl.targets.coverage import ShaclCoverage
+from bijux_ontology.shacl.validation import contracts
 
 if TYPE_CHECKING:
     from pyshacl.shape import Shape
     from pyshacl.shapes_graph import ShapesGraph
-
-
-@dataclass(frozen=True)
-class ShaclConstraintRequirement:
-    """Require a bound supported parameter, optionally from one exact component.
-
-    Execution proof currently covers independently targeted root shapes,
-    including PropertyShapes. Nested-only or conditional invocation is unknown.
-    """
-
-    shape: str
-    parameter: str
-    component: str | None = None
-
-    def __post_init__(self) -> None:
-        absolute_iri(self.shape)
-        absolute_iri(self.parameter)
-        if self.component is not None:
-            absolute_iri(self.component)
 
 
 def _selected(
@@ -79,7 +59,9 @@ def _validators(component: object, shape: "Shape") -> set[Node]:
 
 
 def _required_parameter(
-    requirement: ShaclConstraintRequirement, shape: "Shape", graph: "ShapesGraph"
+    requirement: contracts.ShaclConstraintRequirement,
+    shape: "Shape",
+    graph: "ShapesGraph",
 ) -> str | None:
     """Check binding and selected implementation without treating metadata as rules."""
     from pyshacl.constraints import CONSTRAINT_PARAMETERS_MAP
@@ -133,7 +115,7 @@ class CapabilityPlan:
 def prepare_capabilities(
     graph: Graph,
     roots: Sequence[Node],
-    requirements: Sequence[ShaclConstraintRequirement],
+    requirements: Sequence[contracts.ShaclConstraintRequirement],
     *,
     trusted_sparql: bool,
     limits: Limits,
@@ -241,53 +223,3 @@ def prepare_capabilities(
     except LimitExceeded as error:
         issues.exhausted(str(error), location="shapes")
     return CapabilityPlan(frozenset(definitions), tuple(issues), tuple(normalized))
-
-
-def constraint_execution(
-    requirements: Sequence[ShaclConstraintRequirement],
-    coverage: ShaclCoverage,
-    *,
-    budget: Budget | None = None,
-) -> Report:
-    """Count only required root parameters with completed target execution evidence."""
-    issues = IssueCollector(budget) if budget is not None else []
-    try:
-        if budget is not None:
-            budget.consume(
-                "work",
-                len(coverage.targets)
-                + len(coverage.deactivated_shapes)
-                + len(requirements),
-            )
-            budget.consume(
-                "states",
-                len(coverage.targets)
-                + len(coverage.deactivated_shapes)
-                + len(requirements),
-            )
-        executed = {str(target.shape) for target in coverage.targets}
-        deactivated = {str(shape) for shape in coverage.deactivated_shapes}
-        for requirement in requirements:
-            if requirement.shape not in executed or not coverage.report.complete:
-                issues.append(
-                    Issue(
-                        "shacl.constraint_not_evaluated",
-                        "Required shape is deactivated"
-                        if requirement.shape in deactivated
-                        else "Required parameter has no completed root "
-                        "execution evidence",
-                        requirement.shape,
-                        kind="unverified",
-                        expected=requirement.parameter,
-                    )
-                )
-    except LimitExceeded:
-        if not isinstance(issues, IssueCollector):
-            raise
-        issues.exhausted("Required constraint coverage exhausted its shared budget")
-    return Report(
-        "shacl-constraint-coverage",
-        len(requirements),
-        tuple(issues),
-        regime="shacl-required-root-constraints",
-    )

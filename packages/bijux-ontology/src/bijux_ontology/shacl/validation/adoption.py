@@ -20,13 +20,13 @@ from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.shacl.evidence.findings import ShaclSource, project_findings
 from bijux_ontology.shacl.evidence.results import ShaclResult
-from bijux_ontology.shacl.execution.capabilities import constraint_execution
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract, read_coverage
+from bijux_ontology.shacl.validation.contracts import constraint_execution
 
-from .planning import _metadata, _ShapePlan
+from .contracts import ShaclPlan, selection_metadata
 
 
-def _retained_result(result: ShaclResult, budget: Budget | None) -> ShaclResult:
+def retain_result(result: ShaclResult, budget: Budget | None) -> ShaclResult:
     """Keep native diagnostics paid once across all supported result statuses."""
     if budget is None:
         return result
@@ -75,8 +75,8 @@ def _function_evidence(
     }
 
 
-def _incomplete(
-    plan: _ShapePlan, error: Exception, focus: tuple[URIRef | BNode | Literal, ...] = ()
+def incomplete_result(
+    plan: ShaclPlan, error: Exception, focus: tuple[URIRef | BNode | Literal, ...] = ()
 ) -> ShaclResult:
     """Retain an incomplete operation without inventing raw conformance."""
     kind: IssueKind = (
@@ -95,13 +95,13 @@ def _incomplete(
             complete=False,
             families=plan.families,
         ),
-        **_metadata(plan, focus),
+        **selection_metadata(plan, focus),
     )
 
 
-def _project_result(
+def adopt_result(
     raw: bytes,
-    plan: _ShapePlan,
+    plan: ShaclPlan,
     data: Graph | PreparedSource,
     dg: Graph,
     focus: tuple[URIRef | BNode | Literal, ...],
@@ -120,7 +120,7 @@ def _project_result(
     sources = tuple(source_usages)
     if any(not isinstance(source, ShaclSource) for source in sources):
         raise InputError("Expected explicit prepared SHACL source usages")
-    metadata = _metadata(plan, focus)
+    metadata = selection_metadata(plan, focus)
     if plan.budget is not None:
         plan.budget.consume("bytes", len(raw))
         plan.budget.consume("work", len(raw))

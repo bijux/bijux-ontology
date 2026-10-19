@@ -21,17 +21,20 @@ from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.evidence.findings import ShaclSource
 from bijux_ontology.shacl.evidence.results import ShaclResult
-from bijux_ontology.shacl.execution.bindings import TermSelection, transport_roles
-from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
-from bijux_ontology.shacl.execution.planning import (
-    _options,
-    _prepare_data,
-    _role_graphs,
-    _ShapePlan,
-)
-from bijux_ontology.shacl.execution.projection import _project_result
-from bijux_ontology.shacl.execution.session import _payload, _prepay_graph
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.validation.adoption import adopt_result
+from bijux_ontology.shacl.validation.bindings import TermSelection, transport_roles
+from bijux_ontology.shacl.validation.contracts import (
+    ShaclConstraintRequirement,
+    ShaclPlan,
+    request_options,
+)
+from bijux_ontology.shacl.validation.encoding import encode_roles
+from bijux_ontology.shacl.validation.roles import (
+    prepare_data,
+    prepay_graph,
+    role_graphs,
+)
 
 from ..runtime import invoke_jena
 from ..types import JenaBackend
@@ -77,7 +80,7 @@ def validate_jena_shapes(
     """
     operation = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(operation)
-    plan: _ShapePlan | None = None
+    plan: ShaclPlan | None = None
     focus: tuple[TermSelection, ...] = ()
     result = None
     try:
@@ -103,13 +106,13 @@ def validate_jena_shapes(
             data.graph_name is not None or data.union
         ):
             original_graph, original_union = data.graph_name, data.union
-        _prepay_graph(
+        prepay_graph(
             data._read(graph_name, union=union, budget=operation)
             if isinstance(data, PreparedSource)
             else data,
             operation,
         )
-        dg, focus = _prepare_data(
+        dg, focus = prepare_data(
             data,
             plan,
             focus_nodes,
@@ -143,13 +146,13 @@ def validate_jena_shapes(
         else:
             operation.consume("bytes", 1024)
             roles = transport_roles(
-                {"data": dg, **_role_graphs(plan)},
+                {"data": dg, **role_graphs(plan)},
                 focus,
                 plan.roots,
                 operation.limits,
                 budget=operation,
             )
-            options = _options(plan, focus)
+            options = request_options(plan, focus)
             options.update(
                 protocol=1,
                 operation="shacl",
@@ -163,9 +166,9 @@ def validate_jena_shapes(
                     for item in plan.required_constraints
                 ],
             )
-            payload = _payload(roles, options, operation)
+            payload = encode_roles(roles, options, operation)
             raw = invoke_jena(backend, payload, operation, heap_mb)
-            result = _project_result(
+            result = adopt_result(
                 raw,
                 plan,
                 dg,

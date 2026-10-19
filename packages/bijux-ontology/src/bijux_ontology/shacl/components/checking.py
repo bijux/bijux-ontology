@@ -18,11 +18,11 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.profiles.comparison import _coverage
 from bijux_ontology.shacl.profiles.resources import _capture
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.validation.contracts import ShaclConstraintRequirement
 
 from .types import ComponentCheck, ComponentShapes
 

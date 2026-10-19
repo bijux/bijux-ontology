@@ -18,9 +18,9 @@ from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
-from bijux_ontology.shacl.execution.planning import _select_roots
 from bijux_ontology.shacl.parameters.reading import ParameterReader
 from bijux_ontology.shacl.paths import decode_path
+from bijux_ontology.shacl.validation.roles import select_roots
 
 from .references import LOGICAL_REFERENCES, REFERENCE_PARAMETERS, ReferenceReader
 from .resources import _capture, _owned
@@ -171,7 +171,7 @@ def extract_profile(
         operation.consume("work", 8 * len(all_triples))
         operation.consume("states", 3 * len(all_triples))
         operation.consume("triples", len(all_triples))
-        graph = _select_roots(graph, selected, "targets")
+        graph = select_roots(graph, selected, "targets")
         references = ReferenceReader(ParameterReader(graph, operation), owned_blanks)
         custom_parameters: set[Node] = set()
         for component in graph.subjects(RDF.type, SH.ConstraintComponent):

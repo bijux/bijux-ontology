@@ -1,41 +1,36 @@
 """Own fixed SHACL contracts and prepare selected data for either worker lifetime."""
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass
-from typing import Any, cast
+from typing import cast
 
 from pyparsing import ParseBaseException
-from rdflib import BNode, Dataset, Graph, Literal, URIRef
-from rdflib.namespace import OWL, RDF, RDFS, SH
+from rdflib import Graph, Literal, URIRef
+from rdflib.namespace import RDFS, SH
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue
-from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.sources.loading import _charge_graph
 from bijux_ontology.rdf.sources.snapshots import (
-    GraphSelection,
     PreparedSource,
-    copy_graph,
 )
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
-from bijux_ontology.shacl.execution.bindings import TermSelection, resolve_terms
-from bijux_ontology.shacl.execution.capabilities import (
-    ShaclConstraintRequirement,
-    prepare_capabilities,
-)
+from bijux_ontology.shacl.execution.capabilities import prepare_capabilities
 from bijux_ontology.shacl.paths import decode_path
 from bijux_ontology.shacl.sparql.functions import (
-    FunctionPlan,
     ShaclFunctionCatalog,
     prepare_functions,
 )
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.targets.preparation import prepare_targets
-from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.shacl.validation.bindings import TermSelection, resolve_terms
+from bijux_ontology.shacl.validation.contracts import (
+    ShaclConstraintRequirement,
+    ShaclPlan,
+)
+from bijux_ontology.shacl.validation.roles import prepare_role, select_roots
 
 _UNSUPPORTED = frozenset(
     (
@@ -114,99 +109,6 @@ def _features(
     return tuple(issues)
 
 
-def _role(
-    source: Graph | PreparedSource,
-    *,
-    graph_name: GraphSelection | None,
-    union: bool,
-    limits: Limits,
-    imports: Mapping[str, RdfSource | Payload] | None = None,
-    resolve_imports: bool = False,
-    budget: Budget | None = None,
-) -> Graph:
-    if isinstance(source, PreparedSource):
-        graph = source._read(graph_name, union=union, budget=budget)
-        _charge_graph(
-            graph, budget if budget is not None else Budget(limits), limits.max_bytes
-        )
-        if resolve_imports:
-            graph = copy_graph(
-                graph, max_triples=limits.max_triples, standardize_apart=False
-            )
-    elif graph_name is None and not union and not isinstance(source, Dataset):
-        _charge_graph(
-            source, budget if budget is not None else Budget(limits), limits.max_bytes
-        )
-        graph = copy_graph(
-            source, max_triples=limits.max_triples, standardize_apart=False
-        )
-    else:
-        graph = prepare_source(source, limits=limits, budget=budget)._read(
-            graph_name, union=union, budget=budget
-        )
-    if resolve_imports and next(graph.objects(None, OWL.imports), None) is not None:
-        closure = load_vocabulary(graph, imports=imports, limits=limits, budget=budget)
-        for imported in closure.imports:
-            graph += imported
-    return graph
-
-
-def _select_roots(
-    shapes: Graph, selected: tuple[URIRef | BNode | Literal, ...], mode: str
-) -> Graph:
-    """Select supported Core targets without disabling referenced nested shapes.
-
-    The backend's use_shapes filter omits nested PropertyShapes when only their
-    parent is selected. Altering only owned Core target declarations preserves
-    those constraints. Pair mode deliberately replaces root targeting.
-    """
-    if not selected:
-        return shapes
-    graph = copy_graph(shapes, standardize_apart=False)
-    roots = set(selected)
-    # Match the maintained backend's finite class-target discovery, including
-    # its built-in OWL class declaration, before narrowing root obligations.
-    class_types = {RDFS.Class, OWL.Class} | set(
-        shapes.subjects(RDFS.subClassOf, RDFS.Class)
-    )
-    for kind in class_types:
-        for shape in tuple(graph.subjects(RDF.type, kind)):
-            graph.remove((shape, RDF.type, kind))
-            graph.add((shape, SH.targetClass, shape))
-    for predicate in (
-        SH.targetClass,
-        SH.targetNode,
-        SH.targetSubjectsOf,
-        SH.targetObjectsOf,
-        SH.target,
-    ):
-        for shape in tuple(graph.subjects(predicate)):
-            if mode == "pairs" or shape not in roots:
-                graph.remove((shape, predicate, None))
-    return graph
-
-
-@dataclass(frozen=True)
-class _ShapePlan:
-    """One owned authored/effective shape and fixed target/options contract."""
-
-    shapes: Graph
-    ontology: Graph | None
-    roots: tuple[URIRef | BNode | Literal, ...]
-    function_plan: FunctionPlan
-    has_functions: bool
-    features: tuple[Issue, ...]
-    families: tuple[str, ...]
-    limits: Limits
-    mode: str
-    preflight: bool
-    allow_empty: bool
-    coverage: ShaclCoverageContract | None
-    required_constraints: tuple[ShaclConstraintRequirement, ...]
-    trusted_targets: bool
-    budget: Budget | None = None
-
-
 def _prepare_plan(
     shapes: Graph | PreparedSource,
     *,
@@ -223,7 +125,7 @@ def _prepare_plan(
     functions: ShaclFunctionCatalog | None,
     limits: Limits,
     budget: Budget | None = None,
-) -> _ShapePlan:
+) -> ShaclPlan:
     """Own and inspect every fixed semantic input exactly once per plan."""
     if functions is not None and not isinstance(functions, ShaclFunctionCatalog):
         raise InputError("functions requires an explicit ShaclFunctionCatalog")
@@ -254,7 +156,7 @@ def _prepare_plan(
         raise InputError("SHACL mode must be targets or pairs")
     if mode == "pairs" and not use_shapes:
         raise InputError("Pairs mode requires focus_nodes and use_shapes")
-    sg = _role(
+    sg = prepare_role(
         shapes,
         graph_name=None,
         union=False,
@@ -266,7 +168,7 @@ def _prepare_plan(
     og = (
         None
         if ontology is None
-        else _role(
+        else prepare_role(
             ontology,
             graph_name=None,
             union=False,
@@ -297,7 +199,7 @@ def _prepare_plan(
         budget=budget,
     )
     targets = prepare_targets(
-        _select_roots(sg, selected_shapes, mode),
+        select_roots(sg, selected_shapes, mode),
         selected_shapes,
         enabled=trusted_targets,
         limits=selected,
@@ -349,7 +251,7 @@ def _prepare_plan(
                 kind="unverified",
             ),
         )
-    return _ShapePlan(
+    return ShaclPlan(
         sg,
         og,
         selected_shapes,
@@ -366,79 +268,3 @@ def _prepare_plan(
         trusted_targets,
         budget,
     )
-
-
-def _metadata(
-    plan: _ShapePlan, focus: tuple[URIRef | BNode | Literal, ...]
-) -> dict[str, Any]:
-    """Keep caller-owned RDF term objects as the public selection witnesses."""
-    return {
-        "mode": plan.mode,
-        "focus_nodes": tuple(
-            str(node) if isinstance(node, URIRef) else node for node in focus
-        ),
-        "shapes": tuple(
-            str(node) if isinstance(node, URIRef) else node for node in plan.roots
-        ),
-        "preflight": plan.preflight,
-    }
-
-
-def _prepare_data(
-    data: Graph | PreparedSource,
-    plan: _ShapePlan,
-    focus_nodes: Sequence[TermSelection],
-    *,
-    graph_name: GraphSelection | None,
-    union: bool,
-) -> tuple[Graph, tuple[URIRef | BNode | Literal, ...]]:
-    """Resolve one independent dataset and its exact owned focus terms."""
-    if plan.mode == "pairs" and not focus_nodes:
-        raise InputError("Pairs mode requires focus_nodes and use_shapes")
-    if plan.mode == "targets" and focus_nodes and plan.roots:
-        raise InputError(
-            "Combined node/shape selection bypasses targets; choose mode='pairs'"
-        )
-    if not isinstance(data, (Graph, PreparedSource)):
-        raise InputError("SHACL data requires a graph or prepared source")
-    dg = _role(
-        data, graph_name=graph_name, union=union, limits=plan.limits, budget=plan.budget
-    )
-    focus = resolve_terms(focus_nodes, data, dg, limits=plan.limits, budget=plan.budget)
-    if plan.mode == "targets" and any(not isinstance(node, URIRef) for node in focus):
-        raise InputError("Literal and blank focus terms require explicit pairs mode")
-    return dg, focus
-
-
-def _role_graphs(plan: _ShapePlan) -> dict[str, Graph]:
-    """Keep authored shape identity separate from executable root targets."""
-    graphs = {
-        "shapes": _select_roots(plan.shapes, plan.roots, plan.mode),
-        "authored-shapes": plan.shapes,
-    }
-    if plan.ontology is not None:
-        graphs["ontology"] = plan.ontology
-    if plan.has_functions:
-        graphs["functions"] = plan.function_plan.graph
-    return graphs
-
-
-def _options(
-    plan: _ShapePlan, focus: tuple[URIRef | BNode | Literal, ...]
-) -> dict[str, object]:
-    """Encode only the fixed supported backend options and per-job focus filter."""
-    return {
-        "has_ontology": plan.ontology is not None,
-        "limits": asdict(plan.limits),
-        "max_depth": plan.limits.max_depth,
-        "focus_nodes": tuple(str(node) for node in focus)
-        if plan.mode == "targets"
-        else (),
-        "selected_shapes": bool(plan.roots),
-        "pair_mode": plan.mode == "pairs",
-        "binding_count": len(focus) + len(plan.roots),
-        "preflight": plan.preflight,
-        "coverage": plan.coverage is not None or bool(plan.required_constraints),
-        "functions": plan.function_plan.names,
-        "trusted_targets": plan.trusted_targets,
-    }

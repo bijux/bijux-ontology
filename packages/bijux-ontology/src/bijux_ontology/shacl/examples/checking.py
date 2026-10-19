@@ -17,9 +17,9 @@ from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.evidence.results import ShaclResult
-from bijux_ontology.shacl.execution.projection import _retained_result
 from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.validation.adoption import retain_result
 
 from .construction import Candidates, State
 from .profile import PreparedExamples, UnsupportedExample, prepare, reserve
@@ -171,7 +171,7 @@ def generate_examples(
                 actual = session(selected).validate(
                     data, focus_nodes=(focus,), cancel=current.cancel
                 )
-                actual = _retained_result(actual, current)
+                actual = retain_result(actual, current)
                 trials.append(actual)
                 if not _qualified(actual, selected, focus):
                     if actual.report.outcome == "exhausted":

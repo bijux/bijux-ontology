@@ -1,6 +1,5 @@
 """Owned fixed SHACL contracts with bounded reusable isolated execution."""
 
-import json
 import threading
 import time
 from collections.abc import Mapping, Sequence
@@ -9,112 +8,44 @@ from math import isfinite
 from types import TracebackType
 from typing import cast
 
-from rdflib import Dataset, Graph, Literal
+from rdflib import Graph
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.budgets import Operation, operation
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.execution.limits import Budget, Limits, bound_text
-from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.json.paths import bound_index
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.loading import _charge_graph
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
-from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.evidence.findings import ShaclSource
 from bijux_ontology.shacl.evidence.results import ShaclResult
-from bijux_ontology.shacl.execution.bindings import (
+from bijux_ontology.shacl.execution.planning import _prepare_plan
+from bijux_ontology.shacl.execution.transport import SessionBackend
+from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.validation.adoption import (
+    adopt_result,
+    incomplete_result,
+    retain_result,
+)
+from bijux_ontology.shacl.validation.bindings import (
     StaticBindings,
     TermSelection,
     transport_roles,
 )
-from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
-from bijux_ontology.shacl.execution.planning import (
-    _metadata,
-    _options,
-    _prepare_data,
-    _prepare_plan,
-    _role_graphs,
+from bijux_ontology.shacl.validation.contracts import (
+    ShaclConstraintRequirement,
+    capture_contract,
+    request_options,
+    selection_metadata,
 )
-from bijux_ontology.shacl.execution.projection import (
-    _incomplete,
-    _project_result,
-    _retained_result,
+from bijux_ontology.shacl.validation.encoding import encode_roles
+from bijux_ontology.shacl.validation.roles import (
+    prepare_data,
+    prepay_graph,
+    role_graphs,
 )
-from bijux_ontology.shacl.execution.transport import SessionBackend
-from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
-from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
-
-
-def _prepay_graph(graph: Graph, budget: Budget) -> None:
-    """Bound term validation and graph-copy workspace before maintained copying."""
-    budget.consume("states", len(graph))
-    budget.consume("bytes", 256 * len(graph) + 256)
-    for triple in graph:
-        budget.consume("work")
-        for term in triple:
-            bound_node(term, budget)
-            size = len(str(term))
-            if isinstance(term, Literal):
-                size += len(term.datatype or "") + len(term.language or "")
-            budget.consume("bytes", 16 * size + 64)
-            budget.consume("work", size + 1)
-
-
-def _contract_metadata(
-    coverage: ShaclCoverageContract | None,
-    requirements: Sequence[ShaclConstraintRequirement],
-    functions: ShaclFunctionCatalog | None,
-    budget: Budget,
-) -> tuple[ShaclConstraintRequirement, ...]:
-    """Qualify caller contract scalars before deduplication or later IRI allocation."""
-    captured = capture(requirements, budget)
-    for requirement in captured:
-        if not isinstance(requirement, ShaclConstraintRequirement):
-            raise InputError("Expected typed SHACL constraint requirements")
-        for value in (requirement.shape, requirement.parameter, requirement.component):
-            if value is not None:
-                bound_text(value, budget)
-    if coverage is not None:
-        if not isinstance(coverage, ShaclCoverageContract):
-            raise InputError("coverage requires a ShaclCoverageContract")
-        bound_index(coverage.minimum_focus, budget)
-        for value in capture(coverage.focus_nodes, budget):
-            bound_text(value, budget)
-        for pair in capture(coverage.pairs, budget):
-            for value in pair:
-                bound_text(value, budget)
-    if functions is not None:
-        if not isinstance(functions, ShaclFunctionCatalog):
-            raise InputError("functions requires a ShaclFunctionCatalog")
-        for value in capture(functions.selected, budget):
-            bound_text(value, budget)
-    return captured
-
-
-def _payload(graphs: Dataset, options: dict[str, object], budget: Budget) -> bytes:
-    """Prepay native N-Quads and JSON workspace without replacing serializers."""
-    bound = 64
-    for quad in graphs.quads():
-        budget.consume("work")
-        budget.consume("states", 4)
-        bound += 256
-        for term in quad:
-            if term is None:
-                continue
-            bound_node(term, budget)
-            size = len(str(term))
-            if isinstance(term, Literal):
-                size += len(term.datatype or "") + len(term.language or "")
-            bound += 12 * size + 128
-    budget.consume("bytes", 4 * bound)
-    budget.consume("work", bound)
-    text = graphs.serialize(format="nquads")
-    options["graphs"] = text
-    encoded_bound = json_bound(options, budget)
-    budget.consume("bytes", 2 * encoded_bound)
-    return json.dumps(options).encode()
 
 
 @dataclass(frozen=True)
@@ -173,14 +104,14 @@ class ShaclSession:
             raise InputError("SHACL session requires Limits")
         storage = operation(limits, budget)
         self._budget = budget
-        required_constraints = _contract_metadata(
+        required_constraints = capture_contract(
             coverage, required_constraints, functions, storage
         )
         for source in (shapes, ontology):
             if source is not None:
                 if not isinstance(source, Graph | PreparedSource):
                     raise InputError("SHACL roles require graphs or prepared sources")
-                _prepay_graph(
+                prepay_graph(
                     source._read(budget=storage)
                     if isinstance(source, PreparedSource)
                     else source,
@@ -189,7 +120,7 @@ class ShaclSession:
         if functions is not None:
             if not isinstance(functions, ShaclFunctionCatalog):
                 raise InputError("functions requires a ShaclFunctionCatalog")
-            _prepay_graph(functions._graph, storage)
+            prepay_graph(functions._graph, storage)
         storage.consume("bytes", 1024)
         storage.consume("states", 16)
         plan = _prepare_plan(
@@ -217,8 +148,8 @@ class ShaclSession:
             if graph is not None:
                 storage.consume("resources")
                 _charge_graph(graph, storage, self._plan.limits.max_bytes)
-        _prepay_graph(self._plan.shapes, storage)
-        roles = _role_graphs(self._plan)
+        prepay_graph(self._plan.shapes, storage)
+        roles = role_graphs(self._plan)
         self._bindings = StaticBindings(roles, self._plan.limits, budget=storage)
         static = transport_roles(
             roles,
@@ -230,11 +161,11 @@ class ShaclSession:
         )
         storage.consume("bytes", 1024)
         storage.consume("states", 16)
-        preparation = _payload(
+        preparation = encode_roles(
             static,
             {
                 "command": "prepare",
-                **_options(self._plan, ()),
+                **request_options(self._plan, ()),
                 "anchor_count": len(self._bindings.anchors),
                 "memory_bytes": memory_bytes,
             },
@@ -343,7 +274,7 @@ class ShaclSession:
             while not self._lock.acquire(timeout=0.01):
                 self._backend.checkpoint(deadline, cancel)
         except (LimitExceeded, ResourceError) as error:
-            return _incomplete(plan, error)
+            return incomplete_result(plan, error)
         try:
             self._backend.checkpoint(deadline, cancel)
             source_usages = capture(source_usages, chosen)
@@ -354,8 +285,8 @@ class ShaclSession:
             )
             if not isinstance(graph, Graph):
                 raise InputError("SHACL data requires a graph or prepared source")
-            _prepay_graph(graph, chosen)
-            dg, focus = _prepare_data(
+            prepay_graph(graph, chosen)
+            dg, focus = prepare_data(
                 data,
                 plan,
                 focus_nodes,
@@ -363,7 +294,7 @@ class ShaclSession:
                 union=union,
             )
             if plan.features:
-                return _retained_result(
+                return retain_result(
                     ShaclResult(
                         Report(
                             "shacl",
@@ -373,7 +304,7 @@ class ShaclSession:
                             complete=False,
                             families=plan.families,
                         ),
-                        **_metadata(plan, focus),
+                        **selection_metadata(plan, focus),
                     ),
                     chosen,
                 )
@@ -387,7 +318,7 @@ class ShaclSession:
             )
             chosen.consume("states", 8 + len(focus))
             chosen.consume("bytes", 512 + 64 * len(focus))
-            payload = _payload(
+            payload = encode_roles(
                 roles,
                 {
                     "command": "validate",
@@ -406,7 +337,7 @@ class ShaclSession:
             chosen.consume("states", 2 * len(raw) + 16)
             chosen.consume("bytes", 64 * len(raw) + 1024)
             try:
-                result = _project_result(
+                result = adopt_result(
                     raw,
                     plan,
                     data,
@@ -470,11 +401,11 @@ class ShaclSession:
                     ),
                     complete=False,
                 )
-            return _retained_result(result, chosen)
+            return retain_result(result, chosen)
         except (InputError, ResourceError) as error:
             if isinstance(error, LimitExceeded):
                 self._backend.reset(failure=error)
-            return _incomplete(plan, error)
+            return incomplete_result(plan, error)
         finally:
             self._lock.release()
 
@@ -502,7 +433,10 @@ class ShaclSession:
             selected = tuple(datasets[index] for index in range(capacity))
         except LimitExceeded as error:
             return ShaclBatchResult(
-                (), replace(_incomplete(self._plan, error).report, requested=required)
+                (),
+                replace(
+                    incomplete_result(self._plan, error).report, requested=required
+                ),
             )
         except Exception as error:
             raise InputError(
@@ -524,7 +458,7 @@ class ShaclSession:
                     budget=budget,
                 )
             except LimitExceeded as error:
-                result = _incomplete(self._plan, error)
+                result = incomplete_result(self._plan, error)
             results.append(result)
             reports.append(combine_reports(f"shacl-batch/{index}", result.report))
             if result.report.outcome == "exhausted":
