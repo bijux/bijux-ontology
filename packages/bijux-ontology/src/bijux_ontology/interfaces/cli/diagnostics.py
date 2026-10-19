@@ -380,6 +380,8 @@ _CODES = {
         "models_input_loss models_profile_unsupported "
         "explanations_input_loss explanations_profile_unsupported "
         "explanation_unverified explanation_input_error "
+        "locality_source_unrepresented locality_selection_failed "
+        "locality_unverified locality_input_error "
         "emitted_record_unverified emitted_unverified emitted_input_error "
         "rename_postconditions_missing rename_postcondition_unverified "
         "rename_base_mismatch rename_unverified rename_profile_violation "

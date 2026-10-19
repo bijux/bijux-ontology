@@ -174,3 +174,10 @@ separately from `.explanation_report`: failed or capped explanation work retains
 proved logical findings. Smallest size, subset minimality and complete enumeration
 are not claimed. Anonymous support and unavailable tautology justifications remain
 unknown; generated signature declarations are separate replay scaffolding.
+
+`locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
+for an explicit typed signature. Choose flattened imports, retained annotations
+and a fresh module identity. Inspect original annotated axiom owners and separate
+before/after consumer entailment proofs; only the selected obligations are
+certified. Unsupported original axioms prevent a complete certificate. This
+operation stays separate from RDF neighborhoods and MIREOT selection.
