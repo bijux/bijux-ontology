@@ -14,6 +14,7 @@ import org.bijux.ontology.backend.WorkerProtocol;
 import org.bijux.ontology.entailment.EntailmentChecks;
 import org.bijux.ontology.relationships.InferredRelationships;
 import org.bijux.ontology.queries.ClassQueries;
+import org.bijux.ontology.realization.IndividualQueries;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.formats.TurtleDocumentFormat;
 import org.semanticweb.owlapi.io.StreamDocumentSource;
@@ -161,6 +162,8 @@ public final class PersistentWorker {
                     EntailmentChecks.evaluatePrepared(request, theory, result);
                 else if (operation.equals("relationships"))
                     InferredRelationships.evaluatePrepared(request, theory, result);
+                else if (operation.equals("individuals"))
+                    IndividualQueries.evaluatePrepared(request, theory, result);
                 else if (operation.equals("classes"))
                     ClassQueries.evaluatePrepared(request, theory, result);
                 else if (operation.equals("projection")) projection(request, theory, result, cap);

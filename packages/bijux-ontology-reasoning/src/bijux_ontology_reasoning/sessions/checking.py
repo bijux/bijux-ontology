@@ -33,6 +33,7 @@ from ..backend.types import BackendCapability
 from ..entailment.encoding import UnsupportedQuery, capture_obligations, encode_axiom
 from ..entailment.types import EntailmentAnswer, EntailmentCheck
 from ..queries.types import ClassQueryResult
+from ..realization.types import IndividualQuery, IndividualRealization
 from ..relationships.checking import _groups, _query
 from ..relationships.types import InferredAnswer, InferredContracts, InferredQuery
 from .preparation import encode_request, stage_theory
@@ -801,6 +802,31 @@ class ReasoningSession:
             capability,
             consistency,
             report,
+        )
+
+    def realize(
+        self,
+        queries: Sequence[IndividualQuery],
+        *,
+        max_results: int = 10_000,
+        theory: PreparedReasoningTheory | None = None,
+        limits: Limits | None = None,
+        budget: Budget | None = None,
+        timeout: float = 30,
+        cancel: Event | None = None,
+    ) -> IndividualRealization:
+        """Retrieve independently qualified named individual consequences."""
+        from ..realization.checking import realize
+
+        return realize(
+            self,
+            queries,
+            max_results=max_results,
+            theory=theory,
+            limits=limits,
+            budget=budget,
+            timeout=timeout,
+            cancel=cancel,
         )
 
     def query_classes(

@@ -244,6 +244,16 @@ backend revision. `with sessions.ReasoningSession(theory)` loads and classifies
 once, then recomputes supported queries and batches. Capture and `bind` a new
 theory for changed imports or backend semantics; external mutable inputs are
 not watched. An optional fixed Budget is cumulative across requests.
+`session.realize(queries)` retrieves independently qualified named types,
+instances, object values, same/different individuals and supported data values.
+Use typed `IndividualQuery` records and explicit depth for types/instances. Actual
+native node policy remains visible; BY_NAME nodes do not imply sameAs groups.
+Data values use native entailment over supplied assertion literals, restricted to
+positive named assertions and data sub/equivalent-property axioms. Other logical
+data constructs make that family unverified while supported families stay usable.
+Returned literal representatives retain their metadata; they do not enumerate all
+RDF spellings of equal logical values. Absence asserts no negation and existential
+restrictions manufacture no named witnesses.
 `session.query_classes(expression, direct=False)` retrieves actual named subclass
 and equivalent groups for supported typed intersections, unions, complements and
 existential/universal restrictions. Inspect separate expression satisfiability,
