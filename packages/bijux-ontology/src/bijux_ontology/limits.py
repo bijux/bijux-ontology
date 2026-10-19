@@ -68,6 +68,48 @@ class Budget:
         elif repeated:
             self.consume("issues")
 
+    def _register_transferred_report(
+        self, report: Report, *, paid_issues: int, max_references: int
+    ) -> None:
+        """Retain paid issue identities from one qualified owned-worker receipt.
+
+        The protocol caller validates and consumes the worker's counters first,
+        and reserves host reference/work/storage capacity before dispatch. This
+        terminal handoff adds no logical issue charge. It does not qualify an
+        arbitrary report or reserve capacity on the caller's behalf.
+        """
+        if (
+            type(paid_issues) is not int
+            or not 0 <= paid_issues <= self._counts.get("issues", 0)
+            or type(max_references) is not int
+            or max_references <= 0
+        ):
+            raise InputError("Invalid paid worker report receipt")
+        if (
+            sum(
+                issue.code != "execution.limit_exceeded" or issue.kind != "exhausted"
+                for issue in report.issues
+            )
+            > paid_issues
+        ):
+            raise InputError("Worker report exceeds its paid issue receipt")
+        pending = [report]
+        seen: set[int] = set()
+        owned: list[Issue] = []
+        references = 0
+        while pending:
+            current = pending.pop()
+            if id(current) in seen:
+                continue
+            references += 2 + 2 * len(current.issues) + len(current.children)
+            if references > max_references:
+                raise InputError("Worker report exceeds reserved handoff capacity")
+            seen.add(id(current))
+            owned.extend(current.issues)
+            pending.extend(current.children)
+        for issue in owned:
+            self._retained_issues[id(issue)] = issue
+
 
 class IssueCollector(list[Issue]):
     """Bound retained ordinary findings, reserving one final exhaustion marker."""

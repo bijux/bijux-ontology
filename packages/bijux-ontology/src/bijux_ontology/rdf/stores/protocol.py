@@ -9,7 +9,7 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import IssueCollector
+from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.execution import execute_worker
 from bijux_ontology.rdf.patches.correspondence import _KINDS, Operation, _json_bound
 from bijux_ontology.rdf.queries.access import QueryScope
@@ -21,19 +21,25 @@ from .types import StoredRdf
 
 
 def scope_data(
-    snapshot: StoredRdf, scope: QueryScope, operation: Operation
+    snapshot: StoredRdf, scope: QueryScope, operation: Budget
 ) -> dict[str, object]:
     """Qualify physical selectors, including ownership of blank named graphs."""
     if not isinstance(snapshot, StoredRdf) or not isinstance(scope, QueryScope):
         raise InputError("Disk reads require an owned snapshot and explicit QueryScope")
     if scope.kind == "named":
-        if isinstance(scope.graph_name, BNode):
-            if not any(name is scope.graph_name for name in snapshot.graph_names):
-                raise InputError(
-                    "Blank graph selector must belong to this disk snapshot"
-                )
-        elif scope.graph_name not in snapshot.graph_names:
-            raise InputError("Named graph is absent from the disk snapshot")
+        found = False
+        blank = isinstance(scope.graph_name, BNode)
+        for name in snapshot.graph_names:
+            operation.consume("work")
+            if (name is scope.graph_name) if blank else (name == scope.graph_name):
+                found = True
+                break
+        if not found:
+            raise InputError(
+                "Blank graph selector must belong to this disk snapshot"
+                if blank
+                else "Named graph is absent from the disk snapshot"
+            )
     operation.consume("work")
     return {
         "scope": scope.kind,
@@ -93,7 +99,7 @@ def execute(
     return response
 
 
-def failure(error: InputError, operation: Operation, scope: str) -> Report:
+def failure(error: InputError, operation: Budget, scope: str) -> Report:
     """Keep unsupported, invalid and exhausted work distinct from native findings."""
     issues = IssueCollector(operation)
     if isinstance(error, LimitExceeded):

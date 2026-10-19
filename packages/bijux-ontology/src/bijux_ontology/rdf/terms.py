@@ -1,7 +1,9 @@
 """Validated RDF terms and lexical-preserving parser conversion."""
 
+from collections.abc import Iterable
+
 import pyoxigraph as ox
-from rdflib import BNode, Literal, URIRef
+from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
@@ -90,6 +92,36 @@ def bound_node(node: Node, budget: Budget) -> None:
         bound_text(node.datatype or "", budget)
         bound_text(node.language or "", budget)
     validate_node(node)
+
+
+def independent_blank_scopes(graphs: Iterable[Graph], budget: Budget) -> bool:
+    """Qualify separately serialized roles by actual term-object identity.
+
+    Equal blank labels in different graphs do not establish shared ownership.
+    Strong references keep recorded identities valid for streamed graph inputs.
+    """
+    seen: dict[int, BNode] = {}
+    independent = True
+    for graph in graphs:
+        budget.consume("work")
+        if not isinstance(graph, Graph) or isinstance(
+            graph, Dataset | ConjunctiveGraph
+        ):
+            raise InputError("Blank scopes require selected physical graphs")
+        current: dict[int, BNode] = {}
+        for triple in graph:
+            budget.consume("work")
+            for node in triple:
+                bound_node(node, budget)
+                if isinstance(node, BNode):
+                    budget.consume("states")
+                    identity = id(node)
+                    if seen.get(identity) is node:
+                        independent = False
+                    current[identity] = node
+        budget.consume("states", len(current))
+        seen.update(current)
+    return independent
 
 
 def validate_triple(subject: Node, predicate: Node, value: Node) -> None:

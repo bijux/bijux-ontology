@@ -56,6 +56,19 @@ it does not validate or resolve an RDF IRI. Custom datatype relations stay unkno
 
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
+Use `check_rdf_stream(path, vocabulary)` from `bijux_ontology.data.streams` for
+plain N-Triples/N-Quads statement-local checks. Parsing, local checks and requested
+global obligations have separate reports; explicit excluded IRIs remain visible.
+A sealed disk vocabulary requires an explicit `vocabulary_scope=QueryScope(...)`.
+Rows that pass are discarded; retained findings keep exact statement occurrences.
+
+For caller-managed Pyoxigraph stores, use `prepare_external_store` and
+`query_external` from `bijux_ontology.rdf.stores.external`, or
+`check_external_terms` from `bijux_ontology.vocabulary.external`. Each operation
+uses one native read transaction; later calls may observe later commits. Selected
+declarations require no whole-store copy. Hard deadlines and named-scope presence
+checks are unavailable for this borrowed in-process profile.
+
 `run_query_rules(source, load_query_rules(Path("rules.json")))` checks named
 consumer obligations over asserted RDF. The JSON array contains each rule's
 `name`, either `query` text or a relative `query_file`, and an explicit
@@ -369,7 +382,15 @@ equal labels from other snapshots are rejected. Transport keeps independent
 role scopes separate and preserves blank node kinds. Literal and blank focus
 selection requires explicit pair mode; findings retain report-local identities.
 
-For repeated datasets, use `with ShaclSession(shapes, ontology=ontology) as session:` from `bijux_ontology.shacl` and call `session.validate(data)`. The session owns its fixed resources and reuses one isolated worker; construct a new session to replace them. `validate_batch(datasets)` retains per-dataset results and explicit pending coverage. Deadlines include worker queueing and startup; cancellation, worker failure and close release owned processes. `scope="records"` preserves local conformance while leaving wider dataset conformance unverified. Sessions currently require POSIX process groups.
+For repeated datasets, use `with ShaclSession(shapes, ontology=ontology) as session:` from `bijux_ontology.shacl` and call `session.validate(data)`. The session owns its fixed resources and reuses one isolated worker; construct a new session to replace them. `validate_batch(datasets)` retains per-dataset results and explicit pending coverage. Deadlines include worker queueing and startup; cancellation, worker failure and close release owned processes. `scope="records"` preserves local conformance while leaving wider dataset conformance unverified. Sessions use shared platform process ownership; Windows runtime qualification remains pending.
+
+For checked RDF deltas, `prepare_incremental(data, shapes, use_shapes=(shape_iri,))`
+from `bijux_ontology.shacl.incremental` runs an actual baseline. Pass its owned
+`.state` and an exact `DatasetPatch` to `revalidate`. Complete passing local Core
+checks reuse unaffected named focus/shape pairs; target, schema, global and
+complex-path changes require full selected checking. Results retain checked and
+reused counts, raw executions and the checked patch. Unsupported shared anonymous
+identities yield no reusable state.
 
 For supplied SHACL shapes, `ShaclCoverageContract(minimum_focus=1,
 focus_nodes=record_iris, pairs=shape_focus_pairs)` from `bijux_ontology.shacl`
@@ -414,6 +435,13 @@ resources and returns a raw `report`. Supported operations also include
 `emission`, `serialization`, `flatten`, `framing`, `vocabulary` and `project`; declarations
 use their existing JSON codecs. `project` takes `configuration` and an absolute
 `directory`, retaining completed scopes on cancellation or deadline.
+
+For async hosts, use `async with AsyncChecks(executor, max_running=2, max_queued=8)`
+from `bijux_ontology.interfaces.execution.async_checks`, then await
+`checks.run(checks.prepare(operation, parameters))` or `checks.batch(requests)`.
+Requests own JSON inputs; each worker retains its ordinary limits. Batch collection
+has a separate cumulative host budget. Cancellation returns incomplete execution
+evidence after owned cleanup; session exit drains admitted work.
 
 The trusted worker interpreter must already contain the package and requested
 extras. No environment installation occurs. `memory_bytes=` requests the platform
@@ -547,6 +575,14 @@ unknown; native checks can use exact owned blank nodes. Punning prohibition is
 application policy. Full OWL profile requests require a separate capability and
 remain unverified when unavailable. `classify_statement` retains per-position
 roles: the two occurrences in `C rdf:type C` are individual and class.
+
+Install the optional `bijux-ontology-reasoning` distribution for actual OWL 2
+DL/EL/QL/RL membership. Its `profiles` API requires an explicit Java executable
+and pinned OWLAPI bundle; the package README gives the build commands.
+`check_profile(backend, source, profile="owl2-dl", imports=offline_map)` retains
+native violations and loader metadata. Unparsed triples, guessed declarations or
+missing imports prevent acceptance. This finite POSIX profile accepts one
+physical graph per document; it does not establish consistency or satisfiability.
 
 Use `check_data_compatibility(data, vocabulary)` for finite actual RDF checks
 of named domain/range consequences, explicit disjoint types, property kinds and

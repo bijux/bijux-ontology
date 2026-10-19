@@ -290,5 +290,7 @@ def test_bounds_cancellation_invalid_wire_inputs_and_fresh_recovery() -> None:
     ground_target = prepare_rdf(Graph().add((EX.s, EX.p, EX.new)))
     shared = Budget(Limits(max_work=5000))
     assert plan_rdf_patch(ground_base, ground_target, budget=shared).report.verified
+    assert shared.remaining("work") < shared.limits.max_work
+    shared.consume("work", shared.remaining("work"))
     pending = plan_rdf_patch(ground_base, ground_target, budget=shared)
     assert pending.patch is None and pending.report.outcome == "exhausted"

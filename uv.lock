@@ -20,6 +20,7 @@ resolution-markers = [
 members = [
     "bijux-ontology",
     "bijux-ontology-dev",
+    "bijux-ontology-reasoning",
     "bijux-ontology-workspace",
 ]
 
@@ -299,6 +300,21 @@ version = "0.1.0"
 source = { editable = "packages/bijux-ontology-dev" }
 
 [[package]]
+name = "bijux-ontology-reasoning"
+version = "0.1.0"
+source = { editable = "packages/bijux-ontology-reasoning" }
+dependencies = [
+    { name = "bijux-ontology" },
+    { name = "rdflib" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bijux-ontology", editable = "packages/bijux-ontology" },
+    { name = "rdflib", specifier = ">=7.6,<8" },
+]
+
+[[package]]
 name = "bijux-ontology-workspace"
 version = "0.0.0"
 source = { virtual = "." }
@@ -307,6 +323,7 @@ source = { virtual = "." }
 dev = [
     { name = "bijux-ontology", extra = ["jsonld", "linkml", "patterns", "pydantic", "shacl", "sssom", "templates", "xsd"] },
     { name = "bijux-ontology-dev" },
+    { name = "bijux-ontology-reasoning" },
     { name = "build" },
     { name = "codespell" },
     { name = "deptry" },
@@ -328,6 +345,7 @@ dev = [
 dev = [
     { name = "bijux-ontology", extras = ["jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "sssom"], editable = "packages/bijux-ontology" },
     { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
+    { name = "bijux-ontology-reasoning", editable = "packages/bijux-ontology-reasoning" },
     { name = "build", specifier = ">=1.2,<2" },
     { name = "codespell", specifier = ">=2.4,<3" },
     { name = "deptry", specifier = ">=0.23,<1" },

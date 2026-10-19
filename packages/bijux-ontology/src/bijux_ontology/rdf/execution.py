@@ -1,7 +1,6 @@
 """Bounded owned-process transport for RDF engines and resource preparation."""
 
 import math
-import os
 import subprocess
 import sys
 import threading
@@ -9,7 +8,7 @@ import time
 from typing import BinaryIO, Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.processes import stop_owned_process
+from bijux_ontology.processes.ownership import spawn_owned_process, stop_owned_process
 
 _reap = stop_owned_process
 
@@ -25,10 +24,12 @@ def checkpoint(deadline: float, cancel: threading.Event | None) -> None:
 WorkerModule = Literal[
     "bijux_ontology.rdf._comparison_worker",
     "bijux_ontology.rdf.stores.worker",
+    "bijux_ontology.data.streams.worker",
     "bijux_ontology.rdf.queries.worker",
     "bijux_ontology.rdf.canonical.worker",
     "bijux_ontology.rdf.patches.correspondence",
     "bijux_ontology.workflows.projects.acquisition.worker",
+    "bijux_ontology.workflows.projects.parallel.worker",
     "bijux_ontology.vocabulary.mappings.worker",
     "bijux_ontology.shacl.rules.worker",
     "bijux_ontology.rdf.entailment.worker",
@@ -51,10 +52,12 @@ def execute_worker(
     if module not in (
         "bijux_ontology.rdf._comparison_worker",
         "bijux_ontology.rdf.stores.worker",
+        "bijux_ontology.data.streams.worker",
         "bijux_ontology.rdf.queries.worker",
         "bijux_ontology.rdf.canonical.worker",
         "bijux_ontology.rdf.patches.correspondence",
         "bijux_ontology.workflows.projects.acquisition.worker",
+        "bijux_ontology.workflows.projects.parallel.worker",
         "bijux_ontology.vocabulary.mappings.worker",
         "bijux_ontology.shacl.rules.worker",
         "bijux_ontology.rdf.entailment.worker",
@@ -70,15 +73,12 @@ def execute_worker(
         raise InputError("RDF cancellation requires a threading.Event")
     deadline = time.monotonic() + timeout
     checkpoint(deadline, cancel)
-    if os.name != "posix":
-        raise ResourceError("Local RDF process-group isolation is unavailable")
     try:
-        process = subprocess.Popen(
-            [sys.executable, "-m", module, str(cap)],
+        process = spawn_owned_process(
+            [sys.executable, "-I", "-B", "-m", module, str(cap)],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            start_new_session=True,
         )
     except OSError as error:
         raise ResourceError("Local RDF worker could not be started") from error
