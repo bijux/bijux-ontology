@@ -22,11 +22,10 @@ from ...backend.owlapi.bundles import qualify_backend
 from ...backend.owlapi.execution import invoke_worker, qualify_capability
 from ...backend.owlapi.protocol import result_counter, result_records, result_text
 from ...backend.owlapi.receipts import qualify_reasoning_result, reasoning_header
-from ...backend.types import OwlProfileBackend, ProfileDocument
+from ...backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
 from ...documents.sources.native import stage_native_documents
 from ...documents.sources.rdf import stage_documents
 from ...documents.types import OwlDocument
-from ...profiles.types import LoaderQualification
 from .encoding import UnsupportedQuery, capture_obligations, encode_axiom
 from .types import EntailmentAnswer, EntailmentCheck
 

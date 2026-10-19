@@ -14,12 +14,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
-from bijux_ontology_reasoning.profiles import (
+from bijux_ontology_reasoning.backend import (
     OwlProfileBackend,
     backend_capability,
-    check_profile,
     prepare_profile_backend,
 )
+from bijux_ontology_reasoning.profiles import check_profile
 from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, URIRef
 from rdflib.namespace import OWL, RDF
 

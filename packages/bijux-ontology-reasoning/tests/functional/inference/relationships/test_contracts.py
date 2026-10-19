@@ -14,12 +14,11 @@ from bijux_ontology_reasoning.axioms.types import (
     NamedEntity,
     ObjectProperty,
 )
+from bijux_ontology_reasoning.backend import LoaderQualification as PublicLoader
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
+from bijux_ontology_reasoning.backend import ReasonerIdentity as PublicReasoner
 from bijux_ontology_reasoning.backend.types import LoaderQualification, ReasonerIdentity
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.inference.consistency.types import (
-    ReasonerIdentity as PublicReasoner,
-)
 from bijux_ontology_reasoning.inference.relationships import (
     InferredAnswer,
     InferredContracts,
@@ -31,7 +30,6 @@ from bijux_ontology_reasoning.inference.sessions import (
     ReasoningSession,
     prepare_reasoning_theory,
 )
-from bijux_ontology_reasoning.profiles.types import LoaderQualification as PublicLoader
 from rdflib import Dataset, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 

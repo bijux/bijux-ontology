@@ -8,10 +8,9 @@ from rdflib import URIRef
 
 from bijux_ontology.reports import Report
 
-from ...backend.types import BackendCapability, ProfileDocument
+from ...backend.types import BackendCapability, LoaderQualification, ProfileDocument
 from ...backend.types import ReasonerIdentity as ReasonerIdentity
 from ...documents.types import OwlDocument
-from ...profiles.types import LoaderQualification
 
 
 @dataclass(frozen=True)

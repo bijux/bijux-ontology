@@ -17,20 +17,18 @@ from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Issue, Report
 
 from ..backend.owlapi.bundles import PROFILES, qualify_backend
-from ..backend.owlapi.execution import backend_capability as backend_capability
 from ..backend.owlapi.execution import invoke_worker as _invoke
 from ..backend.owlapi.execution import qualify_capability as _capability
 from ..backend.owlapi.protocol import result_counter as _integer
 from ..backend.owlapi.protocol import result_text as _text
-from ..documents.sources.rdf import stage_documents
-from .types import (
+from ..backend.types import (
     LoaderQualification,
     OwlProfile,
     OwlProfileBackend,
-    ProfileCheck,
     ProfileDocument,
-    ProfileViolation,
 )
+from ..documents.sources.rdf import stage_documents
+from .types import ProfileCheck, ProfileViolation
 
 
 def check_profile(

@@ -27,11 +27,10 @@ from ...backend.owlapi.protocol import result_boolean as _boolean
 from ...backend.owlapi.protocol import result_records as _records
 from ...backend.owlapi.protocol import result_text
 from ...backend.owlapi.receipts import qualify_reasoning_result, reasoning_header
-from ...backend.types import OwlProfileBackend, ProfileDocument
+from ...backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
 from ...documents.sources.native import stage_native_documents
 from ...documents.sources.rdf import stage_documents
 from ...documents.types import OwlDocument
-from ...profiles.types import LoaderQualification
 from .types import ClassSatisfiability, ConsistencyCheck
 
 

@@ -8,10 +8,13 @@ from typing import Literal
 from bijux_ontology.reports import Report
 
 from ...axioms.types import ProjectedAxiom
-from ...backend.types import BackendCapability, ProfileDocument
+from ...backend.types import (
+    BackendCapability,
+    LoaderQualification,
+    ProfileDocument,
+    ReasonerIdentity,
+)
 from ...documents.types import OwlDocument
-from ...profiles.types import LoaderQualification
-from ..consistency.types import ReasonerIdentity
 
 EntailmentOutcome = Literal["entailed", "not_entailed", "unknown"]
 

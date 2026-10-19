@@ -38,8 +38,8 @@ PYTHON
 
 Pass that printed SHA to `prepare_profile_backend(Path(java), Path(bundle),
 manifest_sha256=sha, artifacts=Path("artifacts/owl-jobs"))` from
-`bijux_ontology_reasoning.profiles`. Then call
-`check_profile(backend, prepared_source, profile="owl2-dl", imports=offline_map)`.
+`bijux_ontology_reasoning.backend`. Import `check_profile` from
+`bijux_ontology_reasoning.profiles`, then call `check_profile(backend, prepared_source, profile="owl2-dl", imports=offline_map)`.
 Inspect `.in_profile`, `.violations`, `.loaders` and `.report`; a raw native answer
 alone does not qualify the supplied RDF. The finite runtime profile supports
 POSIX process ownership and one physical graph per supplied document. Missing
