@@ -13,8 +13,7 @@ from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.correspondence import _KINDS
+from bijux_ontology.limits import BUDGET_KINDS, Budget, IssueCollector, Limits
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
@@ -39,12 +38,12 @@ def _execute(request: dict[str, object], operation: Operation) -> dict[str, obje
     # Half of each relevant remaining allowance stays on the host for exact
     # decoding/adoption. Worker parser internals are isolated by the deadline;
     # counters cover explicit retained terms and our protocol operations.
-    request["allowances"] = {kind: operation.remaining(kind) for kind in _KINDS}
+    request["allowances"] = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
     operation.consume("bytes", json_bound(request, operation))
     allowances = {
         kind: operation.remaining(kind)
         // (2 if kind in ("bytes", "work", "states", "triples") else 1)
-        for kind in _KINDS
+        for kind in BUDGET_KINDS
     }
     request["allowances"] = allowances
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
@@ -63,11 +62,11 @@ def _execute(request: dict[str, object], operation: Operation) -> dict[str, obje
     if not isinstance(response, dict):
         raise ResourceError("Invalid triple-term worker response")
     consumed = response.get("consumed")
-    if not isinstance(consumed, dict) or set(consumed) != set(_KINDS):
+    if not isinstance(consumed, dict) or set(consumed) != set(BUDGET_KINDS):
         if response.get("status") == "exhausted":
             raise LimitExceeded("Triple-term worker exceeded its protocol allowance")
         raise ResourceError("Missing triple-term worker counters")
-    for kind in _KINDS:
+    for kind in BUDGET_KINDS:
         amount = consumed[kind]
         if type(amount) is not int or not 0 <= amount <= allowances[kind]:
             raise ResourceError("Invalid triple-term worker counters")

@@ -1,4 +1,4 @@
-"""Checked rule materialization through the existing owned RDF worker boundary."""
+"""Checked SHACL rule materialization in an owned bounded process."""
 
 import json
 import threading

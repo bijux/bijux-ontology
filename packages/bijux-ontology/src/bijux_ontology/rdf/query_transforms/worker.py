@@ -15,9 +15,8 @@ from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.rdf.patches.codecs import read_term, read_witness, witness_data
-from bijux_ontology.rdf.patches.correspondence import _KINDS
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,
     PatchLiteral,
@@ -178,7 +177,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
             response = {"status": "exhausted"}
         response["consumed"] = budget.consumed()
     else:
-        response["consumed"] = dict.fromkeys(_KINDS, 0)
+        response["consumed"] = dict.fromkeys(BUDGET_KINDS, 0)
     encoded = json.dumps(response, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
@@ -187,7 +186,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
             "status": "exhausted",
             "consumed": budget.consumed()
             if budget is not None
-            else dict.fromkeys(_KINDS, 0),
+            else dict.fromkeys(BUDGET_KINDS, 0),
         }
         encoded = json.dumps(response, separators=(",", ":")).encode("ascii")
     return encoded

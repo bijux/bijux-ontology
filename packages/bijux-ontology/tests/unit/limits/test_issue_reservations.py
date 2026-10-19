@@ -162,3 +162,32 @@ def test_unicode_metadata_stops_before_allocating_its_full_encoding(
     valid = Budget(Limits(max_bytes=4, max_total_bytes=4))
     bound_text("🧬", valid)
     assert valid.remaining("bytes") == 0
+
+
+def test_nested_storage_reservations_preserve_total_and_wire_evidence_bounds() -> None:
+    """Unexported copies cannot evade total bytes or spend diagnostic headroom."""
+    from bijux_ontology.workflows.projects.representations.worker import (
+        _PublicationBudget,
+    )
+
+    limits = Limits(max_total_bytes=128)
+    host = Budget(limits)
+    allowances = {
+        kind: host.remaining(kind)
+        for kind in ("bytes", "work", "states", "issues", "resources", "triples")
+    }
+    worker = _PublicationBudget(limits, allowances, 8)
+    outer = Operation(None, worker, 10, None)
+    nested = Operation(None, outer, 10, None)
+    nested.reserve_storage(100)
+    nested.consume("bytes", 8)
+    assert worker.consumed()["bytes"] == 108
+    assert nested.remaining("bytes") == 20
+    with pytest.raises(LimitExceeded, match="evidence allowance"):
+        nested.consume("bytes")
+    with pytest.raises(LimitExceeded, match="shared allowance"):
+        nested.reserve_storage(21)
+    with pytest.raises(InputError):
+        nested.reserve_storage(-1)
+    nested.reserve_storage(20)
+    assert worker.consumed()["bytes"] == 128

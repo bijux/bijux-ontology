@@ -14,20 +14,12 @@ from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget, Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import Budget, BudgetKind, Limits
+from bijux_ontology.limits import BUDGET_KINDS, Budget, Limits
 
 from .codecs import read_witness, term_data, witness_data
 from .types import PatchBlank, PatchUnavailable, PatchValue, SnapshotWitness
 
 _BASE = "urn:bijux:ontology:patch:"
-_KINDS: tuple[BudgetKind, ...] = (
-    "bytes",
-    "resources",
-    "triples",
-    "work",
-    "issues",
-    "states",
-)
 
 
 def blank_tokens(witness: SnapshotWitness, budget: Budget) -> set[str]:
@@ -67,13 +59,13 @@ def compare_witnesses(
         "required": list(required),
         "fixed": [list(pair) for pair in fixed],
         "limits": asdict(operation.limits),
-        "allowances": {kind: operation.remaining(kind) for kind in _KINDS},
+        "allowances": {kind: operation.remaining(kind) for kind in BUDGET_KINDS},
     }
     size = json_bound(request, operation)
     if size > operation.limits.max_bytes:
         raise LimitExceeded("RDF patch protocol exceeds max_bytes")
     operation.consume("bytes", size)
-    allowances = {kind: operation.remaining(kind) for kind in _KINDS}
+    allowances = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
     request["allowances"] = allowances
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
@@ -99,15 +91,15 @@ def compare_witnesses(
     consumed = response.get("consumed")
     if (
         not isinstance(consumed, dict)
-        or set(consumed) != set(_KINDS)
+        or set(consumed) != set(BUDGET_KINDS)
         or any(
             type(consumed[kind]) is not int
             or not 0 <= consumed[kind] <= allowances[kind]
-            for kind in _KINDS
+            for kind in BUDGET_KINDS
         )
     ):
         raise ResourceError("Malformed RDF patch worker accounting completion")
-    for kind in _KINDS:
+    for kind in BUDGET_KINDS:
         operation.consume(kind, consumed[kind])
     if response["status"] == "exhausted":
         raise LimitExceeded("RDF patch comparison exhausted its allowance")

@@ -10,7 +10,7 @@ from bijux_ontology.errors import LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.rdf.patches.correspondence import _KINDS
+from bijux_ontology.limits import BUDGET_KINDS
 from bijux_ontology.rdf.terms import bound_text
 
 
@@ -29,7 +29,7 @@ def run_markup(
         "kind": kind,
         "canonicalization": canonicalization,
         "limits": asdict(budget.limits),
-        "allowances": {key: budget.remaining(key) for key in _KINDS},
+        "allowances": {key: budget.remaining(key) for key in BUDGET_KINDS},
         "output_cap": budget.limits.max_total_bytes,
     }
     budget.consume("bytes", json_bound(request, budget))
@@ -37,7 +37,7 @@ def run_markup(
         key: budget.remaining(key) // 2
         if key in ("bytes", "states", "work")
         else budget.remaining(key)
-        for key in _KINDS
+        for key in BUDGET_KINDS
     }
     request["allowances"] = allowances
     output_cap = min(budget.limits.max_total_bytes, budget.remaining("bytes") // 4)
@@ -65,13 +65,13 @@ def run_markup(
         raise ResourceError("Invalid native markup result")
     consumed = response.get("consumed")
     if consumed is not None:
-        if not isinstance(consumed, dict) or set(consumed) != set(_KINDS):
+        if not isinstance(consumed, dict) or set(consumed) != set(BUDGET_KINDS):
             raise ResourceError("Native markup omitted cumulative counters")
-        for key in _KINDS:
+        for key in BUDGET_KINDS:
             amount = consumed[key]
             if type(amount) is not int or not 0 <= amount <= allowances[key]:
                 raise ResourceError("Invalid native markup counter")
-        for key in _KINDS:
+        for key in BUDGET_KINDS:
             budget.consume(key, consumed[key])
     elif response["status"] not in ("unavailable", "exhausted"):
         raise ResourceError("Native markup omitted its work receipt")

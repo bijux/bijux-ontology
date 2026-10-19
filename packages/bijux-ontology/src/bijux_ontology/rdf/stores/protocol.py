@@ -12,8 +12,7 @@ from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.rdf.patches.correspondence import _KINDS
+from bijux_ontology.limits import BUDGET_KINDS, Budget, IssueCollector
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import term_data
 from bijux_ontology.reports import Issue, Report
@@ -63,9 +62,9 @@ def execute(
         verify_files(snapshot.directory, snapshot.files, operation)
         request["database"] = str(snapshot.directory)
     request["limits"] = asdict(operation.limits)
-    request["allowances"] = {kind: operation.remaining(kind) for kind in _KINDS}
+    request["allowances"] = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
     operation.consume("bytes", json_bound(request, operation))
-    allowances = {kind: operation.remaining(kind) for kind in _KINDS}
+    allowances = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
     request["allowances"] = allowances
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
     raw = execute_worker(
@@ -85,13 +84,13 @@ def execute(
     if not isinstance(response, dict) or not isinstance(response.get("status"), str):
         raise ResourceError("Malformed disk worker response")
     counts = response.pop("consumed", None)
-    if not isinstance(counts, dict) or set(counts) != set(_KINDS):
+    if not isinstance(counts, dict) or set(counts) != set(BUDGET_KINDS):
         if response["status"] == "exhausted":
             raise LimitExceeded(
                 "Disk operation could not complete within its protocol bound"
             )
         raise ResourceError("Disk worker omitted shared consumption evidence")
-    for kind in _KINDS:
+    for kind in BUDGET_KINDS:
         amount = counts[kind]
         if type(amount) is not int or not 0 <= amount <= allowances[kind]:
             raise ResourceError("Disk worker returned invalid operation counters")

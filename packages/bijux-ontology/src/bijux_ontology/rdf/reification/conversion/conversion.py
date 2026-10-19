@@ -17,6 +17,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import (
+    BUDGET_KINDS,
     Budget,
     IssueCollector,
     Limits,
@@ -24,7 +25,7 @@ from bijux_ontology.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.correspondence import _KINDS, compare_witnesses
+from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import Captured, capture_source, edited
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,
@@ -121,7 +122,7 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
         "contract": contract,
         "quads": _wire(quads, operation),
         "limits": asdict(operation.limits),
-        "allowances": dict.fromkeys(_KINDS, 0),
+        "allowances": dict.fromkeys(BUDGET_KINDS, 0),
     }
     size = json_bound(request, operation)
     operation.consume("bytes", size * 3)
@@ -129,7 +130,7 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
     operation.consume("bytes", cap * 16)
     operation.consume("states", 16)
     operation.consume("work", cap * 2)
-    allowances = {kind: operation.remaining(kind) // 2 for kind in _KINDS}
+    allowances = {kind: operation.remaining(kind) // 2 for kind in BUDGET_KINDS}
     request["allowances"] = allowances
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
     received = dispatched = False
@@ -153,13 +154,13 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
         ):
             raise ResourceError("Invalid reifier worker receipt")
         controls = object_value(response["controls"], location="controls")
-        if set(controls) != set(_KINDS):
+        if set(controls) != set(BUDGET_KINDS):
             raise ResourceError("Reifier worker omitted cumulative counters")
-        for kind in _KINDS:
+        for kind in BUDGET_KINDS:
             amount = controls[kind]
             if type(amount) is not int or not 0 <= amount <= allowances[kind]:
                 raise ResourceError("Invalid reifier control counter")
-        for kind in _KINDS:
+        for kind in BUDGET_KINDS:
             operation.shared.consume(kind, cast(int, controls[kind]))
         received = True
         operation.consume("work", 0)
@@ -183,7 +184,7 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
             raise ResourceError("Invalid native reifier output bytes") from error
     finally:
         if dispatched and not received:
-            for kind in _KINDS:
+            for kind in BUDGET_KINDS:
                 operation.shared.consume(kind, allowances[kind])
 
 

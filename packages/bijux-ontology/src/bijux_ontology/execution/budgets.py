@@ -1,21 +1,12 @@
 """Cumulative operation deadlines and worker allowance ownership."""
 
-import math
+import sys
 import threading
 import time
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, BudgetKind, Limits
+from bijux_ontology.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
 from bijux_ontology.processes.transport import checkpoint
-
-_KINDS: tuple[BudgetKind, ...] = (
-    "bytes",
-    "resources",
-    "triples",
-    "work",
-    "issues",
-    "states",
-)
 
 
 class Operation(Budget):
@@ -38,11 +29,7 @@ class Operation(Budget):
             raise InputError("Operations require Limits and Budget objects")
         if limits is not None and budget is not None and limits != budget.limits:
             raise InputError("Operation limits conflict with the shared budget")
-        if (
-            type(timeout) not in (float, int)
-            or not math.isfinite(timeout)
-            or timeout <= 0
-        ):
+        if type(timeout) not in (float, int) or not 0 < timeout <= sys.float_info.max:
             raise InputError("Operation timeout must be finite and positive")
         if cancel is not None and not isinstance(cancel, threading.Event):
             raise InputError("Operation cancellation requires threading.Event")
@@ -70,6 +57,11 @@ class Operation(Budget):
         checkpoint(self.deadline, self.cancel)
         self.shared.consume(kind, amount)
 
+    def reserve_storage(self, amount: int) -> None:
+        """Preserve shared allocation ownership through nested operation views."""
+        checkpoint(self.deadline, self.cancel)
+        self.shared.reserve_storage(amount)
+
     def remaining(self, kind: BudgetKind) -> int:
         """Read the actual shared allowance, including any enclosing operation."""
         return self.shared.remaining(kind)
@@ -85,10 +77,10 @@ class ControlBudget(Budget):
     def __init__(self, limits: Limits, allowances: object) -> None:
         """Accept only complete finite nonnegative per-kind allowances."""
         super().__init__(limits)
-        if not isinstance(allowances, dict) or set(allowances) != set(_KINDS):
+        if not isinstance(allowances, dict) or set(allowances) != set(BUDGET_KINDS):
             raise InputError("Malformed operation worker allowances")
         self.allowances: dict[BudgetKind, int] = {}
-        for kind in _KINDS:
+        for kind in BUDGET_KINDS:
             amount = allowances[kind]
             if type(amount) is not int or not 0 <= amount <= super().remaining(kind):
                 raise InputError("Invalid operation worker allowance")
@@ -113,4 +105,6 @@ class ControlBudget(Budget):
 
     def consumed(self) -> dict[BudgetKind, int]:
         """Return exact completed owned work for validated host adoption."""
-        return {kind: self.allowances[kind] - self.remaining(kind) for kind in _KINDS}
+        return {
+            kind: self.allowances[kind] - self.remaining(kind) for kind in BUDGET_KINDS
+        }

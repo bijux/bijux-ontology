@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import cast
 from urllib.parse import urljoin
 
-from bijux_ontology._json import decode_json, own_json
+from bijux_ontology._json import _capture_json, _measure_json, decode_json, own_json
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_text
@@ -192,21 +192,25 @@ def _resource_join(base: str, reference: str, budget: Budget) -> str:
     return result
 
 
-def _absolutise_imports(context: object, base: str, budget: Budget) -> None:
+def _absolutise_imports(context: object, base: str, budget: Budget) -> bool:
     """Bind imports only inside actual context and scoped-context positions."""
     # PyLD resolves remote @context URLs but leaves relative @import URLs
     # tied to the application base. Resolve those against the supplying document.
+    changed = False
     if isinstance(context, dict):
         mapping = cast(dict[str, object], context)
         imported = mapping.get("@import")
         if isinstance(imported, str):
-            mapping["@import"] = _resource_join(base, imported, budget)
+            absolute = _resource_join(base, imported, budget)
+            changed |= absolute != imported
+            mapping["@import"] = absolute
         for definition in mapping.values():
             if isinstance(definition, dict):
-                _absolutise_imports(definition.get("@context"), base, budget)
+                changed |= _absolutise_imports(definition.get("@context"), base, budget)
     elif isinstance(context, list):
         for child in cast(list[object], context):
-            _absolutise_imports(child, base, budget)
+            changed |= _absolutise_imports(child, base, budget)
+    return changed
 
 
 def context_is_unscoped(context: object) -> bool:
@@ -262,7 +266,7 @@ class ContextResources:
         )
         self._snapshots: dict[str, dict[str, object]] = {}
         self._unscoped = True
-        self._logical: dict[str, str] = {}
+        self._logical: dict[str, dict[str, object]] = {}
 
     @property
     def budget(self) -> Budget:
@@ -313,13 +317,16 @@ class ContextResources:
             if isinstance(self._loader, OfflineDocumentLoader)
             else self._loader(url, options)
         )
-        raw = own_json(
+        raw, size = _capture_json(
             supplied,
             source=url,
             max_bytes=self.budget.limits.max_bytes,
             max_depth=self.budget.limits.max_depth,
             budget=self.budget,
         )
+        # The processor's semantic input allowance is independent of immutable
+        # scalar sharing in the ownership copy.
+        self.budget.consume("bytes", size)
         if not isinstance(raw, dict):
             raise ContextInputError("A loader response must be a JSON object")
         response = cast(dict[str, object], raw)
@@ -330,53 +337,66 @@ class ContextResources:
             )
         bound_text(effective_url, self.budget)
         document = response.get("document")
+        changed = "document" not in response
         response["document"] = document
         nodes = document if isinstance(document, list) else [document]
         for node in nodes:
             if isinstance(node, dict):
                 context = node.get("@context")
                 self._unscoped = self._unscoped and context_is_unscoped(context)
-                _absolutise_imports(context, effective_url, self.budget)
+                changed |= _absolutise_imports(context, effective_url, self.budget)
         absolute_iri(effective_url)
         context_url = response.get("contextUrl")
+        changed |= "contextUrl" not in response
         if context_url is not None and not isinstance(context_url, str):
             raise ContextInputError("A loader contextUrl must be a string or None")
         if isinstance(context_url, str):
-            context_url = _resource_join(effective_url, context_url, self.budget)
+            absolute_context = _resource_join(effective_url, context_url, self.budget)
+            changed |= absolute_context != context_url
+            context_url = absolute_context
             absolute_iri(context_url)
             response["contextUrl"] = context_url
         else:
             response["contextUrl"] = None
-        response = cast(
-            dict[str, object],
-            own_json(
+        if changed:
+            _measure_json(
                 response,
                 source=url,
                 max_bytes=self.budget.limits.max_bytes,
                 max_depth=self.budget.limits.max_depth,
                 budget=self.budget,
-            ),
-        )
-        identity_input = own_json(
-            {"document": document, "contextUrl": context_url},
-            source=url,
+            )
+        previous = self._logical.get(effective_url)
+        if previous is not None and self._identity(previous, url) != self._identity(
+            response, url
+        ):
+            raise ContextInputError(
+                f"Conflicting supplied JSON-LD resources identify {effective_url}"
+            )
+        self._logical[effective_url] = response
+        self._snapshots[url] = response
+        return response
+
+    def _identity(self, response: dict[str, object], source: str) -> str:
+        """Compare colliding logical identities without copying owned documents."""
+        identity_input = {
+            "document": response.get("document"),
+            "contextUrl": response.get("contextUrl"),
+        }
+        measurement = _measure_json(
+            identity_input,
+            source=source,
             max_bytes=self.budget.limits.max_bytes,
             max_depth=self.budget.limits.max_depth,
             budget=self.budget,
         )
-        identity = json.dumps(
-            identity_input,
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
+        # ASCII output retains one-byte characters; Unicode may require four.
+        # Reserve encoder slack and a full result copy before serialization.
+        width = 4 if measurement.ascii_only else 8
+        self.budget.reserve_storage(128 + width * measurement.size)
+        return json.dumps(
+            identity_input, ensure_ascii=False, sort_keys=True, separators=(",", ":")
         )
-        if effective_url in self._logical and self._logical[effective_url] != identity:
-            raise ContextInputError(
-                f"Conflicting supplied JSON-LD resources identify {effective_url}"
-            )
-        self._logical[effective_url] = identity
-        self._snapshots[url] = response
-        return response
 
 
 def context_resources(

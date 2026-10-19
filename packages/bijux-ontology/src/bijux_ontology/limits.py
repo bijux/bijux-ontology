@@ -10,6 +10,15 @@ from bijux_ontology.reports import Issue, Report
 
 BudgetKind = Literal["bytes", "resources", "triples", "work", "issues", "states"]
 
+BUDGET_KINDS: tuple[BudgetKind, ...] = (
+    "bytes",
+    "resources",
+    "triples",
+    "work",
+    "issues",
+    "states",
+)
+
 
 @dataclass(frozen=True)
 class Limits:
@@ -50,6 +59,10 @@ class Budget:
         if count > getattr(self.limits, name):
             raise LimitExceeded(f"Exceeded {name}")
         self._counts[kind] = count
+
+    def reserve_storage(self, amount: int) -> None:
+        """Prepay internal allocation under the same cumulative byte limit."""
+        self.consume("bytes", amount)
 
     def remaining(self, kind: BudgetKind) -> int:
         """Expose the cumulative allowance available to a bounded owned worker."""

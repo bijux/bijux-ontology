@@ -14,7 +14,13 @@ from bijux_ontology.execution.budgets import ControlBudget, Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    BudgetKind,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
@@ -32,6 +38,35 @@ from bijux_ontology.workflows.projects.acquisition.types import (
 )
 
 from .types import PublishedResource, RepresentationVariant
+
+
+class _PublicationBudget(ControlBudget):
+    """Keep internal storage inside the host grant and text inside wire capacity."""
+
+    def __init__(
+        self, limits: Limits, allowances: object, evidence_bytes: object
+    ) -> None:
+        super().__init__(limits, allowances)
+        if type(evidence_bytes) is not int or not 0 <= evidence_bytes <= self.remaining(
+            "bytes"
+        ):
+            raise InputError("Invalid publication evidence allowance")
+        self._evidence_bytes = evidence_bytes
+        self._evidence_used = 0
+
+    def consume(self, kind: BudgetKind, amount: int = 1) -> None:
+        """Bound all exportable semantic text before retaining its evidence."""
+        if type(amount) is not int or amount < 0:
+            raise InputError("Budget consumption must be a nonnegative integer")
+        if kind == "bytes" and amount > self._evidence_bytes - self._evidence_used:
+            raise LimitExceeded("Publication exhausted its evidence allowance")
+        super().consume(kind, amount)
+        if kind == "bytes":
+            self._evidence_used += amount
+
+    def reserve_storage(self, amount: int) -> None:
+        """Charge unexported scratch and copies to the actual shared byte grant."""
+        super().consume("bytes", amount)
 
 
 def _finding(
@@ -356,7 +391,9 @@ def process_request(payload: bytes, cap: int) -> bytes:
     request = decode_json(payload, max_bytes=cap)
     if not isinstance(request, dict):
         raise InputError("Malformed representation request")
-    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
+    budget = _PublicationBudget(
+        Limits(**request["limits"]), request["allowances"], request["evidence_bytes"]
+    )
     operation = Operation(None, budget, request["timeout_ns"] / 1_000_000_000, None)
     result = _run(request, operation)
     result["consumed"] = budget.consumed()
@@ -377,7 +414,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
 
 
 def main() -> int:
-    """Enter through the existing owned-worker allowlist and bounded pipes."""
+    """Run the trusted installed entry point through bounded protocol pipes."""
     cap = int(sys.argv[1])
     try:
         output = process_request(sys.stdin.buffer.read(cap + 1), cap)
