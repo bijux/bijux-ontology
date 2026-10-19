@@ -3,11 +3,9 @@
 import hashlib
 import importlib.metadata
 import platform
-import time
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from threading import Event
-from types import MappingProxyType
 from uuid import uuid4
 
 from rdflib import URIRef
@@ -42,6 +40,7 @@ from bijux_ontology.models.persistence.types import PreparationIdentity
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.types import RdfSource
+from bijux_ontology.shacl.execution.preparation import prepare_session
 from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
@@ -237,6 +236,7 @@ def prepare_revision(
             if not context_result.report.verified:
                 raise ResourceError("Required context preparation did not verify")
         ontology_source = shape_source = None
+        shacl_preparation = None
         if captured_shape is not None:
             ontology_source = prepare_source(
                 captured.source, document_loader=loader, budget=operation
@@ -244,38 +244,48 @@ def prepare_revision(
             shape_source = prepare_source(
                 captured_shape, document_loader=loader, budget=operation
             )
-            for probe_source, focus in probes:
-                preparation_capacity(operation)
-                data = prepare_source(
-                    probe_source, document_loader=loader, budget=operation
-                )
-                selected_roots, selected_focus, coverage = shape_bindings(
-                    roots, focus, operation
-                )
-                operation.consume("work", 0)
-                remaining = operation.deadline - time.monotonic()
-                if remaining <= 0:
-                    raise LimitExceeded("Revision preparation exceeded its deadline")
-                with ShaclSession(
-                    shape_source,
-                    ontology=ontology_source,
-                    imports=captured.imports,
-                    use_shapes=selected_roots,
-                    mode="pairs",
-                    preflight=True,
-                    coverage=coverage,
-                    budget=operation,
-                    timeout=remaining,
-                ) as session:
-                    probe_result = session.validate(
+            operation.consume("states", len(roots))
+            characters = sum(map(len, roots))
+            operation.consume("work", characters)
+            operation.consume("bytes", 64 + 128 * len(roots) + 4 * characters)
+            shacl_preparation = prepare_session(
+                shape_source,
+                ontology=ontology_source,
+                imports=captured.imports,
+                use_shapes=tuple(URIRef(root) for root in roots),
+                mode="pairs",
+                preflight=True,
+                coverage=ShaclCoverageContract(),
+                budget=operation,
+            )
+            with ShaclSession._from_preparation(
+                shacl_preparation, storage=operation
+            ) as session:
+                for probe_source, focus in probes:
+                    preparation_capacity(operation)
+                    data = prepare_source(
+                        probe_source, document_loader=loader, budget=operation
+                    )
+                    _, selected_focus, coverage = shape_bindings(
+                        roots, focus, operation
+                    )
+                    probe_result = session._validate(
                         data,
                         focus_nodes=selected_focus,
+                        graph_name=None,
+                        union=False,
+                        source_usages=(),
+                        scope="dataset",
                         cancel=operation.cancel,
+                        budget=operation,
+                        coverage=coverage,
                     )
-                reports.append(probe_result.report)
-                retain_report(probe_result.report, operation, issues)
-                if not probe_result.report.verified:
-                    raise ResourceError("A required actual positive shape probe failed")
+                    reports.append(probe_result.report)
+                    retain_report(probe_result.report, operation, issues)
+                    if not probe_result.report.verified:
+                        raise ResourceError(
+                            "A required actual positive shape probe failed"
+                        )
         preparation_capacity(operation, 4)
         native_version = None
         if captured_shape is not None:
@@ -326,12 +336,10 @@ def prepare_revision(
             identity,
             artifact,
             restored.prepared,
-            ontology_source,
-            shape_source,
-            MappingProxyType(captured.imports),
             roots,
             report,
             operation._counts.get("bytes", 0) - starting_bytes,
+            shacl_preparation,
         )
         prepared = PreparedRevision._owned(state)
         finished = True

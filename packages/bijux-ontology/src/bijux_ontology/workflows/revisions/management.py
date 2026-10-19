@@ -1,10 +1,10 @@
 """Atomic local activation and exact in-flight semantic revision leases."""
 
-import time
+from _thread import LockType
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass
-from threading import Event, RLock
+from dataclasses import dataclass, field
+from threading import Event, Lock, RLock
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
@@ -19,7 +19,7 @@ from .preparation import named_terms, preparation_capacity, shape_bindings
 from .types import PreparedRevision, RevisionResult, RevisionStatus, _RevisionState
 
 
-@dataclass
+@dataclass(slots=True)
 class _Retained:
     """One manager-owned revision and its independent lease/run references."""
 
@@ -29,6 +29,32 @@ class _Retained:
     state: _RevisionState | None
     leases: int = 0
     operations: int = 0
+    session: ShaclSession | None = None
+    session_lock: LockType = field(default_factory=Lock)
+    retiring: bool = False
+    cleaning: bool = False
+    cleanup_error: BaseException | None = None
+
+    def shape_session(
+        self, state: _RevisionState, operation: Operation
+    ) -> ShaclSession:
+        """Own at most one lazy worker under the retained revision's exact policy."""
+        if self.state is not state or state.shacl_preparation is None:
+            raise InputError("The retained revision has no owned SHACL preparation")
+        # Admission already retained this record, so it cannot retire during this wait.
+        while not self.session_lock.acquire(timeout=0.01):
+            checkpoint(operation.deadline, operation.cancel)
+        try:
+            checkpoint(operation.deadline, operation.cancel)
+            if state.shacl_preparation.plan.limits != operation.limits:
+                raise InputError("Revision SHACL reuse requires the original Limits")
+            if self.session is None:
+                self.session = ShaclSession._from_preparation(
+                    state.shacl_preparation, storage=operation
+                )
+            return self.session
+        finally:
+            self.session_lock.release()
 
 
 class _RevisionOperation:
@@ -39,8 +65,9 @@ class _RevisionOperation:
     multi-record request. No mutable revision state is returned to consumers.
     """
 
-    def __init__(self, state: _RevisionState) -> None:
+    def __init__(self, state: _RevisionState, record: _Retained) -> None:
         self._state: _RevisionState | None = state
+        self._record: _Retained | None = record
 
     def _require_open(self) -> _RevisionState:
         """Deny new child work once the borrowing context has returned."""
@@ -51,6 +78,7 @@ class _RevisionOperation:
     def _close(self) -> None:
         """Release this handle's state before the manager drains its reference."""
         self._state = None
+        self._record = None
 
     @property
     def revision(self) -> str:
@@ -97,31 +125,28 @@ class _RevisionOperation:
     ) -> RevisionResult:
         """Validate selected named shape/focus pairs with one owned native lifetime."""
         state = self._require_open()
-        if state.shapes is None:
+        if state.shacl_preparation is None:
             raise InputError("This revision declares no shape contract")
         operation = Operation(state.models.limits, None, timeout, cancel)
         focus = named_terms(focus_nodes, operation)
         if not focus:
             raise InputError("Leased shape checking needs nonempty named focus")
-        selected_roots, selected_focus, coverage = shape_bindings(
-            state.roots, focus, operation
-        )
-        operation.consume("work", 0)
-        remaining = operation.deadline - time.monotonic()
-        if remaining <= 0:
-            raise LimitExceeded("Leased shape validation exceeded its deadline")
-        with ShaclSession(
-            state.shapes,
-            ontology=state.ontology,
-            imports=state.imports,
-            use_shapes=selected_roots,
-            mode="pairs",
-            preflight=True,
-            coverage=coverage,
+        _, selected_focus, coverage = shape_bindings(state.roots, focus, operation)
+        record = self._record
+        if record is None:
+            raise InputError("The borrowed revision operation is closed")
+        session = record.shape_session(state, operation)
+        result = session._validate(
+            source,
+            focus_nodes=selected_focus,
+            graph_name=None,
+            union=False,
+            source_usages=(),
+            scope="dataset",
+            cancel=cancel,
             budget=operation,
-            timeout=remaining,
-        ) as session:
-            result = session.validate(source, focus_nodes=selected_focus, cancel=cancel)
+            coverage=coverage,
+        )
         return RevisionResult(state.revision, result.report, result)
 
 
@@ -166,7 +191,7 @@ class RevisionLease:
         state = self._manager._start(self)
         operation = None
         try:
-            operation = _RevisionOperation(state)
+            operation = _RevisionOperation(state, self._record)
             yield operation
         finally:
             if operation is not None:
@@ -356,7 +381,7 @@ class RevisionManager:
         with self._locked(operation):
             if self._closing or self._active != expected_active:
                 raise ResourceError("Manager is closing or the active base changed")
-            if revision not in self._records:
+            if revision not in self._records or self._records[revision].retiring:
                 raise ResourceError("Rollback requires a still-retained revision")
             preparation_capacity(operation, len(self._records) + 1)
             self._active = revision
@@ -373,9 +398,11 @@ class RevisionManager:
             if revision == self._active or record.leases or record.operations:
                 raise ResourceError("An active or in-use revision cannot be retired")
             preparation_capacity(operation, len(self._records) + 1)
-            record.state = None
-            del self._records[revision]
-            return self._status()
+            if record.retiring:
+                raise ResourceError("Revision retirement is already in progress")
+            record.retiring = True
+        self._cleanup(record)
+        return self.status()
 
     def lease(self) -> RevisionLease:
         """Acquire exactly the active revision before starting semantic work."""
@@ -398,7 +425,11 @@ class RevisionManager:
             if lease._closed:
                 raise InputError("The revision lease is closed")
             record = lease._record
-            if self._records.get(record.revision) is not record or record.state is None:
+            if (
+                self._records.get(record.revision) is not record
+                or record.state is None
+                or record.retiring
+            ):
                 raise InputError("Revision ownership is no longer retained")
             if (
                 sum(value.operations for value in self._records.values())
@@ -408,36 +439,68 @@ class RevisionManager:
             record.operations += 1
             return record.state
 
-    def _drain(self, record: _Retained) -> None:
-        """Drop only unreferenced semantic owners after close has denied new leases."""
+    def _drain(self, record: _Retained) -> bool:
+        """Mark an unreferenced owner without dropping its still-live worker quota."""
         if self._closing and not record.leases and not record.operations:
-            self._records.pop(record.revision, None)
+            record.retiring = True
+            return True
+        return False
+
+    def _cleanup(self, record: _Retained) -> None:
+        """Reap outside the manager lock before releasing retained capacity."""
+        with self._lock:
+            if self._records.get(record.revision) is not record or record.cleaning:
+                return
+            if record.cleanup_error is not None:
+                raise record.cleanup_error
+            if not record.retiring or record.leases or record.operations:
+                return
+            record.cleaning = True
+        try:
+            if record.session is not None:
+                record.session.close()
+        except BaseException as error:
+            with self._lock:
+                record.cleanup_error = error
+                record.cleaning = False
+            raise
+        with self._lock:
+            record.session = None
             record.state = None
+            self._records.pop(record.revision, None)
 
     def _finish(self, lease: RevisionLease) -> None:
-        """Release one completed operation's counted owner."""
+        """Release one completed operation's counted owner before optional reaping."""
         with self._lock:
             record = lease._record
             record.operations -= 1
-            self._drain(record)
+            drain = self._drain(record)
+        if drain:
+            self._cleanup(record)
 
     def _release(self, lease: RevisionLease) -> None:
         """Idempotently release a lease without touching another request's lifetime."""
         with self._lock:
-            if not lease._closed:
-                lease._closed = True
-                record = lease._record
-                record.leases -= 1
-                self._drain(record)
+            if lease._closed:
+                return
+            lease._closed = True
+            record = lease._record
+            record.leases -= 1
+            drain = self._drain(record)
+        if drain:
+            self._cleanup(record)
 
     def close(self) -> RevisionStatus:
         """Deny new requests and drain without killing existing runs."""
         with self._lock:
             self._closing = True
             self._active = None
-            for record in tuple(self._records.values()):
-                self._drain(record)
-            return self._status()
+            records = tuple(
+                record for record in self._records.values() if self._drain(record)
+            )
+        for record in records:
+            self._cleanup(record)
+        return self.status()
 
     def __enter__(self) -> "RevisionManager":
         """Own local revision lifetimes in an explicit application scope."""
