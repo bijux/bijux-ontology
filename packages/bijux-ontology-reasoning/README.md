@@ -1,7 +1,7 @@
 # bijux-ontology-reasoning
 
-Optional OWL 2 DL, EL, QL and RL membership checks through a pinned OWLAPI 5.5.1
-worker and explicit Java 11 or newer. Imports start no JVM or download; core
+Optional OWL 2 profile checks and DL diagnosis through pinned OWLAPI 5.5.1 and
+HermiT 1.4.5.519 with explicit Java 11 or newer. Imports start no JVM or download; core
 bijux-ontology remains usable without Java. Profile membership does not establish
 consistency, satisfiability or entailment. Incomplete parsing remains unknown.
 
@@ -69,3 +69,20 @@ roles. `.unsupported` records actual selected axioms outside the finite model;
 `.exclusions` records families explicitly omitted by the caller. Missing input
 structure or incomplete execution prevents a verified complete projection.
 Inspection makes no consistency, satisfiability or entailment claim.
+
+`diagnosis.check_consistency(backend, source, named_classes=None)` asks actual
+ontology consistency and separate named-class satisfiability questions. A
+consistent ontology may contain unsatisfiable classes. An inconsistent ontology
+provides no ordinary class proof. `None` selects the actual class signature;
+explicit classes must occur in the selected closure. Inspect `.consistent`,
+`.consistency_report`, `.classes`, `.loaders` and `.report`. The operation requires
+qualified original input, complete supplied imports and OWL 2 DL membership.
+Unsupported datatypes, axioms and failed execution remain unknown. The reported
+Maven artifact version and native reasoner version are retained separately.
+
+`entailment.check_entailments(backend, source, obligations)` accepts existing typed
+`SubClassOf` and `ClassAssertion` requests with supported class expressions.
+Each answer is `entailed`, `not_entailed` or `unknown`. A negative assertion uses
+an explicit `ClassComplement`; failure to entail a positive assertion never
+proves its negation. Actual consistency and complete input qualification precede
+all proofs. Unsupported queries retain their positions as unknown answers.

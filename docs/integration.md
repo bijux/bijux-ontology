@@ -583,6 +583,19 @@ selection requires explicit pair mode; findings retain report-local identities.
 
 For repeated datasets, use `with ShaclSession(shapes, ontology=ontology) as session:` from `bijux_ontology.shacl` and call `session.validate(data)`. The session owns its fixed resources and reuses one isolated worker; construct a new session to replace them. `validate_batch(datasets)` retains per-dataset results and explicit pending coverage. Deadlines include worker queueing and startup; cancellation, worker failure and close release owned processes. `scope="records"` preserves local conformance while leaving wider dataset conformance unverified. Sessions use shared platform process ownership; Windows runtime qualification remains pending.
 
+Pass `budget=operation` to share one cumulative budget across session construction
+and validation calls. Preparation, transport and result projection use its actual
+remaining allowances. Omitting it keeps calls independent; each batch still has
+one cumulative budget. Late coverage exhaustion retains the qualified raw report
+and completed negative findings.
+
+`shacl.examples.generate_examples(shapes, root, focus, seed=seed, values=pool)`
+searches caller values for a finite acyclic direct-path contract. The nonempty
+seed and original explicit shape/focus binding remain fixed. An optional
+`MissingValueExample` requests an actual failing MinCount witness and checked
+preserved siblings. Inspect construction status separately from each native
+validation result; unsuccessful search is no general unsatisfiability proof.
+
 For checked RDF deltas, `prepare_incremental(data, shapes, use_shapes=(shape_iri,))`
 from `bijux_ontology.shacl.incremental` runs an actual baseline. Pass its owned
 `.state` and an exact `DatasetPatch` to `revalidate`. Complete passing local Core
@@ -1748,6 +1761,21 @@ every other source graph, its original selection and resource metadata. Required
 missing references, unsupported extensions and caller-selected arity violations
 remain visible. `project_labels` explicitly reports omitted form/sense structure
 and keeps the full lexicon available; labels never become unconditional synonyms.
+
+`interfaces.adapters.xkos.classifications.read_classification` projects ordered
+levels, exact codes and distinct generic/partitive relationships from one selected
+physical graph. `check_classification` applies explicit level, code and tree
+policies. `PartitionContract` requires a supplied finite population and complete
+assignments for coverage; authored exhaustive/disjoint claims alone prove no
+real-world partition. Blank level selectors must retain their owned witnesses.
+The finite profile follows [XKOS 1.2](https://docs.ddialliance.org/XKOS/1.2/).
+
+`interfaces.adapters.xkos.correspondences.read_correspondence` preserves complete
+association groups against two supplied `ClassificationRelease` inventories.
+`write_correspondence` retains annotations, backing graphs and the original
+physical selection without inventing pairwise exact matches. `assess_assignments`
+requires a caller-owned `RecordConversion` for each actual record/group choice;
+a split never allocates counts or silently selects a destination category.
 
 Install `[frictionless]` for the pinned Frictionless 5.21.0 Data Package v1 CSV
 profile. Use a separate environment from `[oak]`: their native dependencies

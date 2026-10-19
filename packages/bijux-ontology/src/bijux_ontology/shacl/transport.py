@@ -8,6 +8,7 @@ from contextlib import suppress
 from typing import BinaryIO
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.limits import Budget
 from bijux_ontology.processes.ownership import spawn_owned_process, stop_owned_process
 
 _stop_group = stop_owned_process
@@ -223,12 +224,23 @@ class SessionBackend:
         self._stderr_thread.start()
 
     def _exchange(
-        self, payload: bytes, deadline: float | None, cancel: threading.Event | None
+        self,
+        payload: bytes,
+        deadline: float | None,
+        cancel: threading.Event | None,
+        *,
+        budget: Budget | None = None,
     ) -> bytes:
         import struct
 
         if len(payload) > self._cap:
             raise LimitExceeded("SHACL request exceeds protocol byte bound")
+        if budget is not None:
+            if not isinstance(budget, Budget):
+                raise InputError("SHACL transport requires a Budget")
+            budget.consume("work", len(payload) + 1)
+            budget.consume("states", 16)
+            budget.consume("bytes", len(payload) + 2048)
         process = self._process
         if process is None or process.stdin is None or process.stdout is None:
             raise ResourceError("SHACL session worker is not available")
@@ -249,11 +261,16 @@ class SessionBackend:
         def communicate() -> None:
             """Bound frames before allocation and signal all pipe failures."""
             try:
-                outgoing.write(struct.pack(">Q", len(payload)) + payload)
+                outgoing.write(struct.pack(">Q", len(payload)))
+                outgoing.write(payload)
                 outgoing.flush()
                 size = struct.unpack(">Q", read_exact(8))[0]
                 if size > self._cap:
                     raise LimitExceeded("SHACL response exceeds protocol byte bound")
+                if budget is not None:
+                    budget.consume("work", size + 1)
+                    budget.consume("states", 4 + (size + 8191) // 8192)
+                    budget.consume("bytes", 3 * size + 128)
                 output.append(read_exact(size))
             except Exception as error:
                 errors.append(error)
@@ -295,7 +312,12 @@ class SessionBackend:
             thread.join(timeout=0.2)
 
     def execute(
-        self, payload: bytes, *, deadline: float | None, cancel: threading.Event | None
+        self,
+        payload: bytes,
+        *,
+        deadline: float | None,
+        cancel: threading.Event | None,
+        budget: Budget | None = None,
     ) -> bytes:
         """Replay a fixed plan on fresh starts and exchange one independent job."""
         from bijux_ontology._json import decode_json
@@ -305,7 +327,13 @@ class SessionBackend:
             if self._process is None or self._process.poll() is not None:
                 self.reset()
                 self._start()
-                prepared = self._exchange(self._preparation, deadline, cancel)
+                prepared = self._exchange(
+                    self._preparation, deadline, cancel, budget=budget
+                )
+                if budget is not None:
+                    budget.consume("work", len(prepared) + 1)
+                    budget.consume("states", 2 * len(prepared) + 8)
+                    budget.consume("bytes", 64 * len(prepared) + 512)
                 response = decode_json(prepared, max_bytes=self._cap)
                 if not isinstance(response, dict):
                     raise ResourceError("Invalid SHACL session preparation response")
@@ -327,7 +355,7 @@ class SessionBackend:
                     return prepared
                 else:
                     raise ResourceError("Expected SHACL preparation acknowledgement")
-            return self._exchange(payload, deadline, cancel)
+            return self._exchange(payload, deadline, cancel, budget=budget)
         except BaseException as error:
             self.reset(failure=error)
             raise

@@ -6,7 +6,7 @@ from math import isfinite
 from rdflib import Graph
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Report
@@ -24,7 +24,11 @@ from bijux_ontology.shacl.execution.planning import (
     _prepare_plan,
     _role_graphs,
 )
-from bijux_ontology.shacl.execution.projection import _incomplete, _project_result
+from bijux_ontology.shacl.execution.projection import (
+    _incomplete,
+    _project_result,
+    _retained_result,
+)
 from bijux_ontology.shacl.execution.results import ShaclResult as ShaclResult
 from bijux_ontology.shacl.findings import ShaclFinding as ShaclFinding
 from bijux_ontology.shacl.findings import ShaclSource
@@ -32,26 +36,6 @@ from bijux_ontology.shacl.functions import (
     ShaclFunctionCatalog,
 )
 from bijux_ontology.shacl.transport import execute_backend
-
-
-def _retained_result(result: ShaclResult, budget: Budget | None) -> ShaclResult:
-    """Keep native diagnostics paid once across all supported result statuses."""
-    if budget is None:
-        return result
-    retained = IssueCollector(budget)
-    try:
-        retain_report(result.report, budget, retained)
-    except LimitExceeded:
-        retained.exhausted("SHACL report handoff exhausted its shared budget")
-        result.report = Report(
-            "shacl",
-            result.report.checked,
-            tuple(retained),
-            requested=result.report.requested,
-            complete=False,
-            families=result.report.families,
-        )
-    return result
 
 
 def validate_shapes(

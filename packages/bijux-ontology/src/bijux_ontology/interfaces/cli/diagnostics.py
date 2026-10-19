@@ -28,6 +28,24 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "xkos": frozenset(
+        "assignment_missing assignment_unmapped assignment_unverified "
+        "assignments_open association_invalid association_type "
+        "associations_missing category_invalid category_level_conflict "
+        "category_level_unverified classification_unverified "
+        "code_collision code_disallowed code_invalid code_missing "
+        "code_pattern code_pattern_unverified code_unverified "
+        "conversion_outside_group conversion_required "
+        "conversion_unexercised correspondence correspondence_type "
+        "depth_conflict depth_invalid depth_mismatch depth_missing "
+        "depth_unverified endpoint_missing endpoint_unverified "
+        "export_unverified hierarchy_invalid hierarchy_level_mismatch "
+        "hierarchy_scope_unverified input_invalid level_repeated "
+        "levels_list_invalid partition_unverified pattern_unverified "
+        "population_overlap population_unassigned population_unverified "
+        "read_unverified release_mismatch release_missing side_inventory "
+        "side_missing tree_cycle tree_multiple_parents".split()
+    ),
     "frictionless": frozenset(
         "extraction_unverified input_invalid native_coverage_unverified "
         "native_foreign_key native_primary_key native_type_error "
@@ -283,6 +301,12 @@ _CODES = {
         "value_unverified".split()
     ),
     "owl": frozenset(
+        "entailment_input_loss entailment_profile_unsupported "
+        "entailment_consistency_unverified entailment_query_unverified "
+        "not_entailed "
+        "diagnosis_loader_unverified diagnosis_input_loss "
+        "diagnosis_profile_unsupported diagnosis_unverified inconsistent "
+        "unsatisfiable_class "
         "axiom_input_loss axiom_input_unverified axiom_unsupported axioms_unverified "
         "conversion_loss conversion_unverified "
         "assertion_contradiction assertion_unverified backend_unavailable "
@@ -337,6 +361,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "example_search_exhausted example_unsupported example_input_invalid "
         "remediation_unverified "
         "external_aggregate_empty external_nonconformance "
         "external_detail_unverified external_projection_incomplete "
@@ -453,6 +478,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "xkos": (
+        "selected classification levels and finite population contracts",
+        "A selected classification rule fails or lacks complete scoped evidence.",
+        "Inspect owned level selectors, actual depth and code terms, distinct "
+        "hierarchy meanings and explicitly closed finite assignments.",
+        "check_classification(read_classification(source, scheme), policy)",
+    ),
     "frictionless": (
         "supplied native Data Package resources and explicit column bindings",
         "Native package coverage or a selected semantic column contract failed.",
