@@ -133,3 +133,14 @@ required edits in unowned modules refuse the whole transaction. Explicit
 Nonempty `ModuleCheck` postconditions receive the complete candidate module set
 and shared budget. Returned checked bytes form a reviewable transaction;
 publication across multiple destinations remains the caller's responsibility.
+
+`datatypes.check_datatype_obligations` uses actual datatype difference/intersection
+satisfiability to check universal inclusion or disjointness. It qualifies original
+consistency and an explicitly fresh temporary property; finite samples prove no
+universal range relationship. `check_datatype_fields` checks every original value
+branch against conjoined global ranges of actual inferred super/equivalent data
+properties. Missing ranges, unsupported facets, resource/reverse branches and
+application value constraints remain required unknown. Explicit branch selection
+through `check_datatype_branches` retains original field identity and indices;
+combined consumers own coverage of the remaining branches. Class-context and
+model co-emission obligations belong to model compatibility.
