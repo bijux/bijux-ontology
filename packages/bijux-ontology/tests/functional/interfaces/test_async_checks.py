@@ -26,7 +26,7 @@ VOCABULARY: dict[str, object] = {
 
 def _live(root: Path) -> set[int]:
     """Inspect only the actual installed worker commands owned by this test."""
-    output = subprocess.check_output(["ps", "-axo", "pid=,command="], text=True)
+    output = subprocess.check_output(["ps", "-ww", "-axo", "pid=,command="], text=True)
     return {
         int(line.split(maxsplit=1)[0])
         for line in output.splitlines()

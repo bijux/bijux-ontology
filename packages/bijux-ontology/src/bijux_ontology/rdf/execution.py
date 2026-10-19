@@ -5,6 +5,7 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable
 from typing import BinaryIO, Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
@@ -48,11 +49,14 @@ def execute_worker(
     cap: int,
     timeout: float,
     cancel: threading.Event | None = None,
+    completed: Callable[[bytes], None] | None = None,
 ) -> bytes:
     """Run an owned RDF worker and reap its process group.
 
     Payloads and replies are opaque bytes. Domain modules own their protocols;
     this transport owns bounded pipes, cancellation and the worker lifetime.
+    An explicit terminal handoff receives a complete successful receipt before
+    a later stop is reported; its domain still qualifies and retains that receipt.
     """
     if module not in (
         "bijux_ontology.rdf._comparison_worker",
@@ -81,6 +85,8 @@ def execute_worker(
         raise InputError("RDF worker timeout must be finite and positive")
     if cancel is not None and not isinstance(cancel, threading.Event):
         raise InputError("RDF cancellation requires a threading.Event")
+    if completed is not None and not callable(completed):
+        raise InputError("Completed worker receipts require a callable")
     deadline = time.monotonic() + timeout
     checkpoint(deadline, cancel)
     try:
@@ -99,8 +105,10 @@ def execute_worker(
     )
     output, diagnostics = bytearray(), bytearray()
     overflow = threading.Event()
+    delivered = threading.Event()
+    stdout_done, stderr_done = threading.Event(), threading.Event()
 
-    def read(stream: BinaryIO, target: bytearray) -> None:
+    def read(stream: BinaryIO, target: bytearray, done: threading.Event) -> None:
         """Drain without buffering more than the declared protocol bound."""
         try:
             while chunk := stream.read(8192):
@@ -111,20 +119,28 @@ def execute_worker(
                     break
         finally:
             stream.close()
+        done.set()
 
     def write(stream: BinaryIO) -> None:
         """Write concurrently so a blocked input pipe cannot hide cancellation."""
+        written = False
         try:
-            stream.write(payload)
+            written = stream.write(payload) == len(payload)
         except (BrokenPipeError, OSError):
             pass
         finally:
             stream.close()
+            if written:
+                delivered.set()
 
     threads = (
         threading.Thread(target=write, args=(process.stdin,), daemon=True),
-        threading.Thread(target=read, args=(process.stdout, output), daemon=True),
-        threading.Thread(target=read, args=(process.stderr, diagnostics), daemon=True),
+        threading.Thread(
+            target=read, args=(process.stdout, output, stdout_done), daemon=True
+        ),
+        threading.Thread(
+            target=read, args=(process.stderr, diagnostics, stderr_done), daemon=True
+        ),
     )
     failure: BaseException | None = None
     cleanup_error: ResourceError | None = None
@@ -153,8 +169,10 @@ def execute_worker(
             for thread in threads:
                 if thread.ident is not None:
                     thread.join(timeout=1)
+    response: bytes | None = None
     try:
-        checkpoint(deadline, cancel)
+        if completed is None:
+            checkpoint(deadline, cancel)
         if overflow.is_set():
             raise LimitExceeded("Local RDF output exceeds protocol byte bound")
         if process.returncode:
@@ -162,10 +180,24 @@ def execute_worker(
             raise ResourceError(
                 f"Local RDF worker exited {process.returncode}: {detail}"
             )
+        if completed is not None:
+            if cleanup_error is not None:
+                raise cleanup_error
+            if (
+                not delivered.is_set()
+                or not stdout_done.is_set()
+                or not stderr_done.is_set()
+            ):
+                raise ResourceError(
+                    "Local RDF worker did not finish its bounded byte exchange"
+                )
+            response = bytes(output)
+            completed(response)
+            checkpoint(deadline, cancel)
     except InputError as error:
-        if cleanup_error is not None:
+        if cleanup_error is not None and error is not cleanup_error:
             error.args = (f"{error}; {cleanup_error}",)
         raise
     if cleanup_error is not None:
         raise cleanup_error
-    return bytes(output)
+    return response if response is not None else bytes(output)
