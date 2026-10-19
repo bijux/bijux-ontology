@@ -1757,6 +1757,13 @@ assignments for coverage; authored exhaustive/disjoint claims alone prove no
 real-world partition. Blank level selectors must retain their owned witnesses.
 The finite profile follows [XKOS 1.2](https://docs.ddialliance.org/XKOS/1.2/).
 
+`interfaces.adapters.xkos.correspondences.read_correspondence` preserves complete
+association groups against two supplied `ClassificationRelease` inventories.
+`write_correspondence` retains annotations, backing graphs and the original
+physical selection without inventing pairwise exact matches. `assess_assignments`
+requires a caller-owned `RecordConversion` for each actual record/group choice;
+a split never allocates counts or silently selects a destination category.
+
 Install `[frictionless]` for the pinned Frictionless 5.21.0 Data Package v1 CSV
 profile. Use a separate environment from `[oak]`: their native dependencies
 require incompatible chardet versions. The workspace lock declares that conflict

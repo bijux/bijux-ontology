@@ -29,16 +29,22 @@ class DiagnosticExplanation:
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
     "xkos": frozenset(
-        "assignment_unverified assignments_open category_invalid "
-        "category_level_conflict category_level_unverified "
-        "classification_unverified code_collision code_disallowed code_invalid "
-        "code_missing code_pattern code_pattern_unverified code_unverified "
+        "assignment_missing assignment_unmapped assignment_unverified "
+        "assignments_open association_invalid association_type "
+        "associations_missing category_invalid category_level_conflict "
+        "category_level_unverified classification_unverified "
+        "code_collision code_disallowed code_invalid code_missing "
+        "code_pattern code_pattern_unverified code_unverified "
+        "conversion_outside_group conversion_required "
+        "conversion_unexercised correspondence correspondence_type "
         "depth_conflict depth_invalid depth_mismatch depth_missing "
-        "depth_unverified hierarchy_invalid hierarchy_level_mismatch "
-        "hierarchy_scope_unverified level_repeated levels_list_invalid "
-        "partition_unverified pattern_unverified population_overlap "
-        "population_unassigned population_unverified tree_cycle "
-        "tree_multiple_parents".split()
+        "depth_unverified endpoint_missing endpoint_unverified "
+        "export_unverified hierarchy_invalid hierarchy_level_mismatch "
+        "hierarchy_scope_unverified input_invalid level_repeated "
+        "levels_list_invalid partition_unverified pattern_unverified "
+        "population_overlap population_unassigned population_unverified "
+        "read_unverified release_mismatch release_missing side_inventory "
+        "side_missing tree_cycle tree_multiple_parents".split()
     ),
     "frictionless": frozenset(
         "extraction_unverified input_invalid native_coverage_unverified "
