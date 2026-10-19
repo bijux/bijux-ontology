@@ -214,6 +214,14 @@ def test_owned_bounds_and_input_contracts_cannot_yield_a_false_comparison(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     left, right = _literal("1"), _literal("2")
+    bounded_validation = compare_literal_values(
+        _literal("true", "boolean"),
+        _literal("true", "boolean"),
+        regime=OWL,
+        budget=Budget(Limits(max_total_bytes=100, max_states=2, max_work=1000)),
+    )
+    assert bounded_validation.relation == "indeterminate"
+    assert bounded_validation.report.outcome == "exhausted"
     operation = Budget(Limits(max_work=10))
     operation.consume("work", 9)
     result = compare_literal_values(left, right, regime=SPARQL, budget=operation)
@@ -223,7 +231,7 @@ def test_owned_bounds_and_input_contracts_cannot_yield_a_false_comparison(
         _literal("bad"),
         _literal("x" * 1000, "string"),
         regime=SPARQL,
-        budget=Budget(Limits(max_work=100)),
+        budget=Budget(Limits(max_bytes=100)),
     )
     assert partial.report.outcome == "exhausted"
     assert "literal.lexical_invalid" in {issue.code for issue in partial.report.issues}
