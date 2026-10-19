@@ -6,7 +6,12 @@ from typing import cast
 from rdflib import BNode, Dataset, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded, attach_input_failure
+from bijux_ontology.errors import (
+    InputError,
+    LimitExceeded,
+    ResourceError,
+    attach_input_failure,
+)
 from bijux_ontology.jsonld.conversion import DirectionPolicy, _convert_to_rdf_dataset
 from bijux_ontology.jsonld.resources import (
     DocumentLoader,
@@ -155,9 +160,13 @@ def prepare_jsonld(
                 complete=False,
                 issues=(
                     Issue(
-                        "context.input_error",
+                        "context.processor_unverified"
+                        if isinstance(error, ResourceError)
+                        else "context.input_error",
                         str(error),
-                        kind="input_error",
+                        kind="unverified"
+                        if isinstance(error, ResourceError)
+                        else "input_error",
                         details=Location.from_error(error),
                     ),
                 ),

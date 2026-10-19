@@ -358,3 +358,35 @@ def test_drop_policy_is_exact_retains_observations_and_never_hides_unknown_terms
     assert [(issue.actual, issue.severity) for issue in unknown.issues] == [
         (None, "error")
     ]
+
+
+def test_native_processing_defects_withhold_proof_and_preserve_caller_type_errors() -> (
+    None
+):
+    """Actual malformed native input cannot crash or become a semantic success."""
+    from bijux_ontology.errors import ResourceError
+    from bijux_ontology.jsonld.preparation import prepare_jsonld
+
+    document = {"@context": {"label": {"@id": []}}, "label": "x"}
+    with pytest.raises(ResourceError, match="without a semantic input diagnostic"):
+        expand_document(document)
+    checked = check_context(document, (ContextExpectation(("label",), EX + "label"),))
+    assert checked.outcome == "unverified" and not checked.complete
+    assert checked.issues[0].code == "context.processor_unverified"
+    prepared = prepare_jsonld(document)
+    assert prepared.source is None and prepared.report.outcome == "unverified"
+
+    failure = TypeError("consumer callback defect")
+
+    def loader(url: str, options: dict[str, object]) -> dict[str, object]:
+        raise failure
+
+    def dropped(term: str | None) -> None:
+        raise failure
+
+    with pytest.raises(TypeError) as caught:
+        expand_document({"@context": EX + "context"}, document_loader=loader)
+    assert caught.value is failure and failure.__cause__ is not failure
+    with pytest.raises(TypeError) as caught:
+        expand_document({"unmapped": "x"}, on_property_dropped=dropped)
+    assert caught.value is failure and failure.__cause__ is not failure
