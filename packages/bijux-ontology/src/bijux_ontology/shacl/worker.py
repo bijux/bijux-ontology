@@ -79,11 +79,15 @@ def target_coverage(
 
 
 def _roles(request: dict[str, Any]) -> Dataset:
-    """Parse only bounded supplied role terms and their explicit binding anchors."""
+    """Parse bounded role quads; fixed protocol roles supply empty graph identity.
+
+    No source graph-declaration inventory is needed for these private datasets.
+    Its separate parser work must not consume constraint or target allowances.
+    """
     limits = Limits(**request["limits"])
     return prepare_rdf(
         request["graphs"],
-        format="trig",
+        format="nquads",
         limits=replace(
             limits,
             max_triples=limits.max_triples * 5

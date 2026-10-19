@@ -83,7 +83,11 @@ def test_dataset_export_requires_explicit_selection_and_empty_graph_policy() -> 
     )
     dataset.graph(URIRef(EX + "empty"))
     complete = prepare_source(dataset)
-    rejected = export_rdf(complete, format="trig")
+    preserved = export_rdf(complete, format="trig")
+    assert preserved.content is not None and preserved.report.verified
+    reloaded = prepare_source(preserved.content, format="trig")
+    assert len(reloaded.graph(EX + "empty")) == 0
+    rejected = export_rdf(complete, format="nquads")
     assert rejected.content is None
     assert "rdf.export_empty_graph_loss" in {
         issue.code for issue in rejected.report.issues
@@ -99,7 +103,7 @@ def test_dataset_export_requires_explicit_selection_and_empty_graph_policy() -> 
         literal_fidelity="source_terms",
         graph_fidelity="nonempty-only",
     )
-    assert export_rdf(unknown, format="trig").report.outcome == "disagreement"
+    assert export_rdf(unknown, format="trig").report.outcome == "unverified"
     assert export_rdf(unknown, format="trig", preserve_graphs=False).content is not None
     assert len(complete.graph(EX + "empty")) == 0
     with pytest.raises(InputError):

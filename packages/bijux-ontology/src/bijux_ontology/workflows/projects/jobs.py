@@ -8,7 +8,14 @@ from bijux_ontology._json import known_keys, text_value
 from bijux_ontology.errors import InputError
 
 CheckKind = Literal[
-    "vocabulary", "models", "context", "ontology", "data", "shacl", "skos"
+    "vocabulary",
+    "models",
+    "context",
+    "ontology",
+    "data",
+    "shacl",
+    "skos",
+    "query-rules",
 ]
 
 
@@ -30,9 +37,10 @@ def check_kind(job: Mapping[str, object]) -> CheckKind:
     """Validate the selected operation and reject ignored check options lazily."""
     kind = text_value(job.get("kind"), location="kind")
     common = {"name", "kind"}
-    if kind not in ("context", "shacl"):
+    if kind not in ("context", "shacl", "query-rules"):
         common |= {"source", "lookup", "graph_name", "union"}
     options = {
+        "query-rules": {"source", "rules", "timeout", "max_rows", "allow_empty"},
         "vocabulary": {
             "inventory",
             "namespaces",

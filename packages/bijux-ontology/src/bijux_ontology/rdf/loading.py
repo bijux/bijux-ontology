@@ -203,7 +203,6 @@ def prepare_native(preparation: SourcePreparation) -> PreparedSource:
     max_bytes = preparation.limits.max_bytes
     max_triples = preparation.limits.max_triples
     preserve_literals = preparation.preserve_literals
-    require_complete_graphs = preparation.require_complete_graphs
     if syntax == "json-ld":
         raise InputError("JSON-LD preparation requires the document dispatcher")
     dataset = Dataset()
@@ -222,15 +221,9 @@ def prepare_native(preparation: SourcePreparation) -> PreparedSource:
         is_dataset = False
         fidelity = "supplied_terms"
     else:
-        if syntax == "trig":
-            graph_fidelity = "nonempty-only"
-            if require_complete_graphs:
-                raise InputError(
-                    "TriG parser cannot guarantee preservation of empty named graphs"
-                )
         payload = preparation.read()
         assert syntax is not None
-        dataset = parse_dataset(
+        parsed = parse_dataset(
             payload,
             syntax=syntax,
             base=effective,
@@ -238,6 +231,11 @@ def prepare_native(preparation: SourcePreparation) -> PreparedSource:
             max_triples=max_triples,
             preserve_literals=preserve_literals,
         )
+        dataset, graph_fidelity = parsed.dataset, parsed.graph_fidelity
+        if preparation.require_complete_graphs and graph_fidelity != "complete":
+            raise InputError(
+                "TriG metadata parser cannot establish complete graph inventory"
+            )
         is_dataset = syntax in {"trig", "nquads"}
         fidelity = "source_terms" if preserve_literals else "normalisation_allowed"
     return PreparedSource._from_owned(

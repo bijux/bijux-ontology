@@ -49,7 +49,7 @@ Runnable core-only examples cover [inspection and declarations](examples/check_d
 | `shacl.validate_shapes` | Supplied data and shapes; real optional backend, inference disabled | Empty required shape scopes, missing extras and backend failures cannot verify |
 | `documents.export`, `rdf.transforms` | Copied syntactic candidates and reparsed RDF preservation checks | Lossy output is refused or explicitly excluded; no automatic domain correction |
 
-RDF text preserves exact supported literal terms. RDFLib inputs retain the terms supplied by their caller; earlier normalisation cannot be recovered. Dataset operations require explicit selection or union. The maintained TriG parser cannot establish empty named-graph membership; that limitation is reported. Synchronous APIs use work budgets; CLI deadlines interrupt an owned worker. POSIX worker groups include owned descendants; other platforms terminate the direct worker. Platform execution is qualified separately.
+RDF text preserves exact supported literal terms. RDFLib inputs retain the terms supplied by their caller; earlier normalisation cannot be recovered. Dataset operations require explicit selection or union. TriG retains declared empty named graphs where both maintained parsers support the input; otherwise primary quads retain explicit incomplete inventory and complete-inventory requests reject that scope. Synchronous APIs use work budgets; CLI deadlines interrupt an owned worker. POSIX worker groups include owned descendants; other platforms terminate the direct worker. Platform execution is qualified separately.
 
 ## Use the CLI
 

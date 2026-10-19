@@ -28,8 +28,9 @@ def prepare_source(
     Parsed RDFLib graphs preserve their supplied terms, but cannot recover lexical
     forms already normalised before this call. File/text parsing preserves terms
     only when conversion can retain them; unsupported loss raises ``InputError``.
-    TriG reports nonempty-only graph fidelity because the maintained parser does
-    not expose empty named graphs; require_complete_graphs rejects that scope.
+    TriG retains empty graph inventory where both maintained parsers support the
+    input. Unsupported metadata parsing retains primary quads with nonempty-only
+    fidelity; require_complete_graphs rejects that scope.
     """
     preparation = prepare_input(
         source,

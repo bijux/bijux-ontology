@@ -1,6 +1,16 @@
 """Supported structural checks for RDF vocabularies and application declarations."""
 
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.data.query_rules.checking import run_query_rules
+from bijux_ontology.data.query_rules.loading import (
+    load_query_rules,
+    query_rules_from_data,
+)
+from bijux_ontology.data.query_rules.types import (
+    QueryAnswers,
+    QueryRule,
+    QueryRuleResult,
+)
 from bijux_ontology.data.rules import DataView, run_rules
 from bijux_ontology.data.usage import check_data_usage
 from bijux_ontology.declarations.codecs import (
@@ -56,6 +66,8 @@ from bijux_ontology.jsonld.selectors import (
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
+from bijux_ontology.models.context_probes.checking import probe_context
+from bijux_ontology.models.context_probes.types import ContextProbe, ProbeSample
 from bijux_ontology.models.emission import ModelUsage, check_emission
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
@@ -65,6 +77,7 @@ from bijux_ontology.owl.obligations import (
     OntologyObligation,
     prove_obligations,
 )
+from bijux_ontology.rdf.canonical.export import CanonicalRDF, canonicalize_rdf
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
@@ -124,12 +137,14 @@ __all__ = [
     "AcceptancePolicy",
     "ArrayItems",
     "Budget",
+    "CanonicalRDF",
     "Change",
     "CheckError",
     "ContextCorpusDocument",
     "ContextCorpusUpgrade",
     "ContextExpectation",
     "ContextInputError",
+    "ContextProbe",
     "ContractObligation",
     "ContractResult",
     "CorpusBranch",
@@ -167,9 +182,13 @@ __all__ = [
     "PreparedModels",
     "PreparedSource",
     "PreparedUsages",
+    "ProbeSample",
     "ProjectConfig",
     "Property",
     "QueryResult",
+    "QueryAnswers",
+    "QueryRule",
+    "QueryRuleResult",
     "QueryScope",
     "RDFConversion",
     "RDFExport",
@@ -194,6 +213,7 @@ __all__ = [
     "assess_context_corpus",
     "assess_models",
     "assess_upgrade",
+    "canonicalize_rdf",
     "check_context",
     "check_contract",
     "check_data_usage",
@@ -221,6 +241,7 @@ __all__ = [
     "index_uses",
     "inspect_vocabulary",
     "load_project",
+    "load_query_rules",
     "load_catalog",
     "load_vocabulary",
     "merge_sources",
@@ -228,11 +249,14 @@ __all__ = [
     "prepare_jsonld",
     "prepare_source",
     "prepare_usages",
+    "probe_context",
     "query_rdf",
+    "query_rules_from_data",
     "prove_obligations",
     "recheck_transformation",
     "remap_iris",
     "run_rules",
+    "run_query_rules",
     "terms_from_data",
     "write_export",
 ]

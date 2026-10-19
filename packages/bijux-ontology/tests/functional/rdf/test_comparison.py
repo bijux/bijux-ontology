@@ -5,9 +5,9 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import XSD
 
-from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.comparison import compare_rdf
+from bijux_ontology.rdf.snapshots import PreparedSource
 
 EX = Namespace("https://example.org/")
 
@@ -134,7 +134,14 @@ def test_blank_graph_names_retain_correspondence_and_distinct_graph_scope() -> N
 
 
 def test_incomplete_empty_graph_scope_needs_an_explicit_comparison_exclusion() -> None:
-    parsed = prepare_source("<urn:g> {}", format="trig")
+    parsed = PreparedSource(
+        Dataset(),
+        is_dataset=True,
+        document_iri=None,
+        effective_url=None,
+        literal_fidelity="source_terms",
+        graph_fidelity="nonempty-only",
+    )
     actual = Dataset()
     actual.graph(Namespace("urn:").g)
     unresolved = compare_rdf(parsed, actual)

@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 from threading import Event
 
 from bijux_ontology._json import decode_json, object_value, own_json
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.interfaces.execution.checkpoints import read_completed
 from bijux_ontology.interfaces.execution.protocol import report_from_data
 from bijux_ontology.interfaces.execution.transport import run_worker
@@ -102,25 +102,30 @@ class WorkerExecutor:
                         "Execution cancelled before startup",
                         reports,
                     )
-                code, stopped, detail = run_worker(
-                    [
-                        str(self.python),
-                        "-I",
-                        "-B",
-                        "-m",
-                        "bijux_ontology.interfaces.execution.worker",
-                        str(request.resolve()),
-                        str(self.limits.max_total_bytes),
-                    ],
-                    timeout=self.timeout,
-                    cap=self.limits.max_total_bytes,
-                    cancellation=cancellation,
-                )
+                try:
+                    code, stopped, detail = run_worker(
+                        [
+                            str(self.python),
+                            "-I",
+                            "-B",
+                            "-m",
+                            "bijux_ontology.interfaces.execution.worker",
+                            str(request.resolve()),
+                            str(self.limits.max_total_bytes),
+                        ],
+                        timeout=self.timeout,
+                        cap=self.limits.max_total_bytes,
+                        cancellation=cancellation,
+                    )
+                except ResourceError:
+                    reports.extend(read_completed(work, self.limits))
+                    raise
                 reports.extend(read_completed(work, self.limits))
                 if stopped or (work / "result-exhausted").exists():
                     return self._failure(
                         stopped or "execution.limit_exceeded",
-                        "Owned worker stopped before returning its complete result",
+                        "Owned worker stopped before returning its complete result"
+                        + (f": {detail[:2000]}" if detail else ""),
                         reports,
                     )
                 if code:

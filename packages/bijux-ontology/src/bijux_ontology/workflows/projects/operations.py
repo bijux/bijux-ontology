@@ -76,6 +76,20 @@ def run_check(
             limits=config.limits,
             allow_empty=boolean(job.get("allow_empty", False)),
         ).report
+    if kind == "query-rules":
+        from bijux_ontology.data.query_rules.checking import run_query_rules
+        from bijux_ontology.data.query_rules.loading import load_query_rules
+
+        return run_query_rules(
+            resources.source(text_value(job.get("source"), location="source")),
+            load_query_rules(
+                config.path(job.get("rules"), location="rules"), limits=config.limits
+            ),
+            limits=config.limits,
+            max_rows=cast(int, job.get("max_rows", 1000)),
+            timeout=cast(float, job.get("timeout", 30.0)),
+            allow_empty=boolean(job.get("allow_empty", False)),
+        ).report
     selection = VocabularySelection.from_job(job)
     vocabulary = resources.vocabulary(
         selection.source,

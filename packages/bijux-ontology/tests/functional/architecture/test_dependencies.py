@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-FOUNDATION = {"absence", "errors", "limits", "reports", "_json"}
+FOUNDATION = {"absence", "errors", "limits", "reports", "processes", "_json"}
 PACKAGES = {
     "rdf",
     "jsonld",

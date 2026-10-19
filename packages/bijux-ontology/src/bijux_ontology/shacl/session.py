@@ -4,7 +4,7 @@ import json
 import threading
 import time
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import isfinite
 from types import TracebackType
 from typing import cast
@@ -116,7 +116,7 @@ class ShaclSession:
         preparation = json.dumps(
             {
                 "command": "prepare",
-                "graphs": static.serialize(format="trig"),
+                "graphs": static.serialize(format="nquads"),
                 **_options(self._plan, ()),
                 "anchor_count": len(self._bindings.anchors),
                 "memory_bytes": memory_bytes,
@@ -234,7 +234,7 @@ class ShaclSession:
             payload = json.dumps(
                 {
                     "command": "validate",
-                    "graphs": roles.serialize(format="trig"),
+                    "graphs": roles.serialize(format="nquads"),
                     "focus_nodes": tuple(str(node) for node in focus)
                     if self._plan.mode == "targets"
                     else (),
@@ -258,11 +258,25 @@ class ShaclSession:
                     union=union,
                     source_usages=source_usages,
                 )
-            except BaseException:
-                self._backend.reset()
+            except BaseException as error:
+                self._backend.reset(failure=error)
                 raise
             if result.report.outcome in {"input_error", "exhausted"}:
-                self._backend.reset()
+                try:
+                    self._backend.reset()
+                except ResourceError as error:
+                    result.report = replace(
+                        result.report,
+                        issues=result.report.issues
+                        + (
+                            Issue(
+                                "shacl.execution_incomplete",
+                                str(error),
+                                kind="unverified",
+                            ),
+                        ),
+                        complete=False,
+                    )
             if scope == "records":
                 result.report = combine_reports(
                     "shacl",
@@ -281,11 +295,29 @@ class ShaclSession:
                         ),
                     ),
                 )
-            self._backend._interrupted(deadline, cancel)
+            try:
+                self._backend._interrupted(deadline, cancel)
+            except (LimitExceeded, ResourceError) as error:
+                if result.report.outcome not in {"input_error", "exhausted"}:
+                    raise
+                result.report = replace(
+                    result.report,
+                    issues=result.report.issues
+                    + (
+                        Issue(
+                            "shacl.execution_incomplete",
+                            str(error),
+                            kind="exhausted"
+                            if isinstance(error, LimitExceeded)
+                            else "unverified",
+                        ),
+                    ),
+                    complete=False,
+                )
             return result
         except (InputError, ResourceError) as error:
             if isinstance(error, LimitExceeded):
-                self._backend.reset()
+                self._backend.reset(failure=error)
             return _incomplete(self._plan, error)
         finally:
             self._lock.release()

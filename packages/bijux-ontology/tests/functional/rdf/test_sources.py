@@ -151,14 +151,12 @@ def test_source_metadata_rejects_invalid_runtime_types_with_typed_errors() -> No
         RdfSource(invalid_content, format="turtle")
 
 
-def test_trig_empty_graph_scope_is_explicit_instead_of_falsely_preserved() -> None:
-    prepared = prepare_source("<urn:g> {}", format="trig")
-    assert prepared.graph_fidelity == "nonempty-only"
-    with pytest.raises(InputError, match="empty named graphs"):
-        prepare_source("<urn:g> {}", format="trig", require_complete_graphs=True)
-    dataset = Dataset()
-    dataset.graph(URIRef("urn:g"))
-    assert prepare_source(dataset).graph_fidelity == "complete"
+def test_trig_empty_graph_inventory_is_complete() -> None:
+    prepared = prepare_source("<urn:g> {}", format="trig", require_complete_graphs=True)
+    assert prepared.graph_fidelity == "complete"
+    assert len(prepared.graph("urn:g")) == 0
+    with pytest.raises(InputError, match="absent"):
+        prepared.graph("urn:missing")
 
 
 def test_literal_construction_shares_exact_fidelity_and_role_validation() -> None:

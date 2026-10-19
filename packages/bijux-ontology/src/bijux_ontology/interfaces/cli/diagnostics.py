@@ -39,6 +39,7 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "probe_unverified "
         "change_unverified before_input_error after_input_error "
         "container_mismatch datatype_mismatch "
         "flatten_correspondence_unverified flatten_input_error "
@@ -52,7 +53,11 @@ _CODES = {
         "term_dropped types_mismatch unsupported_check usage_dropped "
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
-    "data": frozenset("type_unverified".split()),
+    "data": frozenset(
+        "type_unverified query_kind_mismatch query_answer_mismatch "
+        "query_variables_mismatch query_answer_unexpected query_answer_missing "
+        "query_violation query_empty_scope".split()
+    ),
     "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
         "source_field_undeclared predicate_undeclared source_coverage_unverified "
@@ -108,6 +113,9 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "canonicalization_literal_scope_unverified "
+        "canonicalization_graph_scope_unverified canonicalization_empty_graph_loss "
+        "canonicalization_unavailable canonicalization_input_invalid "
         "export_empty_graph_exclusion export_empty_graph_loss "
         "export_graph_scope_unverified export_representation_unverified "
         "extraction_scope graph_scope_unverified merge_scope remap_collision "
@@ -194,10 +202,10 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         '{"@context":{"label":"https://example.org/label"},"label":"Colour"}',
     ),
     "data": (
-        "supplied RDF data",
-        "The selected data condition cannot be established by this supported check.",
-        "Supply the missing type evidence or use an explicit supported "
-        "data constraint.",
+        "supplied RDF data and asserted query obligations",
+        "The selected data condition disagrees or cannot be established.",
+        "Inspect selected types, actual query bindings and the explicit "
+        "consumer obligation.",
         "<https://example.org/item> a <https://example.org/Image> .",
     ),
     "emission": (
@@ -296,6 +304,36 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "context.probe_unverified": (
+        "A declared branch lacks a supported finite JSON representative.",
+        "Supply its explicit input shape or retain the unverified branch scope.",
+        'ContextProbe(model, samples=(ProbeSample("field", 0, raw_json),))',
+    ),
+    "data.query_violation": (
+        "A consumer SELECT rule returned an actual violating RDF binding.",
+        "Inspect the exact bound terms and local query; correct data or the rule.",
+        'QueryRule("missing-label", sparql, QueryScope("default"))',
+    ),
+    "data.query_answer_mismatch": (
+        "A completed asserted ASK answer differs from its declared expectation.",
+        "Inspect the selected graph and expected answer; this is no OWL proof.",
+        'QueryRule("hierarchy", sparql, QueryScope("default"), expected=True)',
+    ),
+    "data.query_empty_scope": (
+        "A required query selection contains no RDF statements.",
+        "Supply the intended data scope or explicitly exclude nonempty coverage.",
+        "run_query_rules(source, rules, allow_empty=True)",
+    ),
+    "rdf.canonicalization_empty_graph_loss": (
+        "Canonical N-Quads cannot retain the selected empty named-graph inventory.",
+        "Keep the dataset, or explicitly exclude empty graphs from the quad claim.",
+        "canonicalize_rdf(source, ignore_empty_graphs=True)",
+    ),
+    "rdf.canonicalization_unavailable": (
+        "The requested canonicalization backend or execution bound is unavailable.",
+        "Use a supported runtime or platform; retain any required memory bound.",
+        "canonicalize_rdf(source, memory_bytes=required_address_space)",
+    ),
     "emission.source_field_undeclared": (
         "A selected source key has no declaration or proven coverage permission.",
         "Declare the actual field or its alias; allow only intentional extensions.",

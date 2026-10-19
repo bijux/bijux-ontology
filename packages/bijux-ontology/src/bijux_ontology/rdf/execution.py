@@ -2,15 +2,16 @@
 
 import math
 import os
-import signal
 import subprocess
 import sys
 import threading
 import time
-from contextlib import suppress
 from typing import BinaryIO, Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.processes import stop_owned_process
+
+_reap = stop_owned_process
 
 
 def checkpoint(deadline: float, cancel: threading.Event | None) -> None:
@@ -19,20 +20,6 @@ def checkpoint(deadline: float, cancel: threading.Event | None) -> None:
         raise LimitExceeded("RDF operation was cancelled")
     if time.monotonic() >= deadline:
         raise LimitExceeded("RDF operation exceeded its wall-clock deadline")
-
-
-def _reap(process: subprocess.Popen[bytes]) -> None:
-    """Terminate the owned process group, including children of an exited leader."""
-    with suppress(ProcessLookupError):
-        os.killpg(process.pid, signal.SIGTERM)
-    try:
-        process.wait(timeout=0.2)
-    except subprocess.TimeoutExpired:
-        with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGKILL)
-        process.wait()
-    with suppress(ProcessLookupError):
-        os.killpg(process.pid, signal.SIGKILL)
 
 
 WorkerModule = Literal[
@@ -114,6 +101,8 @@ def execute_worker(
         threading.Thread(target=read, args=(process.stdout, output), daemon=True),
         threading.Thread(target=read, args=(process.stderr, diagnostics), daemon=True),
     )
+    failure: BaseException | None = None
+    cleanup_error: ResourceError | None = None
     try:
         for thread in threads:
             thread.start()
@@ -125,15 +114,33 @@ def execute_worker(
                 process.wait(timeout=0.01)
             except subprocess.TimeoutExpired:
                 continue
+    except BaseException as error:
+        failure = error
+        raise
     finally:
-        _reap(process)
-        for thread in threads:
-            if thread.ident is not None:
-                thread.join(timeout=1)
-    checkpoint(deadline, cancel)
-    if overflow.is_set():
-        raise LimitExceeded("Local RDF output exceeds protocol byte bound")
-    if process.returncode:
-        detail = diagnostics.decode(errors="replace")[:2000]
-        raise ResourceError(f"Local RDF worker exited {process.returncode}: {detail}")
+        try:
+            _reap(process, failure=failure)
+        except ResourceError as error:
+            if failure is not None:
+                raise
+            cleanup_error = error
+        finally:
+            for thread in threads:
+                if thread.ident is not None:
+                    thread.join(timeout=1)
+    try:
+        checkpoint(deadline, cancel)
+        if overflow.is_set():
+            raise LimitExceeded("Local RDF output exceeds protocol byte bound")
+        if process.returncode:
+            detail = diagnostics.decode(errors="replace")[:2000]
+            raise ResourceError(
+                f"Local RDF worker exited {process.returncode}: {detail}"
+            )
+    except InputError as error:
+        if cleanup_error is not None:
+            error.args = (f"{error}; {cleanup_error}",)
+        raise
+    if cleanup_error is not None:
+        raise cleanup_error
     return bytes(output)

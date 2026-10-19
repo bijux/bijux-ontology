@@ -20,6 +20,32 @@ original graph; conflicting graph overrides fail explicitly.
 
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
+`run_query_rules(source, load_query_rules(Path("rules.json")))` checks named
+consumer obligations over asserted RDF. The JSON array contains each rule's
+`name`, either `query` text or a relative `query_file`, and an explicit
+`scope: {"kind": "default"}` (or another `QueryScope` choice). A boolean
+`expected` requires that ASK answer; absent/null `expected` requires zero
+violating SELECT rows. Exact SELECT answer sets use
+`expected: {"variables": ["term"], "rows": [[{"kind": "iri", "value": "urn:item"}]]}`.
+Returned results retain named raw answers alongside diagnostics with failing RDF
+bindings. Blank labels cannot identify expected answers across queries.
+Required empty suites/data selections, query errors, answer disagreements and
+exhaustion remain distinct. `allow_empty=True` explicitly excludes only the
+nonempty-data requirement. Project jobs use `kind: "query-rules"`, a named RDF
+`source` and a `rules` filename; every rule retains its own scope.
+
+`probe_context(context, [ContextProbe(model, type_values=("Record",))])`
+qualifies generated representatives for explicitly declared field branches
+through maintained JSON-LD processing. Compact `type_values` select an actual
+type-scoped context and must expand to the model's declared types. Scalars and
+list/set values use neutral representatives; object and custom datatype branches
+can supply `ProbeSample("field", branch_index, raw_json)`.
+Each report scope records its branch, sample origin and source shape. Unsupported
+or unrepresented branches stay unverified. Agreement covers these finite inputs,
+including their predicate, direction, value and container checks; it does not
+prove arbitrary serializer output or biological correctness. Map-container
+qualification and structural `@id`/`@type` field aliases remain unverified.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
@@ -32,6 +58,8 @@ explicitly joins their facts. Unsupplied references remain unknown unless
 equality, inequality or classification.
 
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
+
+Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 

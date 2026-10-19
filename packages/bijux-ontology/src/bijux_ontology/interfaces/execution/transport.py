@@ -2,36 +2,19 @@
 
 import contextlib
 import os
-import signal
 import subprocess
 import time
 from threading import Event, Thread
 
+from bijux_ontology.errors import ResourceError
+from bijux_ontology.processes import stop_owned_process as stop_process
 
-def stop_process(process: subprocess.Popen[bytes]) -> None:
-    """Reap an owned process and its POSIX descendants, including nested validators."""
-    if os.name == "posix":
-        with contextlib.suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGTERM)
-    elif process.poll() is None:
-        process.terminate()
-    try:
-        process.wait(timeout=0.2)
-    except subprocess.TimeoutExpired:
-        if os.name == "posix":
-            with contextlib.suppress(ProcessLookupError):
-                os.killpg(process.pid, signal.SIGKILL)
-        else:
-            process.kill()
-        process.wait()
-    if os.name == "posix":
-        with contextlib.suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGKILL)
+__all__ = ["run_worker", "stop_process"]
 
 
 def run_worker(
     command: list[str], *, timeout: float, cap: int, cancellation: Event | None
-) -> tuple[int, str, str]:
+) -> tuple[int | None, str, str]:
     """Drain bounded diagnostics and interrupt deadlines, cancellation or overflow."""
     process = subprocess.Popen(
         command,
@@ -56,6 +39,8 @@ def run_worker(
     reader.start()
     started = time.monotonic()
     stopped = ""
+    failure: BaseException | None = None
+    cleanup_error: ResourceError | None = None
     try:
         while process.poll() is None:
             if cancellation is not None and cancellation.is_set():
@@ -71,11 +56,23 @@ def run_worker(
                 process.wait(timeout=0.02)
     except KeyboardInterrupt:
         stopped = "execution.cancelled"
+    except BaseException as error:
+        failure = error
+        raise
     finally:
-        stop_process(process)
-        reader.join(timeout=1)
-        if process.stdout is not None and not reader.is_alive():
-            process.stdout.close()
+        try:
+            stop_process(process, failure=failure)
+        except ResourceError as error:
+            cleanup_error = error
+        finally:
+            reader.join(timeout=1)
+            if process.stdout is not None and not reader.is_alive():
+                process.stdout.close()
     if overflow.is_set():
         stopped = stopped or "execution.limit_exceeded"
-    return process.returncode, stopped, output.decode("utf-8", errors="replace")
+    detail = output.decode("utf-8", errors="replace")
+    if cleanup_error is not None:
+        if not stopped:
+            raise cleanup_error
+        detail = f"{cleanup_error}; {detail}"[:cap]
+    return process.returncode, stopped, detail
