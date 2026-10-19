@@ -32,8 +32,8 @@ from ..axioms.types import (
 from ..backend.types import OwlProfileBackend
 from ..documents.sources.native import prepare_owl_document
 from ..documents.types import OwlDocument
-from ..integration.preparation import reserve
-from ..integration.types import TheoryComponent
+from ..theories.sources import reserve
+from ..theories.types import TheoryComponent
 from .types import BridgeInterpretation, BridgeKind, MappingBridge
 
 _KINDS: dict[str, EntityKind] = {

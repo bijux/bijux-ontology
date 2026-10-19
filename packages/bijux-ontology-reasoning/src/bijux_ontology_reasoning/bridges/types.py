@@ -10,7 +10,7 @@ from bijux_ontology.vocabulary.mappings.types import MappingSet
 from ..axioms.changes.types import AxiomCandidate
 from ..axioms.types import AxiomInspection
 from ..explanations.types import ExplanationCheck, SourceAxiom
-from ..integration.types import TheoryComparison, TheoryComponent, TheoryObservation
+from ..theories.types import TheoryComparison, TheoryComponent, TheoryObservation
 
 BridgeKind = Literal[
     "equivalent_classes",

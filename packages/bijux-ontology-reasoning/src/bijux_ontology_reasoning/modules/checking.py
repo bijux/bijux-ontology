@@ -38,10 +38,10 @@ from ..diagnosis.checking import _classes
 from ..documents.sources.native import prepare_owl_document, stage_native_documents
 from ..documents.types import OwlDocument
 from ..entailment.checking import check_entailments
-from ..integration.checking import _logical_report
-from ..integration.preparation import assemble_theory, observe_theory, reserve
-from ..integration.types import TheoryCombination, TheoryComponent, TheoryObservation
 from ..theories.interfaces import ModuleInterfaceChange, ModuleSet, capture_interfaces
+from ..theories.observations import logical_report, observe_theory
+from ..theories.sources import assemble_theory, reserve
+from ..theories.types import TheoryCombination, TheoryComponent, TheoryObservation
 from .preparation import (
     CapturedModules,
     capture_consumers,
@@ -340,7 +340,7 @@ def _deployment(
     )
     reports.append(observed.report)
     retain_report(observed.report, operation, issues)
-    logical = _logical_report(observed, operation)
+    logical = logical_report(observed, operation)
     reports.append(logical)
     retain_report(logical, operation, issues)
 

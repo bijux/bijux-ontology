@@ -22,15 +22,10 @@ from ..documents.types import OwlDocument
 from ..entailment.encoding import encode_axiom
 from ..explanations.checking import explain_reasoning
 from ..explanations.types import ExplanationCheck, ExplanationQuestion
-from ..integration.checking import _logical_report
-from ..integration.comparison import compare_theories
-from ..integration.preparation import (
-    assemble_theory,
-    capture_theories,
-    observe_theory,
-    reserve,
-)
-from ..integration.types import (
+from ..theories.comparison import compare_theories
+from ..theories.observations import logical_report, observe_theory
+from ..theories.sources import assemble_theory, capture_theories, reserve
+from ..theories.types import (
     TheoryCombination,
     TheoryComparison,
     TheoryComponent,
@@ -339,7 +334,7 @@ def check_mapping_bridges(
                 reports,
                 issues,
             )
-        logical = _logical_report(joint, operation)
+        logical = logical_report(joint, operation)
         reports.append(logical)
         retain_report(logical, operation, issues)
         finished = True

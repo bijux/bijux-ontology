@@ -15,8 +15,8 @@ from ..axioms.types import ProjectedAxiom
 from ..backend.types import BackendCapability
 from ..documents.types import OwlDocument
 from ..entailment.types import EntailmentCheck
-from ..integration.types import TheoryCombination, TheoryObservation
 from ..theories.interfaces import ModuleInterfaceChange, ModuleSet
+from ..theories.types import TheoryCombination, TheoryObservation
 
 
 @dataclass(frozen=True)

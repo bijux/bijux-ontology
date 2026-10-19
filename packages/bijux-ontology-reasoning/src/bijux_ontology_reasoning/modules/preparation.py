@@ -21,8 +21,8 @@ from ..documents.sources.capture import (
 from ..documents.sources.native import native_iri
 from ..documents.types import OwlDocument
 from ..entailment.encoding import encode_axiom
-from ..integration.preparation import assemble_theory, reserve
-from ..integration.types import TheoryComponent
+from ..theories.sources import assemble_theory, reserve
+from ..theories.types import TheoryComponent
 from .types import (
     AxiomMove,
     ModuleConsumer,

@@ -18,15 +18,10 @@ from ..diagnosis.checking import _classes
 from ..entailment.encoding import encode_axiom
 from ..explanations.checking import explain_reasoning
 from ..explanations.types import ExplanationCheck, ExplanationQuestion
-from .comparison import compare_theories
-from .preparation import (
-    assemble_theory,
-    capture_theories,
-    derived_label,
-    observe_theory,
-    reserve,
-)
-from .types import (
+from ..theories.comparison import compare_theories
+from ..theories.observations import logical_report, observe_theory
+from ..theories.sources import assemble_theory, capture_theories, derived_label, reserve
+from ..theories.types import (
     IntegrationCheck,
     JointCompatibility,
     TheoryCombination,
@@ -35,55 +30,6 @@ from .types import (
     TheoryInteraction,
     TheoryObservation,
 )
-
-
-def _logical_report(observation: TheoryObservation, operation: Operation) -> Report:
-    """Require actual joint truth only within the selected class/consumer scope."""
-    reserve(operation, len(observation.consistency.classes) + 4)
-    issues = IssueCollector(operation)
-    diagnosis = observation.consistency
-    reports = [
-        diagnosis.consistency_report
-        if diagnosis.consistent is not None
-        else diagnosis.report
-    ]
-    selected = observation.named_classes
-    present = set()
-    for answer in diagnosis.classes:
-        operation.consume("work")
-        if selected is None or answer.iri in selected:
-            reports.append(answer.report)
-            present.add(answer.iri)
-    if selected is not None:
-        for iri in selected:
-            if iri not in present:
-                issues.append(
-                    Issue(
-                        "owl.integration_class_unverified",
-                        "A selected joint class has no qualified native answer",
-                        str(iri),
-                        kind="unverified",
-                    )
-                )
-    if observation.consumer_entailments:
-        if observation.entailments is None:
-            issues.append(
-                Issue(
-                    "owl.integration_contract_unverified",
-                    "Selected joint consumer entailments were not checked",
-                    observation.label,
-                    kind="unverified",
-                )
-            )
-        else:
-            reports.append(observation.entailments.report)
-    return Report(
-        "owl.joint_compatibility",
-        len(reports),
-        tuple(issues),
-        children=tuple(reports),
-        regime="selected-joint-dl-consistency-satisfiability-consumers",
-    )
 
 
 def _explain_interactions(
@@ -290,7 +236,7 @@ def check_integration(
                         reports,
                         issues,
                     )
-                logical = _logical_report(joint, operation)
+                logical = logical_report(joint, operation)
                 result = JointCompatibility(
                     selection,
                     unbridged,

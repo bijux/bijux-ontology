@@ -1,7 +1,6 @@
 """Selected joint-theory compatibility with original and bridge baselines."""
 
-from .checking import check_integration
-from .types import (
+from ..theories.types import (
     EntailmentComparison,
     IntegrationCheck,
     JointCompatibility,
@@ -11,6 +10,7 @@ from .types import (
     TheoryInteraction,
     TheoryObservation,
 )
+from .checking import check_integration
 
 __all__ = [
     "EntailmentComparison",

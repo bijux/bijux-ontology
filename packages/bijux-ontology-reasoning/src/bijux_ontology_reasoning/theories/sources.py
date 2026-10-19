@@ -1,21 +1,13 @@
-"""Bounded original-module assembly and reusable actual native observations."""
+"""Bounded original-module capture and explicit theory assembly."""
 
 from collections.abc import Sequence
-from dataclasses import replace
 from xml.etree.ElementTree import Element, SubElement, tostring
-
-from rdflib import URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
 
-from ..axioms.types import ProjectedAxiom
-from ..backend.types import OwlProfileBackend
-from ..diagnosis.checking import check_consistency
 from ..documents.sources.capture import (
     capture_document,
     capture_imports,
@@ -23,8 +15,7 @@ from ..documents.sources.capture import (
 )
 from ..documents.sources.native import prepare_owl_document
 from ..documents.types import OwlDocument
-from ..entailment.checking import check_entailments
-from .types import TheoryCombination, TheoryComponent, TheoryObservation
+from .types import TheoryCombination, TheoryComponent
 
 
 def reserve(operation: Operation, count: int = 1) -> None:
@@ -185,90 +176,3 @@ def assemble_theory(
         budget=operation,
     )
     return TheoryComponent(label, prepared, aliases)
-
-
-def observe_theory(
-    backend: OwlProfileBackend,
-    theory: TheoryComponent,
-    classes: tuple[URIRef, ...] | None,
-    obligations: tuple[ProjectedAxiom, ...],
-    operation: Operation,
-    heap_mb: int,
-    retained: list[TheoryObservation],
-) -> TheoryObservation:
-    """Record native truth before later contract execution or report adoption can stop.
-
-    All-class inventory enables truthful absent-versus-unknown comparisons across
-    components. Explicit empty class selection requests consistency only. Known
-    negative consumer answers are completed observations, not a fabricated joint
-    consumer failure; joint acceptance separately requires its actual answers.
-    """
-    reserve(operation, 8 + len(obligations) + len(theory.imports or {}))
-    diagnosis = check_consistency(
-        backend,
-        theory.source,
-        named_classes=() if classes == () else None,
-        imports=theory.imports,
-        budget=operation,
-        heap_mb=heap_mb,
-    )
-    signature_complete = (
-        diagnosis.consistent is True and classes != () and diagnosis.report.complete
-    )
-    observed = TheoryObservation(
-        theory.label,
-        theory.source,
-        tuple((theory.imports or {}).items()),
-        diagnosis,
-        None,
-        classes,
-        obligations,
-        signature_complete,
-        Report(
-            "owl.theory_observation",
-            issues=(
-                Issue(
-                    "execution.incomplete",
-                    "Theory observation is incomplete",
-                    kind="unverified",
-                ),
-            ),
-            requested=1,
-            complete=False,
-        ),
-    )
-    index = len(retained)
-    retained.append(observed)
-    entailments = None
-    if obligations:
-        entailments = check_entailments(
-            backend,
-            theory.source,
-            obligations,
-            imports=theory.imports,
-            budget=operation,
-            heap_mb=heap_mb,
-        )
-        observed = replace(observed, entailments=entailments)
-        retained[index] = observed
-    complete = diagnosis.consistent is not None and diagnosis.report.complete
-    if obligations:
-        complete = complete and entailments is not None and entailments.report.complete
-    issues = IssueCollector(operation)
-    if not complete:
-        retain_report(diagnosis.report, operation, issues)
-        if entailments is not None:
-            retain_report(entailments.report, operation, issues)
-    observed = replace(
-        observed,
-        report=Report(
-            "owl.theory_observation",
-            int(complete),
-            tuple(issues),
-            requested=1,
-            complete=complete,
-            regime="native-outcome-and-signature-coverage",
-        ),
-    )
-    retained[index] = observed
-    return observed

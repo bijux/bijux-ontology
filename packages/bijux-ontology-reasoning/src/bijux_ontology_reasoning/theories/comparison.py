@@ -7,7 +7,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import IssueCollector
 from bijux_ontology.reports import Issue, Report
 
-from .preparation import reserve
+from .sources import reserve
 from .types import EntailmentComparison, TheoryComparison, TheoryObservation
 
 
