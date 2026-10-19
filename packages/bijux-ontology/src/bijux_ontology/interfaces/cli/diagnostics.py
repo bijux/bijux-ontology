@@ -28,6 +28,7 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "shape-interchange": frozenset("unsupported unverified behavior_changed".split()),
     "pattern": frozenset("expected_missing unexpected_binding unverified".split()),
     "biosamples": frozenset(
         "schema_mismatch value_disallowed value_unverified binding_missing "
@@ -492,6 +493,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "shape-interchange": (
+        "fixed explicit SHACL and ShEx record bindings",
+        "Compilation is unsupported, execution is unverified or validators disagree.",
+        "Inspect the retained original shapes, unsupported remainder and exact "
+        "pair outcomes; preserve authored targets and open or closed policies.",
+        "check_interchange(translation, prepared_data)",
+    ),
     "pattern": (
         "selected syntactic DOSDP patterns and exact expected assignments",
         "An expected assignment differs or local pattern execution is unverified.",

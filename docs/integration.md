@@ -1824,3 +1824,15 @@ identity stays exact. Original, request-metadata and committed references block
 reuse. Portable drafts need fresh checks when reimported; reconciliation exposes
 conflicts without renumbering or `sameAs`. Reopen with the same explicit policy.
 Separate RDF exports remain ordinary snapshots outside the SQLite transaction.
+
+`interfaces.adapters.shape_interchange.shacl_to_shex` and `shex_to_shacl` compile
+one nonrecursive record with distinct outgoing predicates, cardinalities and the
+supported native string/integer or node-kind constraints. Supply a nonempty
+`ShexBinding` map and an explicit open/closed rule. The default target policy
+requires exactly those authored target nodes; `pairs` requires an untargeted
+shape. Original resources, preservation scope and unsupported remainder remain
+available. Class closure, overlapping consumption, EXTRA and semantic actions
+prevent a claimed translation. Install `[shacl,shex]` and call
+`check_interchange(translation, prepared_data)` to compare each pair through
+actual pySHACL and pyrudof. Agreement can mean both reject: raw negative results
+remain separate from correspondence and never certify the data as valid.
