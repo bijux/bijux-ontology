@@ -86,3 +86,18 @@ Each answer is `entailed`, `not_entailed` or `unknown`. A negative assertion use
 an explicit `ClassComplement`; failure to entail a positive assertion never
 proves its negation. Actual consistency and complete input qualification precede
 all proofs. Unsupported queries retain their positions as unknown answers.
+
+`patterns.prepare_dosdp_pattern(content, prefixes=...)` captures the JSON subset
+of DOSDP's YAML input. `check_patterns(backend, source, patterns, expected,
+scope=...)` retains actual generated queries, complete named filler assignments
+and the single maintained RDFLib engine answer. Distinct assignments remain
+distinct; `extras="allow"` explicitly relaxes only the expected inventory.
+Syntactic absence does not prove logical nonconformance. Inferred matching,
+nontrivial variable constraints and unsupported pattern fields remain unknown.
+Use a separate local [DOSDP 0.20.0 distribution](https://github.com/INCATools/dosdp-tools/releases/tag/v0.20.0)
+with `prepare_dosdp_backend`: its pinned manifest has `protocol=1`,
+`dosdp="0.20.0"`, `main_class="org.monarchinitiative.dosdp.cli.Main"` and ordered
+`jars` entries containing exact `name`/`sha256` pairs. Its 194-jar dependency set
+requires an explicit preparation allowance such as
+`Limits(max_total_bytes=200_000_000)`; subsequent checks use ordinary limits.
+Pattern paths, prefixes and required ontology imports are local and explicit.

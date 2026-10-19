@@ -28,6 +28,7 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "pattern": frozenset("expected_missing unexpected_binding unverified".split()),
     "biosamples": frozenset(
         "schema_mismatch value_disallowed value_unverified binding_missing "
         "value_missing term_invalid characteristic_missing vocabulary_missing "
@@ -483,6 +484,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "pattern": (
+        "selected syntactic DOSDP patterns and exact expected assignments",
+        "An expected assignment differs or local pattern execution is unverified.",
+        "Inspect original query and filler assignments, the explicit physical "
+        "scope, complete local imports and selected extra-binding policy.",
+        "check_patterns(backend, source, patterns, expected, scope=scope)",
+    ),
     "biosamples": (
         "versioned local BioSamples sample and checklist resources",
         "A native schema or explicit characteristic obligation fails or is unverified.",
