@@ -5,6 +5,7 @@ from itertools import chain
 from rdflib import URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
+from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.patches.correspondence import Operation
@@ -160,6 +161,30 @@ def check_mappings(
         sources: dict[str, set[str]] = {}
         relations: dict[tuple[str, str], set[str]] = {}
         uncertain: set[str] = set()
+        bound_text(mapping_set.metadata_json, operation)
+        operation.consume("states", len(mapping_set.metadata_json))
+        operation.consume("work", len(mapping_set.metadata_json))
+        operation.consume("bytes", 4 * len(mapping_set.metadata_json))
+        metadata = object_value(
+            decode_json(
+                mapping_set.metadata_json,
+                max_bytes=operation.limits.max_bytes,
+                max_depth=operation.limits.max_depth,
+            ),
+            location="mapping metadata",
+        )
+        metadata_uninterpreted = bool(
+            metadata.get("predicate_modifier") or metadata.get("other")
+        )
+        if metadata_uninterpreted:
+            issues.append(
+                Issue(
+                    "mapping.semantics_unverified",
+                    "Mapping-set qualifiers remain uninterpreted",
+                    "metadata",
+                    kind="unverified",
+                )
+            )
         for index, row in enumerate(mapping_set.rows):
             operation.consume("work")
             operation.consume("states")
@@ -170,11 +195,14 @@ def check_mappings(
                 bound_text(value, operation)
             where = "row:" + str(index)
             cells = dict(row.cells)
-            if any(cells.get(name, "") for name in mapping_set.uninterpreted):
+            row_uninterpreted = bool(cells.get("other")) or any(
+                cells.get(name, "") for name in mapping_set.uninterpreted
+            )
+            if row_uninterpreted:
                 issues.append(
                     Issue(
                         "mapping.semantics_unverified",
-                        "Defined extension values remain uninterpreted",
+                        "Extension and other values remain uninterpreted",
                         where,
                         kind="unverified",
                     )
@@ -261,7 +289,8 @@ def check_mappings(
                 not supported_types
                 or row.predicate not in _SUPPORTED
                 or cells.get("predicate_modifier", "")
-                or any(cells.get(name, "") for name in mapping_set.uninterpreted)
+                or row_uninterpreted
+                or metadata_uninterpreted
                 or row.predicate_type
                 not in (
                     "",

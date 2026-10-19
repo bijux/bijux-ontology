@@ -28,11 +28,16 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "csvw": frozenset(
+        "cell_invalid duplicate_key extraction_unverified input_invalid".split()
+    ),
     "jsonld": frozenset("record_unavailable stream_empty".split()),
     "mapping": frozenset(
         "endpoint_unverified endpoint_kind semantics_unverified relation_forbidden "
         "relation_conflict maximum_exceeded minimum_missing invalid_input "
-        "interchange_unverified".split()
+        "interchange_unverified composition_input_unverified "
+        "composition_rule_unverified composition_semantics_unverified "
+        "composition_invalid".split()
     ),
     "taxonomy": frozenset(
         "class_role_unverified expression_unrepresented outside_parent "
@@ -272,6 +277,7 @@ _CODES = {
         "implicit_target_unverified nonconformance sparql_unverified".split()
     ),
     "skos": frozenset(
+        "labels_unverified label_consumer_unverified "
         "subset.scope_unverified subset.lifecycle_unverified "
         "xl_relation.endpoint_not_resource xl_relation.form_shape "
         "xl_relation.form_conflict xl_relation.role_conflict "
@@ -304,6 +310,7 @@ _CODES = {
         "xl_form_conflict xl_form_unresolved xl_role_conflict xl_role_overlap".split()
     ),
     "terms": frozenset(
+        "slim_root_unverified slim_view_unverified slim_uncovered slim_invalid "
         "relation_projection_unverified relation_source_unverified "
         "relation_path_missing relation_path_invalid relation_candidates_invalid "
         "restriction_malformed restriction_unverified "
@@ -342,6 +349,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "csvw": (
+        "explicit CSVW-described table extraction",
+        "A selected cell, declared key or required conversion rule is unqualified.",
+        "Inspect the original table, row, cell and explicit metadata; supply "
+        "required resources and retain unsupported conversion rules as unknown.",
+        "extract_csvw(description, tables, base=metadata_url)",
+    ),
     "jsonld": (
         "explicit independent JSON-LD document records",
         "A required record capability is unavailable or no records were supplied.",

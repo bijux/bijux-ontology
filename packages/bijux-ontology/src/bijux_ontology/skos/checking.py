@@ -74,6 +74,7 @@ def check_skos(
     notation_collections: Sequence[str] = (),
     replacement_predicates: Sequence[str] = (),
     limits: Limits | None = None,
+    budget: Budget | None = None,
 ) -> Report:
     """Check advertised finite SKOS implications and explicit authoring policies.
 
@@ -94,6 +95,10 @@ def check_skos(
     Notation collections intersect that selection. Supporting ordered lists do
     not select their other members for publication checks.
     """
+    if budget is not None and (
+        not isinstance(budget, Budget) or limits is not None and limits != budget.limits
+    ):
+        raise InputError("Use a shared SKOS Budget with matching limits")
     if profile is not None and (
         not isinstance(profile, str) or profile not in _PROFILES
     ):
@@ -126,11 +131,13 @@ def check_skos(
     selected_limits = (
         limits
         if limits is not None
+        else budget.limits
+        if budget is not None
         else vocabulary.limits
         if isinstance(vocabulary, (Vocabulary, VocabularyView))
         else None
     )
-    budget = Budget(selected_limits)
+    budget = budget if budget is not None else Budget(selected_limits)
     issues = IssueCollector(budget)
     checked = 0
     complete = True
@@ -139,7 +146,7 @@ def check_skos(
             vocabulary
             if isinstance(vocabulary, VocabularyView)
             else inspect_vocabulary(
-                vocabulary, scopes=scopes, limits=limits, budget=budget
+                vocabulary, scopes=scopes, limits=selected_limits, budget=budget
             )
         )
         graph = view._read()

@@ -164,6 +164,15 @@ languages, exact literal-form comparisons, asserted/either orientation or
 forbidden relations. Equal forms preserve distinct label resources; missing
 forms remain unverified. Subrelations inherit no implicit reverse assertion.
 
+Use `skos.label_projection.project_xl_labels` on one prepared physical graph to
+produce plain SKOS label consequences. Original equal-form label resources stay
+distinct; correspondence and omitted metadata or relations remain explicit.
+`promote_labels` adds XL assertions from exact `LabelIdentity` assignments with
+fresh distinct IRIs, including checks against existing datatype IRIs. Plain
+labels remain. Both operations require explicit consumer `after_checks` and
+selected native label integrity. Export accepted candidates through
+`export_migration`; plain projection does not claim a lossless round trip.
+
 `negotiate_annotations(view, iri, predicates=(label_iri,), ranges=("fr-CA",))`
 uses [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647.html) lookup, preserving
 tied annotations and their original terms. Select basic/extended filtering,
@@ -198,6 +207,14 @@ classifies an explicit candidate inventory for ordinary application field
 constraints; its closed selection covers only the supplied view and language.
 For classification, `find_relation_path` permits complete nonmatches: its report
 qualifies search coverage, while `status` records whether a path was found.
+
+Use `vocabulary.slims.assign_slim` with original `SlimAnnotation(record_id, term)`
+occurrences, explicit roots and `policy="all"` or `"nearest"`. The default view
+uses asserted subclass paths; `path` can select the typed relation language.
+Nearest counts typed edges and retains all minimum-distance ties. Every required
+root comparison must finish before selections are final. Counts distinguish
+annotation occurrences from distinct exact record IDs; uncovered and unknown
+remain separate. Original fine terms and partial witnesses stay visible.
 
 Use `read_obo_records(view, term_iri)` for explicitly selected OBO-in-OWL
 definitions and exact/broad/narrow/related synonyms. Records retain original
@@ -1253,6 +1270,14 @@ Modifiers, composed/literal endpoints, extension semantics and unmapped sentinel
 remain unknown; sentinels cannot satisfy required cardinality. The supported TSV
 body excludes hash characters because maintained comment handling can lose data.
 
+`bijux_ontology.vocabulary.mappings.composition.compose_mappings` joins explicit
+intermediate IRIs in two owned mapping sets or raw `MappingRead` results. Supply
+finite `MappingCompositionRule` records: only exactMatch transitivity has a SKOS
+basis; other supported chains require an explicit application policy. Results
+retain every original row, path, qualifier and conflicting target. Uninterpreted
+qualifiers block affected derivations; confidence is never multiplied. Candidates
+establish neither OWL identity nor a newly authored SSSOM mapping set.
+
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing
 owned worker enumerates each selected root once, then validates ordinary Core
@@ -1362,3 +1387,15 @@ and explicit `RetainedUsage` path pairs. Array rebinding additionally needs the
 same actual named parent. Failed base/tests reject publication; unsupported
 operations or uncertain identity remain unverified. `export_document_patch`
 returns immutable checked JSON bytes for ordinary atomic `write_export`.
+
+Use `interfaces.adapters.csvw.extract_csvw` with optional `[csvw]`, inline
+single-table metadata, exact URL-to-CSV-text resources and an explicit metadata
+base. Maintained CSVW tooling interprets explicit subject/predicate/value URI
+templates, scalar string/integer/decimal/boolean/anyURI cells, column null/default,
+inherited required policies, unordered separators and scalar primary keys.
+Unsupported rules or missing resources prevent complete extraction. Returned
+cells retain original text, row, column, physical start line and emitted RDF;
+`CsvwCheck` callbacks inspect the owned source. Acceptance requires the aggregate
+report. Shared subjects are legal without declared uniqueness. Decimals retain
+native exact values independently of caller Decimal settings; split/default
+amplification is bounded before native parsing. No external resources are fetched.
