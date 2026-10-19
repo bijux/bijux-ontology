@@ -14,7 +14,8 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, Limits
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
@@ -36,25 +37,6 @@ class CanonicalRDF:
     backend: str | None = None
     quad_scope: str = "graph"
     graph_name: str | None = None
-
-
-class _CanonicalBudget(Budget):
-    """Keep metadata walks and term capture inside the operation deadline."""
-
-    def __init__(
-        self, shared: Budget, deadline: float, cancel: threading.Event | None
-    ) -> None:
-        super().__init__(shared.limits)
-        self.shared = shared
-        self.deadline, self.cancel = deadline, cancel
-
-    def remaining(self, kind: BudgetKind) -> int:
-        """Read the caller's allowance without granting fresh metadata capacity."""
-        return self.shared.remaining(kind)
-
-    def consume(self, kind: BudgetKind, amount: int = 1) -> None:
-        checkpoint(self.deadline, self.cancel)
-        self.shared.consume(kind, amount)
 
 
 def _graphs(
@@ -298,13 +280,10 @@ def canonicalize_rdf(
         raise InputError("memory_bytes must be a positive integer")
     if cancel is not None and not isinstance(cancel, threading.Event):
         raise InputError("Canonical RDF cancellation requires a threading.Event")
-    if budget is not None and limits is not None and budget.limits != limits:
-        raise InputError("Explicit limits conflict with the shared operation budget")
-    selected = limits if limits is not None else budget.limits if budget else Limits()
-    deadline = time.monotonic() + timeout_seconds
-    shared = budget or Budget(selected)
-    operation = _CanonicalBudget(shared, deadline, cancel)
-    issues = IssueCollector(shared)
+    operation = Operation(limits, budget, timeout_seconds, cancel)
+    selected = operation.limits
+    deadline, cancel = operation.deadline, operation.cancel
+    issues = IssueCollector(operation.shared)
     content, backend, fidelity = None, None, "unestablished"
     count = 0
     exclusions = ("empty-named-graphs",) if ignore_empty_graphs else ()
