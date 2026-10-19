@@ -38,7 +38,13 @@ def test_binary_exchange_bounds_stdout_and_stderr_and_recovers() -> None:
 
 def test_diagnostic_workers_admit_only_live_finite_execution() -> None:
     """Cancelled, expired and invalid requests do not create a child process."""
-    command = [sys.executable, "-I", "-B", "-c", "print('completed')"]
+    command = [
+        sys.executable,
+        "-I",
+        "-B",
+        "-c",
+        "import sys; sys.stdout.buffer.write(b'completed\\n')",
+    ]
     cancelled = Event()
     cancelled.set()
     assert run_worker(command, timeout=3, cap=128, cancellation=cancelled) == (
