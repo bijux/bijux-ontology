@@ -13,7 +13,7 @@ def execute_worker(
     payload: bytes,
     *,
     cap: int,
-    timeout: float,
+    timeout: float | None,
     cancel: Event | None = None,
     completed: Callable[[bytes], None] | None = None,
 ) -> bytes:
