@@ -486,6 +486,29 @@ public final class NativeDocuments {
         return records;
     }
 
+    /** Serialize an owned edited root and recheck its exact annotated native structure. */
+    public static Map<String,Object> checkedWrite(Loaded input, Path job, JsonNode selectedProfiles,
+            int cap, int maximum, int resources) throws Exception {
+        if (input.documents == null) throw new IOException("Native original documents required");
+        Path output = job.resolve("candidate.owl");
+        try (OutputStream stream = new CappedOutput(Files.newOutputStream(output, StandardOpenOption.CREATE_NEW), cap)) {
+            input.ontology.getOWLOntologyManager().saveOntology(input.ontology, format("functional"), stream);
+        }
+        List<Document> updated = new ArrayList<>(input.documents);
+        updated.set(0, new Document(output, input.documents.get(0).effective, "functional"));
+        OWLOntology restored = load(updated, input.aliases, 0, resources);
+        List<Map<String,Object>> changes = new ArrayList<>();
+        compare(input.ontology, restored, changes, cap, maximum);
+        if (restored.anonymousIndividuals().findAny().isPresent())
+            throw new IOException("Anonymous individual structural correspondence unavailable");
+        Map<String,Object> result = new LinkedHashMap<>();
+        result.put("changes", changes);
+        result.put("after_profiles", profiles(restored, selectedProfiles, cap, maximum));
+        result.put("bytes", Files.size(output));
+        result.put("qualified", changes.isEmpty());
+        return result;
+    }
+
     public static Map<String,Object> evaluate(JsonNode request, Path job, Map<String,Object> result) throws Exception {
         List<Map<String,Object>> changes = new ArrayList<>();
         String syntax = WorkerProtocol.text(request.path("format"), 32);

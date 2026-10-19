@@ -315,6 +315,11 @@ _CODES = {
         "diagnosis_profile_unsupported diagnosis_unverified inconsistent "
         "unsatisfiable_class "
         "axiom_input_loss axiom_input_unverified axiom_unsupported axioms_unverified "
+        "axiom_change_unrepresented axiom_change_loss axiom_change_unverified "
+        "axiom_change_input_error axiom_header_mismatch "
+        "axiom_postconditions_missing axiom_postcondition_unverified "
+        "axiom_base_mismatch axiom_precondition_failed axiom_profile_violation "
+        "axiom_acceptance_unverified axiom_candidate_changed "
         "conversion_loss conversion_unverified "
         "assertion_contradiction assertion_unverified backend_unavailable "
         "loader_unverified profile_unverified profile_violation".split()

@@ -342,6 +342,23 @@ public final class AxiomProjection implements OWLObjectVisitorEx<Map<String,Obje
         return result;
     }
 
+    /** Project a bounded structural delta through the existing finite visitor. */
+    public static Map<String,Object> projectChanges(Collection<OWLAxiom> axioms,
+            int maximum, int depth, int cap) throws IOException {
+        AxiomProjection projection = new AxiomProjection(maximum, depth, cap);
+        List<Map<String,Object>> records = new ArrayList<>();
+        List<String> unsupported = new ArrayList<>();
+        if (axioms.size() > maximum) throw new WorkerProtocol.OutputLimit();
+        for (OWLAxiom axiom : axioms) {
+            try { records.add(projection.project(axiom)); }
+            catch (UnsupportedProjection unavailable) { unsupported.add(axiom.getAxiomType().getName()); }
+            catch (ProjectionLimit exhausted) { throw new WorkerProtocol.OutputLimit(); }
+        }
+        Map<String,Object> result = new LinkedHashMap<>();
+        result.put("axioms", records); result.put("unsupported", unsupported);
+        return result;
+    }
+
     /** Visit only actual owned ontologies; every selected axiom has one outcome. */
     public static Map<String,Object> evaluate(JsonNode request, Path job,
             Map<String,Object> result) throws Exception {
