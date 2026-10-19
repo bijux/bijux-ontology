@@ -1,12 +1,12 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11, <4"
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -75,7 +75,7 @@ name = "anyio"
 version = "4.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "idna" },
+    { name = "idna", marker = "python_full_version < '3.15'" },
     { name = "typing-extensions", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a9/d2/f4d173e22df740bc37b1db102b386ba719b66e95b0f0d751f556b387e6d2/anyio-4.15.1.tar.gz", hash = "sha256:9f28306018cbd6d329e64a36d58256edff76dd996fe423bc957326e578b82a94", size = 276966, upload-time = "2026-09-05T10:42:39.44Z" }
@@ -285,6 +285,10 @@ dependencies = [
 analysis = [
     { name = "scipy" },
 ]
+biosamples = [
+    { name = "jsonschema", extra = ["format-nongpl"] },
+    { name = "referencing" },
+]
 checksums = [
     { name = "python-stdnum" },
 ]
@@ -358,6 +362,7 @@ requires-dist = [
     { name = "jsonpatch", marker = "extra == 'jsonpatch'", specifier = ">=1.35,<2" },
     { name = "jsonpointer", marker = "extra == 'jsonpatch'", specifier = ">=3,<4" },
     { name = "jsonschema", marker = "extra == 'jsonschema'", specifier = ">=4.26,<5" },
+    { name = "jsonschema", extras = ["format-nongpl"], marker = "extra == 'biosamples'", specifier = ">=4.26,<5" },
     { name = "linkml-runtime", marker = "extra == 'linkml'", specifier = ">=1.12.1,<2" },
     { name = "lxml", marker = "extra == 'jsonld'", specifier = ">=6,<7" },
     { name = "lxml", marker = "extra == 'markup'", specifier = ">=6,<7" },
@@ -374,13 +379,14 @@ requires-dist = [
     { name = "python-stdnum", marker = "extra == 'checksums'", specifier = ">=2.2,<3" },
     { name = "pyyaml", marker = "extra == 'sssom'", specifier = ">=6,<7" },
     { name = "rdflib", specifier = ">=7.6,<8" },
+    { name = "referencing", marker = "extra == 'biosamples'", specifier = ">=0.37,<0.38" },
     { name = "referencing", marker = "extra == 'jsonschema'", specifier = ">=0.37,<0.38" },
     { name = "scipy", marker = "extra == 'analysis'", specifier = "==1.17.1" },
     { name = "sssom", marker = "extra == 'sssom'", specifier = "==0.4.21" },
     { name = "sssom-schema", marker = "extra == 'sssom'", specifier = "==1.1.0a5" },
     { name = "uri-template", marker = "extra == 'templates'", specifier = ">=1.3,<2" },
 ]
-provides-extras = ["analysis", "oak", "fhir", "shex", "quantities", "csvw", "frictionless", "jsonpatch", "markup", "jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
+provides-extras = ["analysis", "oak", "fhir", "shex", "quantities", "csvw", "frictionless", "jsonpatch", "markup", "biosamples", "jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
 
 [[package]]
 name = "bijux-ontology-dev"
@@ -409,7 +415,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
-    { name = "bijux-ontology", extra = ["analysis", "checksums", "csvw", "fhir", "jsonld", "jsonpatch", "linkml", "patterns", "pydantic", "quantities", "shacl", "shex", "sssom", "templates", "xsd"] },
+    { name = "bijux-ontology", extra = ["analysis", "biosamples", "checksums", "csvw", "fhir", "jsonld", "jsonpatch", "linkml", "patterns", "pydantic", "quantities", "shacl", "shex", "sssom", "templates", "xsd"] },
     { name = "bijux-ontology", extra = ["oak"], marker = "extra == 'extra-14-bijux-ontology-oak'" },
     { name = "bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning" },
@@ -432,7 +438,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bijux-ontology", extras = ["analysis", "oak", "fhir", "shex", "quantities", "csvw", "jsonpatch", "jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology", extras = ["biosamples", "analysis", "oak", "fhir", "shex", "quantities", "csvw", "jsonpatch", "jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
     { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning", editable = "packages/bijux-ontology-reasoning" },
     { name = "build", specifier = ">=1.2,<2" },
@@ -478,8 +484,8 @@ name = "cattrs"
 version = "26.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "attrs" },
-    { name = "typing-extensions" },
+    { name = "attrs", marker = "python_full_version < '3.15'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/23/75/e72b839c3dc869c990b4842f3dba730bdcdf5215f68fc7955edf849a1792/cattrs-26.2.1.tar.gz", hash = "sha256:679132bfdc225c5ee40c024fc42519954767c387f950dc6751946c586bccdc6d", size = 525617, upload-time = "2026-09-26T20:53:21.114Z" }
 wheels = [
@@ -607,11 +613,8 @@ name = "chardet"
 version = "5.2.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.15' and sys_platform == 'win32'",
     "python_full_version == '3.14.*' and sys_platform == 'win32'",
-    "python_full_version >= '3.15' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -631,10 +634,10 @@ version = "7.7.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -838,7 +841,7 @@ name = "class-resolver"
 version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions" },
+    { name = "typing-extensions", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/43/f4/44cf5c85f12b2719f2d4bfe4c0081001e26dedeebf8b213801bd04ceb33c/class_resolver-0.8.2.tar.gz", hash = "sha256:20dd9065acb2ccd790c932a0c2d7425c28dcaa6a572ebe607b606995f2e1e26a", size = 32195, upload-time = "2026-09-29T18:55:42.325Z" }
 wheels = [
@@ -859,7 +862,7 @@ name = "click-default-group"
 version = "1.2.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click" },
+    { name = "click", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1d/ce/edb087fb53de63dad3b36408ca30368f438738098e668b78c87f93cd41df/click_default_group-1.2.4.tar.gz", hash = "sha256:eb3f3c99ec0d456ca6cd2a7f08f7d4e91771bef51b01bdd9580cc6450fe1251e", size = 3505, upload-time = "2023-08-04T07:54:58.425Z" }
 wheels = [
@@ -1147,10 +1150,10 @@ version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -1265,8 +1268,8 @@ resolution-markers = [
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "lxml", marker = "python_full_version >= '3.12'" },
-    { name = "requests", marker = "python_full_version >= '3.12'" },
+    { name = "lxml", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "requests", marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/11/77/73b46f2f1c1f714456dd84d36e2b1c1c989c88423f74d5773f884606f3a9/eutils-0.6.1.tar.gz", hash = "sha256:68d4e007996d4b08171a936413f6ec2cd4c045ac83acf7df9e9b7110df06c030", size = 435726, upload-time = "2025-12-07T23:33:44.243Z" }
 wheels = [
@@ -1589,8 +1592,8 @@ name = "httpcore2"
 version = "2.14.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "h11", marker = "sys_platform != 'emscripten'" },
-    { name = "truststore", marker = "sys_platform != 'emscripten'" },
+    { name = "h11", marker = "python_full_version < '3.15' and sys_platform != 'emscripten'" },
+    { name = "truststore", marker = "python_full_version < '3.15' and sys_platform != 'emscripten'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/30/ff/b53af1b49bb2cb5fa97c92215614b173ca5c1a99ded80e2d52f15a94fa6d/httpcore2-2.14.0.tar.gz", hash = "sha256:4f57a1a8249fe6af589d935cfd456f1d13bbdcb0f0fc72af9142368fc94811d7", size = 69096, upload-time = "2026-10-18T16:29:21.898Z" }
 wheels = [
@@ -1602,11 +1605,11 @@ name = "httpx2"
 version = "2.14.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "anyio", marker = "sys_platform != 'emscripten'" },
-    { name = "httpcore2", marker = "sys_platform != 'emscripten'" },
-    { name = "httpx2-jsfetch", marker = "python_full_version >= '3.12' and sys_platform == 'emscripten'" },
-    { name = "idna" },
-    { name = "truststore", marker = "sys_platform != 'emscripten'" },
+    { name = "anyio", marker = "python_full_version < '3.15' and sys_platform != 'emscripten'" },
+    { name = "httpcore2", marker = "python_full_version < '3.15' and sys_platform != 'emscripten'" },
+    { name = "httpx2-jsfetch", marker = "python_full_version >= '3.12' and python_full_version < '3.15' and sys_platform == 'emscripten'" },
+    { name = "idna", marker = "python_full_version < '3.15'" },
+    { name = "truststore", marker = "python_full_version < '3.15' and sys_platform != 'emscripten'" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e8/67/58353f1848b4ba568e1ec22ea1e0d8e039f0bca5fde7e2d1f07739fd83e7/httpx2-2.14.0.tar.gz", hash = "sha256:47ad61a3c40282cd8d0dc96311531f00f5bfc71a066c6fe3b36d8f63fb9e4f6e", size = 102036, upload-time = "2026-10-18T16:29:22.627Z" }
@@ -2058,7 +2061,7 @@ name = "jsonlines"
 version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "attrs" },
+    { name = "attrs", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/35/87/bcda8e46c88d0e34cad2f09ee2d0c7f5957bccdb9791b0b934ec84d84be4/jsonlines-4.0.0.tar.gz", hash = "sha256:0c6d2c09117550c089995247f605ae4cf77dd1533041d366351f6f298822ea74", size = 11359, upload-time = "2023-09-01T12:34:44.187Z" }
 wheels = [
@@ -2112,16 +2115,27 @@ format = [
     { name = "uri-template" },
     { name = "webcolors" },
 ]
+format-nongpl = [
+    { name = "fqdn" },
+    { name = "idna" },
+    { name = "isoduration" },
+    { name = "jsonpointer" },
+    { name = "rfc3339-validator" },
+    { name = "rfc3986-validator" },
+    { name = "rfc3987-syntax" },
+    { name = "uri-template" },
+    { name = "webcolors" },
+]
 
 [[package]]
 name = "jsonschema-path"
 version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "attrs", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pathable", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pyyaml", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "referencing", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "attrs", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pathable", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyyaml", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "referencing", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/39/79/cd02a4df6d9270efdc7d3feefe6edd730b0820c39eeaa107a2faee8322d5/jsonschema_path-0.5.0.tar.gz", hash = "sha256:493b156ba895c97602655b620a8456caa2ce08c1aa389f5a7addec065e6e855c", size = 19597, upload-time = "2026-05-19T20:45:00.971Z" }
 wheels = [
@@ -2163,8 +2177,8 @@ name = "kgcl-rdflib"
 version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "kgcl-schema" },
-    { name = "linkml-runtime" },
+    { name = "kgcl-schema", marker = "python_full_version < '3.15'" },
+    { name = "linkml-runtime", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0e/02/76dfc99158963295d69344c74cdb73ffad94a890e80b7ee4d794a796dbb1/kgcl_rdflib-0.5.0.tar.gz", hash = "sha256:19e34690316714b9c500e1749a35d1a0d17282f2a38cd2b1fd3d7d8cf5e6013d", size = 26693, upload-time = "2023-05-11T21:30:42.211Z" }
 wheels = [
@@ -2176,10 +2190,10 @@ name = "kgcl-schema"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "curies" },
-    { name = "lark" },
-    { name = "linkml-runtime" },
-    { name = "prefixmaps" },
+    { name = "curies", marker = "python_full_version < '3.15'" },
+    { name = "lark", marker = "python_full_version < '3.15'" },
+    { name = "linkml-runtime", marker = "python_full_version < '3.15'" },
+    { name = "prefixmaps", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/bf/9c/b8277ee1c3af601b11e9da9d4c679f8d56537f12326675eb01fa7927a883/kgcl_schema-0.7.0.tar.gz", hash = "sha256:6851ea4a8f6f9268597e0d1b96cbd0cfa0c8e49560602feac6f7c47346dc69d2", size = 42863, upload-time = "2024-11-14T19:51:49.011Z" }
 wheels = [
@@ -2354,11 +2368,8 @@ name = "linkml"
 version = "1.11.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.15' and sys_platform == 'win32'",
     "python_full_version == '3.14.*' and sys_platform == 'win32'",
-    "python_full_version >= '3.15' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -2368,31 +2379,31 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "antlr4-python3-runtime", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "click", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "graphviz", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "hbreader", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "isodate", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "jinja2", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "jsonasobj2", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "jsonschema", extra = ["format"], marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "linkml-runtime", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "openpyxl", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "parse", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "prefixcommons", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "prefixmaps", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "pydantic", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "pyjsg", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "pyshex", version = "0.8.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "pyshexc", version = "0.9.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "python-dateutil", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "pyyaml", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "rdflib", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "requests", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "sphinx-click", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "sqlalchemy", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
+    { name = "antlr4-python3-runtime", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "click", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "graphviz", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "hbreader", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "isodate", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jinja2", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jsonasobj2", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jsonschema", extra = ["format"], marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "linkml-runtime", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "openpyxl", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "parse", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "prefixcommons", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "prefixmaps", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pydantic", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyjsg", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyshex", version = "0.8.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyshexc", version = "0.9.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "python-dateutil", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyyaml", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "rdflib", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "requests", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "sphinx-click", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "sqlalchemy", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
     { name = "typing-extensions", marker = "python_full_version < '3.12' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "watchdog", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
+    { name = "watchdog", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b4/26/38e7340959cd4a87bfe5403cfcf5311d9fe2ff4382fa00e96008a1342760/linkml-1.11.1.tar.gz", hash = "sha256:2f6774e13628270cadaeecda3313db0437ecc15cd44ee35c6c2655dbe31c8524", size = 374853, upload-time = "2026-05-20T17:05:42.359Z" }
 wheels = [
@@ -2409,33 +2420,33 @@ resolution-markers = [
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "antlr4-python3-runtime", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "click", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "graphviz", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "hbreader", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "isodate", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "jinja2", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "jsonasobj2", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "jsonschema", extra = ["format"], marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "linkml-runtime", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "openapi-spec-validator", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "openpyxl", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "parse", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "platformdirs", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "prefixcommons", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "prefixmaps", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pydantic", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pydantic-settings", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pyjsg", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pyshex", version = "0.9.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pyshexc", version = "0.10.3.post1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "python-dateutil", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pyyaml", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "rdflib", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "requests", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "sphinx-click", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "sqlalchemy", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "watchdog", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "antlr4-python3-runtime", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "click", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "graphviz", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "hbreader", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "isodate", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jinja2", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jsonasobj2", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jsonschema", extra = ["format"], marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "linkml-runtime", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "openapi-spec-validator", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "openpyxl", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "parse", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "platformdirs", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "prefixcommons", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "prefixmaps", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pydantic", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pydantic-settings", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyjsg", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyshex", version = "0.9.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyshexc", version = "0.10.3.post1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "python-dateutil", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyyaml", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "rdflib", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "requests", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "sphinx-click", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "sqlalchemy", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "watchdog", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3a/ef/e42918cf9f0eb02a5e4cd166fa6df6795e9e5e02a1bb6e87ab1b3675f7ca/linkml-1.12.1.tar.gz", hash = "sha256:dfaf32cba7f8e5e2fb8d3b5177087fae55c6475e387de2ca93f1449a723f3d12", size = 450719, upload-time = "2026-10-13T14:02:46.521Z" }
 wheels = [
@@ -2447,10 +2458,10 @@ name = "linkml-renderer"
 version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "airium" },
-    { name = "click" },
-    { name = "linkml-runtime" },
-    { name = "pydantic" },
+    { name = "airium", marker = "python_full_version < '3.15'" },
+    { name = "click", marker = "python_full_version < '3.15'" },
+    { name = "linkml-runtime", marker = "python_full_version < '3.15'" },
+    { name = "pydantic", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/62/fa/b160433f9a0ed8b71e01b05d6e3c0d5166f5368209c24d7bc1081bfc4422/linkml_renderer-0.3.1.tar.gz", hash = "sha256:f600ca96d603e53b7187abe1dc9c417334bd96756d3e4f704a96892f6b28ba5a", size = 18859, upload-time = "2024-06-26T02:59:58.932Z" }
 wheels = [
@@ -2488,22 +2499,22 @@ name = "llm"
 version = "0.36"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click" },
-    { name = "click-default-group" },
-    { name = "condense-json" },
-    { name = "httpx2" },
-    { name = "openai" },
-    { name = "pip" },
-    { name = "pluggy" },
+    { name = "click", marker = "python_full_version < '3.15'" },
+    { name = "click-default-group", marker = "python_full_version < '3.15'" },
+    { name = "condense-json", marker = "python_full_version < '3.15'" },
+    { name = "httpx2", marker = "python_full_version < '3.15'" },
+    { name = "openai", marker = "python_full_version < '3.15'" },
+    { name = "pip", marker = "python_full_version < '3.15'" },
+    { name = "pluggy", marker = "python_full_version < '3.15'" },
     { name = "puremagic", version = "1.30", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "puremagic", version = "2.2.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pydantic" },
-    { name = "pyreadline3", marker = "sys_platform == 'win32'" },
-    { name = "python-ulid" },
-    { name = "pyyaml" },
-    { name = "setuptools" },
-    { name = "sqlite-utils" },
-    { name = "typing-extensions" },
+    { name = "puremagic", version = "2.2.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pydantic", marker = "python_full_version < '3.15'" },
+    { name = "pyreadline3", marker = "python_full_version < '3.15' and sys_platform == 'win32'" },
+    { name = "python-ulid", marker = "python_full_version < '3.15'" },
+    { name = "pyyaml", marker = "python_full_version < '3.15'" },
+    { name = "setuptools", marker = "python_full_version < '3.15'" },
+    { name = "sqlite-utils", marker = "python_full_version < '3.15'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/93/5e/7d5e3c85a64b7b08d74ff6332ece77685383261575c693ed694f0f9c2e78/llm-0.36.tar.gz", hash = "sha256:e59ad30875a99be2eea0c880543b1ebfe40eea24ae55d4008eb1e12c77964626", size = 154890, upload-time = "2026-09-22T18:52:02.475Z" }
 wheels = [
@@ -2817,7 +2828,7 @@ name = "more-click"
 version = "0.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click" },
+    { name = "click", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/74/52/dc524f10307c472f3ee83ceef5cc3c3c1d987f9554c90cf34616bdcb2ca9/more_click-0.1.3.tar.gz", hash = "sha256:c170987d37334278169fe3b9b388f1fcd9fc96439579354fd7c537537a182128", size = 11793, upload-time = "2025-10-21T15:28:23.531Z" }
 wheels = [
@@ -2907,16 +2918,16 @@ name = "ndex2"
 version = "3.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ijson" },
+    { name = "ijson", marker = "python_full_version < '3.15'" },
     { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pandas" },
-    { name = "requests" },
-    { name = "requests-toolbelt" },
-    { name = "six" },
-    { name = "urllib3" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pandas", marker = "python_full_version < '3.15'" },
+    { name = "requests", marker = "python_full_version < '3.15'" },
+    { name = "requests-toolbelt", marker = "python_full_version < '3.15'" },
+    { name = "six", marker = "python_full_version < '3.15'" },
+    { name = "urllib3", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b8/ce/ddb977ce672688959a76c746fd512520c2b1bbdb19e7cdea43ddb34584d9/ndex2-3.12.0.tar.gz", hash = "sha256:0a97df1fb4e70c09e90aaf24a315128bdb576d57abd4d776560b8994fc4a38e9", size = 251902, upload-time = "2026-08-12T18:25:22.944Z" }
 wheels = [
@@ -3078,10 +3089,10 @@ version = "2.5.4"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -3161,43 +3172,43 @@ name = "oaklib"
 version = "0.7.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "airium" },
-    { name = "appdirs" },
-    { name = "class-resolver" },
-    { name = "click" },
-    { name = "curies" },
-    { name = "defusedxml" },
+    { name = "airium", marker = "python_full_version < '3.15'" },
+    { name = "appdirs", marker = "python_full_version < '3.15'" },
+    { name = "class-resolver", marker = "python_full_version < '3.15'" },
+    { name = "click", marker = "python_full_version < '3.15'" },
+    { name = "curies", marker = "python_full_version < '3.15'" },
+    { name = "defusedxml", marker = "python_full_version < '3.15'" },
     { name = "eutils", version = "0.6.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "eutils", version = "0.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "greenlet" },
-    { name = "jsonlines" },
-    { name = "kgcl-rdflib" },
-    { name = "kgcl-schema" },
-    { name = "linkml-renderer" },
-    { name = "linkml-runtime" },
-    { name = "llm" },
-    { name = "lxml" },
-    { name = "ndex2" },
+    { name = "eutils", version = "0.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "greenlet", marker = "python_full_version < '3.15'" },
+    { name = "jsonlines", marker = "python_full_version < '3.15'" },
+    { name = "kgcl-rdflib", marker = "python_full_version < '3.15'" },
+    { name = "kgcl-schema", marker = "python_full_version < '3.15'" },
+    { name = "linkml-renderer", marker = "python_full_version < '3.15'" },
+    { name = "linkml-runtime", marker = "python_full_version < '3.15'" },
+    { name = "llm", marker = "python_full_version < '3.15'" },
+    { name = "lxml", marker = "python_full_version < '3.15'" },
+    { name = "ndex2", marker = "python_full_version < '3.15'" },
     { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "ols-client" },
-    { name = "ontoportal-client" },
-    { name = "prefixmaps" },
-    { name = "pronto" },
-    { name = "py-horned-owl" },
-    { name = "pydantic" },
-    { name = "pysolr" },
-    { name = "pystow" },
-    { name = "ratelimit" },
-    { name = "regex" },
-    { name = "requests-cache" },
-    { name = "ruamel-yaml" },
-    { name = "semsql" },
-    { name = "setuptools" },
-    { name = "sparqlwrapper" },
-    { name = "sqlalchemy" },
-    { name = "sssom" },
-    { name = "tenacity" },
+    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "ols-client", marker = "python_full_version < '3.15'" },
+    { name = "ontoportal-client", marker = "python_full_version < '3.15'" },
+    { name = "prefixmaps", marker = "python_full_version < '3.15'" },
+    { name = "pronto", marker = "python_full_version < '3.15'" },
+    { name = "py-horned-owl", marker = "python_full_version < '3.15'" },
+    { name = "pydantic", marker = "python_full_version < '3.15'" },
+    { name = "pysolr", marker = "python_full_version < '3.15'" },
+    { name = "pystow", marker = "python_full_version < '3.15'" },
+    { name = "ratelimit", marker = "python_full_version < '3.15'" },
+    { name = "regex", marker = "python_full_version < '3.15'" },
+    { name = "requests-cache", marker = "python_full_version < '3.15'" },
+    { name = "ruamel-yaml", marker = "python_full_version < '3.15'" },
+    { name = "semsql", marker = "python_full_version < '3.15'" },
+    { name = "setuptools", marker = "python_full_version < '3.15'" },
+    { name = "sparqlwrapper", marker = "python_full_version < '3.15'" },
+    { name = "sqlalchemy", marker = "python_full_version < '3.15'" },
+    { name = "sssom", marker = "python_full_version < '3.15'" },
+    { name = "tenacity", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/fb/93/3ae40ff72819b03851dc747bb8b453c13b400afaaad72640bcf1d1a018a0/oaklib-0.7.4.tar.gz", hash = "sha256:919432328d5089f7e5d0614181b0d017f97bdc4fdfaa3e09ab6a2fa069093490", size = 30923442, upload-time = "2026-08-03T15:44:24.309Z" }
 wheels = [
@@ -3209,11 +3220,11 @@ name = "ols-client"
 version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "class-resolver" },
-    { name = "click" },
-    { name = "more-click" },
-    { name = "pystow" },
-    { name = "requests" },
+    { name = "class-resolver", marker = "python_full_version < '3.15'" },
+    { name = "click", marker = "python_full_version < '3.15'" },
+    { name = "more-click", marker = "python_full_version < '3.15'" },
+    { name = "pystow", marker = "python_full_version < '3.15'" },
+    { name = "requests", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/be/6e/13b086c5712370029f592ddc99110a004697e696be70fbe3899125cba086/ols_client-0.2.1.tar.gz", hash = "sha256:c5078446f025e2fbe24a1a2bbb924d7372216ca05e7ff11dba87aa7721be008a", size = 12563, upload-time = "2025-08-04T09:31:26.216Z" }
 wheels = [
@@ -3225,11 +3236,11 @@ name = "ontoportal-client"
 version = "0.0.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "class-resolver" },
-    { name = "pystow" },
-    { name = "requests" },
-    { name = "tqdm" },
-    { name = "typing-extensions" },
+    { name = "class-resolver", marker = "python_full_version < '3.15'" },
+    { name = "pystow", marker = "python_full_version < '3.15'" },
+    { name = "requests", marker = "python_full_version < '3.15'" },
+    { name = "tqdm", marker = "python_full_version < '3.15'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/94/8c/72dc7e01a48d2993f0c62dbc4cf5e41355517c5ad35b79484ebac87ba1ae/ontoportal_client-0.0.9.tar.gz", hash = "sha256:444674499434c683b971a602bbc342a37e7b705a87d03383591aa6967ad99ad2", size = 12439, upload-time = "2026-04-14T15:06:38.115Z" }
 wheels = [
@@ -3241,12 +3252,12 @@ name = "openai"
 version = "3.35.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "anyio" },
-    { name = "httpx2" },
-    { name = "jiter" },
-    { name = "pydantic" },
-    { name = "sniffio" },
-    { name = "typing-extensions" },
+    { name = "anyio", marker = "python_full_version < '3.15'" },
+    { name = "httpx2", marker = "python_full_version < '3.15'" },
+    { name = "jiter", marker = "python_full_version < '3.15'" },
+    { name = "pydantic", marker = "python_full_version < '3.15'" },
+    { name = "sniffio", marker = "python_full_version < '3.15'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/87/4c/609b16f2a6e9a99f27a82ce93ff75868e7cb364fe6daff50cc0c1d620772/openai-3.35.1.tar.gz", hash = "sha256:b33e6561b90586e450def8a388e7d364755325da6884fc71348be5542e043bd0", size = 2250942, upload-time = "2026-10-18T01:06:38.964Z" }
 wheels = [
@@ -3258,12 +3269,12 @@ name = "openapi-schema-validator"
 version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "jsonschema", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "jsonschema-specifications", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pydantic", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pydantic-settings", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "referencing", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "rfc3339-validator", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jsonschema", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jsonschema-specifications", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pydantic", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pydantic-settings", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "referencing", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "rfc3339-validator", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/98/e8/ab3f27dbca54ec645f7fab714b640907d5d36c2ebb07e87eebd30bd5c81b/openapi_schema_validator-0.9.0.tar.gz", hash = "sha256:b72db64315b89d21834cd3ffef37e3e6893bc876327be2d366e8424b1029afd3", size = 24686, upload-time = "2026-04-27T17:31:27.606Z" }
 wheels = [
@@ -3275,12 +3286,12 @@ name = "openapi-spec-validator"
 version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "jsonschema", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "jsonschema-path", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "lazy-object-proxy", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "openapi-schema-validator", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pydantic", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pydantic-settings", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jsonschema", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jsonschema-path", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "lazy-object-proxy", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "openapi-schema-validator", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pydantic", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pydantic-settings", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8f/d2/640b5149cd5688bc0ad1fdbb4df6a2f7b84a093c8d787c27d566132f8b8b/openapi_spec_validator-0.9.0.tar.gz", hash = "sha256:6d648cff6490ebb799dcfe273792f2941c050158854c721f086599d845da78b8", size = 1756839, upload-time = "2026-05-20T09:23:18.871Z" }
 wheels = [
@@ -3514,11 +3525,11 @@ name = "pronto"
 version = "2.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "chardet", version = "5.2.0", source = { registry = "https://pypi.org/simple" } },
-    { name = "fastobo" },
+    { name = "chardet", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
+    { name = "fastobo", marker = "python_full_version < '3.15'" },
     { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "python-dateutil" },
+    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version < '3.12' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak') or (python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "python-dateutil", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c2/fd/b23ce2421f966fce762817ec2a7636b5b47c8020d1f97a210d9aadf9fcd6/pronto-2.7.3.tar.gz", hash = "sha256:101effc2cc5de4269d0754e10c3c574181b8e5ba8cc615dea530b61a8cbd5046", size = 63137, upload-time = "2026-01-12T13:15:31.022Z" }
 wheels = [
@@ -3570,7 +3581,7 @@ name = "py-horned-owl"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "jinja2" },
+    { name = "jinja2", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b2/99/1a499cd6020fd66c4b8e2c6888f7aa7e399702851c4977d20c6a9bf61995/py_horned_owl-2.0.0.tar.gz", hash = "sha256:9f1a928d2f0e6508a5c660cede1501cdc5e6eeb096eddfff44d1a1176c3e542c", size = 325475, upload-time = "2026-09-23T10:13:41.738Z" }
 wheels = [
@@ -3818,10 +3829,10 @@ name = "pydantic-settings"
 version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pydantic", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "python-dotenv", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "typing-extensions", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "typing-inspection", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pydantic", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "python-dotenv", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "typing-extensions", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "typing-inspection", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/2e/3b/a5d2294799b53b448319978cfb5bd139d5a9d45e862af91661614f14c922/pydantic_settings-2.16.0.tar.gz", hash = "sha256:5b6c578049ede4db0e2ef3b4eaa4ad4069cfa9211f83fb38df899dfade50a614", size = 301031, upload-time = "2026-10-14T12:44:09.998Z" }
 wheels = [
@@ -3961,11 +3972,8 @@ name = "pyshex"
 version = "0.8.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.15' and sys_platform == 'win32'",
     "python_full_version == '3.14.*' and sys_platform == 'win32'",
-    "python_full_version >= '3.15' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -3975,16 +3983,16 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "cfgraph", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "chardet", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-14-bijux-ontology-oak'" },
+    { name = "cfgraph", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "chardet", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
     { name = "chardet", version = "7.7.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version < '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pyshexc", version = "0.9.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "rdflib-shim", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "requests", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "shexjsg", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "sparqlslurper", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "sparqlwrapper", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "urllib3", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
+    { name = "pyshexc", version = "0.9.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "rdflib-shim", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "requests", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "shexjsg", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "sparqlslurper", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "sparqlwrapper", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "urllib3", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/97/d7/420ce2df4e8688e06fa8e1fc353fdf3875eb70f6fc2e17493d0526d778ff/PyShEx-0.8.1.tar.gz", hash = "sha256:3c5c4d45fe27faaadae803cb008c41acf8ee784da7868b04fd84967e75be70d0", size = 475611, upload-time = "2022-04-14T21:14:58.769Z" }
 wheels = [
@@ -4001,15 +4009,15 @@ resolution-markers = [
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "cfgraph", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "chardet", version = "7.7.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pyshexc", version = "0.10.3.post1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "rdflib-shim", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "requests", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "shexjsg", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "sparqlslurper", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "sparqlwrapper", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "urllib3", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "cfgraph", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "chardet", version = "7.7.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyshexc", version = "0.10.3.post1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "rdflib-shim", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "requests", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "shexjsg", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "sparqlslurper", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "sparqlwrapper", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "urllib3", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/85/ca/f0e6ecd16e65318f69fe5937982955c340a9e5828dcb391371100577c174/pyshex-0.9.0.tar.gz", hash = "sha256:87288b5e5613f734f55f0085334558218ff618fb1061aabdcee19841092b3eca", size = 508959, upload-time = "2026-05-07T12:55:05.188Z" }
 wheels = [
@@ -4021,11 +4029,8 @@ name = "pyshexc"
 version = "0.9.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.15' and sys_platform == 'win32'",
     "python_full_version == '3.14.*' and sys_platform == 'win32'",
-    "python_full_version >= '3.15' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -4035,13 +4040,13 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "antlr4-python3-runtime", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "chardet", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-14-bijux-ontology-oak'" },
+    { name = "antlr4-python3-runtime", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "chardet", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
     { name = "chardet", version = "7.7.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version < '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "jsonasobj", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "pyjsg", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "rdflib-shim", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "shexjsg", marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
+    { name = "jsonasobj", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyjsg", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "rdflib-shim", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "shexjsg", marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/2a/31/95c590e8ed6e8cff141b6dd2a3de93b540f9dc3fba54621a20fd1cdb11e4/PyShExC-0.9.1.tar.gz", hash = "sha256:35a9975d4b9afeb20ef710fb6680871756381d0c39fbb5470b3b506581a304d3", size = 96070, upload-time = "2022-04-14T18:51:45.979Z" }
 wheels = [
@@ -4058,12 +4063,12 @@ resolution-markers = [
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "antlr4-python3-runtime", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "chardet", version = "7.7.0", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "jsonasobj", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "pyjsg", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "rdflib-shim", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
-    { name = "shexjsg", marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "antlr4-python3-runtime", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "chardet", version = "7.7.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "jsonasobj", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "pyjsg", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "rdflib-shim", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "shexjsg", marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/36/c5/81196cd2ab23953c4a8d39c7627437984bf8566eae896c5745356a7de7c8/pyshexc-0.10.3.post1.tar.gz", hash = "sha256:80d9d067c80af9a796e3c1c47d2207edf2e9a9fc39d3ca0ce5dd2019334ea915", size = 130019, upload-time = "2026-05-01T11:34:19.23Z" }
 wheels = [
@@ -4075,8 +4080,8 @@ name = "pysolr"
 version = "3.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "requests" },
-    { name = "setuptools" },
+    { name = "requests", marker = "python_full_version < '3.15'" },
+    { name = "setuptools", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0d/2a/b6c793a17e173524ccc7a90cdd8ebb65264f6ebcdb1942eba2478ec3a85e/pysolr-3.11.0.tar.gz", hash = "sha256:bbd0e7467835316880f994b55386c9bc3c146733c17d85a3fed317755976c40a", size = 63983, upload-time = "2025-11-18T10:42:40.247Z" }
 
@@ -4498,12 +4503,12 @@ name = "requests-cache"
 version = "1.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "attrs" },
-    { name = "cattrs" },
-    { name = "platformdirs" },
-    { name = "requests" },
-    { name = "url-normalize" },
-    { name = "urllib3" },
+    { name = "attrs", marker = "python_full_version < '3.15'" },
+    { name = "cattrs", marker = "python_full_version < '3.15'" },
+    { name = "platformdirs", marker = "python_full_version < '3.15'" },
+    { name = "requests", marker = "python_full_version < '3.15'" },
+    { name = "url-normalize", marker = "python_full_version < '3.15'" },
+    { name = "urllib3", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/32/ab/a340c7f529646f16e5656a8ba1424ed0de406203e4554868491786628730/requests_cache-1.3.3.tar.gz", hash = "sha256:79b72d5ac5143992d1836ad78f4d8e65666061dd44e220548caab3723089826b", size = 101179, upload-time = "2026-07-03T19:48:57.963Z" }
 wheels = [
@@ -4556,12 +4561,33 @@ wheels = [
 ]
 
 [[package]]
+name = "rfc3986-validator"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/88/f270de456dd7d11dcc808abfa291ecdd3f45ff44e3b549ffa01b126464d0/rfc3986_validator-0.1.1.tar.gz", hash = "sha256:3d44bde7921b3b9ec3ae4e3adca370438eccebc676456449b145d533b240d055", size = 6760, upload-time = "2019-10-28T16:00:19.144Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/51/17023c0f8f1869d8806b979a2bffa3f861f26a3f1a66b094288323fba52f/rfc3986_validator-0.1.1-py2.py3-none-any.whl", hash = "sha256:2f235c432ef459970b4306369336b9d5dbdda31b510ca1e327636e01f528bfa9", size = 4242, upload-time = "2019-10-28T16:00:13.976Z" },
+]
+
+[[package]]
 name = "rfc3987"
 version = "1.3.8"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/14/bb/f1395c4b62f251a1cb503ff884500ebd248eed593f41b469f89caa3547bd/rfc3987-1.3.8.tar.gz", hash = "sha256:d3c4d257a560d544e9826b38bc81db676890c79ab9d7ac92b39c7a253d5ca733", size = 20700, upload-time = "2018-07-29T17:23:47.954Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/65/d4/f7407c3d15d5ac779c3dd34fbbc6ea2090f77bd7dd12f207ccf881551208/rfc3987-1.3.8-py2.py3-none-any.whl", hash = "sha256:10702b1e51e5658843460b189b185c0366d2cf4cff716f13111b0ea9fd2dce53", size = 13377, upload-time = "2018-07-29T17:23:45.313Z" },
+]
+
+[[package]]
+name = "rfc3987-syntax"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "lark" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2c/06/37c1a5557acf449e8e406a830a05bf885ac47d33270aec454ef78675008d/rfc3987_syntax-1.1.0.tar.gz", hash = "sha256:717a62cbf33cffdd16dfa3a497d81ce48a660ea691b1ddd7be710c22f00b4a0d", size = 14239, upload-time = "2025-07-18T01:05:05.015Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/71/44ce230e1b7fadd372515a97e32a83011f906ddded8d03e3c6aafbdedbb7/rfc3987_syntax-1.1.0-py3-none-any.whl", hash = "sha256:6c3d97604e4c5ce9f714898e05401a0445a641cfa276432b0a648c80856f6a3f", size = 8046, upload-time = "2025-07-18T01:05:03.843Z" },
 ]
 
 [[package]]
@@ -4845,9 +4871,9 @@ name = "semsql"
 version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click" },
-    { name = "linkml-runtime" },
-    { name = "sqlalchemy-utils" },
+    { name = "click", marker = "python_full_version < '3.15'" },
+    { name = "linkml-runtime", marker = "python_full_version < '3.15'" },
+    { name = "sqlalchemy-utils", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/30/77/e7d80e679bea86d4691485490f0f0b2871b09d4b1429e1e354eb3e5c9a4e/semsql-0.4.0.tar.gz", hash = "sha256:89a3273e3595036a190c7d1bb779a8e144996582d131d9757c5ffbbb8029a3ce", size = 118498, upload-time = "2025-02-05T20:36:52.007Z" }
 wheels = [
@@ -4985,10 +5011,10 @@ version = "9.1.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'win32'",
+    "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
@@ -5174,7 +5200,7 @@ name = "sqlalchemy-utils"
 version = "0.38.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "sqlalchemy" },
+    { name = "sqlalchemy", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b4/43/b8f78428a33410ea3d12cafe6bc3fb359fbebaa2a90c5cc90c766956fa87/SQLAlchemy-Utils-0.38.3.tar.gz", hash = "sha256:9f9afba607a40455cf703adfa9846584bf26168a0c5a60a70063b70d65051f4d", size = 137517, upload-time = "2022-07-11T07:32:24.866Z" }
 wheels = [
@@ -5195,13 +5221,13 @@ name = "sqlite-utils"
 version = "4.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click" },
-    { name = "click-default-group" },
-    { name = "pip" },
-    { name = "pluggy" },
-    { name = "python-dateutil" },
-    { name = "sqlite-fts4" },
-    { name = "tabulate" },
+    { name = "click", marker = "python_full_version < '3.15'" },
+    { name = "click-default-group", marker = "python_full_version < '3.15'" },
+    { name = "pip", marker = "python_full_version < '3.15'" },
+    { name = "pluggy", marker = "python_full_version < '3.15'" },
+    { name = "python-dateutil", marker = "python_full_version < '3.15'" },
+    { name = "sqlite-fts4", marker = "python_full_version < '3.15'" },
+    { name = "tabulate", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7e/6b/4a7b3d20c92e6c7acedc96ef620df8e1ea8f94a26a41ab788c1c08055815/sqlite_utils-4.2.1.tar.gz", hash = "sha256:76114b6a5414714e6c70e5fa5c4781b301b590f6951b5da39c8cc60c21382ba1", size = 311722, upload-time = "2026-08-13T23:59:17.848Z" }
 wheels = [
@@ -5216,8 +5242,8 @@ dependencies = [
     { name = "click" },
     { name = "curies" },
     { name = "deprecation" },
-    { name = "linkml", version = "1.11.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "linkml", version = "1.12.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "linkml", version = "1.11.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "linkml", version = "1.12.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
     { name = "linkml-runtime" },
     { name = "packaging" },
     { name = "pandas" },
@@ -5238,8 +5264,8 @@ version = "1.1.0a5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinjanator" },
-    { name = "linkml", version = "1.11.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or extra == 'extra-14-bijux-ontology-oak'" },
-    { name = "linkml", version = "1.12.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.15' and extra == 'extra-14-bijux-ontology-frictionless') or (python_full_version >= '3.15' and extra != 'extra-14-bijux-ontology-oak') or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "linkml", version = "1.11.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
+    { name = "linkml", version = "1.12.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.15' or (extra == 'extra-14-bijux-ontology-frictionless' and extra == 'extra-14-bijux-ontology-oak')" },
     { name = "linkml-runtime" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/20/fa/8ff4a12cab071f8631d2fcc60209ccc9f72ad2d183b20d6174cd1ba241ac/sssom_schema-1.1.0a5.tar.gz", hash = "sha256:39afcd364b4521a4dc6411c94ee657c9e2c1848f260b4a9085397c8ab5595f78", size = 43238, upload-time = "2026-05-22T20:56:41.945Z" }
@@ -5482,7 +5508,7 @@ name = "url-normalize"
 version = "3.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "idna" },
+    { name = "idna", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/33/26/b60cce0211e94bb130e88dbcba87583f61c6ddf386fa6adc10a167461f6a/url_normalize-3.0.1.tar.gz", hash = "sha256:1655cd214159d9d47dc37aa6ce993c2149da44fa35cac6bafd90036a4eda3ac3", size = 28198, upload-time = "2026-09-22T22:20:54.513Z" }
 wheels = [

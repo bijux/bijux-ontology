@@ -25,7 +25,7 @@ bijux-ontology-reasoning = { workspace = true }
 dev = [
   "bijux-ontology-dev",
   "bijux-ontology-reasoning",
-  "bijux-ontology[analysis,oak,fhir,shex,quantities,csvw,jsonpatch,jsonld,shacl,pydantic,linkml,templates,xsd,patterns,checksums,sssom]",
+  "bijux-ontology[biosamples,analysis,oak,fhir,shex,quantities,csvw,jsonpatch,jsonld,shacl,pydantic,linkml,templates,xsd,patterns,checksums,sssom]",
   "build>=1.2,<2",
   "hatchling>=1.27,<2",
   "twine>=6,<7",

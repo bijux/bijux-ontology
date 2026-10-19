@@ -1789,3 +1789,16 @@ markers, scalar keys and foreign keys; semantic checks run on each selected row.
 Cells retain original text, native values and record/column locations. Missing
 values emit nothing. Unsupported descriptor semantics and truncated validation
 remain unqualified; no remote resource or scientific identifier is inferred.
+
+`interfaces.adapters.biosamples.check_sample` is a read-only `[biosamples]`
+consumer. Supply `SchemaResource(uri, version, content)` for the
+[BioSamples core at `9e552cf`](https://github.com/EBIBioSamples/biosamples-v4/blob/9e552cf60451ad2b6dad20a1234bb07a111a4948/webapps/core/src/main/resources/schemas/core/sample.json),
+a versioned local draft-07 checklist and every referenced resource. Actual
+`jsonschema` validation uses an offline registry and asserts date-time formats.
+`CharacteristicBinding` explicitly selects ontology declarations, finite allowed
+terms, literal texts and units; prose supplies no ontology rules. The result
+retains checked sample JSON, resource versions/digests, separate raw schema and
+semantic reports, and every characteristic array occurrence. The finite profile
+supports the four published core regexes; other regexes, unknown assertions,
+recursion and missing resources remain unverified. There is no submission or
+implicit checklist acquisition.

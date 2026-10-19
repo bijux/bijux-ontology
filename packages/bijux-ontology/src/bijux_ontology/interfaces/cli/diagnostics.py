@@ -28,6 +28,11 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "biosamples": frozenset(
+        "schema_mismatch value_disallowed value_unverified binding_missing "
+        "value_missing term_invalid characteristic_missing vocabulary_missing "
+        "semantics_unchecked contract_unverified".split()
+    ),
     "xkos": frozenset(
         "assignment_missing assignment_unmapped assignment_unverified "
         "assignments_open association_invalid association_type "
@@ -478,6 +483,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "biosamples": (
+        "versioned local BioSamples sample and checklist resources",
+        "A native schema or explicit characteristic obligation fails or is unverified.",
+        "Inspect the exact characteristic array path; supply the selected local "
+        "draft-07 resources, explicit sidecar bindings and vocabulary declarations.",
+        "check_sample(sample, core=core, checklist=checklist, bindings=bindings, "
+        "vocabulary=vocabulary)",
+    ),
     "xkos": (
         "selected classification levels and finite population contracts",
         "A selected classification rule fails or lacks complete scoped evidence.",

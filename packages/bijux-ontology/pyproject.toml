@@ -47,6 +47,10 @@ jsonpatch = [
 markup = [
     "lxml>=6,<7",
 ]
+biosamples = [
+    "jsonschema[format-nongpl]>=4.26,<5",
+    "referencing>=0.37,<0.38",
+]
 jsonschema = [
     "jsonschema>=4.26,<5",
     "referencing>=0.37,<0.38",
