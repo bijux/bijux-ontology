@@ -77,7 +77,10 @@ def capture_context_json(value: object, budget: Budget) -> object:
     """Own qualified JSON without preserving mutable caller dictionaries."""
     preflight_context_json(value, budget)
     return own_json(
-        value, max_bytes=budget.limits.max_bytes, max_depth=budget.limits.max_depth
+        value,
+        max_bytes=budget.limits.max_bytes,
+        max_depth=budget.limits.max_depth,
+        budget=budget,
     )
 
 
