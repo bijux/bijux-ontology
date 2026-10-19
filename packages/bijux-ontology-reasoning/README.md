@@ -273,3 +273,14 @@ Direct and transitive views reuse the same classification without caching answer
 a separate ordinary RDF artifact, retaining quantifiers and unknown pairs.
 Its raw required-axiom answers remain inspectable separately from pair coverage;
 no class-instance assertions or complete inventory of all fillers is implied.
+
+`modules.prepare_module_refactor` moves exact annotated axioms or explicitly
+inlines owned local modules as one candidate set. Supply exact `axiom_base`
+preconditions for every original, unchanged required consumer contracts, explicit
+import/provider changes and a selected `TheoryCombination` deployment. Actual
+consumer import closures and native joint consistency/entailments are checked
+before and after; a synthetic all-source union cannot establish consumer access.
+Protected axioms and read-only sources remain intact. Namespace transfers are
+explicit policy records; no IRI spelling establishes ownership. Legal import
+cycles are supported. Any failed obligation withholds all candidate module bytes;
+passing the finite selected obligations does not establish full equivalence.

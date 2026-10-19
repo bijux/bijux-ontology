@@ -46,6 +46,7 @@ public final class ProfileWorker {
         if (mode.equals("convert")) return NativeDocuments.evaluate(request, job, result);
         if (mode.equals("role_rename")) return org.bijux.ontology.entities.RoleRenaming.evaluate(request, job, result);
         if (mode.equals("axiom_changes")) return org.bijux.ontology.axioms.AxiomChanges.evaluate(request, job, result);
+        if (mode.equals("module_changes")) return org.bijux.ontology.modules.ModuleChanges.evaluate(request, job, result);
         if (mode.equals("axioms")) return AxiomProjection.evaluate(request, job, result);
         if (mode.equals("diagnosis")) return LogicalDiagnosis.evaluate(request, job, result);
         if (mode.equals("model_compatibility")) return org.bijux.ontology.models.ModelCompatibility.evaluate(request, job, result);
