@@ -20,7 +20,7 @@ def capture_lone_filter(group: CompValue, budget: Budget) -> CompValue | None:
     if group.name != "GroupGraphPatternSub":
         return None
     only = None
-    # CompValue.get's second argument controls evaluation, not missing keys.
+    # The second argument to CompValue.get controls evaluation, not missing keys.
     for child in group["part"] if "part" in group else ():  # noqa: SIM401
         budget.consume("work")
         if isinstance(child, CompValue) and child.name == "Filter":
