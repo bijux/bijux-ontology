@@ -331,6 +331,10 @@ _CODES = {
         "required_occurrence_missing types_mismatch value_mismatch "
         "value_unverified".split()
     ),
+    "endpoint": frozenset(
+        "completeness_unverified blank_scope_unverified slice_incomplete "
+        "acquisition_unverified input_error".split()
+    ),
     "execution": frozenset(
         "cancelled deadline incomplete limit_exceeded worker_failed".split()
     ),
@@ -940,6 +944,14 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Check the selected output path and model alternatives; examples "
         "do not prove all outputs.",
         '{"@id":"https://example.org/item","@type":"https://example.org/Image"}',
+    ),
+    "endpoint": (
+        "explicit endpoint triple extraction",
+        "The selected response or whole snapshot cannot establish complete "
+        "consistent extraction.",
+        "Inspect version, total and truncation receipts, requested page bounds "
+        "and exact RDF scope; normal validation remains offline.",
+        "acquire_endpoint(url, query=EndpointQuery(), policy=policy)",
     ),
     "execution": (
         "requested execution",

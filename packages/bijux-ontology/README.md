@@ -39,3 +39,15 @@ bundle and artifact paths to `prepare_jena_backend` from
 `bijux_ontology.interfaces.adapters.jena`. Runtime operations neither compile nor
 retrieve dependencies. The current process profile requires POSIX ownership;
 JVM heap, wall time and bounded transport constrain opaque native execution.
+
+`interfaces.adapters.sparql.acquire_endpoint` explicitly acquires an
+`EndpointQuery` with typed subject/predicate/object parameters and an optional
+named graph. Supply an
+`AcquisitionPolicy` with authorized origins, page size and maximum pages. The
+returned `source` is an ordinary owned RDF slice for later offline checks.
+Completeness additionally requires `EndpointCompleteness`: a server guarantee
+that a supplied version parameter selects immutable data, with per-page version,
+exact row-total and no-truncation headers. Missing guarantees, short/capped pages,
+changed receipts and cross-page blank identities cannot certify a complete slice.
+The initial profile uses parameterized distinct-triple SELECT over HTTP GET;
+it does not accept executable query fragments. No validation fetches the endpoint.
