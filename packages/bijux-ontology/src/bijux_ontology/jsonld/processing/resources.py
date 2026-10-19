@@ -1,7 +1,6 @@
 """Owned offline JSON-LD resources and per-operation resolution policy."""
 
 import json
-import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -11,6 +10,7 @@ from urllib.parse import urljoin
 from bijux_ontology.diagnostics.errors import (
     InputError,
     LimitExceeded,
+    ResourceError,
     attach_input_failure,
 )
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
@@ -21,6 +21,7 @@ from bijux_ontology.json.values import (
     own_json,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.resources.files import capture_file
 
 DocumentLoader = Callable[[str, dict[str, object]], dict[str, object]]
 
@@ -135,8 +136,7 @@ class OfflineDocumentLoader:
             document = self._documents[url]
             if isinstance(document, Path):
                 try:
-                    with document.open("rb") as handle:
-                        size = os.fstat(handle.fileno()).st_size
+                    with capture_file(document, metadata) as (handle, size):
                         if size > min(self._max_bytes, metadata.limits.max_bytes):
                             raise LimitExceeded("JSON-LD document exceeds max_bytes")
                         # The decoder owns its parser workspace. This boundary
@@ -152,7 +152,7 @@ class OfflineDocumentLoader:
                         raise LimitExceeded(
                             f"JSON-LD document exceeds byte limit: {url}"
                         )
-                except (OSError, UnicodeError) as error:
+                except (OSError, UnicodeError, ResourceError) as error:
                     raise ContextInputError(
                         f"Cannot load JSON-LD document {url}: {error}"
                     ) from error

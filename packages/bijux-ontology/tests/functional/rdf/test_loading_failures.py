@@ -252,3 +252,72 @@ def test_jsonld_metadata_bounds_and_actual_loader_document_identity(
             2,
             1,
         )
+
+
+@pytest.mark.parametrize("boundary", ["rdf", "jsonld"])
+@pytest.mark.parametrize("mutation", ["modify", "replace"])
+def test_path_capture_rejects_changed_revision_before_publication(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    boundary: str,
+    mutation: str,
+) -> None:
+    import io
+    import os
+    from typing import IO, Any
+
+    target = tmp_path / "document.input"
+    first = b"<urn:s> <urn:p> <urn:old> .\n"
+    payload = (
+        first
+        + b"#"
+        + b" " * (65536 - len(first) - 2)
+        + b"\n<urn:t> <urn:p> <urn:old> .\n"
+        if boundary == "rdf"
+        else b'{"first":"old","padding":"' + b" " * 65536 + b'","last":"old"}'
+    )
+    target.write_bytes(payload)
+    original_open = Path.open
+    changed = False
+
+    class ChangingReader(io.BufferedReader):
+        def read(self, size: int | None = -1) -> bytes:
+            nonlocal changed
+            assert size is not None and size > 0
+            data = super().read(min(size, 65536))
+            if not changed:
+                changed = True
+                if mutation == "replace":
+                    target.unlink()
+                with io.FileIO(target, "w" if mutation == "replace" else "r+") as out:
+                    out.write(payload.replace(b"old", b"new"))
+                revision = target.stat()
+                os.utime(
+                    target,
+                    ns=(revision.st_atime_ns, revision.st_mtime_ns + 1_000_000),
+                )
+            return data + (super().read(size - len(data)) if size > len(data) else b"")
+
+    def opened(path: Path, mode: str = "r", *args: Any, **kwargs: Any) -> IO[Any]:
+        if path == target and mode == "rb":
+            return ChangingReader(io.FileIO(path, "r"))
+        return original_open(path, mode, *args, **kwargs)
+
+    with monkeypatch.context() as controlled:
+        controlled.setattr(Path, "open", opened)
+        with pytest.raises(InputError, match="Input file changed during capture"):
+            if boundary == "rdf":
+                prepare_rdf(RdfSource(target, format="nt", document_iri="urn:input"))
+            else:
+                OfflineDocumentLoader({"urn:input": target})("urn:input", {})
+    assert changed
+    # The same current bytes remain ordinary supported input after capture stops.
+    if boundary == "rdf":
+        stable = prepare_rdf(RdfSource(target, format="nt")).graph()
+        assert {str(value) for value in stable.objects()} == {"urn:new"}
+    else:
+        document = OfflineDocumentLoader({"urn:input": target})("urn:input", {})[
+            "document"
+        ]
+        assert isinstance(document, dict)
+        assert document["first"] == document["last"] == "new"
