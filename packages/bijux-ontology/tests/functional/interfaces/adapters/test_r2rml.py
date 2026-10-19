@@ -6,9 +6,11 @@ import hashlib
 import importlib.util
 import os
 import sqlite3
+import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
 from threading import Event
+from types import FrameType
 
 import pytest
 from rdflib import Graph, Literal, URIRef
@@ -23,6 +25,7 @@ from bijux_ontology.declarations.types import (
     OutputRequirement,
     ValueDeclaration,
 )
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.r2rml import (
     MorphBackend,
@@ -372,4 +375,56 @@ def test_shared_cuts_cancel_and_fresh_actual_recovery(
         cancel=event,
     )
     assert cancelled.report.outcome == "exhausted" and cancelled.output is None
+    for target in ("_source_table", "_call"):
+        late = Event()
+        observed: list[str] = []
+
+        def completed_stage(
+            frame: FrameType,
+            kind: str,
+            value: object,
+            *,
+            target: str = target,
+            late: Event = late,
+            observed: list[str] = observed,
+        ) -> None:
+            """Observe real completed work without replacing any native output."""
+            if (
+                kind != "return"
+                or frame.f_code.co_name != target
+                or not frame.f_globals.get("__name__", "").startswith(
+                    "bijux_ontology.interfaces.adapters.r2rml."
+                )
+                or late.is_set()
+            ):
+                return
+            if target == "_source_table":
+                report = getattr(value, "report", None)
+                if not isinstance(report, Report) or not report.verified:
+                    return
+            elif not isinstance(value, dict) or value.get("status") != "completed":
+                return
+            observed.append(target)
+            late.set()
+
+        previous = sys.getprofile()
+        sys.setprofile(completed_stage)
+        try:
+            stopped = check_r2rml(
+                backend,
+                case.snapshot,
+                case.mapping,
+                populations=case.populations,
+                models=case.models,
+                foreign_checks=case.foreign,
+                graph_name=GRAPH,
+                cancel=late,
+            )
+        finally:
+            sys.setprofile(previous)
+        assert observed == [target]
+        assert stopped.report.outcome == "exhausted" and stopped.output is None
+        assert stopped.tables and all(t.report.verified for t in stopped.tables)
+        assert stopped.native_report.verified is (target == "_call")
+        assert hashlib.sha256(case.path.read_bytes()).hexdigest() == case.digest
     assert _check(backend, case).report.verified
