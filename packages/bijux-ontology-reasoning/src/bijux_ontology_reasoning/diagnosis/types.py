@@ -9,18 +9,9 @@ from rdflib import URIRef
 from bijux_ontology.reports import Report
 
 from ..backend.types import BackendCapability, ProfileDocument
+from ..backend.types import ReasonerIdentity as ReasonerIdentity
 from ..documents.types import OwlDocument
 from ..profiles.types import LoaderQualification
-
-
-@dataclass(frozen=True)
-class ReasonerIdentity:
-    """Actual artifact and native versions, which this release reports differently."""
-
-    name: str
-    artifact_version: str
-    native_version: str
-    ignore_unsupported_datatypes: bool
 
 
 @dataclass(frozen=True)

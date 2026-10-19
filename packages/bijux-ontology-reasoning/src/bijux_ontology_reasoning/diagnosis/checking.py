@@ -25,31 +25,19 @@ from ..backend.bundles import qualify_backend
 from ..backend.execution import (
     invoke_worker,
     qualify_capability,
-    result_counter,
     result_text,
 )
+from ..backend.qualification import _boolean as _boolean
+from ..backend.qualification import _loaders as _loaders
+from ..backend.qualification import _reasoner as _reasoner
+from ..backend.qualification import _records as _records
+from ..backend.qualification import qualify_reasoning_result, reasoning_header
 from ..backend.rdf_sources import stage_documents
 from ..backend.types import OwlProfileBackend, ProfileDocument
 from ..documents.preparation import stage_native_documents
 from ..documents.types import OwlDocument
 from ..profiles.types import LoaderQualification
-from .types import ClassSatisfiability, ConsistencyCheck, ReasonerIdentity
-
-
-def _records(raw: object, budget: Budget) -> list[object]:
-    """Prepay native inventory iteration and retained references."""
-    if type(raw) is not list:
-        raise ResourceError("Diagnosis omitted a required finite inventory")
-    budget.consume("work", len(raw))
-    budget.consume("states", len(raw))
-    budget.consume("bytes", 64 + 16 * len(raw))
-    return cast(list[object], raw)
-
-
-def _boolean(raw: object) -> bool:
-    if type(raw) is not bool:
-        raise ResourceError("Diagnosis omitted a required boolean")
-    return raw
+from .types import ClassSatisfiability, ConsistencyCheck
 
 
 def _classes(
@@ -77,59 +65,6 @@ def _classes(
         seen.add(value)
         selected.append(value)
     return tuple(selected)
-
-
-def _reasoner(raw: object, budget: Budget) -> ReasonerIdentity:
-    item = object_value(raw, location="DL reasoner identity")
-    name = result_text(item.get("name"), budget)
-    artifact = result_text(item.get("artifact_version"), budget)
-    native = result_text(item.get("native_version"), budget)
-    ignored = _boolean(item.get("ignore_unsupported_datatypes"))
-    if (name, artifact, native, ignored) != ("HermiT", "1.4.5.519", "1.4.1.513", False):
-        raise ResourceError("DL reasoner differs from the qualified pinned profile")
-    budget.consume("states")
-    assert name is not None and artifact is not None and native is not None
-    return ReasonerIdentity(name, artifact, native, ignored)
-
-
-def _loaders(
-    raw: object,
-    originals: tuple[OwlDocument | ProfileDocument, ...],
-    budget: Budget,
-    issues: IssueCollector,
-) -> tuple[LoaderQualification, ...]:
-    result = []
-    seen = set()
-    for record in _records(raw, budget):
-        item = object_value(record, location="DL RDF loader receipt")
-        index = result_counter(item.get("document"), budget, len(originals) - 1)
-        original = originals[index]
-        if index in seen or not isinstance(original, ProfileDocument):
-            raise ResourceError("DL loader receipt has ambiguous original ownership")
-        seen.add(index)
-        present = _boolean(item.get("present"))
-        counts = tuple(
-            result_counter(item.get(name), budget, budget.limits.max_triples)
-            if present
-            else None
-            for name in ("unparsed", "guessed", "triples")
-        )
-        header = result_text(item.get("header"), budget, optional=not present)
-        unparsed, guessed, triples = counts
-        budget.consume("states")
-        receipt = LoaderQualification(
-            original, present, unparsed, guessed, triples, header
-        )
-        result.append(receipt)
-        if not receipt.qualified:
-            issues.append(
-                Issue(
-                    "owl.diagnosis_loader_unverified",
-                    "Original RDF has incomplete or guessed native interpretation",
-                    kind="unverified",
-                )
-            )
-    return tuple(result)
 
 
 def check_consistency(
@@ -210,73 +145,28 @@ def check_consistency(
             operation.consume("states", 4)
             capability = qualify_capability(data, backend, operation)
             children.append(capability.report)
-            if data.get("input_kind") != kind:
-                raise ResourceError(
-                    "DL diagnosis omitted its exact input interpretation"
-                )
-            if type(data.get("consistent")) not in (bool, type(None)):
-                raise ResourceError(
-                    "DL diagnosis returned an invalid consistency value"
-                )
-            raw_consistent = cast(bool | None, data["consistent"])
-            if data.get("dl_profile") is not None:
-                in_profile = _boolean(data["dl_profile"])
-            native_error = result_text(data.get("error"), operation, optional=True)
-            # These are actual OWLAPI document ownership receipts, not source RDF
-            # identities guessed from serialized native headers.
-            observed = set()
-            for raw in _records(data.get("documents"), operation):
-                record = object_value(raw, location="DL loaded document")
-                index = result_counter(
-                    record.get("document"), operation, len(documents) - 1
-                )
-                if index in observed:
-                    raise ResourceError("DL document ownership is ambiguous")
-                observed.add(index)
-                for name in ("ontology_iri", "version_iri"):
-                    result_text(record.get(name), operation, optional=True)
-                result_counter(record.get("axioms"), operation, 2**31 - 1)
-                for iri in _records(record.get("imports"), operation):
-                    result_text(iri, operation)
-            if len(observed) != len(documents):
-                raise ResourceError("DL diagnosis did not load every selected document")
-            loaders = _loaders(data.get("loaders"), documents, operation, issues)
-            if (kind == "rdf" and len(loaders) != len(documents)) or (
-                kind == "native" and loaders
-            ):
-                raise ResourceError("DL diagnosis omitted exact loader scope")
-            for raw in _records(data.get("changes"), operation):
-                record = object_value(raw, location="DL native input loss")
-                loss_kind = result_text(record.get("kind"), operation)
-                value = result_text(record.get("value"), operation)
-                issues.append(
-                    Issue(
-                        "owl.diagnosis_input_loss",
-                        "Original native content is not completely represented",
-                        expected=loss_kind,
-                        actual=value,
-                        kind="unverified",
-                    )
-                )
-            for raw in _records(data.get("violations"), operation):
-                text = result_text(raw, operation)
-                issues.append(
-                    Issue(
-                        "owl.diagnosis_profile_unsupported",
-                        "Logical diagnosis requires the OWL 2 DL profile",
-                        actual=text,
-                        kind="unverified",
-                    )
-                )
-            if data.get("reasoner") is not None:
-                reasoner = _reasoner(data["reasoner"], operation)
-            if not (
-                data.get("qualified") is True
-                and data.get("dl_profile") is True
-                and reasoner is not None
-                and all(item.qualified for item in loaders)
-                and not issues
-            ):
+            header = reasoning_header(data, operation)
+            raw_consistent, in_profile, native_error = (
+                header.raw_consistent,
+                header.in_profile,
+                header.native_error,
+            )
+            receipt = qualify_reasoning_result(
+                data,
+                documents,
+                kind,
+                operation,
+                issues,
+                header=header,
+                scope="diagnosis",
+            )
+            raw_consistent, in_profile, native_error = (
+                receipt.raw_consistent,
+                receipt.in_profile,
+                receipt.native_error,
+            )
+            loaders, reasoner = receipt.loaders, receipt.reasoner
+            if not receipt.qualified:
                 if data["status"] == "exhausted":
                     raise LimitExceeded(
                         "DL native input qualification did not complete"
