@@ -222,10 +222,16 @@ def test_cancelled_waiter_does_not_stop_active_job_and_cancelled_worker_recovers
         assert session.worker_launches == 2
 
 
-def test_deadline_and_crashed_worker_restart_without_mixed_batch_state() -> None:
-    with ShaclSession(_slow_shapes(), trusted_sparql=True, timeout=1) as session:
+def test_deadline_and_crashed_worker_restart_without_mixed_batch_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with ShaclSession(_slow_shapes(), trusted_sparql=True, timeout=30) as session:
         assert session.validate(_data()).report.verified
-        stopped = session.validate(_slow_data())
+        started = time.monotonic()
+        with monkeypatch.context() as deadline:
+            deadline.setattr(session, "_timeout", 1)
+            stopped = session.validate(_slow_data())
+        assert time.monotonic() - started < 3
         assert stopped.report.outcome == "exhausted" and not stopped.report.complete
         assert session.validate(_data()).report.verified
         process = session._backend._process
