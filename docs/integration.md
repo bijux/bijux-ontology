@@ -125,6 +125,37 @@ languages, exact literal-form comparisons, asserted/either orientation or
 forbidden relations. Equal forms preserve distinct label resources; missing
 forms remain unverified. Subrelations inherit no implicit reverse assertion.
 
+`negotiate_annotations(view, iri, predicates=(label_iri,), ranges=("fr-CA",))`
+uses [RFC 4647](https://www.rfc-editor.org/rfc/rfc4647.html) lookup, preserving
+tied annotations and their original terms. Select basic/extended filtering,
+source-role priority and explicit untagged/other fallback when required.
+`matches_language("en-GB", "en")` is filtering only; it supplies no lookup
+fallback or publication-coverage guarantee.
+
+`check_annotation_coverage(view, requirements, kinds=(class_iri,))` applies
+`AnnotationRequirement` shape/count rules to every selected entity. Per-language
+`LanguageRequirement("en")` uses exact tags; `mode="basic"` can count `en-GB`.
+Fallback is explicit, requires an empty completed primary inventory and never
+fills a nonempty deficit. Original assertions and chosen fallback witnesses stay
+visible; incomplete inventories cannot establish missing minima.
+
+Use `terms_page`, `statements_page` and `search_page` to browse an immutable
+`VocabularyView` with `page_size` and its returned `next_cursor`. A page report
+covers that page; only `enumeration_complete` certifies the whole selection.
+Cursors bind to the actual snapshot, filters and ordering, and support resumed
+reads after cancellation or exhaustion. They are opaque in-process objects.
+Term and lexical ordering are prepared lazily and shared by compatible views;
+ordinary inspection and statement paging reuse the existing index.
+
+Use `select_concepts(view, scheme=iri, closed=True)` or `collection=iri` to
+bind an explicit controlled set with `subset.bind(field)`. Scheme selections
+accept interior `roots` and authored hierarchy policies. Choose deprecation
+`allow`, `exclude` (the default), or `require-active`; the last requires explicit
+nondeprecated metadata. Known members and definite exclusions retain their
+witnesses. Open or incomplete selections cannot prove outsider exclusion or
+complete coverage, and their original reports remain required by output checks.
+Binding preserves other predicates and rejects an existing enumeration.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.
@@ -284,6 +315,14 @@ resources, unsupported encodings and unresolved source-to-RDF counts remain
 unverified. `PreparedModels(..., rdf_direction=...)` freezes that policy for
 its fresh checks. Pydantic sample checks and serializer corpus checks accept the
 same keyword separately from actual serializer options.
+
+Pass `ValueDeclaration(..., constraints=ValueConstraints(...))` for actual
+emitted values. Enumerations preserve exact RDF terms; finite `Decimal` bounds
+compare qualified integer/decimal values. Lengths count original Unicode code
+points, and `iri_namespaces` uses exact IRI prefixes. Install
+`bijux-ontology[patterns]` for RE2 UTF-8 patterns with explicit `fullmatch` or
+`search` mode. Unsupported syntax or conversions remain unverified; constraints
+never rewrite RDF identity or assert ontology inconsistency.
 
 For ordinary nested Pydantic models, an authoritative context can supply the RDF
 mappings without duplicate primitive declarations:

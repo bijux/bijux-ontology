@@ -17,6 +17,7 @@ from bijux_ontology.declarations.codecs import (
     models_from_data,
     terms_from_data,
 )
+from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.types import (
     EmissionCondition,
     EmissionCoverage,
@@ -29,6 +30,7 @@ from bijux_ontology.declarations.types import (
     TermDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.documents.compaction import export_jsonld
 from bijux_ontology.documents.export import RDFExport, export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
@@ -123,6 +125,21 @@ from bijux_ontology.skos.publication import (
     check_scheme_coverage,
     check_top_concepts,
 )
+from bijux_ontology.skos.subsets import ConceptSubset, select_concepts
+from bijux_ontology.vocabulary.annotations import (
+    AnnotationCoverage,
+    AnnotationRequirement,
+    LanguageCoverage,
+    LanguageRequirement,
+    check_annotation_coverage,
+)
+from bijux_ontology.vocabulary.browsing import (
+    VocabularyCursor,
+    VocabularyPage,
+    search_page,
+    statements_page,
+    terms_page,
+)
 from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.collections import (
@@ -136,6 +153,7 @@ from bijux_ontology.vocabulary.comparison import (
     compare_vocabularies,
 )
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
+from bijux_ontology.vocabulary.languages import matches_language, negotiate_annotations
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.registry import (
     IdentifierRegistry,
@@ -177,6 +195,8 @@ __all__ = [
     "ABSENT",
     "Absent",
     "AcceptancePolicy",
+    "AnnotationCoverage",
+    "AnnotationRequirement",
     "ArrayItems",
     "BranchCoverage",
     "Budget",
@@ -190,6 +210,7 @@ __all__ = [
     "ContextExpectation",
     "ContextInputError",
     "ContextProbe",
+    "ConceptSubset",
     "ContractObligation",
     "ContractResult",
     "CorpusBranch",
@@ -218,6 +239,8 @@ __all__ = [
     "JSONLDPreparation",
     "KeyedItems",
     "LabelHomonym",
+    "LanguageCoverage",
+    "LanguageRequirement",
     "LimitExceeded",
     "Limits",
     "Location",
@@ -267,10 +290,14 @@ __all__ = [
     "Transformation",
     "UpgradeAssessment",
     "UseIndex",
+    "ValueConstraints",
     "ValueDeclaration",
+    "ValueEnumeration",
     "ValueTraits",
     "Vocabulary",
     "VocabularyChanges",
+    "VocabularyCursor",
+    "VocabularyPage",
     "VocabularyView",
     "WorkerExecutor",
     "XLRelation",
@@ -279,6 +306,7 @@ __all__ = [
     "assess_models",
     "assess_upgrade",
     "canonicalize_rdf",
+    "check_annotation_coverage",
     "check_collection_sequence",
     "check_context",
     "check_contract",
@@ -317,6 +345,8 @@ __all__ = [
     "load_catalog",
     "load_vocabulary",
     "merge_identifier_registry",
+    "matches_language",
+    "negotiate_annotations",
     "merge_sources",
     "models_from_data",
     "prepare_jsonld",
@@ -330,6 +360,10 @@ __all__ = [
     "remap_iris",
     "run_rules",
     "run_query_rules",
+    "search_page",
+    "select_concepts",
+    "statements_page",
+    "terms_page",
     "terms_from_data",
     "write_export",
 ]

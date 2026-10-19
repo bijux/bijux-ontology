@@ -326,11 +326,15 @@ def topology(
 
 
 def scheme_members(
-    view: VocabularyView, scheme: str, *, top_only: bool = False
+    view: VocabularyView,
+    scheme: str,
+    *,
+    top_only: bool = False,
+    budget: Budget | None = None,
 ) -> Selection[Membership]:
     """Normalise top-concept inverses, preserving original membership assertions."""
     absolute_iri(scheme)
-    budget = Budget(view.limits)
+    budget = budget if budget is not None else Budget(view.limits)
     issues = IssueCollector(budget)
     selected = view.relationships(
         scheme,

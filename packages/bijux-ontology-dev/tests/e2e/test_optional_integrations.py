@@ -113,6 +113,29 @@ import pytest
         assert bad.outcome == "disagreement"
         assert bad.issues[0].code == "literal.lexical_invalid"
         """,
+        """
+        from rdflib import Graph, Literal, Namespace
+        from rdflib.namespace import RDF, XSD
+        from bijux_ontology import (
+            FieldDeclaration, ModelDeclaration, RdfModelUsage, ValueConstraints,
+            ValueDeclaration, check_rdf_emission, prepare_source,
+        )
+        ex = Namespace("https://example.org/")
+        def check(text, pattern):
+            graph = Graph().add((ex.record, RDF.type, ex.Record))
+            graph.add((ex.record, ex.name, Literal(text)))
+            model = ModelDeclaration("record", (str(ex.Record),), (
+                FieldDeclaration("name", str(ex.name), (
+                    ValueDeclaration("literal", str(XSD.string),
+                        constraints=ValueConstraints(pattern=pattern)),
+                )),
+            ))
+            return check_rdf_emission(prepare_source(graph), (model,),
+                                     (RdfModelUsage("record", ex.record),))
+        assert check("ABC", "[A-Z]+").verified
+        assert check("AbC", "[A-Z]+").outcome == "disagreement"
+        assert check("ABC", "(?=A)ABC").outcome == "unverified"
+        """,
     ],
     ids=[
         "shacl-conformance",
@@ -120,6 +143,7 @@ import pytest
         "linkml-inheritance",
         "typed-template-identifiers",
         "xsd-lexical-validation",
+        "re2-application-patterns",
     ],
 )
 def test_real_installed_integrations(
@@ -300,12 +324,28 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
         from bijux_ontology import expand_document, compare_rdf
         for name in (
             "pyld", "pyshacl", "pydantic", "linkml_runtime",
-            "uri_template", "elementpath",
+            "uri_template", "elementpath", "re2",
         ):
             assert find_spec(name) is None, name
+        from bijux_ontology import (
+            FieldDeclaration, ModelDeclaration, RdfModelUsage, ValueConstraints,
+            ValueDeclaration, check_rdf_emission, prepare_source,
+        )
+        from rdflib import Literal, Namespace
+        from rdflib.namespace import RDF, XSD
+        ex = Namespace("https://example.org/")
+        graph = Graph().add((ex.record, RDF.type, ex.Record))
+        graph.add((ex.record, ex.name, Literal("ABC")))
+        model = ModelDeclaration("record", (str(ex.Record),), (
+            FieldDeclaration("name", str(ex.name), (
+                ValueDeclaration("literal", str(XSD.string),
+                    constraints=ValueConstraints(pattern="[A-Z]+")),
+            )),
+        ))
+        requested = check_rdf_emission(prepare_source(graph), (model,),
+                                      (RdfModelUsage("record", ex.record),))
+        assert requested.outcome == "unverified"
         assert compare_rdf(Graph(), Graph()).verified
-        from rdflib import Literal
-        from rdflib.namespace import XSD
         from bijux_ontology.rdf.literals import check_literal
         lexical = check_literal(Literal("P1Y", datatype=XSD.duration, normalize=False))
         assert lexical.outcome == "unverified"

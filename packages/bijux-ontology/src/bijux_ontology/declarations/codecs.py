@@ -1,9 +1,11 @@
 """Public JSON-shaped declaration ingestion shared by API and console callers."""
 
+from decimal import Decimal
 from typing import Literal, cast
 
 from rdflib import Literal as RDFLiteral
 from rdflib import URIRef
+from rdflib.namespace import XSD
 
 from bijux_ontology._json import (
     array_value,
@@ -31,8 +33,11 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
     ValueKind,
 )
+from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.errors import InputError
+from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
+from bijux_ontology.rdf.literals import check_literal
 
 
 def terms_from_data(value: object, *, source: str = "") -> tuple[TermDeclaration, ...]:
@@ -88,6 +93,7 @@ def _value(value: object) -> ValueDeclaration:
             "model",
             "container",
             "samples",
+            "constraints",
         },
         location="",
         message="Unknown declaration keys",
@@ -105,8 +111,86 @@ def _value(value: object) -> ValueDeclaration:
         types=string_values(data.get("types", [])),
         model=optional_string_value(data.get("model")),
         container=optional_string_value(data.get("container")),
+        constraints=_constraints(data.get("constraints")),
         samples=tuple(
             _sample(sample) for sample in array_value(data.get("samples", []))
+        ),
+    )
+
+
+def _constraints(value: object) -> ValueConstraints | None:
+    """Decode explicit predicates with exact RDF enums and decimal text bounds."""
+    if value is None:
+        return None
+    data = object_value(value, location="constraints")
+    known_keys(
+        data,
+        {
+            "enumeration",
+            "minimum",
+            "maximum",
+            "minimum_inclusive",
+            "maximum_inclusive",
+            "min_length",
+            "max_length",
+            "pattern",
+            "pattern_mode",
+            "iri_namespaces",
+        },
+        location="constraints",
+    )
+    enumeration: tuple[URIRef | RDFLiteral, ...] | None = None
+    if data.get("enumeration") is not None:
+        values = array_value(data["enumeration"])
+        if len(values) > Limits().max_states:
+            raise InputError("Value enumeration exceeds supported declaration size")
+        terms: list[URIRef | RDFLiteral] = []
+        for index in range(len(values)):
+            item = object_value(values[index], location="enumeration")
+            if set(item) == {"iri"}:
+                terms.append(URIRef(absolute_iri(string_value(item["iri"]))))
+            else:
+                terms.append(_sample(item))
+        enumeration = tuple(terms)
+    bounds: dict[str, Decimal | None] = {}
+    for name in ("minimum", "maximum"):
+        raw = data.get(name)
+        if raw is None:
+            bounds[name] = None
+        else:
+            text = string_value(raw)
+            sample = _sample({"lexical": text, "datatype": str(XSD.decimal)})
+            if not check_literal(sample).verified:
+                raise InputError(
+                    "Numeric bounds require finite XSD decimal text", location=name
+                )
+            bounds[name] = Decimal(text)
+    lengths: dict[str, int | None] = {}
+    for name in ("min_length", "max_length"):
+        raw = data.get(name)
+        if raw is not None and type(raw) is not int:
+            raise InputError(
+                "String length bounds require integers or null", location=name
+            )
+        lengths[name] = raw
+    namespaces = array_value(data.get("iri_namespaces", []))
+    if len(namespaces) > Limits().max_states:
+        raise InputError("IRI namespaces exceed supported declaration size")
+    mode = string_value(data.get("pattern_mode", "fullmatch"))
+    if mode not in ("fullmatch", "search"):
+        raise InputError("Pattern mode must be fullmatch or search")
+    return ValueConstraints(
+        enumeration=enumeration,
+        minimum=bounds["minimum"],
+        maximum=bounds["maximum"],
+        minimum_inclusive=boolean_value(data.get("minimum_inclusive", True)),
+        maximum_inclusive=boolean_value(data.get("maximum_inclusive", True)),
+        min_length=lengths["min_length"],
+        max_length=lengths["max_length"],
+        pattern=optional_string_value(data.get("pattern")),
+        pattern_mode=cast(Literal["fullmatch", "search"], mode),
+        iri_namespaces=tuple(
+            string_value(namespaces[index]) for index in range(len(namespaces))
         ),
     )
 

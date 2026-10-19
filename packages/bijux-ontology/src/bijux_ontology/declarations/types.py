@@ -11,6 +11,8 @@ from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 
+from .value_constraints import ValueConstraints
+
 ValueKind = Literal["literal", "iri", "object", "unknown"]
 Emission = Literal["unknown", "optional", "guaranteed"]
 
@@ -68,6 +70,7 @@ class ValueDeclaration:
     _: KW_ONLY
     samples: tuple[RDFLiteral, ...] = ()
     direction: Literal["ltr", "rtl"] | Absent | None = None
+    constraints: ValueConstraints | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.kind, str) or self.kind not in {
@@ -112,6 +115,10 @@ class ValueDeclaration:
             raise InputError("A language-tagged literal has datatype rdf:langString")
         if self.language is ABSENT and self.datatype == str(RDF.langString):
             raise InputError("rdf:langString requires a language tag")
+        if self.constraints is not None and not isinstance(
+            self.constraints, ValueConstraints
+        ):
+            raise InputError("Expected explicit application value constraints")
         samples = _sequence(self.samples, "samples")
         if any(not isinstance(sample, RDFLiteral) for sample in samples):
             raise InputError("Literal samples must be RDFLib Literal values")

@@ -2,6 +2,7 @@
 
 from bijux_ontology.absence import ABSENT, Absent
 
+from .enumerations import ValueEnumeration
 from .types import (
     Emission,
     EmissionCondition,
@@ -16,6 +17,7 @@ from .types import (
     ValueDeclaration,
     ValueKind,
 )
+from .value_constraints import ValueConstraints
 
 __all__ = [
     "ABSENT",
@@ -30,6 +32,8 @@ __all__ = [
     "OutputRequirement",
     "SubjectIdentity",
     "TermDeclaration",
+    "ValueConstraints",
     "ValueDeclaration",
+    "ValueEnumeration",
     "ValueKind",
 ]
