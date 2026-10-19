@@ -49,6 +49,8 @@ def export_rdf(
     those exports require preserve_graphs=False to exclude that inventory.
     Unknown source empty-graph fidelity cannot become a verified full-dataset
     claim. Namespace prefixes aid readability; exact IRIs define identity.
+    Resource pins retain physical dataset membership; an explicit graph_name on
+    an unpinned source requests the existing graph projection instead.
     """
     if not isinstance(source, PreparedSource):
         raise InputError("RDF 1.1 export requires an owned PreparedSource")
@@ -65,7 +67,36 @@ def export_rdf(
     selected: Graph
     exclusions: tuple[str, ...] = ()
     try:
-        if graph_name is not None or union or format not in _DATASET_FORMATS:
+        if (
+            format in _DATASET_FORMATS
+            and source.is_dataset
+            and not (source.union or union)
+            and source.graph_name is not None
+        ):
+            operation.consume("bytes", 4096)
+            operation.consume("states", 16)
+            selected = Dataset()
+            for role, selected_name, context in source._contexts(
+                graph_name, union=union, budget=operation
+            ):
+                if role == "named":
+                    assert selected_name is not None
+                    target = selected.graph(selected_name)
+                else:
+                    target = selected.default_graph
+                for triple in context:
+                    operation.consume("work")
+                    operation.consume("states", 4)
+                    operation.consume("bytes", 256)
+                    target.add(triple)
+                bind_namespaces(selected, context)
+        elif (
+            graph_name is not None
+            or union
+            or source.graph_name is not None
+            or source.union
+            or format not in _DATASET_FORMATS
+        ):
             selected = source.graph(graph_name, union=union)
         else:
             selected = source.dataset() if source.is_dataset else source.graph()

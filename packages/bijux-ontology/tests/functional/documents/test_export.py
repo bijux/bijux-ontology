@@ -12,7 +12,9 @@ from bijux_ontology.documents.export import export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, ResourceError
 from bijux_ontology.limits import Limits
+from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources import RdfSource
 
 EX = "https://example.org/"
 S, P, G = (URIRef(EX + value) for value in ("subject", "predicate", "graph"))
@@ -126,6 +128,43 @@ def test_export_refuses_serializer_lexical_loss_without_global_normalisation() -
     unrepresentable = export_rdf(no_qname, format="xml")
     assert unrepresentable.content is None
     assert unrepresentable.report.outcome == "unverified"
+
+
+@pytest.mark.parametrize("format", ("trig", "nquads", "json-ld"))
+def test_dataset_serializers_preserve_authoritative_resource_selection(
+    format: str,
+) -> None:
+    """Resource graph pins cannot expand into unrelated backing graph contents."""
+    dataset = Dataset()
+    dataset.graph(G).add((S, P, Literal("Named")))
+    dataset.default_graph.add((S, P, Literal("Default")))
+    for graph_name, union in ((str(G), False), ("@default", False), (None, True)):
+        source = prepare_source(RdfSource(dataset, graph_name=graph_name, union=union))
+        exported = export_rdf(source, format=format)
+        assert exported.content is not None and exported.report.verified
+        restored = prepare_source(exported.content, format=format)
+        assert compare_rdf(source, restored).verified
+        assert len(tuple(restored.dataset().quads())) == (2 if union else 1)
+        if graph_name == str(G):
+            assert len(restored.graph(str(G))) == 1
+        elif union:
+            assert len(restored.graph("@default")) == 2
+        else:
+            assert len(restored.graph("@default")) == 1
+        with pytest.raises(InputError, match="conflicts"):
+            export_rdf(source, format=format, graph_name=EX + "other")
+
+    empty = URIRef(EX + "empty")
+    dataset.graph(empty)
+    selected_empty = prepare_source(RdfSource(dataset, graph_name=str(empty)))
+    empty_export = export_rdf(selected_empty, format=format)
+    if format == "trig":
+        assert empty_export.content is not None and empty_export.report.verified
+        empty_after = prepare_source(empty_export.content, format=format)
+        assert compare_rdf(selected_empty, empty_after).verified
+        assert len(empty_after.graph(empty)) == 0
+    else:
+        assert empty_export.content is None and not empty_export.report.verified
 
 
 @pytest.mark.parametrize("failure_point", ("fsync", "replace"))
