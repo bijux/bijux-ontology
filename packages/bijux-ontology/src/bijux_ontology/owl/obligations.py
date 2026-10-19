@@ -13,7 +13,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import DatatypeRelation, Regime, datatype_relation
-from bijux_ontology.rdf.snapshots import PreparedSource, copy_graph
+from bijux_ontology.rdf.snapshots import PreparedSource, _is_owned_reader, copy_graph
 from bijux_ontology.rdf.structure import read_rdf_list
 
 from .classes import ClassContracts
@@ -307,8 +307,10 @@ def prove_obligations(
     results = []
     try:
         graph = (
-            source.graph()
+            source._read()
             if isinstance(source, PreparedSource)
+            else source
+            if _is_owned_reader(source)
             else copy_graph(
                 source, max_triples=selected.max_triples, standardize_apart=False
             )

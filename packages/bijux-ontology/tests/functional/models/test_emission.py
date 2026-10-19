@@ -92,7 +92,7 @@ def test_each_mixed_alternative_value_and_list_item_is_checked() -> None:
     assert len(report.issues) == 1
 
 
-def test_nested_bindings_reversal_and_guaranteed_presence_remain_explicit() -> None:
+def test_nested_discovery_reversal_and_guaranteed_presence() -> None:
     parent = Model(
         "parent",
         (EX + "Parent",),
@@ -117,9 +117,7 @@ def test_nested_bindings_reversal_and_guaranteed_presence_remain_explicit() -> N
         "child": {"kind": "Child", "name": "Child"},
     }
     report = check_emission(document, [parent, child], [ModelUsage("parent")])
-    assert [issue.code for issue in report.issues] == [
-        "emission.nested_scope_unverified"
-    ]
+    assert report.verified
     bindings = [ModelUsage("parent"), ModelUsage("child", ("child",))]
     report = check_emission(document, [parent, child], bindings)
     assert report.verified, report.to_dict()
@@ -298,9 +296,7 @@ def test_actual_child_bindings_cross_containers_without_binding_the_wrapper(
     assert check_emission(document, [parent, child], bindings).verified
     assert document == original
     omitted = check_emission(document, [parent, child], bindings[:1])
-    assert "emission.nested_scope_unverified" in {
-        issue.code for issue in omitted.issues
-    }
+    assert omitted.verified
     if explicit:
         wrapper = check_emission(
             document,
@@ -309,7 +305,7 @@ def test_actual_child_bindings_cross_containers_without_binding_the_wrapper(
         )
         assert not wrapper.verified
     del child_node["label"]
-    missing = check_emission(document, [parent, child], bindings)
+    missing = check_emission(document, [parent, child], bindings[:1])
     assert any(
         issue.code == "emission.required_occurrence_missing"
         and issue.location == "/" + "/".join(map(str, (*child_path, "label")))
@@ -630,7 +626,7 @@ def test_repeated_references_resolve_one_entity_without_source_occurrence_fictio
         ],
     )
     assert not report.verified
-    assert "emission.nested_scope_unverified" in {issue.code for issue in report.issues}
+    assert "emission.reference_unverified" in {issue.code for issue in report.issues}
 
 
 def test_source_graph_selection_and_rdf_identity_do_not_infer_owl_equality() -> None:
@@ -696,3 +692,104 @@ def test_subject_identity_plain_declaration_ingestion_is_explicit() -> None:
             models_from_data(
                 [{"identifier": "record", "types": [], "subject": subject}]
             )
+
+
+@pytest.mark.parametrize("named", [False, True])
+def test_one_root_binding_checks_many_children_and_retains_exact_failure(
+    named: bool,
+) -> None:
+    parent = Model(
+        "parent",
+        (EX + "Parent",),
+        (Field("items", EX + "items", (Value("object", model="child"),)),),
+    )
+    child = Model(
+        "child",
+        (EX + "Child",),
+        (Field("label", EX + "label", (Value("literal"),), emission="guaranteed"),),
+    )
+    children = [
+        dict(
+            {"@id": EX + str(i)} if named else {}, **{"@type": "Child", "label": str(i)}
+        )
+        for i in range(20)
+    ]
+    document = {"@context": {"@vocab": EX}, "@type": "Parent", "items": children}
+    models = [parent, child]
+    assert check_emission(document, models, [ModelUsage("parent")]).verified
+    children[7].pop("label")
+    result = check_emission(document, models, [ModelUsage("parent")])
+    assert not result.verified
+    if named:
+        assert any(
+            issue.code == "emission.required_occurrence_missing"
+            and issue.location == "/items/7/label"
+            for issue in result.issues
+        )
+    else:
+        assert any(
+            issue.code == "emission.nested_scope_unverified" for issue in result.issues
+        )
+    children[7]["label"] = "7"
+    wrong = Model("other", (EX + "Child",))
+    conflict = check_emission(
+        document,
+        [*models, wrong],
+        [ModelUsage("parent"), ModelUsage("other", ("items", 7))],
+    )
+    assert "emission.binding_conflict" in {issue.code for issue in conflict.issues}
+
+
+def test_repeated_child_descriptions_keep_each_source_guarantee_and_all_conflicts() -> (
+    None
+):
+    parent = Model(
+        "parent",
+        (EX + "Parent",),
+        (Field("children", EX + "children", (Value("object", model="child"),)),),
+    )
+    child = Model(
+        "child",
+        (EX + "Child",),
+        (Field("label", EX + "label", (Value("literal"),), emission="guaranteed"),),
+    )
+    wrong = Model("other", (EX + "Child",))
+    children = [
+        {"@id": EX + "child", "@type": "Child", "label": "First"},
+        {"@id": EX + "child", "@type": "Child"},
+    ]
+    document = {"@context": {"@vocab": EX}, "@type": "Parent", "children": children}
+    for bindings in (
+        [ModelUsage("parent")],
+        [ModelUsage("parent"), ModelUsage("child", ("children", 0))],
+    ):
+        result = check_emission(document, [parent, child], bindings)
+        assert not result.verified
+        assert "emission.nested_scope_unverified" in {
+            issue.code for issue in result.issues
+        }
+    explicit = check_emission(
+        document,
+        [parent, child],
+        [
+            ModelUsage("parent"),
+            ModelUsage("child", ("children", 0)),
+            ModelUsage("child", ("children", 1)),
+        ],
+    )
+    assert any(
+        issue.code == "emission.required_occurrence_missing"
+        and issue.location == "/children/1/label"
+        for issue in explicit.issues
+    )
+    one = {**document, "children": children[:1]}
+    result = check_emission(
+        one,
+        [parent, child, wrong],
+        [
+            ModelUsage("parent"),
+            ModelUsage("other", ("children", 0)),
+            ModelUsage("child", ("children", 0)),
+        ],
+    )
+    assert "emission.binding_conflict" in {issue.code for issue in result.issues}

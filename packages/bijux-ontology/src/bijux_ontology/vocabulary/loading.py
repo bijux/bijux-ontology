@@ -6,7 +6,7 @@ from rdflib import Graph
 
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 
@@ -24,6 +24,7 @@ def load_vocabulary(
     imports: Mapping[str, RdfSource | Payload] | None = None,
     lookup: Sequence[Graph | PreparedSource | RdfSource] = (),
     limits: Limits | None = None,
+    budget: Budget | None = None,
     preserve_literals: bool = True,
     document_loader: DocumentLoader | None = None,
 ) -> Vocabulary:
@@ -33,7 +34,7 @@ def load_vocabulary(
     explicit union. Snapshot files keep their logical base. Lookup documents do
     not form a required import closure. Limits apply before owned source copies.
     """
-    resources = context_resources(document_loader, limits=limits)
+    resources = context_resources(document_loader, limits=limits, budget=budget)
     budget = resources.budget
     selected = budget.limits
     prepared = prepare_source(
@@ -45,7 +46,7 @@ def load_vocabulary(
         preserve_literals=preserve_literals,
         document_loader=resources,
     )
-    local = prepared.graph(graph_name, union=union)
+    local = prepared._read(graph_name, union=union, budget=budget)
     imported = required_imports(
         prepared,
         local,
@@ -56,12 +57,12 @@ def load_vocabulary(
     )
     lookups = [
         prepare_source(
-            item.graph() if isinstance(item, PreparedSource) else item,
+            item._read() if isinstance(item, PreparedSource) else item,
             limits=selected,
             budget=budget,
             preserve_literals=preserve_literals,
             document_loader=resources,
-        ).graph()
+        )._read(budget=budget)
         for item in lookup
     ]
-    return Vocabulary(local, imported, lookups, limits=selected)
+    return Vocabulary._from_owned(local, imported, tuple(lookups), selected)

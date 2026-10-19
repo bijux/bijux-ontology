@@ -56,12 +56,14 @@ def declared_kinds(
         if isinstance(vocabulary, Vocabulary)
         else load_vocabulary(vocabulary)
     )
-    if scope == "all":
-        kinds = source._kind_index.get(iri, frozenset())
-    elif scope == "local":
-        kinds = source._local_kind_index.get(iri, frozenset())
-    else:
-        kinds = source._closure_kind_index.get(iri, frozenset())
+    scopes = (
+        ("local",)
+        if scope == "local"
+        else ("local", "imports")
+        if scope == "closure"
+        else ("local", "imports", "lookup")
+    )
+    kinds = source._declared(iri, scopes)
     return kinds if scope == "local" else kinds | builtin_kinds(iri, regime)
 
 
@@ -113,12 +115,14 @@ def _lint_issues(
     local: Graph, regime: Regime, *, budget: Budget, issues: IssueCollector
 ) -> int:
     checked = 0
-    named = {node for triple in local for node in triple if isinstance(node, URIRef)}
-    named.update(
-        node.datatype
-        for node in local.objects()
-        if isinstance(node, Literal) and node.datatype is not None
-    )
+    named: set[URIRef] = set()
+    for triple in local:
+        budget.consume("work")
+        for node in triple:
+            if isinstance(node, URIRef):
+                named.add(node)
+            elif isinstance(node, Literal) and node.datatype is not None:
+                named.add(node.datatype)
     for term in sorted(named, key=str):
         budget.consume("work")
         known = reserved_name_known(str(term))
@@ -170,6 +174,7 @@ def check_vocabulary(
     lint: bool = False,
     allow_empty: bool = False,
     limits: Limits | None = None,
+    budget: Budget | None = None,
 ) -> Report:
     """Check used terms and optional complete coverage of selected local terms.
 
@@ -179,23 +184,30 @@ def check_vocabulary(
     Reference/lint rules are opt-in; schema.org includes metadata is descriptive.
     """
     validate_regime(regime)
+    if budget is not None and limits is not None and budget.limits != limits:
+        raise InputError("Explicit limits conflict with the shared operation budget")
     sources = (
         vocabulary
         if isinstance(vocabulary, Vocabulary)
-        else load_vocabulary(vocabulary, limits=limits)
+        else load_vocabulary(vocabulary, limits=limits, budget=budget)
     )
-    selected = limits if limits is not None else sources.limits
-    budget = Budget(selected)
+    selected = limits or (budget.limits if budget is not None else sources.limits)
+    budget = budget if budget is not None else Budget(selected)
     if coverage_scope not in ("local", "closure"):
         raise InputError("Coverage scope must be local or closure")
     for iri in (*local_namespaces, *exclude, *coverage_terms, *coverage_kinds):
         absolute_iri(iri)
-    combined = sources._combined
     excluded = frozenset(exclude)
     issues = IssueCollector(budget)
     checked = 0
     complete = True
     try:
+        combined = sources._read(budget=budget).graph
+        local = (
+            sources._read(("local",), budget=budget).graph
+            if local_namespaces or lint or check_references
+            else None
+        )
         inventory: set[str] = set()
         for term in terms:
             budget.consume("work")
@@ -239,10 +251,9 @@ def check_vocabulary(
                     )
                 )
             else:
-                index = (
-                    sources._local_kind_index
-                    if coverage_scope == "local"
-                    else sources._closure_kind_index
+                index = sources._kind_index(
+                    ("local",) if coverage_scope == "local" else ("local", "imports"),
+                    budget,
                 )
                 declared: set[str] = set()
                 for iri, kinds in index.items():
@@ -292,13 +303,13 @@ def check_vocabulary(
                             )
                         )
         if check_references:
+            assert local is not None
             checked += _reference_issues(
-                sources._local, combined, regime, budget=budget, issues=issues
+                local, combined, regime, budget=budget, issues=issues
             )
         if lint:
-            checked += _lint_issues(
-                sources._local, regime, budget=budget, issues=issues
-            )
+            assert local is not None
+            checked += _lint_issues(local, regime, budget=budget, issues=issues)
     except LimitExceeded as error:
         issues.exhausted(str(error), location="vocabulary")
         complete = False

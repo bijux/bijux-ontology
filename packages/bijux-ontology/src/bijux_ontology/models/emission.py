@@ -19,6 +19,9 @@ from bijux_ontology.jsonld.entities import (
     EntityKey,
     object_key,
 )
+from bijux_ontology.jsonld.entities import (
+    source_entity as source_record,
+)
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
@@ -36,8 +39,16 @@ from bijux_ontology.rdf.terms import literal_term
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
-from .bindings import same_contribution, source_entity, source_node_traits
+from .bindings import (
+    candidate_paths,
+    same_contribution,
+    source_entity,
+    source_node_traits,
+)
+from .occurrences import check_occurrences
 from .registry import index_models
+from .value_matching import identity_matches as _identity_matches
+from .value_matching import matches_value
 
 
 @dataclass(frozen=True)
@@ -88,55 +99,26 @@ class ModelUsage:
                 raise InputError("Reference and expected subject identities conflict")
 
 
-def _identity_matches(contract: SubjectIdentity, traits: ValueTraits) -> bool:
-    if contract.expected_iri is not None and traits.identifier != contract.expected_iri:
-        return False
-    return contract.allow_blank or traits.identifier_kind == "iri"
-
-
 def _matches(
     value: ValueDeclaration,
     occurrence: ObservedOccurrence,
     registry: dict[str, ModelDeclaration],
     inventory: EntityInventory | None = None,
 ) -> bool | None:
-    if value.kind == "unknown" or value.container not in (None, "@set", "@list"):
-        return None
-    container = "list" if value.container == "@list" else "unordered"
-    if occurrence.container != container:
-        return False
-    if occurrence.empty:
-        return True if container == "list" else None
+    """Resolve actual joined descriptions before shared scalar contract matching."""
     traits = occurrence.traits
-    if value.kind == "literal":
-        if traits.kind != "literal":
-            return False
-        if value.datatype is not None and value.datatype != traits.datatype:
-            return False
-        return not (
-            value.language is not None
-            and value.language.lower() != (traits.language or "").lower()
-        )
-    if value.kind == "iri" and traits.kind != "iri":
-        return False
-    if value.kind == "object" and traits.kind not in {"node", "iri", "blank"}:
-        return False
-    if inventory is not None:
+    if (
+        inventory is not None
+        and value.kind in {"iri", "object"}
+        and traits.kind in {"iri", "blank", "node"}
+    ):
         key = object_key(occurrence)
         description = inventory.get(key) if key is not None else None
         if description is not None and description.described:
             traits = replace(traits, types=description.types)
-    required = set(value.types)
-    if value.model is not None:
-        if value.model not in registry:
-            return None
-        model = registry[value.model]
-        if not _identity_matches(model.subject, traits):
-            return False
-        required.update(model.types)
-    if required - set(traits.types):
-        return None if traits.kind in {"iri", "blank"} and not traits.types else False
-    return True
+    return matches_value(
+        value, traits, registry, container=occurrence.container, empty=occurrence.empty
+    )
 
 
 def _literal_result(
@@ -227,18 +209,23 @@ def check_emission(
     document_loader: DocumentLoader | None = None,
     allowed_drops: frozenset[str] = frozenset(),
     limits: Limits | None = None,
+    budget: Budget | None = None,
 ) -> Report:
     """Check selected actual outputs, without claiming all hypothetical instances.
 
     Each occurrence must match one alternative branch. Nested model nodes need
-    explicit source or graph-qualified entity bindings. Unsupplied descriptions
+    established source or graph-qualified entity bindings. Supported unambiguous
+    children are discovered automatically; explicit bindings can constrain them.
+    Unsupplied descriptions
     stay unknown unless their reference binding explicitly requires closed coverage.
     Predicates, reversal, collection membership and literal traits come from the
     shared standards-processed usage snapshot, never a second expansion engine.
     Type checks compare explicit emitted types, without ontology entailment.
     """
-    selected = limits if limits is not None else Limits()
-    budget = Budget(selected)
+    if budget is not None and limits is not None and budget.limits != limits:
+        raise InputError("Explicit limits conflict with the shared operation budget")
+    selected = limits or (budget.limits if budget is not None else Limits())
+    budget = budget if budget is not None else Budget(selected)
     issues = IssueCollector(budget)
     checked = 0
     complete = True
@@ -270,7 +257,7 @@ def check_emission(
             limits=selected,
             budget=budget,
         )
-        bindings = tuple(usages)
+        bindings = list(usages)
         bound_traits: dict[SourcePath, tuple[ValueTraits, ...]] = {}
 
         def traits_for(path: SourcePath) -> tuple[ValueTraits, ...]:
@@ -367,6 +354,108 @@ def check_emission(
                 ):
                     return True
             return False
+
+        def bind_reference(key: EntityKey, targets: set[str]) -> bool:
+            """Follow one established named child in its exact selected graph."""
+            if len(targets) != 1 or key.identifier is None or key.anonymous_graph:
+                return False
+            if key.identifier.startswith("_:"):
+                return False
+            description = prepared.entities.get(key)
+            if description is None or not description.described:
+                return False
+            target = next(iter(targets))
+            if target not in registry or set(registry[target].types) - set(
+                description.types
+            ):
+                return False
+            selected = ModelUsage(
+                target, reference=key.identifier, graph=key.graph, entity=True
+            )
+            if selected not in bindings:
+                budget.consume("states")
+                bindings.append(selected)
+            return True
+
+        discovered_sources: dict[
+            tuple[SourcePath, EntityKey | None, str], tuple[SourcePath, ...]
+        ] = {}
+
+        def bind_source(
+            path: SourcePath, occurrence: ObservedOccurrence, targets: set[str]
+        ) -> tuple[SourcePath, ...]:
+            """Check proven inline descriptions without joining source guarantees."""
+            if len(targets) != 1:
+                return ()
+            target = next(iter(targets))
+            key = (path, object_key(occurrence), target)
+            if key in discovered_sources:
+                return discovered_sources[key]
+            matches = []
+            for candidate in candidate_paths(at_path(snapshot, path), path, budget):
+                traits = traits_for(candidate)
+                if len(traits) != 1 or traits[0].kind not in {"node", "iri", "blank"}:
+                    continue
+                node = at_path(snapshot, candidate)
+                if not isinstance(node, dict):
+                    continue
+                association = source_record(node, candidate, prepared.observe, budget)
+                if association is None or not association.described:
+                    continue
+                usage = prepared.observe(candidate)
+                if association.key == object_key(occurrence) or (
+                    not usage.limitation
+                    and any(
+                        same_contribution(occurrence, item)
+                        for item in usage.occurrences
+                    )
+                ):
+                    matches.append(candidate)
+            for selected_path in matches:
+                if any(
+                    child.reference is None
+                    and not child.entity
+                    and child.path == selected_path
+                    and child.model != target
+                    for child in bindings
+                ):
+                    issues.append(
+                        Issue(
+                            "emission.binding_conflict",
+                            "Explicit child binding conflicts with the "
+                            "established model relationship",
+                            location(selected_path),
+                            kind="input_error",
+                            expected=target,
+                        )
+                    )
+                selected = ModelUsage(target, selected_path)
+                if selected not in bindings:
+                    budget.consume("states")
+                    bindings.append(selected)
+            discovered_sources[key] = tuple(matches)
+            return discovered_sources[key]
+
+        def reference_source(path: SourcePath, key: EntityKey) -> bool:
+            """Join descriptions only for actual references, not inline source nodes."""
+            value = at_path(snapshot, path)
+            if (
+                isinstance(value, str)
+                or isinstance(value, list)
+                and all(isinstance(item, str) for item in value)
+            ):
+                return True
+            reference = False
+            for candidate in candidate_paths(value, path, budget):
+                node = at_path(snapshot, candidate)
+                if not isinstance(node, dict):
+                    continue
+                association = source_record(node, candidate, prepared.observe, budget)
+                if association is not None and association.key == key:
+                    if association.described:
+                        return False
+                    reference = True
+            return reference
 
         def check_entity(binding: ModelUsage, model: ModelDeclaration) -> None:
             """Check joined entity facts separately from source-object guarantees."""
@@ -481,6 +570,7 @@ def check_emission(
                         targets
                         and child_key is not None
                         and not reference_binding(child_key, targets)
+                        and not bind_reference(child_key, targets)
                     ):
                         issues.append(
                             Issue(
@@ -490,6 +580,16 @@ def check_emission(
                                 kind="unverified",
                             )
                         )
+
+                issues.extend(
+                    check_occurrences(
+                        field.output,
+                        facts,
+                        where=field_where,
+                        budget=budget,
+                        native_literals=native_literals,
+                    )
+                )
 
         for binding in bindings:
             budget.consume("work")
@@ -563,6 +663,16 @@ def check_emission(
                 path = binding.path + (field.key or field.name,)
                 checked += 1
                 if path[-1] not in node:
+                    issues.extend(
+                        check_occurrences(
+                            field.output,
+                            (),
+                            where=location(path),
+                            budget=budget,
+                            native_literals=native_literals,
+                            present=False,
+                        )
+                    )
                     if field.emission == "guaranteed":
                         issues.append(
                             Issue(
@@ -588,6 +698,17 @@ def check_emission(
                     )
                     continue
                 if not observed.occurrences:
+                    issues.extend(
+                        check_occurrences(
+                            field.output,
+                            (),
+                            where=location(path),
+                            budget=budget,
+                            native_literals=native_literals,
+                            present=True,
+                            raw=node[path[-1]],
+                        )
+                    )
                     if field.emission == "guaranteed":
                         issues.append(
                             Issue(
@@ -596,6 +717,12 @@ def check_emission(
                                 location(path),
                             )
                         )
+                    elif (
+                        field.output is not None
+                        and field.output.allow_empty
+                        and (node[path[-1]] is not None or field.output.allow_null)
+                    ):
+                        expectations.pop()
                     else:
                         issues.append(
                             Issue(
@@ -641,6 +768,21 @@ def check_emission(
                                 actual=occurrence.traits.kind,
                             )
                         )
+                issues.extend(
+                    check_occurrences(
+                        field.output,
+                        tuple(
+                            item
+                            for item in observed.occurrences
+                            if item.depth == minimum_depth
+                        ),
+                        where=location(path),
+                        budget=budget,
+                        native_literals=native_literals,
+                        present=True,
+                        raw=node[path[-1]],
+                    )
+                )
                 covered: set[SourcePath] = set()
                 for occurrence in observed.occurrences:
                     budget.consume("work")
@@ -657,8 +799,12 @@ def check_emission(
                     if not targets:
                         continue
                     child_key = object_key(occurrence)
-                    matched = child_key is not None and reference_binding(
-                        child_key, targets
+                    discovered = bind_source(path, occurrence, targets)
+                    covered.update(discovered)
+                    matched = bool(discovered) or (
+                        child_key is not None
+                        and reference_source(path, child_key)
+                        and reference_binding(child_key, targets)
                     )
                     for child in bindings:
                         if matched:
@@ -688,6 +834,12 @@ def check_emission(
                             covered.add(child.path)
                             matched = True
                             break
+                    if (
+                        not matched
+                        and child_key is not None
+                        and reference_source(path, child_key)
+                    ):
+                        matched = bind_reference(child_key, targets)
                     if not matched:
                         issues.append(
                             Issue(

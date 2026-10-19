@@ -2,7 +2,7 @@
 
 import json
 from collections import Counter, defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from copy import deepcopy
 from dataclasses import replace
 from typing import cast
@@ -18,6 +18,7 @@ from .observations import (
     location,
     occurrences,
 )
+from .projections import NamedProjections
 from .resources import context_is_unscoped
 
 Expansion = Callable[[object], list[dict[str, object]]]
@@ -47,6 +48,13 @@ class UsageIndex:
                 lists[item.list_id].append((item.value_json, item.list_position))
         self._lists = {key: tuple(members) for key, members in lists.items()}
         self._unscoped_resources = unscoped_resources
+        self._projections = NamedProjections(
+            self._document,
+            self._original,
+            self._expand,
+            self._budget,
+            self._unscoped_resources,
+        )
         self._flat_context = (
             context_is_unscoped(document.get("@context", {}))
             if isinstance(document, dict)
@@ -100,6 +108,24 @@ class UsageIndex:
         return ObservedUsage(
             path, tuple(replace(item, location=location(path)) for item in selected)
         )
+
+    def prepare_many(self, paths: Sequence[SourcePath]) -> None:
+        """Warm proven shared cohorts without changing unsupported fallbacks."""
+        if len(paths) > self._budget.limits.max_states:
+            return
+        pending = tuple(
+            dict.fromkeys(path for path in paths if path not in self._cache)
+        )
+        if len(pending) < 2:
+            return
+        for path, usage in self._projections.select(pending).items():
+            self._budget.consume("states")
+            self._cache[path] = usage
+
+    def select_many(self, paths: Sequence[SourcePath]) -> tuple[ObservedUsage, ...]:
+        """Observe every requested path, preserving order and duplicate requests."""
+        self.prepare_many(paths)
+        return tuple(self.select(path) for path in paths)
 
     def select(self, path: SourcePath) -> ObservedUsage:
         """Select a contribution without assuming stable expansion indexes."""

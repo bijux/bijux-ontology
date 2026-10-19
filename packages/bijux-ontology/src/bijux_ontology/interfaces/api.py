@@ -10,6 +10,7 @@ from bijux_ontology.declarations.codecs import (
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
+    OutputRequirement,
     SubjectIdentity,
     TermDeclaration,
     ValueDeclaration,
@@ -51,6 +52,7 @@ from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
 from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
 from bijux_ontology.models.serialization import InstanceCheck, check_instance
 from bijux_ontology.owl.obligations import (
     ObligationResult,
@@ -77,6 +79,7 @@ from bijux_ontology.reports import (
     combine_reports,
 )
 from bijux_ontology.skos.checking import check_skos
+from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.comparison import (
     Change,
@@ -141,12 +144,14 @@ __all__ = [
     "Location",
     "ModelAssessment",
     "ModelDeclaration",
+    "OutputRequirement",
     "ModelUsage",
     "ObligationResult",
     "ObservedOccurrence",
     "ObservedUsage",
     "OfflineDocumentLoader",
     "OntologyObligation",
+    "OntologyVersion",
     "PreparedChecks",
     "PreparedSource",
     "PreparedUsages",
@@ -154,6 +159,7 @@ __all__ = [
     "Property",
     "RDFConversion",
     "RDFExport",
+    "RdfModelUsage",
     "RdfSource",
     "Report",
     "ResourceError",
@@ -182,6 +188,7 @@ __all__ = [
     "check_models",
     "check_ontology",
     "check_project",
+    "check_rdf_emission",
     "check_skos",
     "check_vocabulary",
     "combine_reports",
@@ -199,6 +206,7 @@ __all__ = [
     "index_uses",
     "inspect_vocabulary",
     "load_project",
+    "load_catalog",
     "load_vocabulary",
     "merge_sources",
     "models_from_data",

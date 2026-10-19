@@ -1,6 +1,7 @@
 """Prepare actual usages and compare every supported selected occurrence."""
 
 from collections.abc import Sequence
+from typing import cast
 
 from bijux_ontology._json import own_json
 from bijux_ontology.limits import Budget, IssueCollector, Limits
@@ -143,6 +144,28 @@ class PreparedUsages:
                 "No supplied usage", location=location(path)
             ) from error
 
+    def observe_many(self, paths: Sequence[SourcePath]) -> tuple[ObservedUsage, ...]:
+        """Share proven nested preparation while preserving each concrete usage."""
+        if not isinstance(paths, Sequence) or isinstance(
+            cast(object, paths), (str, bytes)
+        ):
+            raise ContextInputError("Expected an explicit sequence of usage selectors")
+        if len(paths) > self._budget.limits.max_states:
+            raise LimitExceeded("Observation batch exceeds max_states")
+        selected = tuple(paths)
+        for path in selected:
+            if (
+                not isinstance(path, tuple)
+                or not path
+                or any(
+                    type(key) not in (str, int) or isinstance(key, int) and key < 0
+                    for key in path
+                )
+            ):
+                raise ContextInputError("Expected nonempty key/index usage selectors")
+        self._index.prepare_many(selected)
+        return tuple(self.observe(path) for path in selected)
+
     def select(self, selector: SourceSelector | EntitySelector) -> Selection:
         """Resolve typed finite matches with explicit source/entity coverage."""
         return resolve_selection(
@@ -167,6 +190,16 @@ class PreparedUsages:
         try:
             issues.extend(self._omission_issues)
             issues.extend(_drop_issues(self._dropped, self._allowed_drops))
+            self._index.prepare_many(
+                tuple(
+                    expectation.path
+                    for expectation in expectations
+                    if not any(
+                        expectation.path[: len(path)] == path
+                        for path in self._omissions
+                    )
+                )
+            )
             for expectation in expectations:
                 self._budget.consume("work")
                 if any(

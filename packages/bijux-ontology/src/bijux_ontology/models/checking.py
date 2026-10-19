@@ -43,6 +43,7 @@ def check_models(
     allow_empty: bool = False,
     regime: Regime = "application",
     limits: Limits | None = None,
+    budget: Budget | None = None,
 ) -> Report:
     """Check finite model declarations against explicit supplied RDF statements.
 
@@ -52,20 +53,22 @@ def check_models(
     """
     if regime not in ("application", "rdf", "owl-dl"):
         raise InputError("Unknown semantic regime")
+    if budget is not None and limits is not None and budget.limits != limits:
+        raise InputError("Explicit limits conflict with the shared operation budget")
+    budget = budget if budget is not None else Budget(limits)
     sources = (
         vocabulary
         if isinstance(vocabulary, Vocabulary)
-        else load_vocabulary(vocabulary)
+        else load_vocabulary(vocabulary, budget=budget)
     )
-    graph = sources.graph()
-    budget = Budget(limits)
-    contracts = ModelContracts(graph, regime, budget)
-    classes = ClassContracts(graph, budget)
     registry: dict[str, ModelDeclaration] = {}
     issues = IssueCollector(budget)
     checked = 0
     complete = True
     try:
+        graph = sources._read(budget=budget).graph
+        contracts = ModelContracts(graph, regime, budget)
+        classes = ClassContracts(graph, budget)
         budget.consume("triples", len(graph))
         registry = index_models(models, budget, issues)
         for model in registry.values():
@@ -167,6 +170,7 @@ def check_models(
                         for iri in model.types
                     ],
                     regime="owl-dl" if regime == "owl-dl" else "rdf",
+                    budget=budget,
                 )
                 checked += membership.checked
                 issues.extend(membership.issues)
@@ -338,5 +342,5 @@ def assess_models(
     report = check_models(
         models, sources, allow_empty=allow_empty, regime=regime, limits=limits
     )
-    answers = prove_obligations(sources.graph(), obligations, limits=limits)
+    answers = prove_obligations(sources._read().graph, obligations, limits=limits)
     return ModelAssessment(report, answers)

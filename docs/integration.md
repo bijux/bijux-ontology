@@ -150,3 +150,32 @@ finite registry and explicit `RdfField` metadata: dataclasses use the `rdf`
 field metadata key, while TypedDict fields use `Annotated`. Serializer sidecars
 can describe output aliases and contracts; conflicting metadata remains visible.
 Python field types, defaults and required keys do not imply RDF emission.
+
+`load_catalog(Path("catalog.xml"), versions=[OntologyVersion(ontology, version)])`
+provides immutable offline imports for `load_vocabulary`. The supported OASIS
+subset is `catalog`, nested `group` and exact `uri` entries with inherited
+`xml:base`. Targets are local files; rewrites, chaining, DTDs, duplicate names
+and conflicting versions fail. Logical entry/version IRIs supply RDF bases.
+Use `formats={iri: "xml"}` for ambiguous `.owl` targets and explicitly select
+dataset graphs through the returned `RdfSource` values.
+
+A root `ModelUsage` also checks unambiguous nested models declared by its value
+branches. Actual processor-established contributions identify children through
+arrays and list/set wrappers; named references follow descriptions in their
+exact graph. Explicit bindings remain available and conflicting model choices
+fail. Ambiguous anonymous correspondence or model alternatives stay unverified;
+removing an anonymous node’s only identifying evidence can cross that boundary.
+
+`FieldDeclaration(output=OutputRequirement(...))` separates required source
+properties, null/empty permission, distinct RDF value bounds and per-list member
+bounds. Repeated unordered values count once; repeated list positions count
+separately, and an empty list contributes `rdf:nil` with zero members. These
+are application output requirements, independent of Python constructor fields
+and OWL cardinalities. Legacy `optional=True` aliases optional emission and
+rejects conflicting required output; its default `False` adds no guarantee.
+
+`PreparedUsages.observe_many(paths)` shares maintained processing for supported
+primitive fields on uniquely named subjects. Scoped contexts, anonymous subjects,
+lists and ambiguous correspondences retain conservative individual observation.
+The same owned preparation can serve repeated checks within its cumulative
+budget. Worker calls still start separate processes; this API adds no session.

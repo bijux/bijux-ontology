@@ -19,6 +19,7 @@ from bijux_ontology.declarations.types import (
     Emission,
     FieldDeclaration,
     ModelDeclaration,
+    OutputRequirement,
     SubjectIdentity,
     TermDeclaration,
     ValueDeclaration,
@@ -129,6 +130,7 @@ def models_from_data(
                             "location",
                             "reverse",
                             "emission",
+                            "output",
                         },
                         location="",
                         message="Unknown declaration keys",
@@ -155,6 +157,7 @@ def models_from_data(
                             ),
                             key=optional_string_value(field.get("key")),
                             optional=boolean_value(field.get("optional", False)),
+                            output=_output(field.get("output")),
                             location=string_value(
                                 field.get(
                                     "location",
@@ -221,4 +224,43 @@ def _subject(value: object) -> SubjectIdentity:
     return SubjectIdentity(
         expected_iri=optional_string_value(data.get("expected_iri")),
         allow_blank=boolean_value(data.get("allow_blank", True)),
+    )
+
+
+def _output(value: object) -> OutputRequirement | None:
+    if value is None:
+        return None
+    data = object_value(value, location="output")
+    known_keys(
+        data,
+        {
+            "require_property",
+            "allow_null",
+            "allow_empty",
+            "minimum_values",
+            "maximum_values",
+            "minimum_list_members",
+            "maximum_list_members",
+        },
+        location="output",
+    )
+    counts: dict[str, int | None] = {}
+    for name in (
+        "minimum_values",
+        "maximum_values",
+        "minimum_list_members",
+        "maximum_list_members",
+    ):
+        count = data.get(name)
+        if count is not None and type(count) is not int:
+            raise InputError("Output counts require integers or null", location=name)
+        counts[name] = count
+    return OutputRequirement(
+        require_property=boolean_value(data.get("require_property", False)),
+        allow_null=boolean_value(data.get("allow_null", False)),
+        allow_empty=boolean_value(data.get("allow_empty", False)),
+        minimum_values=counts["minimum_values"],
+        maximum_values=counts["maximum_values"],
+        minimum_list_members=counts["minimum_list_members"],
+        maximum_list_members=counts["maximum_list_members"],
     )
