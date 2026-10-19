@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "templates": frozenset(
+        "row_input_error native_row_error row_output_missing "
+        "unrequested_output unverified input_error".split()
+    ),
     "r2rml": frozenset(
         "source_population_unverified emitted_key_mismatch "
         "emitted_population_unverified unverified input_error".split()
@@ -579,6 +583,16 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "templates": (
+        "explicit native ROBOT rows and selected generated ontology obligations",
+        "A row, native output assertion or consumer proof fails or is unverified.",
+        "Inspect original table and located row receipts, explicit identifier "
+        "and role bindings, exact native output inventory and consumer reports; "
+        "supply the qualified runtime and measured preparation allowance.",
+        "compile_table_template(runtime, backend, table, columns=columns, "
+        "bindings=bindings, identifiers=identifiers, terms=terms, "
+        "prefixes=prefixes, ontology_iri=iri, postconditions=obligations)",
+    ),
     "r2rml": (
         "explicit SQLite table populations and owned native R2RML output",
         "A source row, emitted key or join fails or lacks complete scoped evidence.",

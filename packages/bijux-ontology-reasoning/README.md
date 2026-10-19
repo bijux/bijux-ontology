@@ -70,6 +70,19 @@ roles. `.unsupported` records actual selected axioms outside the finite model;
 structure or incomplete execution prevents a verified complete projection.
 Inspection makes no consistency, satisfiability or entailment claim.
 
+`templates.compile_table_template` executes the documented ROBOT 1.9.11 CSV/TSV
+class templates: ID, LABEL, TYPE, named parents, named-property existentials and
+plain literal annotations. Supply exact `TemplateColumn`, `TemplateIdentifier`
+and role-specific `TemplateTerm` bindings, local declaration/label ontology,
+prefixes and nonempty consumer postconditions. Original rows and native cell
+diagnostics remain available; every emitted axiom must match the declared rows.
+Only complete native profile, roundtrip and consumer proofs publish output.
+`prepare_template_backend` requires explicit Java and the official standalone
+jar pinned to SHA256
+`53cd275c8e4c0dad1fc2c1c34174876795cd7d6b6926e1444adcbb0cb3c7ab26`.
+Sealing its 82,708,624 bytes needs an explicit preparation allowance such as
+`Limits(max_total_bytes=128_000_000)`; execution uses a separate caller budget.
+
 `diagnosis.check_consistency(backend, source, named_classes=None)` asks actual
 ontology consistency and separate named-class satisfiability questions. A
 consistent ontology may contain unsatisfiable classes. An inconsistent ontology
