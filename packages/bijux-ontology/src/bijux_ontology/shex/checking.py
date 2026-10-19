@@ -13,6 +13,7 @@ from rdflib import Graph, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.execution.processes.transport import run_worker
@@ -154,7 +155,8 @@ def validate_shex(
         # Request framing is host work and must precede the final native grant.
         grant = {kind: operation.remaining(kind) for kind in _KINDS}
         grant["issues"] = 0
-        request["allowances"] = grant
+        delegated = DelegatedAllowance(operation, grant)
+        request["allowances"] = delegated.to_data()
         payload = json.dumps(request, ensure_ascii=False).encode()
         root = (
             artifacts
@@ -303,9 +305,10 @@ def validate_shex(
             # before dispatch. Retain them without re-running a stopped deadline.
             for issue in projected:
                 list.append(issues, issue)
-            adopted = grant if stopped or code or malformed else paid
-            for kind, amount in adopted.items():
-                operation.consume_completed(kind, amount)
+            if stopped or code or malformed:
+                delegated.forfeit()
+            else:
+                delegated.settle(paid)
             if not complete:
                 if stopped or problem == "shex.execution_incomplete":
                     issues.exhausted("Owned ShEx execution did not complete")
