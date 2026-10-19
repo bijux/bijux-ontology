@@ -20,6 +20,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.paths import at_path, bound_path, bounded_location
+from bijux_ontology.json.snapshots import serialized, snapshot
 from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
@@ -35,8 +36,6 @@ from .operations import (
     declarations,
     loader_resources,
     prepare_operations,
-    serialized,
-    snapshot,
 )
 from .types import DocumentPatch, RetainedUsage
 

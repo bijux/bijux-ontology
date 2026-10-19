@@ -14,8 +14,6 @@ from bijux_ontology.documents.patches.operations import (
     _Unsupported,
     declarations,
     loader_resources,
-    serialized,
-    snapshot,
 )
 from bijux_ontology.documents.patches.types import DocumentPatch, RetainedUsage
 from bijux_ontology.execution.limits import (
@@ -25,6 +23,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.snapshots import serialized, snapshot
 from bijux_ontology.json.values import _measure
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
