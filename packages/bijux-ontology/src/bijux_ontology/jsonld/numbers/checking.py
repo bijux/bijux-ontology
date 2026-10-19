@@ -12,8 +12,8 @@ from rdflib import Literal, URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology._json import _decode_json
+from bijux_ontology._jsonpaths import SourcePath, bounded_location
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.jsonld.paths import SourcePath, bounded_location
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report

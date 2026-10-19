@@ -8,13 +8,13 @@ from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
+from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
     ObservedUsage,
     occurrences,
 )
-from bijux_ontology.jsonld.paths import SourcePath
 from bijux_ontology.limits import Budget
 
 

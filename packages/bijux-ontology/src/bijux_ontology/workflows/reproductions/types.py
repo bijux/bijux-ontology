@@ -4,8 +4,8 @@ import json
 from dataclasses import dataclass
 from typing import ClassVar, TypeAlias, TypeVar
 
+from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.paths import SourcePath
 from bijux_ontology.rdf.patches.types import PatchResource, SnapshotWitness
 from bijux_ontology.reports import Issue, Report
 

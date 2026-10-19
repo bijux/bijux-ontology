@@ -3,8 +3,8 @@
 import json
 from dataclasses import dataclass
 
+from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.paths import SourcePath
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.reports import Report
 

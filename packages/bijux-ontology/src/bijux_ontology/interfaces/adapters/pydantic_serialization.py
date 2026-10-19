@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Literal, cast, get_args
 from rdflib import Graph
 
 from bijux_ontology._json import own_json
+from bijux_ontology._jsonpaths import SourcePath, at_path, location
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
@@ -21,7 +22,6 @@ from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import object_key
 from bijux_ontology.jsonld.observations import ObservedOccurrence
-from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.models.emission.bindings import (

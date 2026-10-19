@@ -3,9 +3,9 @@
 from collections.abc import Sequence
 from dataclasses import fields
 
+from bijux_ontology._jsonpaths import bounded_location
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.paths import bounded_location
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.terms import bound_text

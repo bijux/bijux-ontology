@@ -3,13 +3,13 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from bijux_ontology._jsonpaths import bound_index, bound_path
 from bijux_ontology.declarations.types import (
     ModelDeclaration,
 )
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.jsonld.paths import bound_index, bound_path
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector

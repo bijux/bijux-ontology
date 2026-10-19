@@ -7,8 +7,8 @@ from dataclasses import dataclass, replace
 from typing import cast
 
 from bijux_ontology._json import own_json
+from bijux_ontology._jsonpaths import SourcePath, location
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.paths import SourcePath, location
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.reports import Issue, Report, combine_reports

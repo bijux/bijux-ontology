@@ -4,6 +4,7 @@ import json
 from dataclasses import fields, replace
 from typing import cast
 
+from bijux_ontology._jsonpaths import at_path, bounded_location
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
@@ -15,7 +16,6 @@ from bijux_ontology.jsonld.comparison import (
     compare_observed_usages,
 )
 from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.jsonld.paths import at_path, bounded_location
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.models.emission.coverage import source_properties
 from bijux_ontology.models.resource_roles.types import RoleUse

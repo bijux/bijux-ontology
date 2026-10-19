@@ -9,12 +9,12 @@ from typing import cast
 from rdflib.namespace import RDF, XSD
 
 from bijux_ontology._json import own_json
+from bijux_ontology._jsonpaths import location
 from bijux_ontology.absence import Absent
 from bijux_ontology.declarations.types import FieldDeclaration, ValueDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.expectations import ContainerKind, ContextExpectation
-from bijux_ontology.jsonld.paths import location
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
 from bijux_ontology.jsonld.values import ValueKind
 from bijux_ontology.limits import Budget, IssueCollector, Limits

@@ -4,17 +4,17 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import TypeVar, cast
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.entities import source_entity
-from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.paths import (
+from bijux_ontology._jsonpaths import (
     SourcePath,
     at_path,
     bound_pointer_text,
     bounded_location,
 )
+from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
+from bijux_ontology.jsonld.conversion import DirectionPolicy
+from bijux_ontology.jsonld.entities import source_entity
+from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.jsonld.selectors.checking import resolve_selection

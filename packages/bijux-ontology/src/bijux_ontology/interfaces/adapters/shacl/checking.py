@@ -9,12 +9,12 @@ from rdflib import BNode, Graph, Literal
 from rdflib.namespace import RDF
 
 from bijux_ontology._json import own_json
+from bijux_ontology._jsonpaths import at_path, bound_path
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.entities import object_key
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.paths import at_path, bound_path
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report

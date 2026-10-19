@@ -6,6 +6,7 @@ from typing import Any, cast
 
 from rdflib import Graph
 
+from bijux_ontology._jsonpaths import SourcePath, location
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.interfaces.adapters.jsonschema.extraction import (
@@ -17,7 +18,6 @@ from bijux_ontology.interfaces.adapters.jsonschema.extraction import (
 )
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.paths import SourcePath, location
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.emission.serialization import InstanceCheck, check_serialized

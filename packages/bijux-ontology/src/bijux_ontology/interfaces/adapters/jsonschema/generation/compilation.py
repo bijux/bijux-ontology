@@ -11,6 +11,7 @@ from urllib.parse import quote, urldefrag
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import XSD
 
+from bijux_ontology._jsonpaths import bound_index, bound_pointer_text
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.types import (
@@ -21,7 +22,6 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
-from bijux_ontology.jsonld.paths import bound_index, bound_pointer_text
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal

@@ -4,18 +4,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import cast
 
+from bijux_ontology._jsonpaths import SourcePath, at_path, bound_path, bounded_location
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.contexts.usages import (
     SourceTerm,
     UsageContextUnavailable,
     source_terms,
-)
-from bijux_ontology.jsonld.paths import (
-    SourcePath,
-    at_path,
-    bound_path,
-    bounded_location,
 )
 from bijux_ontology.jsonld.resources import ContextInputError
 from bijux_ontology.jsonld.selectors.checking import resolve_selection

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 from rdflib import Literal
 
+from bijux_ontology._jsonpaths import SourcePath, at_path, location
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError
@@ -15,7 +16,6 @@ from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import EntityKey, object_key
 from bijux_ontology.jsonld.entities import source_entity as source_record
 from bijux_ontology.jsonld.observations import ObservedOccurrence
-from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.models.emission.bindings import (

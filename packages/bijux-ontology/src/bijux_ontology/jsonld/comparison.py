@@ -10,8 +10,8 @@ from typing import cast
 from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.term import Node
 
+from bijux_ontology._jsonpaths import SourcePath, location
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
-from bijux_ontology.jsonld.paths import SourcePath, location
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf

@@ -5,11 +5,11 @@ from collections import Counter
 from collections.abc import Sequence
 from typing import cast
 
+from bijux_ontology._jsonpaths import bounded_location, location
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.expectations import compare_usage
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
-from bijux_ontology.jsonld.paths import bounded_location, location
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import KeyedItems, SourceSelector
 from bijux_ontology.limits import Budget, IssueCollector

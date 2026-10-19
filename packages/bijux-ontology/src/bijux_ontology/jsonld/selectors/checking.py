@@ -4,6 +4,14 @@ from collections.abc import Callable
 from itertools import chain
 from typing import cast
 
+from bijux_ontology._jsonpaths import (
+    SourcePath,
+    at_path,
+    bound_index,
+    bound_path,
+    bound_pointer_text,
+    bounded_location,
+)
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.entities import (
     EntityInventory,
@@ -13,14 +21,6 @@ from bijux_ontology.jsonld.entities import (
     subject_key,
 )
 from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.jsonld.paths import (
-    SourcePath,
-    at_path,
-    bound_index,
-    bound_path,
-    bound_pointer_text,
-    bounded_location,
-)
 from bijux_ontology.jsonld.selectors.types import (
     ArrayItems,
     CoverageUnit,

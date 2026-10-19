@@ -215,7 +215,7 @@ def test_library_dependencies_follow_feature_ownership(
             target_owner = _owner(target)
             if owner in FOUNDATION:
                 assert target_owner in FOUNDATION, f"{module} -> {target}"
-            if module == "bijux_ontology.jsonld.paths":
+            if module == "bijux_ontology._jsonpaths":
                 assert target_owner in FOUNDATION, f"{module} -> {target}"
             if owner == "rdf":
                 assert target_owner in FOUNDATION | {"rdf"}, f"{module} -> {target}"

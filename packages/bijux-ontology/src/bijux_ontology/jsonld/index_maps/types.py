@@ -4,10 +4,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TypeVar, cast
 
+from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.jsonld.paths import SourcePath
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.reports import Report

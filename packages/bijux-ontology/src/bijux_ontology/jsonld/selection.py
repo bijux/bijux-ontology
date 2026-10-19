@@ -7,13 +7,13 @@ from copy import deepcopy
 from dataclasses import replace
 from typing import cast
 
+from bijux_ontology._jsonpaths import SourcePath, at_path, location
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
     ObservedUsage,
     occurrences,
 )
-from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.limits import Budget
 
 from .projections import NamedProjections

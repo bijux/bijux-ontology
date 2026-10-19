@@ -7,9 +7,9 @@ from math import isfinite
 from typing import Any, TypeVar, cast
 
 from bijux_ontology._json import own_json
+from bijux_ontology._jsonpaths import bound_index
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.paths import bound_index
 from bijux_ontology.jsonld.resources import (
     ContextInputError,
     ContextResources,

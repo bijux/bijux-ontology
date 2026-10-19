@@ -7,10 +7,10 @@ from dataclasses import dataclass, replace
 
 from rdflib.namespace import RDF
 
+from bijux_ontology._jsonpaths import SourcePath, at_path, location
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.jsonld.entities import EntityKey, subject_key
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
-from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.limits import Budget
 from bijux_ontology.models.emission.counts import check_occurrences
 from bijux_ontology.reports import Issue
