@@ -7,8 +7,11 @@ import time
 from collections.abc import Iterator
 from typing import cast
 
-from rdflib import BNode, Graph, URIRef
+from rdflib import BNode, Graph, Literal, URIRef
+from rdflib.compare import isomorphic
+from rdflib.term import Node
 
+from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget, IssueCollector, Limits
@@ -19,6 +22,54 @@ from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.reports import Issue, Report
 
 _Record = tuple[str, tuple[tuple[str | None, ...], ...]]
+
+_BASE = "urn:bijux:ontology:comparison:"
+
+
+def _term(value: object) -> Node:
+    if not isinstance(value, list) or not value:
+        raise InputError("Malformed comparison term")
+    if value[0] == "blank" and len(value) == 2 and isinstance(value[1], str):
+        return BNode("original:" + value[1])
+    # Exact tagged strings prevent IRI/literal/default collisions and normalisation.
+    if value[0] not in ("iri", "literal", "default"):
+        raise InputError("Unknown comparison term kind")
+    return Literal(
+        json.dumps(value, ensure_ascii=False, separators=(",", ":")), normalize=False
+    )
+
+
+def _encode(records: object) -> Graph:
+    """Reify each quad/empty-graph record without colliding with caller nodes."""
+    if not isinstance(records, list):
+        raise InputError("Malformed comparison records")
+    graph = Graph(bind_namespaces="none")
+    for index, record in enumerate(records):
+        if (
+            not isinstance(record, list)
+            or len(record) != 2
+            or record[0] not in ("quad", "graph")
+            or not isinstance(record[1], list)
+        ):
+            raise InputError("Malformed comparison record")
+        if len(record[1]) != (4 if record[0] == "quad" else 1):
+            raise InputError("Malformed comparison record arity")
+        node = BNode("record:" + str(index))
+        graph.add((node, URIRef(_BASE + "kind"), Literal(record[0])))
+        for position, value in enumerate(record[1]):
+            graph.add((node, URIRef(_BASE + "position:" + str(position)), _term(value)))
+    return graph
+
+
+def _compare_request(payload: bytes, maximum: int) -> bytes:
+    """Evaluate the same finite protocol within an already deadline-owned worker."""
+    if type(maximum) is not int or maximum <= 0:
+        raise InputError("Comparison requires a positive protocol byte bound")
+    values = decode_json(payload, max_bytes=maximum)
+    if not isinstance(values, list) or len(values) != 2:
+        raise InputError("Comparison requires two exact record inventories")
+    equal = isomorphic(_encode(values[0]), _encode(values[1]))
+    return b"true\n" if equal else b"false\n"
 
 
 def _contexts(
@@ -89,9 +140,7 @@ def _isomorphic(
     if timeout_seconds <= 0:
         raise LimitExceeded("RDF operation exceeded its wall-clock deadline")
     if _owned_worker:
-        from bijux_ontology.rdf._comparison_worker import process_request
-
-        output = process_request(payload, max(len(payload), 6))
+        output = _compare_request(payload, max(len(payload), 6))
     else:
         output = execute_worker(
             "bijux_ontology.rdf._comparison_worker",
