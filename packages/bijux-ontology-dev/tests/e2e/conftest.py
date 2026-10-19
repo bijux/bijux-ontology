@@ -74,8 +74,7 @@ def _install_distribution(
     distribution: tuple[Path, Path, dict[str, str]],
     work: Path,
     *,
-    extras: bool,
-    jsonld: bool = False,
+    extras: tuple[str, ...] = (),
 ) -> tuple[Path, Path, dict[str, str]]:
     """Install locked dependencies separately from the local project wheel."""
     wheel, root, env = distribution
@@ -93,7 +92,7 @@ def _install_distribution(
             "--package",
             "bijux-ontology",
             "--no-emit-workspace",
-            *(["--all-extras"] if extras else ["--extra", "jsonld"] if jsonld else []),
+            *(argument for extra in extras for argument in ("--extra", extra)),
             "--format",
             "requirements-txt",
             "--output-file",
@@ -104,20 +103,7 @@ def _install_distribution(
     run(["uv", "venv", "--python", sys.executable, str(work / "env")])
     scripts = work / "env" / ("Scripts" if os.name == "nt" else "bin")
     python = scripts / ("python.exe" if os.name == "nt" else "python")
-    selected_extras = (
-        list(
-            tomllib.loads((root / "pyproject.toml").read_text())["project"][
-                "optional-dependencies"
-            ]
-        )
-        if extras
-        else ["jsonld"]
-        if jsonld
-        else []
-    )
-    target = str(wheel) + (
-        "[" + ",".join(selected_extras) + "]" if selected_extras else ""
-    )
+    target = str(wheel) + ("[" + ",".join(extras) + "]" if extras else "")
     run(
         [
             "uv",
@@ -157,7 +143,7 @@ def installed(
 ) -> tuple[Path, Path, dict[str, str]]:
     """Expose the installed core-only wheel, outside every source checkout."""
     return _install_distribution(
-        distribution, tmp_path_factory.mktemp("installed-core"), extras=False
+        distribution, tmp_path_factory.mktemp("installed-core")
     )
 
 
@@ -170,17 +156,35 @@ def installed_jsonld(
     return _install_distribution(
         distribution,
         tmp_path_factory.mktemp("installed-jsonld"),
-        extras=False,
-        jsonld=True,
+        extras=("jsonld",),
     )
 
 
 @pytest.fixture(scope="session")
-def installed_all_extras(
+def installed_integrations(
     distribution: tuple[Path, Path, dict[str, str]],
     tmp_path_factory: pytest.TempPathFactory,
 ) -> tuple[Path, Path, dict[str, str]]:
-    """Expose the same wheel with all shipped integrations installed."""
+    """Expose the compatible integration set; native package readers are separate."""
+    _, source, _ = distribution
+    optional = tomllib.loads((source / "pyproject.toml").read_text())["project"][
+        "optional-dependencies"
+    ]
     return _install_distribution(
-        distribution, tmp_path_factory.mktemp("installed-extras"), extras=True
+        distribution,
+        tmp_path_factory.mktemp("installed-integrations"),
+        extras=tuple(extra for extra in optional if extra != "frictionless"),
+    )
+
+
+@pytest.fixture(scope="session")
+def installed_frictionless(
+    distribution: tuple[Path, Path, dict[str, str]],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[Path, Path, dict[str, str]]:
+    """Qualify native packages without OAK's conflicting character detector."""
+    return _install_distribution(
+        distribution,
+        tmp_path_factory.mktemp("installed-frictionless"),
+        extras=("frictionless",),
     )

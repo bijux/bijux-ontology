@@ -1708,3 +1708,56 @@ remain visible. Bag qualification makes no ORDER BY sequence claim. Unsupported
 extensions, nondeterminism, native term loss, failed execution and exhausted
 work cannot establish portability. Qualification applies to the supplied corpus
 and configurations, with explicit row and cumulative execution bounds.
+
+`data.discovery.discover_contracts(source, records, fields, shape=...)` observes
+an explicit finite record/path population. Candidates retain original endpoints,
+all type/datatype alternatives, per-record counts including zero and exceptions.
+Native declarations and independently authored SHACL shapes are checked against
+every selected record. `accept_candidate(..., accept_observed_bounds=True)` makes
+the qualified observed envelope an explicit application policy; `check_contract`
+then checks held-out records without retraining it. Empty, unsupported, incomplete
+or invalid observations cannot authorize that policy. Samples establish no
+universal requiredness or maxima, and optional SHACL absence remains unverified.
+
+`rdf.reification.conversion.convert_reifications(source, selections, contract=...)`
+maps selected complete RDF 1.1 statement descriptions to actual RDF 1.2 reifiers.
+Choose the explicit qualified Pyoxigraph 0.5.11 or 0.5.12 contract. Distinct reifier
+resources, annotations, graph inventory, shared blanks and separately asserted
+triples remain distinct; conversion never asserts a described triple. The owned
+candidate accompanies native N-Quads with empty-graph inventory and established
+blank correspondence. `restore_reifications(candidate)` derives and checks its
+inverse. Independently parsed modern datasets, nested triple terms and ambiguous
+descriptions remain outside this reversible profile; it makes no OWL equivalence
+claim.
+
+`interfaces.adapters.dcat.prepare_catalog_profile(Dcat3Profile(...))` prepares
+reusable DCAT 3 shapes for explicit application choices. `check_catalog` checks
+selected catalog, dataset, series, distribution, service, record and period roles
+against actual SHACL and supplied theme/license vocabularies. Linked records need
+explicit selection; exact permitted external service IRIs are exceptions. Minima
+belong to the chosen profile. Shared distributions and absent download URLs are
+allowed when the selected access rule is satisfied. Select historical graphs
+explicitly; unsupported required extensions, incomplete vocabularies and missing
+related populations withhold complete profile qualification.
+
+`interfaces.adapters.ontolex.read_lexicon` reads explicitly selected OntoLex Core
+entries, forms, written literals and separate senses against a supplied vocabulary
+view. `lookup_written` ranks language and form roles while preserving ties and
+sense identities. `write_lexicon` reconstructs the typed Core assertions and retains
+every other source graph, its original selection and resource metadata. Required
+missing references, unsupported extensions and caller-selected arity violations
+remain visible. `project_labels` explicitly reports omitted form/sense structure
+and keeps the full lexicon available; labels never become unconditional synonyms.
+
+Install `[frictionless]` for the pinned Frictionless 5.21.0 Data Package v1 CSV
+profile. Use a separate environment from `[oak]`: their native dependencies
+require incompatible chardet versions. The workspace lock declares that conflict
+and installed-package checks exercise both profiles with their real dependencies.
+Workspace development requires uv 0.13.1 or later to resolve those profiles correctly.
+`interfaces.adapters.frictionless.extract_package` consumes an unchanged inline
+descriptor, exactly supplied package-relative bytes, explicit column bindings and
+an existing work directory. The owned worker runs actual native typing, missing
+markers, scalar keys and foreign keys; semantic checks run on each selected row.
+Cells retain original text, native values and record/column locations. Missing
+values emit nothing. Unsupported descriptor semantics and truncated validation
+remain unqualified; no remote resource or scientific identifier is inferred.

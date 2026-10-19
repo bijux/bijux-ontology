@@ -28,6 +28,24 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "frictionless": frozenset(
+        "extraction_unverified input_invalid native_coverage_unverified "
+        "native_foreign_key native_primary_key native_type_error "
+        "native_constraint_error native_missing_cell native_extra_cell".split()
+    ),
+    "ontolex": frozenset(
+        "input source_unverified label_structure_omitted extension_unverified "
+        "entry_unverified canonical_count form_invalid sense_invalid "
+        "written_invalid literal_unverified written_missing reference_missing "
+        "reference_count reference_invalid reference_dangling reference_unverified "
+        "sense_owner_count".split()
+    ),
+    "catalog": frozenset(
+        "extension_unverified controlled_forbidden reference_unverified input".split()
+    ),
+    "discovery": frozenset(
+        "identity_unverified types_unverified values_unverified input".split()
+    ),
     "workload": frozenset("unsupported engine_failed empty unqualified".split()),
     "query": frozenset(
         "dependencies_unverified usage_input vocabulary_deprecated "
@@ -297,7 +315,7 @@ _CODES = {
         "triple_terms_unverified "
         "container_contract container_unverified container_conversion_rejected "
         "query_transform_unverified query_transform_invalid query_unverified "
-        "reification_contract reification_unverified "
+        "reification_contract reification_unverified reifier_conversion_unverified "
         "merge_conflict merge_unverified merge_resolution_required "
         "algebra_identity_unverified "
         "skolem_unverified "
@@ -435,6 +453,34 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "frictionless": (
+        "supplied native Data Package resources and explicit column bindings",
+        "Native package coverage or a selected semantic column contract failed.",
+        "Inspect actual package-relative resource, record and field diagnostics; "
+        "supply supported inline metadata and complete local resource bytes.",
+        "extract_package(descriptor, resources, bindings, work_directory=directory)",
+    ),
+    "ontolex": (
+        "selected asserted lexical entries, forms and ontology references",
+        "A selected lexical assertion fails its contract or remains unqualified.",
+        "Inspect original resource and sense identities, selected vocabulary "
+        "declarations, explicit arity policy and any omitted lexical structure.",
+        "read_lexicon(source, entries, vocabulary=view)",
+    ),
+    "catalog": (
+        "selected DCAT 3 records and explicit application-profile choices",
+        "A selected record fails its rule or lacks complete profile coverage.",
+        "Inspect actual entity findings, related record selection, qualified "
+        "controlled vocabularies and exact permitted external service IRIs.",
+        "check_catalog(source, bindings, profile=Dcat3Profile(...))",
+    ),
+    "discovery": (
+        "explicit finite record population and observed contract candidates",
+        "The selected observations lack complete qualified candidate coverage.",
+        "Inspect every original record, value alternative and corpus check; "
+        "accept observed bounds explicitly only after full candidate verification.",
+        "discover_contracts(source, records, fields, shape=shape)",
+    ),
     "workload": (
         "supplied finite queries and two explicit maintained engine configurations",
         "The workload lacks a complete supported agreeing native answer pair.",
