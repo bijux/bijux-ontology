@@ -13,7 +13,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.structure import iter_rdf_list
+from bijux_ontology.rdf.structure import iter_rdf_list, strong_components
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 
@@ -284,40 +284,12 @@ def topology(
                         queue.append(linked)
             remaining.difference_update(reached)
             components.append(tuple(sorted(reached)))
-        # Iterative Kosaraju retains long chains without Python recursion.
-        seen: set[str] = set()
-        order: list[str] = []
-        for start in sorted(nodes):
-            if start in seen:
-                continue
-            stack = [(start, False)]
-            while stack:
-                node, finishing = stack.pop()
-                budget.consume("work")
-                if finishing:
-                    order.append(node)
-                elif node not in seen:
-                    seen.add(node)
-                    stack.append((node, True))
-                    stack.extend(
-                        (linked, False)
-                        for linked in sorted(outgoing[node], reverse=True)
-                        if linked not in seen
-                    )
-        seen.clear()
-        for start in reversed(order):
-            if start in seen:
-                continue
-            group: set[str] = set()
-            stack_nodes = [start]
-            while stack_nodes:
-                node = stack_nodes.pop()
-                budget.consume("work")
-                if node not in seen:
-                    seen.add(node)
-                    group.add(node)
-                    stack_nodes.extend(incoming[node] - seen)
-            if len(group) > 1 or start in outgoing[start]:
+        budget.consume("states", len(nodes))
+        budget.reserve_storage(64 + 8 * len(nodes))
+        for group in strong_components(
+            sorted(nodes), outgoing, incoming, budget=budget, max_depth=None
+        ):
+            if len(group) > 1 or group[0] in outgoing[group[0]]:
                 cycles.append(tuple(sorted(group)))
     except LimitExceeded as error:
         issues.exhausted(str(error), location="terms.topology")
