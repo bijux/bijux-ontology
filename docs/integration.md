@@ -1846,3 +1846,15 @@ are alternatives within one restriction; independent restrictions conjoin.
 Original resource receipts and path witnesses remain visible. Competing group
 definitions, missing ancestry or absent requested constraints remain unverified;
 this read-only finite profile claims no biological absence or general OWL truth.
+
+`interfaces.adapters.ols.prepare_ols_snapshot` consumes immutable `OlsPage`
+responses for an explicit `OlsQuery` and `/api/v2` base. Ontology, exact IRI,
+entity roles and imported/defining/obsolete policies retain separate meanings.
+The selected lexical vocabulary is a service projection, with qualified JSON
+annotations retained; generic ancestors become no asserted subclass edges.
+Complete queries require all pages and stable ontology versionIRI/loaded metadata,
+independent of software release. `lookup_ols` reports scoped membership; missing
+or incomplete results publish no empty successful vocabulary. Offline preparation
+performs no acquisition. Opt-in `acquire_ols_snapshot` uses an explicit bounded
+`AcquisitionPolicy` and fresh metadata before and after each page; it promises
+an observed query snapshot, not an atomic remote transaction.

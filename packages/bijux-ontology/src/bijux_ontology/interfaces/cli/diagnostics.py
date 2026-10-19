@@ -28,6 +28,11 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "ols": frozenset(
+        "acquisition_unverified input_error unverified data_changed "
+        "data_unversioned page_incomplete hierarchy_unverified "
+        "no_selected_entities membership_unverified".split()
+    ),
     "go": frozenset("taxon_disallowed taxon_unverified".split()),
     "shape-interchange": frozenset("unsupported unverified behavior_changed".split()),
     "pattern": frozenset("expected_missing unexpected_binding unverified".split()),
@@ -499,6 +504,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "ols": (
+        "one versioned ontology-scoped OLS entity query",
+        "Captured service evidence is incomplete or outside the selected query.",
+        "Inspect exact ontology and role, every required page and unchanged "
+        "ontology data version; software identity alone cannot close the query.",
+        "prepare_ols_snapshot(pages, query=query, base_url=base_url)",
+    ),
     "go": (
         "explicit GO annotation and supplied taxon-constraint release",
         "A selected taxon restriction fails or its resource evidence is incomplete.",
