@@ -360,6 +360,7 @@ def test_missing_backend_metadata_bounds_cancellation_and_fresh_recovery() -> No
         result = prepare_incremental(source, _shapes(), use_shapes=(str(E.S),))
         assert result.state is None and not result.report.verified
         assert result.result is not None and result.result.backend == "unavailable"
+        assert result.result.report.outcome == "unverified"
         return
     giant = prepare_incremental(
         source,

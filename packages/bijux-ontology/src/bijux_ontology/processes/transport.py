@@ -3,6 +3,7 @@
 import contextlib
 import subprocess
 import time
+from collections.abc import Callable
 from threading import Event, Thread
 
 from bijux_ontology.errors import ResourceError
@@ -14,9 +15,18 @@ __all__ = ["run_worker", "stop_process"]
 
 
 def run_worker(
-    command: list[str], *, timeout: float, cap: int, cancellation: Event | None
+    command: list[str],
+    *,
+    timeout: float,
+    cap: int,
+    cancellation: Event | None,
+    deadline: Callable[[], float | None] | None = None,
 ) -> tuple[int | None, str, str]:
-    """Drain bounded diagnostics and interrupt deadlines, cancellation or overflow."""
+    """Drain bounded diagnostics and interrupt deadlines, cancellation or overflow.
+
+    An optional trusted host probe supplies the current inner-operation deadline;
+    it must perform only bounded local work so supervision remains responsive.
+    """
     process = spawn_owned_process(
         command,
         stdout=subprocess.PIPE,
@@ -49,7 +59,11 @@ def run_worker(
             if overflow.is_set():
                 stopped = "execution.limit_exceeded"
                 break
-            if time.monotonic() - started >= timeout:
+            operation_deadline = deadline() if deadline is not None else None
+            if time.monotonic() - started >= timeout or (
+                operation_deadline is not None
+                and time.monotonic() >= operation_deadline
+            ):
                 stopped = "execution.deadline"
                 break
             with contextlib.suppress(subprocess.TimeoutExpired):

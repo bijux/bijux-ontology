@@ -5,6 +5,7 @@ import sys
 import time
 from pathlib import Path
 from threading import Event, Thread
+from typing import cast
 
 import pytest
 
@@ -304,3 +305,144 @@ def test_isolated_context_preserves_index_requirements(
                 f"context.{field}_mismatch"
             }
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.skipif(os.name != "posix", reason="Actual POSIX process ownership")
+@pytest.mark.parametrize("interruption", ["cancel", "deadline"])
+@pytest.mark.parametrize("native_kind", ["shacl", "query-rules"])
+def test_isolated_project_native_jobs_stay_owned_and_honor_timeout(
+    tmp_path: Path, interruption: str, native_kind: str
+) -> None:
+    """Stop actual native search without leaving a nested independent process."""
+    import json
+    import subprocess
+
+    (tmp_path / "small.ttl").write_text(
+        "<urn:A> a <http://www.w3.org/2002/07/owl#Class>."
+    )
+    (tmp_path / "inventory.json").write_text('["urn:Missing"]')
+    (tmp_path / "data.ttl").write_text(
+        "\n".join(f"<urn:n{i}> <urn:number> {i} ." for i in range(100))
+    )
+    (tmp_path / "shapes.ttl").write_text(
+        "@prefix sh:<http://www.w3.org/ns/shacl#>. <urn:Shape> a sh:NodeShape; "
+        'sh:targetNode <urn:record>; sh:sparql [sh:select """SELECT $this WHERE { '
+        "?a <urn:number> ?b . ?c <urn:number> ?d . ?e <urn:number> ?f "
+        'FILTER ((?b + ?d + ?f) < 0) }"""].'
+    )
+    (tmp_path / "rules.json").write_text(
+        json.dumps(
+            [
+                {
+                    "name": "costly",
+                    "query": "SELECT ?a WHERE { ?a <urn:number> ?b . "
+                    "?c <urn:number> ?d . ?e <urn:number> ?f "
+                    "FILTER ((?b + ?d + ?f) < 0) }",
+                    "scope": {"kind": "default"},
+                }
+            ]
+        )
+    )
+    configuration = {
+        "version": 1,
+        "rdf": {name: {"path": name + ".ttl"} for name in ("small", "data", "shapes")},
+        "checks": [
+            {
+                "name": "membership",
+                "kind": "vocabulary",
+                "source": "small",
+                "inventory": "inventory.json",
+            },
+            {
+                "name": "native",
+                "kind": native_kind,
+                **(
+                    {"document": "data", "shapes": "shapes", "trusted_sparql": True}
+                    if native_kind == "shacl"
+                    else {"source": "data", "rules": "rules.json"}
+                ),
+                "timeout": 0.3 if interruption == "deadline" else 5.0,
+            },
+        ],
+    }
+    runs = tmp_path / "runs"
+    stop, cancellation = Event(), Event()
+    owned: set[int] = set()
+    nested: set[int] = set()
+
+    def observe() -> None:
+        """Observe real descendants; cancellation begins after native admission."""
+        while not stop.wait(0.01):
+            rows = [
+                line.strip().split(None, 2)
+                for line in subprocess.check_output(
+                    ["ps", "-ww", "-axo", "pid=,ppid=,command="], text=True
+                ).splitlines()
+            ]
+            owned.update(
+                int(pid)
+                for pid, parent, command in rows
+                if int(parent) == os.getpid()
+                and "bijux_ontology.interfaces.execution.worker" in command
+            )
+            nested.update(
+                int(pid)
+                for pid, parent, command in rows
+                if int(parent) in owned
+                and any(
+                    name in command
+                    for name in (
+                        "bijux_ontology.shacl.worker",
+                        "bijux_ontology.rdf.queries.worker",
+                    )
+                )
+            )
+            if interruption == "cancel" and any(runs.glob("*/job-deadline")):
+                cancellation.set()
+
+    watcher = Thread(target=observe, daemon=True)
+    watcher.start()
+    started = time.monotonic()
+    try:
+        result = WorkerExecutor(artifacts=runs, timeout=6).run(
+            "project",
+            {"configuration": configuration, "directory": str(tmp_path)},
+            cancellation=cancellation,
+        )
+    finally:
+        stop.set()
+        watcher.join(timeout=2)
+    assert time.monotonic() - started < 5
+    assert result.report.outcome == "exhausted"
+    assert {issue.code for issue in result.report.issues} >= {
+        "vocabulary.term_missing",
+        "execution.cancelled" if interruption == "cancel" else "execution.deadline",
+    }
+    assert owned and not nested
+    for pid in owned:
+        with pytest.raises(ProcessLookupError):
+            os.kill(pid, 0)
+    (tmp_path / "inventory.json").write_text(json.dumps(["urn:A"]))
+    (tmp_path / "data.ttl").write_text('<urn:record> <urn:p> "value".')
+    (tmp_path / "shapes.ttl").write_text(
+        "@prefix sh:<http://www.w3.org/ns/shacl#>. <urn:Shape> a sh:NodeShape; "
+        "sh:targetNode <urn:record>; sh:property [sh:path <urn:p>; sh:minCount 1]."
+    )
+    (tmp_path / "rules.json").write_text(
+        json.dumps(
+            [
+                {
+                    "name": "exists",
+                    "query": "ASK {}",
+                    "scope": {"kind": "default"},
+                    "expected": True,
+                }
+            ]
+        )
+    )
+    cast(list[dict[str, object]], configuration["checks"])[1]["timeout"] = 5.0
+    recovered = WorkerExecutor(artifacts=runs, timeout=6).run(
+        "project", {"configuration": configuration, "directory": str(tmp_path)}
+    )
+    assert recovered.report.verified
+    assert not list(runs.iterdir())

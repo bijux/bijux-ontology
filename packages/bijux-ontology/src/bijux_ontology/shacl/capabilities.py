@@ -137,6 +137,7 @@ def prepare_capabilities(
     limits: Limits,
     enabled_functions: frozenset[URIRef] = frozenset(),
     inspect_targets: bool = False,
+    budget: Budget | None = None,
 ) -> CapabilityPlan:
     """Resolve selected queries and explicitly required parameter bindings."""
     if (
@@ -165,7 +166,7 @@ def prepare_capabilities(
                 ),
             ),
         )
-    budget = Budget(limits)
+    budget = budget if budget is not None else Budget(limits)
     issues = IssueCollector(budget)
     definitions: set[Node] = set()
     normalized: list[tuple[Node, URIRef, Literal]] = []
@@ -241,25 +242,47 @@ def prepare_capabilities(
 
 
 def constraint_execution(
-    requirements: Sequence[ShaclConstraintRequirement], coverage: ShaclCoverage
+    requirements: Sequence[ShaclConstraintRequirement],
+    coverage: ShaclCoverage,
+    *,
+    budget: Budget | None = None,
 ) -> Report:
     """Count only required root parameters with completed target execution evidence."""
-    executed = {str(target.shape) for target in coverage.targets}
-    deactivated = {str(shape) for shape in coverage.deactivated_shapes}
-    issues = []
-    for requirement in requirements:
-        if requirement.shape not in executed or not coverage.report.complete:
-            issues.append(
-                Issue(
-                    "shacl.constraint_not_evaluated",
-                    "Required shape is deactivated"
-                    if requirement.shape in deactivated
-                    else "Required parameter has no completed root execution evidence",
-                    requirement.shape,
-                    kind="unverified",
-                    expected=requirement.parameter,
-                )
+    issues = IssueCollector(budget) if budget is not None else []
+    try:
+        if budget is not None:
+            budget.consume(
+                "work",
+                len(coverage.targets)
+                + len(coverage.deactivated_shapes)
+                + len(requirements),
             )
+            budget.consume(
+                "states",
+                len(coverage.targets)
+                + len(coverage.deactivated_shapes)
+                + len(requirements),
+            )
+        executed = {str(target.shape) for target in coverage.targets}
+        deactivated = {str(shape) for shape in coverage.deactivated_shapes}
+        for requirement in requirements:
+            if requirement.shape not in executed or not coverage.report.complete:
+                issues.append(
+                    Issue(
+                        "shacl.constraint_not_evaluated",
+                        "Required shape is deactivated"
+                        if requirement.shape in deactivated
+                        else "Required parameter has no completed root "
+                        "execution evidence",
+                        requirement.shape,
+                        kind="unverified",
+                        expected=requirement.parameter,
+                    )
+                )
+    except LimitExceeded:
+        if not isinstance(issues, IssueCollector):
+            raise
+        issues.exhausted("Required constraint coverage exhausted its shared budget")
     return Report(
         "shacl-constraint-coverage",
         len(requirements),

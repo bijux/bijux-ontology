@@ -65,7 +65,12 @@ def _parameters(
 
 
 def materialize_targets(
-    data: Graph, shapes: Graph, ontology: Graph | None, limits: Limits
+    data: Graph,
+    shapes: Graph,
+    ontology: Graph | None,
+    limits: Limits,
+    *,
+    budget: Budget | None = None,
 ) -> None:
     """Replace complete maintained target results with actual Core target nodes.
 
@@ -79,7 +84,7 @@ def materialize_targets(
     from pyshacl.shape import Shape
     from pyshacl.target import SPARQLTargetType
 
-    budget = Budget(limits)
+    budget = budget if budget is not None else Budget(limits)
     validator = Validator(
         DataGraph.from_rdflib(data),
         shacl_graph=shapes,

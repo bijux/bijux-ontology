@@ -120,23 +120,30 @@ def _role(
     limits: Limits,
     imports: Mapping[str, RdfSource | Payload] | None = None,
     resolve_imports: bool = False,
+    budget: Budget | None = None,
 ) -> Graph:
     if isinstance(source, PreparedSource):
-        graph = source._read(graph_name, union=union)
-        _charge_graph(graph, Budget(limits), limits.max_bytes)
+        graph = source._read(graph_name, union=union, budget=budget)
+        _charge_graph(
+            graph, budget if budget is not None else Budget(limits), limits.max_bytes
+        )
         if resolve_imports:
             graph = copy_graph(
                 graph, max_triples=limits.max_triples, standardize_apart=False
             )
     elif graph_name is None and not union and not isinstance(source, Dataset):
-        _charge_graph(source, Budget(limits), limits.max_bytes)
+        _charge_graph(
+            source, budget if budget is not None else Budget(limits), limits.max_bytes
+        )
         graph = copy_graph(
             source, max_triples=limits.max_triples, standardize_apart=False
         )
     else:
-        graph = prepare_source(source, limits=limits).graph(graph_name, union=union)
+        graph = prepare_source(source, limits=limits, budget=budget)._read(
+            graph_name, union=union, budget=budget
+        )
     if resolve_imports and next(graph.objects(None, OWL.imports), None) is not None:
-        closure = load_vocabulary(graph, imports=imports, limits=limits)
+        closure = load_vocabulary(graph, imports=imports, limits=limits, budget=budget)
         for imported in closure.imports:
             graph += imported
     return graph
@@ -195,6 +202,7 @@ class _ShapePlan:
     coverage: ShaclCoverageContract | None
     required_constraints: tuple[ShaclConstraintRequirement, ...]
     trusted_targets: bool
+    budget: Budget | None = None
 
 
 def _prepare_plan(
@@ -212,6 +220,7 @@ def _prepare_plan(
     required_constraints: Sequence[ShaclConstraintRequirement],
     functions: ShaclFunctionCatalog | None,
     limits: Limits,
+    budget: Budget | None = None,
 ) -> _ShapePlan:
     """Own and inspect every fixed semantic input exactly once per plan."""
     if functions is not None and not isinstance(functions, ShaclFunctionCatalog):
@@ -250,6 +259,7 @@ def _prepare_plan(
         limits=selected,
         imports=imports,
         resolve_imports=True,
+        budget=budget,
     )
     og = (
         None
@@ -261,15 +271,19 @@ def _prepare_plan(
             limits=selected,
             imports=imports,
             resolve_imports=True,
+            budget=budget,
         )
     )
+    if budget is not None:
+        budget.consume("work", len(sg) * (len(_UNSUPPORTED) + 4))
+        budget.consume("states", len(sg))
     selected_shapes = resolve_terms(
-        use_shapes, shapes, sg, shapes=True, limits=selected
+        use_shapes, shapes, sg, shapes=True, limits=selected, budget=budget
     )
     for node in selected_shapes:
         if (node, None, None) not in sg and (None, None, node) not in sg:
             raise InputError("Selected shape is absent", location=str(node))
-    function_plan = prepare_functions(functions, selected)
+    function_plan = prepare_functions(functions, selected, budget=budget)
     capabilities = prepare_capabilities(
         sg,
         selected_shapes,
@@ -278,12 +292,14 @@ def _prepare_plan(
         limits=selected,
         enabled_functions=frozenset(URIRef(name) for name in function_plan.names),
         inspect_targets=trusted_targets,
+        budget=budget,
     )
     targets = prepare_targets(
         _select_roots(sg, selected_shapes, mode),
         selected_shapes,
         enabled=trusted_targets,
         limits=selected,
+        budget=budget,
         enabled_functions=frozenset(URIRef(name) for name in function_plan.names),
     )
     for query_node, predicate, text in (*capabilities.queries, *targets.queries):
@@ -305,7 +321,7 @@ def _prepare_plan(
         + targets.issues
         + function_plan.issues
     )
-    path_budget = Budget(selected)
+    path_budget = budget if budget is not None else Budget(selected)
     for shape, path_node in sg.subject_objects(SH.path):
         if capabilities.nodes is not None and shape not in capabilities.nodes:
             continue
@@ -346,6 +362,7 @@ def _prepare_plan(
         coverage,
         required_constraints,
         trusted_targets,
+        budget,
     )
 
 
@@ -382,8 +399,10 @@ def _prepare_data(
         )
     if not isinstance(data, (Graph, PreparedSource)):
         raise InputError("SHACL data requires a graph or prepared source")
-    dg = _role(data, graph_name=graph_name, union=union, limits=plan.limits)
-    focus = resolve_terms(focus_nodes, data, dg, limits=plan.limits)
+    dg = _role(
+        data, graph_name=graph_name, union=union, limits=plan.limits, budget=plan.budget
+    )
+    focus = resolve_terms(focus_nodes, data, dg, limits=plan.limits, budget=plan.budget)
     if plan.mode == "targets" and any(not isinstance(node, URIRef) for node in focus):
         raise InputError("Literal and blank focus terms require explicit pairs mode")
     return dg, focus

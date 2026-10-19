@@ -10,6 +10,8 @@ from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, cast
 from urllib.parse import unquote_to_bytes
 
+from rdflib import BNode, Literal
+
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -299,25 +301,26 @@ class IdentifierTemplate:
         )
 
     def recognize(
-        self, iri: str, *, limits: Limits | None = None
+        self,
+        iri: str,
+        *,
+        limits: Limits | None = None,
+        budget: Budget | None = None,
     ) -> IdentifierRecognition:
         """Retain original spelling and recognize only the exact expansion image."""
-        if not isinstance(iri, str):
+        if not isinstance(iri, str) or isinstance(iri, BNode | Literal):
             raise InputError("Expected an IRI string")
-        budget = Budget(limits)
+        if limits is not None and budget is not None and limits != budget.limits:
+            raise InputError("Recognition limits conflict with its shared budget")
+        budget = budget if budget is not None else Budget(limits)
         issues = IssueCollector(budget)
         record: IdentifierRecord | None = None
         checked = 0
         try:
             _text(iri, budget)
             absolute_iri(iri)
-            engine = _engine(self.template, self.keys, budget)
-            parts = _parts(self.template, self.keys, budget)
-            if (
-                parts is None
-                or any(reserved for _, reserved in parts[1])
-                or any(not _RESERVED.intersection(part) for part in parts[0][1:-1])
-            ):
+            inverse = self._inverse(budget)
+            if inverse is None:
                 issues.append(
                     Issue(
                         "vocabulary.identifier_template_unverified",
@@ -326,6 +329,7 @@ class IdentifierTemplate:
                     )
                 )
             else:
+                engine, parts = inverse
                 record = self._recognize(iri, engine, parts, budget)
                 checked = 1
                 if record is None:
@@ -352,6 +356,43 @@ class IdentifierTemplate:
             "vocabulary.identifier_recognition", checked, tuple(issues), requested=1
         )
         return IdentifierRecognition(iri, record if report.verified else None, report)
+
+    def _inverse(
+        self, budget: Budget
+    ) -> (
+        tuple[
+            URITemplate,
+            tuple[tuple[str, ...], tuple[tuple[str, bool], ...]],
+        ]
+        | None
+    ):
+        """Qualify one maintained exact inverse profile without result diagnostics."""
+        engine = _engine(self.template, self.keys, budget)
+        parts = _parts(self.template, self.keys, budget)
+        if (
+            parts is None
+            or any(reserved for _, reserved in parts[1])
+            or any(not _RESERVED.intersection(part) for part in parts[0][1:-1])
+        ):
+            return None
+        return engine, parts
+
+    def match(self, iri: str, *, budget: Budget) -> IdentifierRecord | None:
+        """Match one exact supported inverse without charging a mismatch finding.
+
+        None is a completed no-match. Unavailable processors or unsupported
+        inverse profiles raise ResourceError; callers cannot treat them as
+        evidence that a different alternate is uniquely recognized.
+        """
+        if not isinstance(iri, str) or isinstance(iri, BNode | Literal):
+            raise InputError("Expected an IRI string")
+        _text(iri, budget)
+        absolute_iri(iri)
+        inverse = self._inverse(budget)
+        if inverse is None:
+            raise ResourceError("Identifier template inverse profile is unavailable")
+        engine, parts = inverse
+        return self._recognize(iri, engine, parts, budget)
 
     def _recognize(
         self,
@@ -401,7 +442,9 @@ class IdentifierTemplate:
             budget,
             sum(len(part.encode("utf-8")) for part in literals),
         )
-        return result if result.iri == iri else None
+        # Compare accepted IRI spellings without invoking RDF-kind equality on
+        # URIRef string subclasses or changing the original recognition input.
+        return result if str.__eq__(result.iri, iri) else None
 
     def construct_many(
         self,

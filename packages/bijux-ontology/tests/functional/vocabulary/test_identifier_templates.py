@@ -6,9 +6,10 @@ from dataclasses import FrozenInstanceError
 from typing import cast, overload
 
 import pytest
+from rdflib import BNode, Literal, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
 
 
@@ -26,6 +27,11 @@ def test_two_key_reserved_unicode_roundtrip_and_owned_order() -> None:
     recognized = profile.recognize(record.iri)
     assert recognized.report.verified
     assert recognized.record == record
+    named = URIRef(record.iri)
+    recognized_named = profile.recognize(named)
+    assert recognized_named.report.verified and recognized_named.record == record
+    assert recognized_named.original_iri is named
+    assert profile.match(named, budget=Budget()) == record
     assert record.bindings == (("accession", "A?B#C%"), ("collection", "lab/α"))
     with pytest.raises(FrozenInstanceError):
         profile.template = "https://example.org/changed"  # type: ignore[misc]
@@ -52,6 +58,13 @@ def test_single_decode_and_exact_iri_image() -> None:
     record = profile.construct({"key": "%2F"})
     assert record.iri.endswith("%252F")
     assert profile.recognize(record.iri).record == record
+    operation = Budget()
+    assert profile.match(record.iri, budget=operation) == record
+    assert profile.match("https://example.org/other/value", budget=operation) is None
+    assert operation.remaining("issues") == operation.limits.max_issues
+    operation.consume("work", operation.remaining("work"))
+    with pytest.raises(LimitExceeded):
+        profile.match(record.iri, budget=operation)
     for iri in (
         "https://example.org/id/%2f",
         "https://example.org/id/%41",
@@ -105,6 +118,8 @@ def test_unsupported_inverse_never_returns_a_record(template: str) -> None:
     result = profile.recognize("https://example.org/value")
     assert result.record is None
     assert result.report.outcome == "unverified"
+    with pytest.raises(ResourceError, match="inverse profile"):
+        profile.match("https://example.org/value", budget=Budget())
     if template != "https://example.org/{+key}":
         with pytest.raises(InputError, match="Unsupported forward"):
             profile.construct({"key": "value"})
@@ -262,12 +277,16 @@ def test_recognition_rejects_non_string_runtime_inputs() -> None:
         1,
         True,
         b"https://example.org/value",
+        BNode("https://example.org/value"),
+        Literal("https://example.org/value"),
         [],
         {},
     )
     for invalid in invalid_values:
         with pytest.raises(InputError, match="IRI string"):
             profile.recognize(cast(str, invalid))
+        with pytest.raises(InputError, match="IRI string"):
+            profile.match(cast(str, invalid), budget=Budget())
     relative = profile.recognize("relative/id")
     assert relative.original_iri == "relative/id"
     assert relative.report.outcome == "input_error"

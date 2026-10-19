@@ -6,7 +6,7 @@ from math import isfinite
 from rdflib import Graph
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Report
@@ -34,6 +34,26 @@ from bijux_ontology.shacl.functions import (
 from bijux_ontology.shacl.transport import execute_backend
 
 
+def _retained_result(result: ShaclResult, budget: Budget | None) -> ShaclResult:
+    """Keep native diagnostics paid once across all supported result statuses."""
+    if budget is None:
+        return result
+    retained = IssueCollector(budget)
+    try:
+        retain_report(result.report, budget, retained)
+    except LimitExceeded:
+        retained.exhausted("SHACL report handoff exhausted its shared budget")
+        result.report = Report(
+            "shacl",
+            result.report.checked,
+            tuple(retained),
+            requested=result.report.requested,
+            complete=False,
+            families=result.report.families,
+        )
+    return result
+
+
 def validate_shapes(
     data: Graph | PreparedSource,
     shapes: Graph | PreparedSource,
@@ -55,6 +75,8 @@ def validate_shapes(
     source_usages: Sequence[ShaclSource] = (),
     limits: Limits | None = None,
     timeout: float | None = 30.0,
+    budget: Budget | None = None,
+    _owned_worker: bool = False,
 ) -> ShaclResult:
     """Validate supplied graphs with inference, JS, rules and implicit retrieval off.
 
@@ -92,11 +114,21 @@ def validate_shapes(
     into the backend data graph without running an inference engine. Dataset
     union or graph selection is deliberate; returned conformance covers exactly
     that scope. Backend recursion depth and process deadline are separate limits.
+    Optional shared accounting covers controlled preparation and projection;
+    opaque maintained-engine CPU remains bounded by the owning process deadline.
+    The private owned-worker route requires an already isolated disposable worker
+    whose caller enforces the timeout; it starts no nested process.
     """
+    if budget is not None and not isinstance(budget, Budget):
+        raise InputError("SHACL shared accounting requires a Budget")
+    if type(_owned_worker) is not bool:
+        raise InputError("Owned SHACL execution flag must be boolean")
     if timeout is not None and (
         type(timeout) not in (int, float) or not isfinite(timeout) or timeout <= 0
     ):
         raise InputError("timeout must be a positive finite number or None")
+    if budget is not None and limits is not None and budget.limits != limits:
+        raise InputError("SHACL limits conflict with the shared budget")
     plan = _prepare_plan(
         shapes,
         ontology=ontology,
@@ -110,13 +142,16 @@ def validate_shapes(
         coverage=coverage,
         required_constraints=required_constraints,
         functions=functions,
-        limits=limits if limits is not None else Limits(),
+        limits=limits
+        if limits is not None
+        else (budget.limits if budget is not None else Limits()),
+        budget=budget,
     )
     dg, focus = _prepare_data(
         data, plan, focus_nodes, graph_name=graph_name, union=union
     )
     if plan.features:
-        return ShaclResult(
+        result = ShaclResult(
             Report(
                 "shacl",
                 0,
@@ -127,21 +162,45 @@ def validate_shapes(
             ),
             **_metadata(plan, focus),
         )
+        return _retained_result(result, budget)
     import json
 
     roles = transport_roles(
-        {"data": dg, **_role_graphs(plan)}, focus, plan.roots, plan.limits
+        {"data": dg, **_role_graphs(plan)},
+        focus,
+        plan.roots,
+        plan.limits,
+        budget=budget,
     )
-    payload = json.dumps(
-        {"graphs": roles.serialize(format="nquads"), **_options(plan, focus)}
-    ).encode()
-    if len(payload) > plan.limits.max_total_bytes:
-        raise LimitExceeded("SHACL request exceeds max_total_bytes")
-    try:
-        raw = execute_backend(payload, cap=plan.limits.max_total_bytes, timeout=timeout)
-    except (LimitExceeded, ResourceError) as error:
-        return _incomplete(plan, error, focus)
-    return _project_result(
+    if _owned_worker:
+        # The caller already owns a disposable worker and its outer deadline.
+        # Execute the same backend there; a nested isolated process would escape
+        # the outer POSIX process group when its owner is terminated.
+        from bijux_ontology.rdf.patches.correspondence import _json_bound
+        from bijux_ontology.shacl.worker import execute
+
+        response = execute(_options(plan, focus), supplied=roles, budget=budget)
+        if budget is not None:
+            budget.consume("bytes", _json_bound(response, budget))
+        raw = json.dumps(response, ensure_ascii=True).encode()
+        if len(raw) > plan.limits.max_total_bytes:
+            raise LimitExceeded("SHACL response exceeds max_total_bytes")
+    else:
+        payload = json.dumps(
+            {"graphs": roles.serialize(format="nquads"), **_options(plan, focus)}
+        ).encode()
+        if budget is not None:
+            budget.consume("bytes", len(payload))
+            budget.consume("work", len(payload))
+        if len(payload) > plan.limits.max_total_bytes:
+            raise LimitExceeded("SHACL request exceeds max_total_bytes")
+        try:
+            raw = execute_backend(
+                payload, cap=plan.limits.max_total_bytes, timeout=timeout
+            )
+        except (LimitExceeded, ResourceError) as error:
+            return _retained_result(_incomplete(plan, error, focus), budget)
+    result = _project_result(
         raw,
         plan,
         data,
@@ -151,3 +210,4 @@ def validate_shapes(
         union=union,
         source_usages=source_usages,
     )
+    return _retained_result(result, budget)

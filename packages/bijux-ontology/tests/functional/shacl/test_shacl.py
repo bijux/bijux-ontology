@@ -9,7 +9,7 @@ from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import AcceptancePolicy
 from bijux_ontology.shacl import validate_shapes
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
@@ -863,3 +863,22 @@ def test_cyclic_paths_and_result_details_are_finite_and_truthful() -> None:
         report, Graph(), limits=Limits(max_states=1)
     )
     assert not complete and limited == ()
+
+
+def test_shared_preparation_and_projection_keep_paid_findings_cumulative() -> None:
+    """A report handoff cannot reset issue ownership or a later shared allowance."""
+    budget = Budget(Limits(max_issues=1))
+    data = Graph().add((EX.record, RDF.type, EX.Record))
+    first = validate_shapes(data, shapes_graph(), budget=budget)
+    assert first.report.outcome == "disagreement"
+    assert budget.remaining("issues") == 0
+    assert any(issue.code == "shacl.nonconformance" for issue in first.report.issues)
+    retained = IssueCollector(budget)
+    retain_report(first.report, budget, retained)
+    assert len(retained) == 1 and budget.remaining("issues") == 0
+    work = budget.remaining("work")
+    second = validate_shapes(data, shapes_graph(), budget=budget)
+    assert second.report.outcome == "exhausted" and not second.report.verified
+    assert budget.remaining("work") < work and budget.remaining("issues") == 0
+    with pytest.raises(InputError, match="conflict"):
+        validate_shapes(data, shapes_graph(), budget=budget, limits=Limits())

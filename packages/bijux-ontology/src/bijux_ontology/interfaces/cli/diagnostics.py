@@ -75,6 +75,10 @@ _CODES = {
         "structure_mismatch binding_unverified".split()
     ),
     "adapter": frozenset(
+        "shape_binding_unverified shape_constraint_untranslated "
+        "shape_list_unverified shape_output_backend_unavailable "
+        "shape_representation_unverified shape_source_scope_unverified "
+        "bioregistry_unverified bioregistry_input_error "
         "schema_unverified schema_mismatch "
         "alias_unverified class_mapping_unverified computed_output_unverified "
         "emission_unverified excluded_emission_conflict mapping_conflict "
@@ -130,7 +134,7 @@ _CODES = {
         "query_violation query_empty_scope".split()
     ),
     "contract": frozenset("coverage_missing unavailable".split()),
-    "project": frozenset(("dependency_unverified",)),
+    "project": frozenset("dependency_unverified job_pending input_error".split()),
     "profile": frozenset(
         "instantiation_unverified "
         "routing_unverified record_unverified declaration_missing "
@@ -182,6 +186,7 @@ _CODES = {
         "value_unverified".split()
     ),
     "owl": frozenset(
+        "conversion_loss conversion_unverified "
         "assertion_contradiction assertion_unverified backend_unavailable "
         "loader_unverified profile_unverified profile_violation".split()
     ),
@@ -282,6 +287,7 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "identifier_changed identifier_unverified identifier_input_error "
         "matrix_unverified "
         "value_inadmissible value_unverified value_scope_unverified "
         "plan_unverified plan_final_changed "
@@ -296,6 +302,7 @@ _CODES = {
         "no_contracts contract_persistent contract_resolved contract_introduced".split()
     ),
     "vocabulary": frozenset(
+        "accession_invalid accession_unverified accession_input_error "
         "authoring_rejected authoring_unverified "
         "fact_role_unverified fact_attribution_unverified fact_graph_unverified "
         "coverage_gap coverage_source_missing declaration_conflict "
@@ -346,10 +353,10 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "compose_profile(domain, {base.iri: base})",
     ),
     "project": (
-        "required earlier project checks",
-        "A required earlier check did not verify, so its dependent was not started.",
-        "Inspect the named prerequisite reports and resolve their failures or "
-        "missing coverage before rerunning the dependent check.",
+        "declared project jobs and required dependencies",
+        "Selected work is invalid, unavailable or awaiting unverified prerequisites.",
+        "Inspect original inputs, named prerequisite reports and limits before "
+        "rerunning the required scopes.",
         '{"name": "output", "kind": "emission", "depends_on": ["models"]}',
     ),
     "documents": (

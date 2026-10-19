@@ -23,14 +23,18 @@ from bijux_ontology.jsonld.entities import object_key
 from bijux_ontology.jsonld.observations import ObservedOccurrence
 from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.models.emission.bindings import (
     candidate_paths,
     source_entity,
     source_node_traits,
 )
 from bijux_ontology.models.emission.counts import check_occurrences
-from bijux_ontology.models.emission.serialization import InstanceCheck, check_serialized
+from bijux_ontology.models.emission.serialization import (
+    InstanceCheck,
+    _failure,
+    check_serialized,
+)
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.loading import load_vocabulary
@@ -439,6 +443,22 @@ def check_instance(
     reports: list[Report] = []
     sample: _Sample | None = None
     try:
+        if isinstance(inventory, ModelExtraction):
+            retained = IssueCollector(budget)
+            try:
+                retain_report(inventory.report, budget, retained)
+            except LimitExceeded:
+                retained.exhausted("Pydantic inventory handoff exhausted its budget")
+                reports.append(
+                    Report(
+                        "pydantic.inventory",
+                        issues=tuple(retained),
+                        requested=1,
+                        complete=False,
+                    )
+                )
+                raise
+            reports.append(inventory.report)
         if context is not ABSENT:
             context = own_json(
                 context, max_bytes=selected.max_bytes, max_depth=selected.max_depth
@@ -482,8 +502,6 @@ def check_instance(
                 if isinstance(inventory, ModelExtraction)
                 else tuple(inventory)
             )
-            if isinstance(inventory, ModelExtraction):
-                reports.append(inventory.report)
             roots = (
                 [
                     item.identifier
@@ -517,21 +535,16 @@ def check_instance(
     except Exception as error:
         if sample is not None and not reports:
             reports.append(replace(sample.extraction().report, complete=False))
-        exhausted = isinstance(error, (LimitExceeded, MemoryError))
-        reports.append(
-            Report(
-                "pydantic.sample",
-                requested=1,
-                complete=False,
-                issues=(
-                    Issue(
-                        "execution.limit_exceeded" if exhausted else "input.invalid",
-                        f"{type(error).__name__}: {error}",
-                        kind="exhausted" if exhausted else "input_error",
-                    ),
-                ),
+        failure = _failure(error, budget)
+        retained = IssueCollector(budget)
+        try:
+            retain_report(failure, budget, retained)
+        except LimitExceeded:
+            retained.exhausted("Pydantic sample failed within its resource limits")
+            failure = Report(
+                "pydantic.sample", issues=tuple(retained), requested=1, complete=False
             )
-        )
+        reports.append(failure)
         return InstanceCheck(
             output_json, None, combine_reports("pydantic.sample", *reports)
         )

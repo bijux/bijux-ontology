@@ -19,7 +19,13 @@ from bijux_ontology import (
 )
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
-from bijux_ontology.models.emission.serialization import check_instance
+from bijux_ontology.jsonld.checking import prepare_usages
+from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.limits import Budget
+from bijux_ontology.models.emission.serialization import (
+    check_instance,
+    check_serialized,
+)
 
 EX = Namespace("https://example.org/")
 
@@ -247,3 +253,70 @@ def test_serializer_diagnostics_bound_owned_text_without_caller_formatting() -> 
         assert max(len(issue.message) for issue in checked.report.issues) <= 1000
         if isinstance(error, UnsafeError):
             assert checked.report.issues[0].message == "ordinary failure"
+
+
+def test_explicit_context_inventory_checks_the_same_joined_output() -> None:
+    """Entity contracts and selected source meanings share one usage preparation."""
+    model = ModelDeclaration(
+        "record",
+        (str(EX.Record),),
+        (
+            FieldDeclaration(
+                "name", str(EX.name), (ValueDeclaration("literal", str(XSD.string)),)
+            ),
+        ),
+    )
+    for predicate, expected in ((EX.name, True), (EX.note, False)):
+        output = {"@id": str(EX.record), "@type": str(EX.Record), "n": "name"}
+        result = check_serialized(
+            output,
+            [model],
+            [ModelUsage("record", entity=True)],
+            vocabulary=vocabulary(),
+            context={"n": str(predicate)},
+            context_expectations=(ContextExpectation(("n",), str(EX.name)),),
+        )
+        assert result.output == output
+        assert result.report.verified is expected, result.report.to_dict()
+
+
+def test_private_prepared_output_preserves_exact_document_and_resource_owner() -> None:
+    """A same-owner handoff cannot substitute JSON, base, resources or exclusions."""
+    model = ModelDeclaration(
+        "record",
+        (str(EX.Record),),
+        (
+            FieldDeclaration(
+                "name", str(EX.name), (ValueDeclaration("literal", str(XSD.string)),)
+            ),
+        ),
+    )
+    context = {"n": str(EX.name), "extra": str(EX.note)}
+    original = {
+        "@id": str(EX.record),
+        "@type": str(EX.Record),
+        "n": "name",
+        "extra": True,
+    }
+    for changed in ("none", "number", "budget", "base", "loader", "drops"):
+        operation = Budget()
+        prepared = prepare_usages(
+            {**original, "@context": context},
+            budget=operation,
+            allowed_drops=frozenset({"ignored"}) if changed == "drops" else frozenset(),
+        )
+        output = {**original, "extra": 1} if changed == "number" else original
+        result = check_serialized(
+            output,
+            [model],
+            [ModelUsage("record", entity=True)],
+            vocabulary=vocabulary(),
+            context=context,
+            base="urn:different" if changed == "base" else None,
+            document_loader=None if changed == "loader" else prepared._loader,
+            budget=Budget() if changed == "budget" else operation,
+            _prepared=prepared,
+        )
+        assert result.report.verified is (changed == "none"), result.report.to_dict()
+        if changed != "none":
+            assert result.report.outcome == "input_error"

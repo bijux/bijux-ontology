@@ -1,15 +1,18 @@
 """Operation-owned RDF snapshots, vocabulary views and explicit context resources."""
 
 import json
+import os
+import stat
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 from threading import RLock
+from types import MappingProxyType
 
 from rdflib import ConjunctiveGraph, Dataset, Graph
 
-from bijux_ontology._json import own_json
+from bijux_ontology._json import _decode_json, own_json
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.resources import (
@@ -30,6 +33,87 @@ from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 
+def _read_snapshot(path: Path, budget: Budget) -> bytes:
+    """Prepay the over-limit sentinel and account unusable physical reads."""
+    budget.consume("bytes")
+    budget.consume("work")
+    cap = min(
+        budget.limits.max_bytes, budget.remaining("bytes"), budget.remaining("work")
+    )
+    descriptor = os.open(
+        path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0)
+    )
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise OSError("Project inputs require regular files")
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            value = handle.read(cap + 1)
+    finally:
+        os.close(descriptor)
+    budget.consume("bytes", max(0, len(value) - 1))
+    budget.consume("work", max(0, len(value) - 1))
+    if len(value) > cap and cap < budget.limits.max_bytes:
+        raise LimitExceeded("Project capture exhausted its shared allowance")
+    return value
+
+
+class _CapturedFiles(Mapping[Path, bytes | Exception]):
+    """Operation-owned lazy reads from immutable private capture descriptors."""
+
+    def __init__(self, entries: Mapping[Path, Path | Exception], budget: Budget):
+        self.budget = budget
+        owned: dict[Path, Path | Exception] = {}
+        for original, private in entries.items():
+            budget.consume("work")
+            budget.consume("states", 2)
+            budget.consume("bytes", 32)
+            bound_text(str(original), budget)
+            if isinstance(private, Path):
+                bound_text(str(private), budget)
+            owned[original] = private
+        self._entries = MappingProxyType(owned)
+        self._cache: dict[Path, bytes | Exception] = {}
+
+    def __len__(self) -> int:
+        return len(self._entries)
+
+    def __iter__(self) -> Iterator[Path]:
+        return iter(self._entries)
+
+    def __getitem__(self, path: Path) -> bytes | Exception:
+        self.budget.consume("work")
+        if path in self._cache:
+            return self._cache[path]
+        private = self._entries[path]
+        if isinstance(private, Exception):
+            value: bytes | Exception = private
+        else:
+            self.budget.consume("resources")
+            try:
+                value = _read_snapshot(private, self.budget)
+            except OSError:
+                value = InputError(
+                    "Project input could not be read", location=str(path)
+                )
+            if isinstance(value, bytes) and len(value) > self.budget.limits.max_bytes:
+                value = LimitExceeded("Captured project input exceeds max_bytes")
+        self._cache[path] = value
+        return value
+
+
+def _captured_bytes(path: Path, captured: Mapping[Path, bytes | Exception]) -> bytes:
+    """Read an explicitly captured path without falling back to mutable files."""
+    try:
+        value = captured[path]
+    except KeyError:
+        raise InputError("Input was not captured", location=str(path)) from None
+    if isinstance(value, Exception):
+        raise value
+    if not isinstance(value, bytes):
+        raise InputError("Captured inputs require bytes or acquisition failures")
+    return value
+
+
 class _ContextDocuments:
     """Retain immutable raw documents independently of operation context caches."""
 
@@ -38,9 +122,11 @@ class _ContextDocuments:
         inputs: Mapping[str, Path | str],
         storage: Budget,
         metadata: Mapping[str, DocumentLocation] | None = None,
+        captured: Mapping[Path, bytes | Exception] | None = None,
     ) -> None:
         if len(inputs) > storage.limits.max_resources:
             raise LimitExceeded("Too many supplied context documents")
+        self.captured = captured
         self.inputs = dict(inputs)
         self.metadata = dict(metadata or {})
         self.storage = storage
@@ -62,9 +148,19 @@ class _ContextDocuments:
                 bound_text(value, self.storage)
                 absolute_iri(value)
         if isinstance(document, Path):
-            document = OfflineDocumentLoader(
-                {url: document}, limits=self.storage.limits
-            )(url, {})["document"]
+            if self.captured is None:
+                document = OfflineDocumentLoader(
+                    {url: document}, limits=self.storage.limits
+                )(url, {})["document"]
+            else:
+                payload = _captured_bytes(document, self.captured)
+                document = _decode_json(
+                    payload,
+                    source=str(document),
+                    max_bytes=self.storage.limits.max_bytes,
+                    max_depth=self.storage.limits.max_depth,
+                    budget=self.storage,
+                )
         owned = own_json(
             document,
             source=url,
@@ -143,8 +239,41 @@ class ProjectResources:
     their paths, including when a changed context requires fresh RDF preparation.
     """
 
-    def __init__(self, configuration: ProjectConfig) -> None:
+    def __init__(
+        self,
+        configuration: ProjectConfig,
+        *,
+        budget: Budget | None = None,
+        captured: Mapping[Path, bytes | Exception] | None = None,
+    ) -> None:
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Project resources require a Budget")
+        if budget is not None and budget.limits != configuration.limits:
+            raise InputError("Project limits conflict with the shared budget")
         self.configuration = configuration
+        self._budget = budget
+        self._captured: Mapping[Path, bytes | Exception] | None = None
+        if isinstance(captured, _CapturedFiles):
+            if budget is not captured.budget:
+                raise InputError("Captured inputs belong to another operation budget")
+            self._captured = captured
+        elif captured is not None:
+            if not isinstance(captured, Mapping):
+                raise InputError("Captured project inputs require a mapping")
+            owner = budget if budget is not None else Budget(configuration.limits)
+            owned_capture: dict[Path, bytes | Exception] = {}
+            self._captured = owned_capture
+            for path, value in captured.items():
+                owner.consume("work")
+                owner.consume("states")
+                owner.consume("bytes", 16)
+                if not isinstance(path, Path) or not isinstance(
+                    value, bytes | Exception
+                ):
+                    raise InputError(
+                        "Captured paths require immutable bytes or failures"
+                    )
+                owned_capture[path] = value
         self._lock = RLock()
         self._rdf = dict(configuration.rdf)
         self._registered = {
@@ -162,10 +291,15 @@ class ProjectResources:
         self._sizes: dict[str, tuple[int, int]] = {}
         self._context_sources: set[str] = set()
         self._preparing: str | None = None
-        self._preparation = Budget(configuration.limits)
-        self._storage = Budget(configuration.limits)
+        self._preparation = (
+            budget if budget is not None else Budget(configuration.limits)
+        )
+        self._storage = budget if budget is not None else Budget(configuration.limits)
         self._documents = _ContextDocuments(
-            configuration.contexts, self._storage, configuration.context_metadata
+            configuration.contexts,
+            self._storage,
+            configuration.context_metadata,
+            self._captured,
         )
         self._imports = _Imports(self)
         self._contexts = _Contexts(self)
@@ -212,6 +346,7 @@ class ProjectResources:
                         imports=self._imports,
                         lookup=lookups,
                         limits=config.limits,
+                        budget=self._budget,
                     )
                     self._dependencies[key] = frozenset(self._loading)
                     self._vocabularies[key] = vocabulary
@@ -223,7 +358,25 @@ class ProjectResources:
         """Own source bytes or graph terms before recording reusable preparation."""
         resource = self._rdf[name]
         if name not in self._sizes:
-            before = prepare_input(resource, budget=self._storage)
+            descriptor = resource
+            if self._captured is not None and isinstance(resource.content, Path):
+                document = resource.document_iri or resource.content.as_uri()
+                descriptor = replace(
+                    resource,
+                    document_iri=document,
+                    effective_url=resource.effective_url or document,
+                )
+            before = prepare_input(descriptor, budget=self._storage)
+            if self._captured is not None and isinstance(resource.content, Path):
+                # Resolve syntax/base/compression from the original descriptor;
+                # only its physical byte acquisition changes ownership.
+                before = replace(
+                    before,
+                    resource=replace(
+                        before.resource,
+                        content=_captured_bytes(resource.content, self._captured),
+                    ),
+                )
             content: Graph | bytes
             if isinstance(resource.content, Graph):
                 owned = prepare_source(resource, budget=self._preparation)
@@ -279,6 +432,23 @@ class ProjectResources:
                     finally:
                         self._preparing = previous
             return self._sources[name]
+
+    def read_json(self, path: Path) -> object:
+        """Decode one original-path snapshot using this operation's owned inputs."""
+        if self._budget is not None:
+            bound_text(str(path), self._budget)
+        if self._captured is None:
+            with path.open("rb") as handle:
+                payload = handle.read(self._storage.limits.max_bytes + 1)
+        else:
+            payload = _captured_bytes(path, self._captured)
+        return _decode_json(
+            payload,
+            source=str(path),
+            max_bytes=self._storage.limits.max_bytes,
+            max_depth=self._storage.limits.max_depth,
+            budget=self._budget,
+        )
 
     def replace_resources(
         self,

@@ -320,9 +320,10 @@ def project_findings(
     graph_name: str | None = None,
     union: bool = False,
     limits: Limits | None = None,
+    budget: Budget | None = None,
 ) -> tuple[tuple[ShaclFinding, ...], tuple[ShaclFinding, ...], bool]:
     """Project raw results without changing the graph, conformance or severities."""
-    budget = Budget(limits)
+    budget = budget if budget is not None else Budget(limits)
     try:
         index = _SourceIndex(sources, data, graph_name, union, budget)
     except LimitExceeded:

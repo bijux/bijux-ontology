@@ -376,7 +376,9 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
             else:
                 raise AssertionError("Missing integration falsely succeeded")
         result = validate_shapes(Graph(), Graph())
-        assert result.conforms is None and result.report.exit_code() == 2
+        assert result.conforms is None and not result.report.verified
+        assert result.report.outcome == "unverified"
+        assert result.report.exit_code(strict=True) == 1
         assert "[shacl]" in result.report.issues[0].message
         """),
         ],

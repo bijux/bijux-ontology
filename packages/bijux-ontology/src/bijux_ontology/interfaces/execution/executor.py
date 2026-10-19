@@ -11,7 +11,10 @@ from threading import Event
 
 from bijux_ontology._json import decode_json, object_value, own_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.interfaces.execution.checkpoints import read_completed
+from bijux_ontology.interfaces.execution.checkpoints import (
+    read_completed,
+    read_deadline,
+)
 from bijux_ontology.interfaces.execution.protocol import report_from_data
 from bijux_ontology.interfaces.execution.transport import run_worker
 from bijux_ontology.limits import Limits
@@ -116,6 +119,9 @@ class WorkerExecutor:
                         timeout=self.timeout,
                         cap=self.limits.max_total_bytes,
                         cancellation=cancellation,
+                        deadline=(lambda: read_deadline(work))
+                        if operation == "project"
+                        else None,
                     )
                 except ResourceError:
                     reports.extend(read_completed(work, self.limits))

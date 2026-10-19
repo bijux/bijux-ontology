@@ -28,6 +28,31 @@ the original spelling and checks only unmodified slots separated by reserved
 literals, strict single decoding and exact re-expansion. Ambiguous or unsupported
 inverse profiles return no guessed record.
 
+`vocabulary.accessions.check_accessions(values, registry, rules=...)` applies
+explicit `AccessionRule` policies to `AccessionValue` occurrences with declared
+CURIE or IRI intent and source locations. Install `[patterns]` for RE2 grammar,
+`[checksums]` for ISO 7064 MOD 11-2 or Luhn, and `[templates]` for alternate IRIs.
+ASCII case corrections are separate suggestions; original values stay intact.
+Unknown namespaces may be explicitly excluded. Missing rules and unsupported
+alternate recognition remain unverified, and valid accessions imply no term
+existence.
+
+`interfaces.adapters.bioregistry.read_bioregistry` imports explicitly selected
+records from supplied bytes with a required SHA256 and revision label. Original
+records remain available; supported namespace aliases feed the existing registry.
+Use `BioregistryOverride` for local namespaces, aliases and `AccessionRule`
+replacements. Source patterns and unsupported provider semantics remain visible;
+local rules do not establish equivalence to them. `read_bioregistry_bundle`
+loads an explicit member through the ordinary offline bundle reader. Neither
+operation creates ontology declarations.
+
+Use `workflows.upgrades.identifiers.compare_identifier_releases` with two
+`IdentifierRelease` policies and actual `AccessionValue` occurrences to distinguish
+changed expansion, canonical spelling, validity and recognition ambiguity.
+Raw before/after checks remain available. Advisory updates require explicit
+`IdentifierEquivalence` IRI pairs and actual after-policy validation; no input is
+rewritten and ontology membership cannot erase a changed identifier.
+
 Pass `compression="gzip"` with an explicit RDF `format` for paths, bytes or
 binary streams in `RdfSource` or `prepare_source`. `max_compressed_bytes` bounds
 input bytes; `max_bytes` bounds expanded bytes, and both consume the shared byte
@@ -322,6 +347,14 @@ are omitted; unresolved or dynamic dependencies remain unverified. Inspect
 through faithful RDF serialization. Agreement covers supplied cases only;
 independent role exports cannot preserve shared anonymous constants across roles.
 
+`interfaces.adapters.shacl.import_shape_contracts` imports selected property
+constraints through explicit `ShapeFieldBinding` serializer keys. Use
+`check_imported_output` for actual serialized JSON-LD or `check_imported_rdf`
+for selected native RDF. Both retain untranslated original obligations and
+qualify aggregate values; bare declarations cannot establish full SHACL
+conformance. Selected list-shaped values remain unknown. Shape targets and
+`sh:class` never manufacture exact application type declarations.
+
 `inspect_shapes(shapes, (root_iri,))` projects supported supplied constraints into
 the immutable authoring records and reports uninterpreted semantic RDF in
 `remainder`. `edit_shape_counts(inspection, (ShapeCountEdit(property_shape,
@@ -434,7 +467,17 @@ expectation_data, "resources": contexts, "base": logical_base})` transfers JSON
 resources and returns a raw `report`. Supported operations also include
 `emission`, `serialization`, `flatten`, `framing`, `vocabulary` and `project`; declarations
 use their existing JSON codecs. `project` takes `configuration` and an absolute
-`directory`, retaining completed scopes on cancellation or deadline.
+`directory`, retaining completed scopes on cancellation or deadline. Direct SHACL
+and query-rule jobs execute inside that owned worker; the host also enforces
+their configured job timeout, without creating an independent nested process.
+
+Use `check_project_parallel(configuration, workers=2, artifacts=Path("artifacts/checks"))`
+from `bijux_ontology.workflows.projects.parallel` for independent vocabulary,
+single-document context and SHACL jobs. Captured regular files and separate
+processes keep inputs stable. Disjoint grants share the configured budget; raw
+verified dependencies govern starts and results retain declaration order.
+Inspect `.jobs` and `.report`. Prepared resource revisions and other job profiles
+remain explicit unsupported scopes.
 
 For async hosts, use `async with AsyncChecks(executor, max_running=2, max_queued=8)`
 from `bijux_ontology.interfaces.execution.async_checks`, then await
@@ -665,6 +708,15 @@ children automatically. An optional independent `inventory` retains its own
 mappings and requirements. Unresolved/custom output shapes remain unverified;
 absent optional fields are explicit sample exclusions. Preparation and checking
 share one operation budget. Success qualifies this output and these options.
+
+For computed Pydantic outputs, `model_declarations(..., field_contracts=...)`
+accepts the public computed member name and retains its serialization alias.
+Use `serializer_contracts={Model: declaration}` for explicitly described whole
+model output, including renamed nested fields and emission conditions. Pass the
+result as `check_instance(..., inventory=extraction, model=declaration.identifier)`
+to check one actual serialization. Whole output subsets without explicit
+`EmissionCoverage` remain unverified; sidecars preserve their independent RDF
+intent when a serializer or context changes.
 
 For LinkML, `interfaces.adapters.linkml.model_declarations(view,
 serializer="rdflib")` qualifies the maintained schema-driven RDFLib dumper.

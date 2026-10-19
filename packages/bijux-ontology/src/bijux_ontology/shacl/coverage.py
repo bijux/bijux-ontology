@@ -63,7 +63,11 @@ class ShaclCoverage:
 
 
 def read_coverage(
-    value: object, contract: ShaclCoverageContract, limits: Limits
+    value: object,
+    contract: ShaclCoverageContract,
+    limits: Limits,
+    *,
+    budget: Budget | None = None,
 ) -> ShaclCoverage:
     """Read bounded backend evidence and evaluate only the requested coverage."""
     if (
@@ -75,13 +79,15 @@ def read_coverage(
         raise ResourceError("SHACL process returned invalid target coverage")
     targets: list[ShaclTarget] = []
     deactivated: tuple[Node, ...] = ()
-    budget = Budget(limits)
+    budget = budget if budget is not None else Budget(limits)
     issues = IssueCollector(budget)
     requested = 1 + len(contract.focus_nodes) + len(contract.pairs)
     checked = 0
     complete = value["complete"]
     try:
-        graph = prepare_source(value["graph"], format="nt", limits=limits).graph()
+        graph = prepare_source(
+            value["graph"], format="nt", limits=limits, budget=budget
+        ).graph()
         for record in graph.subjects(TARGET.shape):
             budget.consume("work")
             budget.consume("states")
