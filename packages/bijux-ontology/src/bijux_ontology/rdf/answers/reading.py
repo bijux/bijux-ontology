@@ -276,10 +276,10 @@ def _dispatch(
             if type(amount) is not int or not 0 <= amount <= allowances[kind]:
                 raise InputError("Invalid answer worker counter")
         for kind in _KINDS:
-            operation.consume(kind, controls[kind])
+            operation.consume_completed(kind, controls[kind])
     except InputError as error:
         for kind in _KINDS:
-            operation.shared.consume(kind, operation.shared.remaining(kind))
+            operation.consume_completed(kind, operation.remaining(kind))
         raise LimitExceeded(
             "Answer parser stopped without a qualified control receipt: " + str(error)
         ) from error

@@ -76,7 +76,7 @@ def _adopt(
         if type(count) is not int or not 0 <= count <= allowances[kind]:
             raise InputError("Query usage worker exceeded its shared allowance")
     for kind in KINDS:
-        operation.consume(kind, cast(int, receipt[kind]))
+        operation.consume_completed(kind, cast(int, receipt[kind]))
     report = report_from_data(data["report"])
     operation.shared._register_transferred_report(
         report, paid_issues=cast(int, receipt["issues"]), max_references=2 * cap + 1
@@ -227,12 +227,12 @@ def read_query_usage(
                 encoded,
                 cap=cap,
                 timeout=remaining,
-                cancel=cancel,
+                cancel=operation.cancel,
             )
             references, dynamic, report = _adopt(raw, operation, allowances, cap)
         except InputError as error:
             for key in KINDS:
-                operation.shared.consume(key, operation.shared.remaining(key))
+                operation.consume_completed(key, operation.remaining(key))
             raise LimitExceeded(
                 "Query usage lacks a qualified worker control receipt; "
                 "delegated allowances were forfeited: " + str(error)

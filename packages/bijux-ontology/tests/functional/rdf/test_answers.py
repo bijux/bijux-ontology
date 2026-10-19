@@ -1,14 +1,21 @@
 """Public finite answers retain RDF identity independently of query execution."""
 
 import json
+import subprocess
+import sys
 from dataclasses import replace
 from threading import Event
+from types import FrameType
+from typing import Literal as EventKind
 from typing import cast
 
+import pytest
 from rdflib import BNode, Graph
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.rdf.answers import (
     AnswerArtifact,
     AnswerFormat,
@@ -264,3 +271,76 @@ def test_shared_budgets_cancel_and_query_truncation_remain_incomplete() -> None:
     )
     bounded = compare_answers(a, b, budget=cut)
     assert not bounded.verified and cut._counts.get("work", 0) <= cut.limits.max_work
+
+
+@pytest.mark.parametrize("receipt", (True, False))
+def test_native_answer_receipts_settle_before_cancelled_host_adoption(
+    receipt: bool,
+) -> None:
+    """A native parse receipt is paid even when its final table cannot be adopted."""
+    text = (
+        '{"head":{"vars":["x"]},"results":{"bindings":'
+        '[{"x":{"type":"uri","value":"urn:x"}}]}}'
+    )
+    limits = Limits()
+    cancellation = Event()
+    ledger = Budget(limits)
+    parent = Operation(limits, ledger, 30, cancellation)
+    native: list[bytes] = []
+    processes: list[subprocess.Popen[bytes]] = []
+    before: dict[BudgetKind, int] = {}
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        returned: object,
+    ) -> None:
+        if previous is not None:
+            previous(frame, event, returned)
+        if event != "return":
+            return
+        process = frame.f_locals.get("self")
+        if (
+            frame.f_code is subprocess.Popen.__init__.__code__
+            and isinstance(process, subprocess.Popen)
+            and isinstance(process.args, list)
+            and "bijux_ontology.rdf.answers.worker" in process.args
+        ):
+            processes.append(process)
+            if not receipt:
+                cancellation.set()
+        if (
+            frame.f_code is execute_worker.__code__
+            and frame.f_locals.get("module") == "bijux_ontology.rdf.answers.worker"
+            and isinstance(returned, bytes)
+        ):
+            native.append(returned)
+            before.update((kind, ledger.remaining(kind)) for kind in BUDGET_KINDS)
+            cancellation.set()
+
+    sys.setprofile(observe)
+    try:
+        stopped = read_answers(text, format="json", budget=parent)
+    finally:
+        sys.setprofile(previous)
+    assert cancellation.is_set()
+    assert len(processes) == 1 and processes[0].returncode is not None
+    assert stopped.report.outcome == "exhausted" and not stopped.report.complete
+    assert stopped.kind is None and not stopped.rows
+    if receipt:
+        assert len(native) == 1 and json.loads(native[0])["status"] == "ok"
+        consumed = json.loads(native[0])["controls"]
+        assert all(
+            ledger.remaining(kind) == before[kind] - consumed[kind]
+            for kind in BUDGET_KINDS
+        )
+    else:
+        assert not native and all(ledger.remaining(kind) == 0 for kind in BUDGET_KINDS)
+    cancellation.clear()
+    recovered = read_answers(text, format="json", budget=parent)
+    if receipt:
+        assert recovered.report.verified and str(recovered.rows[0][0]) == "urn:x"
+    else:
+        assert recovered.report.outcome == "exhausted"
+        assert read_answers(text, format="json", limits=limits).report.verified
