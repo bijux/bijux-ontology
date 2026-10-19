@@ -24,6 +24,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget
+from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.groups import declaration_states, group_limitation
 from bijux_ontology.models.emission.matching import matches_value
 from bijux_ontology.owl.classes import ClassContracts
@@ -614,6 +615,24 @@ def _emission_issues(
                     else matches_value(value, traits, {model.identifier: model})
                     for value in fields_by_name[condition.field].values
                 )
+                constrained: list[bool | None] = []
+                for value, matched in zip(
+                    fields_by_name[condition.field].values, matches, strict=True
+                ):
+                    if matched is False or value.constraints is None:
+                        constrained.append(matched)
+                        continue
+                    application = application_matches(
+                        value.constraints, term, budget=contracts.budget
+                    )
+                    constrained.append(
+                        False
+                        if application is False
+                        else None
+                        if matched is None or application is None
+                        else True
+                    )
+                matches = tuple(constrained)
                 if True not in matches:
                     unknown = None in matches
                     group_issues.append(

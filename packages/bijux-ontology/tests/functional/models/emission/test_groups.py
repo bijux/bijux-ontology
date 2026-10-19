@@ -13,6 +13,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
@@ -626,3 +627,87 @@ def test_authored_literal_condition_needs_supported_valid_lexical_form() -> None
         assert not report.verified and any(
             issue.code == code for issue in report.issues
         ), report.to_dict()
+
+
+def test_scenario_discriminator_satisfies_its_application_value_contract() -> None:
+    from dataclasses import replace
+
+    for constraints in (
+        ValueConstraints(enumeration=(Literal("allowed"),)),
+        ValueConstraints(pattern="allowed"),
+    ):
+        for lexical in ("allowed", "forbidden"):
+            declaration = model(
+                EmissionGroup(
+                    "conditional",
+                    ("mode",),
+                    minimum=1,
+                    maximum=1,
+                    scenarios=(
+                        EmissionScenario(
+                            "selected",
+                            ("mode",),
+                            EmissionCondition("mode", Literal(lexical)),
+                        ),
+                    ),
+                    closed=True,
+                ),
+                fields=("mode",),
+            )
+            declaration = replace(
+                declaration,
+                fields=(
+                    replace(
+                        declaration.fields[0],
+                        values=(
+                            ValueDeclaration(
+                                "literal",
+                                datatype=str(XSD.string),
+                                constraints=constraints,
+                            ),
+                        ),
+                    ),
+                ),
+            )
+            result = check_models((declaration,), vocabulary())
+            assert result.verified is (lexical == "allowed"), result.to_dict()
+            if lexical == "forbidden":
+                assert any(
+                    issue.code == "models.scenario_condition_conflict"
+                    for issue in result.issues
+                )
+            for emitted in actual(declaration, (), mode=lexical):
+                assert emitted.verified is (lexical == "allowed"), emitted.to_dict()
+
+
+def test_guaranteed_emission_cannot_forbid_every_rdf_value() -> None:
+    import pytest
+
+    from bijux_ontology.declarations.types import OutputRequirement
+    from bijux_ontology.errors import InputError
+
+    output = OutputRequirement(maximum_values=0, allow_empty=True, allow_null=True)
+    with pytest.raises(InputError, match="Guaranteed emission"):
+        FieldDeclaration(
+            "mode",
+            str(EX.mode),
+            (ValueDeclaration("literal", datatype=str(XSD.string)),),
+            emission="guaranteed",
+            output=output,
+        )
+    declaration = ModelDeclaration(
+        "record",
+        (str(EX.Record),),
+        (
+            FieldDeclaration(
+                "mode",
+                str(EX.mode),
+                (ValueDeclaration("literal", datatype=str(XSD.string)),),
+                emission="optional",
+                output=output,
+            ),
+        ),
+    )
+    assert check_models((declaration,), vocabulary()).verified
+    for emitted in actual(declaration, ()):
+        assert emitted.verified, emitted.to_dict()

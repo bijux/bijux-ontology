@@ -206,6 +206,14 @@ class FieldDeclaration:
             raise InputError(f"Unknown emission guarantee: {self.emission}")
         if self.output is not None and not isinstance(self.output, OutputRequirement):
             raise InputError("Expected an explicit OutputRequirement")
+        if (
+            self.emission == "guaranteed"
+            and self.output is not None
+            and self.output.maximum_values == 0
+        ):
+            raise InputError(
+                "Guaranteed emission conflicts with zero permitted RDF values"
+            )
         if self.optional:
             if (
                 self.emission == "guaranteed"
