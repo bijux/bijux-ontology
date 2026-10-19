@@ -213,17 +213,33 @@ def test_missing_ranges_unsupported_branches_and_constraints_are_not_omitted(
                 ),
             ),
         ),
+        FieldDeclaration(
+            "collection",
+            "urn:child",
+            (
+                ValueDeclaration("literal", datatype="urn:small", container="@set"),
+                ValueDeclaration("literal", datatype="urn:small", container="@list"),
+            ),
+        ),
     )
     result = check_datatype_fields(backend, _source(), fields)
-    assert len(result.answers) == 5 and not result.report.complete
+    assert len(result.answers) == 7 and not result.report.complete
     assert tuple(a.outcome for a in result.answers) == (
         "unknown",
         "unknown",
         "included",
         "unknown",
         "unknown",
+        "included",
+        "unknown",
     )
     assert result.answers[2].report.verified
+    assert result.answers[5].report.verified
+    listed = result.answers[6]
+    assert listed.request == DatatypeFieldBranch(fields[4], 1)
+    assert listed.raw_difference_satisfiable is None
+    assert listed.raw_intersection_satisfiable is None
+    assert listed.report.outcome == "unverified"
     assert (
         result.answers[0].native_error is not None
         and "MissingGlobalDataPropertyRange" in result.answers[0].native_error
