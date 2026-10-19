@@ -1368,6 +1368,15 @@ unselected metadata remain informational; incomplete baseline or consumer scope
 stays unknown. Selected identifier qualifiers need qualified prefix interpretation;
 selected `curie_map` metadata compares the actual retained prefix maps.
 
+`workflows.upgrades.instances.compare_instance_releases` compares selected
+instance records independently of schema changes. Supply physical entity scopes,
+explicit identity pairs and `InstanceFieldPolicy` paths for immutable, append-only
+or permitted changes. The reusable exact dataset patch retains lexical changes
+even when a selected literal-value regime accepts them. Ordered lists and shared
+blank support remain significant; ambiguous anonymous identity stays unknown.
+Append-only protects selected roots and reachable blank support in their graphs;
+named child descriptions need their own entity or path selection.
+
 `bijux_ontology.data.projection.project_records` reads explicit `ReadBinding`
 subjects and `ReadField` paths in one selected physical graph. Immutable records
 retain exact terms, ordered list members and source-qualified reference handles.

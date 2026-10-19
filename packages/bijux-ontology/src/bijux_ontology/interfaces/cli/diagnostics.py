@@ -362,6 +362,11 @@ _CODES = {
         "collection_list_ambiguous collection_list_malformed "
         "navigation_anonymous".split()
     ),
+    "instance": frozenset(
+        "entity_removal_forbidden record_change_forbidden field_change_forbidden "
+        "path_unverified change_unverified release_unverified "
+        "release_input_error".split()
+    ),
     "upgrade": frozenset(
         "mapping_obligation_changed mapping_cardinality_changed "
         "mapping_impact_unverified mapping_impact_input_error mapping_relation_changed "
@@ -681,6 +686,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "<https://example.org/list> "
         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> "
         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .",
+    ),
+    "instance": (
+        "explicit instance-data release and path change policies",
+        "A selected record or field change violates policy or lacks evidence.",
+        "Supply physical entity selections and explicit correspondence; inspect "
+        "the exact patch and distinguish term identity from selected value equality.",
+        "compare_instance_releases(before, after, fields=fields, append_only=True)",
     ),
     "upgrade": (
         "selected application usage and upgrade impact",
