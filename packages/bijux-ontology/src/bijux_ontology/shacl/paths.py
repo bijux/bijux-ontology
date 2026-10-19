@@ -1,14 +1,15 @@
 """Finite SHACL property paths with explicit malformed and bounded outcomes."""
 
-from dataclasses import dataclass
-
 from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import RDF, SH
 from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.rdf.paths import RdfPath as ShaclPath
 from bijux_ontology.rdf.structure import read_rdf_list
+
+__all__ = ["ShaclPath", "decode_path"]
 
 _OPERATORS = (
     (SH.inversePath, "inverse"),
@@ -17,41 +18,6 @@ _OPERATORS = (
     (SH.oneOrMorePath, "one_or_more"),
     (SH.zeroOrOnePath, "zero_or_one"),
 )
-
-
-@dataclass(frozen=True)
-class ShaclPath:
-    """A finite path expression; the original RDF node is always retained."""
-
-    kind: str
-    node: Node
-    children: tuple["ShaclPath", ...] = ()
-    limitation: str | None = None
-
-    @property
-    def readable(self) -> str:
-        """Render established path syntax without interpreting unsupported terms."""
-        if self.kind == "predicate":
-            return f"<{self.node}>"
-        parts = tuple(child.readable for child in self.children)
-        if self.kind in ("sequence", "alternative"):
-            return "(" + (" / " if self.kind == "sequence" else " | ").join(parts) + ")"
-        if parts:
-            if self.kind == "inverse":
-                return "^" + parts[0]
-            suffix = {"zero_or_more": "*", "one_or_more": "+", "zero_or_one": "?"}
-            return "(" + parts[0] + ")" + suffix[self.kind]
-        return self.node.n3()
-
-    def to_dict(self) -> dict[str, object]:
-        """Export typed syntax and retained limitations beside a readable path."""
-        return {
-            "kind": self.kind,
-            "node": self.node.n3(),
-            "readable": self.readable,
-            "children": [child.to_dict() for child in self.children],
-            "limitation": self.limitation,
-        }
 
 
 def decode_path(

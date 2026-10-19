@@ -17,6 +17,7 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.roles.classification import bound_node
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import term_key
@@ -62,6 +63,7 @@ class RdfModelUsage:
 
 def _traits(graph: Graph, node: Node, budget: Budget) -> ValueTraits:
     """Read exact native term traits without constructing JSON-LD or expansion."""
+    bound_node(node, budget)
     if isinstance(node, Literal):
         return ValueTraits(
             "literal",
@@ -75,6 +77,7 @@ def _traits(graph: Graph, node: Node, budget: Budget) -> ValueTraits:
         for kind in graph.objects(node, RDF.type):
             budget.consume("work")
             if isinstance(kind, URIRef):
+                bound_node(kind, budget)
                 kinds.append(str(kind))
         return ValueTraits(
             "iri" if isinstance(node, URIRef) else "blank",

@@ -2,6 +2,12 @@
 
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.data.compatibility import check_data_compatibility
+from bijux_ontology.data.keys import (
+    KeyProjection,
+    KeyRecord,
+    check_record_keys,
+    project_record_key,
+)
 from bijux_ontology.data.query_rules.checking import run_query_rules
 from bijux_ontology.data.query_rules.loading import (
     load_query_rules,
@@ -13,13 +19,20 @@ from bijux_ontology.data.query_rules.types import (
     QueryRuleResult,
 )
 from bijux_ontology.data.rules import DataView, run_rules
+from bijux_ontology.data.topology import TopologyRecord, check_record_topology
 from bijux_ontology.data.usage import check_data_usage
 from bijux_ontology.declarations.codecs import (
     models_from_data,
     terms_from_data,
 )
 from bijux_ontology.declarations.enumerations import ValueEnumeration
+from bijux_ontology.declarations.keys import KeyComponent, KeyContract
+from bijux_ontology.declarations.path_fields import (
+    IntermediateRequirement,
+    PathFieldDeclaration,
+)
 from bijux_ontology.declarations.resource_roles import ResourceRole, RoleBridge
+from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
 from bijux_ontology.declarations.types import (
     EmissionCondition,
     EmissionCoverage,
@@ -94,6 +107,7 @@ from bijux_ontology.models.corpus import (
     check_serializer_corpus,
 )
 from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
 from bijux_ontology.models.resource_roles import RoleUse, check_resource_roles
@@ -241,6 +255,20 @@ from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
+    "IntermediateRequirement",
+    "PathFieldDeclaration",
+    "PathFieldUsage",
+    "check_path_fields",
+    "TopologyContract",
+    "TopologyRelation",
+    "TopologyRecord",
+    "check_record_topology",
+    "KeyComponent",
+    "KeyContract",
+    "KeyProjection",
+    "KeyRecord",
+    "check_record_keys",
+    "project_record_key",
     "ABSENT",
     "Absent",
     "AcceptancePolicy",

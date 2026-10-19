@@ -77,6 +77,14 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "topology_binding_unverified topology_corpus_unverified topology_cycle "
+        "topology_owners topology_path_unverified topology_record_missing "
+        "topology_reference_missing topology_reference_unverified "
+        "topology_roots_unverified topology_scope_unverified "
+        "topology_target_invalid topology_unreachable "
+        "key_absent key_multiple key_collision key_binding_unverified "
+        "key_path_unverified key_normalization_unverified "
+        "key_comparison_unverified key_corpus_unverified key_projection_unverified "
         "disjoint_conflict expression_unverified asserted_type_missing "
         "datatype_conflict datatype_unverified property_unverified property_conflict "
         "type_unverified query_kind_mismatch query_answer_mismatch "
@@ -85,6 +93,8 @@ _CODES = {
     ),
     "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
+        "path_mapping_unverified path_intermediate_count_mismatch "
+        "path_intermediate_mismatch path_ownership_mismatch "
         "source_field_undeclared predicate_undeclared source_coverage_unverified "
         "extension_allowed "
         "group_unverified group_count_mismatch scenario_unverified "
@@ -150,6 +160,8 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "path_field_unverified "
+        "model_shape_unverified "
         "dataset_scope_unverified "
         "backend_warning execution_incomplete feature_unverified "
         "path_unverified finding_unverified "

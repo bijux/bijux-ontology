@@ -35,6 +35,34 @@ from bijux_ontology.rdf.sources import RdfSource
 EX = Namespace("https://output.example/")
 
 
+def test_iri_text_metadata_accepts_rdflib_terms_without_changing_output_identity() -> (
+    None
+):
+    """Accepted IRI string subclasses describe the same asserted output contract."""
+    model = Model(
+        "record",
+        (EX.Record,),
+        (
+            Field("child", EX.child, (Value("object", types=(EX.Child,)),)),
+            Field("name", EX.name, (Value("literal", datatype=XSD.string),)),
+        ),
+        subject=SubjectIdentity(expected_iri=EX.record),
+    )
+    graph = (
+        Graph()
+        .add((EX.record, RDF.type, EX.Record))
+        .add((EX.record, EX.child, EX.child_record))
+        .add((EX.child_record, RDF.type, EX.Child))
+        .add((EX.record, EX.name, Literal("name")))
+    )
+    usages = (RdfModelUsage("record", EX.record),)
+    source = prepare_source(RdfSource(graph))
+    assert check_rdf_emission(source, (model,), usages).verified
+    graph.set((EX.child_record, RDF.type, EX.Other))
+    changed = check_rdf_emission(prepare_source(RdfSource(graph)), (model,), usages)
+    assert any(issue.code == "emission.value_mismatch" for issue in changed.issues)
+
+
 def _model(
     value: Value, *, output: Output | None = None, reverse: bool = False
 ) -> Model:

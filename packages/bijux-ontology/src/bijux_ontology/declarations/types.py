@@ -35,7 +35,8 @@ def _text(value: str, location: str, *, empty: bool = False) -> str:
 
 def _iris(values: tuple[str, ...], location: str) -> tuple[str, ...]:
     return tuple(
-        absolute_iri(value, location=location) for value in _sequence(values, location)
+        str(absolute_iri(value, location=location))
+        for value in _sequence(values, location)
     )
 
 
@@ -48,7 +49,9 @@ class TermDeclaration:
     location: str = ""
 
     def __post_init__(self) -> None:
-        absolute_iri(self.iri, location=self.location)
+        object.__setattr__(
+            self, "iri", str(absolute_iri(self.iri, location=self.location))
+        )
         object.__setattr__(self, "kinds", _iris(self.kinds, self.location))
         _text(self.location, "location", empty=True)
 
@@ -84,7 +87,9 @@ class ValueDeclaration:
             raise InputError(f"Unknown RDF value kind: {self.kind}")
         object.__setattr__(self, "types", _iris(self.types, "types"))
         if self.datatype is not None:
-            absolute_iri(self.datatype, location="datatype")
+            object.__setattr__(
+                self, "datatype", str(absolute_iri(self.datatype, location="datatype"))
+            )
         if isinstance(self.language, str):
             language_tag(self.language, location="language")
         elif self.language is not None and self.language is not ABSENT:
@@ -188,6 +193,7 @@ class FieldDeclaration:
         _text(self.predicate, "predicate")
         if self.predicate not in {"@id", "@type"}:
             absolute_iri(self.predicate, location=self.location or self.name)
+        object.__setattr__(self, "predicate", str(self.predicate))
         if self.key is not None:
             _text(self.key, "key")
         if type(self.optional) is not bool or type(self.reverse) is not bool:
@@ -229,7 +235,11 @@ class SubjectIdentity:
 
     def __post_init__(self) -> None:
         if self.expected_iri is not None:
-            absolute_iri(self.expected_iri, location="expected_iri")
+            object.__setattr__(
+                self,
+                "expected_iri",
+                str(absolute_iri(self.expected_iri, location="expected_iri")),
+            )
         if type(self.allow_blank) is not bool:
             raise InputError("allow_blank must be a boolean")
 

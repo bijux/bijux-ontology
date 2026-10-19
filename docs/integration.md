@@ -189,6 +189,41 @@ a sequence is available only for complete, fully ordered membership. Mixed or
 unordered membership supplies no total order. `nested="retain"` keeps child
 collections atomic; cycles, unresolved roles and exhausted bounds remain visible.
 
+Use `check_record_keys(records, KeyContract(name, components), complete=True)`
+for application uniqueness over an explicitly supplied corpus. `KeyRecord` binds
+each identifier and subject to an owned source and graph; `KeyComponent` accepts
+finite predicate, sequence and inverse RDFLib paths. Absence and multiplicity
+are explicit policies. Default equality is exact RDF identity; string business
+normalization and named semantic regimes require an explicit choice. Partial
+corpora and lossy literal preparation remain unverified; collisions retain their
+original values and source associations without implying OWL identity.
+`project_record_key` exports QueryRules and SHACL-SPARQL for supported exact
+singleton keys and named records in one graph. Keep its projection report
+alongside backend results, select the same graph, and use `trusted_sparql=True`
+for SHACL validation. Unsupported policies never acquire a verified projection.
+
+Use `check_record_topology(source, records, contract, roots=record_ids,
+complete=True, closure="closed")` for explicit application reachability,
+ownership and cycle rules. `TopologyRelation` selects each path's policy roles;
+references become containment only when declared. `TopologyRecord` binds a
+named or owned blank subject and optional known output location. Roots are
+exempt from minimum ownership, and explicit `shared_targets` from its maximum.
+The selected graph supplies all record and path support. Open or partial
+external scope retains unresolved absence; witnessed cycles and excess owners
+remain findings. This operation makes no OWL consistency claim.
+
+Declare a logical multi-hop field with `PathFieldDeclaration` and bind its
+actual subject using `PathFieldUsage`. `check_path_fields` checks finite
+predicate, sequence and inverse paths on owned RDF or `JSONLDPreparation`.
+Endpoint alternatives/counts and `IntermediateRequirement` node counts, types
+and ownership are separate obligations. Graph scope applies throughout; paths
+never become direct ontology properties. Source permissions, unsupported paths
+or ambiguous bindings remain unknown. The default output contract waives JSON
+null/empty restrictions; requesting them requires separate source evidence.
+`project_path_field(..., shape=shape_iri)` from `bijux_ontology.shacl` reuses
+typed model translation for supported Core constraints. Keep its report with
+backend results, including any lexical or intermediate-description limitation.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
@@ -231,6 +266,29 @@ pointers. Blank-node or anonymous-graph correspondence remains unverified withou
 an identity witness. RDF preservation does not promise original JSON shape.
 
 Keep findings and unsupported comparisons visible. Apply narrow code/location exceptions through `AcceptancePolicy`; they do not change verification truth. Retain application validation, reference checks and any existing reasoning gate. Supplied-shapes validation is an optional additional operation, not general OWL consistency checking.
+
+Author explicit application shapes with `ShaclNodeShape`, `ShaclPropertyShape`
+and `compile_shapes` from `bijux_ontology.shacl`. Constraints include value and
+count rules, cross-property comparisons, qualified counts and logical shape
+references. Property paths accept RDFLib paths such as `~ex.owner / ex.name`;
+construction captures their intent before later caller mutation. References must
+resolve to supplied definitions; recursion remains an RDF link. Compilation
+returns an owned `PreparedSource` and raises on unsupported or exhausted input
+without returning partial shapes. It infers no constraints from ontology axioms.
+Use `validate_shapes(data, compiled, preflight=True)` to run maintained
+meta-SHACL and data validation; compilation alone does not establish conformance.
+
+Use `compile_model_shapes(models, bindings)` with explicit `ModelShapeBinding`
+targets to translate supported output declarations into the same typed shapes.
+Asserted model/value types use exact `rdf:type` values; subclass edges do not
+substitute for required assertions. Reverse fields, alternatives, explicit value
+counts and closed enumerations retain their meaning. Keep the returned `report`
+alongside its optional `source`: source permissions, conditional groups, list and
+role rules, and native lexical checks beyond the backend's supported subset
+remain required unknowns. Finite exact enumerations can qualify lexical domains;
+an unbounded datatype shape alone cannot promise native lexical agreement.
+An explicit target without a positive assertion requirement still needs native
+subject-occurrence evidence; naming a SHACL focus node does not supply a record.
 
 SHACL findings retain report-local identities, nested details and finite typed
 property paths in `result.findings` and each generic issue’s `evidence`.
