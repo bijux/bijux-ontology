@@ -10,7 +10,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import language_tag
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
 
 from .types import OakPreparation

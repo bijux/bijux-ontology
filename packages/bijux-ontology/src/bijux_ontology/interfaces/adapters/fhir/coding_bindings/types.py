@@ -11,7 +11,7 @@ from bijux_ontology.interfaces.adapters.fhir.code_system.types import (
 from bijux_ontology.interfaces.adapters.fhir.identity import FhirCodeIdentity
 from bijux_ontology.interfaces.adapters.fhir.value_set.types import FhirValueSet
 from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.results import Annotation, Selection
+from bijux_ontology.vocabulary.browsing.results import Annotation, Selection
 
 
 @dataclass(frozen=True)

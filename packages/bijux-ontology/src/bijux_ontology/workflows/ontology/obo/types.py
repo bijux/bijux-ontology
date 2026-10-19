@@ -13,9 +13,9 @@ from bijux_ontology.vocabulary.annotations.types import (
     AnnotationCoverage,
     AnnotationRequirement,
 )
+from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 from bijux_ontology.vocabulary.obo.subsets.types import OboSubsets
 from bijux_ontology.vocabulary.obo.types import OboRecords
-from bijux_ontology.vocabulary.results import Edge, Selection
 from bijux_ontology.workflows.upgrades.lifecycle.types import (
     LifecycleCheck,
     LifecyclePolicy,

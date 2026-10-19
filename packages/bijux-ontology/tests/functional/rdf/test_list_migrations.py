@@ -27,7 +27,7 @@ from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import literal_term, term_key
 from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.skos.collections import check_collection_sequence
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
 E = Namespace("urn:list-migration:")
 

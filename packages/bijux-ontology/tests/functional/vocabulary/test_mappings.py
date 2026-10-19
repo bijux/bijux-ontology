@@ -15,7 +15,7 @@ from rdflib.namespace import OWL, RDF, SKOS
 from bijux_ontology.errors import InputError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.mappings import (
     MappingPolicy,
     MappingSet,

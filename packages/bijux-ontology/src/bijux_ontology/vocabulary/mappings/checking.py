@@ -13,7 +13,7 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.roles.classification import classify_statement, declaration_role
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import MappingCheck, MappingPolicy, MappingSet, _iri, _iris

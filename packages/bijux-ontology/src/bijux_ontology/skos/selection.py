@@ -8,7 +8,7 @@ from rdflib import Graph, URIRef
 from rdflib.namespace import SKOS
 from rdflib.term import Node
 
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 from .structure import SkosStructure
 

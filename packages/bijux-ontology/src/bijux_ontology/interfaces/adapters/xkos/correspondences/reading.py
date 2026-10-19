@@ -12,8 +12,8 @@ from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.navigation import scheme_members
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.navigation import scheme_members
 
 from .types import XKOS as X
 from .types import (

@@ -13,8 +13,8 @@ from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.results import Edge, Selection
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 
 from .types import OboAttachment, OboRecord, OboRecords
 

@@ -10,7 +10,7 @@ from typing import cast
 from bijux_ontology.errors import InputError
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.reports import Issue
-from bijux_ontology.vocabulary.identifiers import compact_iri, expand_curie
+from bijux_ontology.vocabulary.registry.prefixes import compact_iri, expand_curie
 
 
 def _prefix(value: str) -> str:

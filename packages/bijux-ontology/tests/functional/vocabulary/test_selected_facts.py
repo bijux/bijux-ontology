@@ -12,6 +12,7 @@ from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import term_key
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.comparison import compare_vocabularies
 from bijux_ontology.vocabulary.facts import (
     FactGraph,
@@ -19,7 +20,6 @@ from bijux_ontology.vocabulary.facts import (
     FactSelection,
     compare_selected_facts,
 )
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("urn:selected:")

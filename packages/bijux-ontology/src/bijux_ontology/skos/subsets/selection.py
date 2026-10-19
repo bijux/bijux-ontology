@@ -10,11 +10,11 @@ from rdflib.term import Node
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.navigation import Membership, scheme_members
+from bijux_ontology.vocabulary.browsing.results import Deprecation
 from bijux_ontology.vocabulary.collections.expansion import expand_collection
 from bijux_ontology.vocabulary.collections.types import CollectionOccurrence
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.navigation import Membership, scheme_members
-from bijux_ontology.vocabulary.results import Deprecation
 
 from ..publication.coverage import _Hierarchy, _roots, _walk
 from ..publication.scope import _PublicationRead

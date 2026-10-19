@@ -19,7 +19,10 @@ from bijux_ontology.data.analysis import (
 )
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
 from bijux_ontology.vocabulary.relation_paths import RelationInverse, RelationStep
 from bijux_ontology.vocabulary.restrictions.types import RestrictionProjection
 

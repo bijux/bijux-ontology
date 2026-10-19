@@ -8,7 +8,7 @@ from rdflib.namespace import RDFS
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 CONTROLLER_REVISION = "493545801ca8f5c86f7d15650eed1f2a4cd765ef"
 

@@ -3,8 +3,8 @@
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF
 
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.deprecation import replacement_candidates
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
 

@@ -14,9 +14,9 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Annotation, Selection
 from bijux_ontology.vocabulary.languages.selection import negotiate_annotations
-from bijux_ontology.vocabulary.results import Annotation, Selection
 
 from ..code_system.checking import check_code_membership
 from ..code_system.types import FhirCodeMembership, FhirCodeSystem

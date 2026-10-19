@@ -25,7 +25,7 @@ from bijux_ontology.skos.collections import check_collection_sequence
 from bijux_ontology.skos.publication.roots import check_top_concepts
 from bijux_ontology.skos.publication.types import TopConceptPolicy
 from bijux_ontology.skos.xl import XL
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.workflows.ontology.publication import (
     SkosPublication,
     compile_skos_publication,

@@ -17,6 +17,7 @@ from bijux_ontology.owl.checking import (
 from bijux_ontology.owl.expressions import check_expression_shapes
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.builtins import (
     Regime,
     builtin_kinds,
@@ -24,7 +25,6 @@ from bijux_ontology.vocabulary.builtins import (
     validate_regime,
 )
 from bijux_ontology.vocabulary.checking import _lint_issues
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.ontology.deprecation import check_deprecated_terms

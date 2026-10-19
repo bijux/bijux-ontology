@@ -22,7 +22,7 @@ from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.rdf.literals import Regime
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary, _VocabularyPreparation
 

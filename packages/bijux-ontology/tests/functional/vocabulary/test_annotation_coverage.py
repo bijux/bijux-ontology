@@ -16,7 +16,7 @@ from bijux_ontology.vocabulary.annotations import (
     LanguageRequirement,
     check_annotation_coverage,
 )
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.languages import negotiate_annotations
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

@@ -11,9 +11,9 @@ from bijux_ontology.absence import Absent
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
+from bijux_ontology.vocabulary.browsing.results import Edge
 
 from ..languages.matching import matches_language
-from ..results import Edge
 
 T = TypeVar("T")
 LanguageMode = Literal["exact", "basic", "extended"]

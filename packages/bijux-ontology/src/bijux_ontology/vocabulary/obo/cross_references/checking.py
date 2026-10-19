@@ -15,10 +15,10 @@ from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.accessions.checking import check_accessions
 from bijux_ontology.vocabulary.accessions.types import AccessionRule, AccessionValue
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge
 from bijux_ontology.vocabulary.obo.types import OboRecords
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
-from bijux_ontology.vocabulary.results import Edge
 
 from .reading import UnsupportedScope, qualify_edge, qualify_view, read_references
 from .types import (

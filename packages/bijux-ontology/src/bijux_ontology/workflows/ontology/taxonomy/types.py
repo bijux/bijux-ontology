@@ -15,7 +15,7 @@ from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import TermRoleOccurrence
 from bijux_ontology.rdf.terms import bound_node, literal_term
 from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.vocabulary.browsing.results import Edge
 from bijux_ontology.workflows.ontology.publication.types import SkosPublication, _iris
 from bijux_ontology.workflows.upgrades.plans.types import MigrationPlanResult
 

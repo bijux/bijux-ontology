@@ -13,8 +13,8 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge
 
 from ..structure import _RELATIONS
 from .scope import _PublicationRead

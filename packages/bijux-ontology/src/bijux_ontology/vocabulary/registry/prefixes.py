@@ -2,9 +2,8 @@
 
 from collections.abc import Mapping
 
+from bijux_ontology.errors import InputError
 from bijux_ontology.rdf.identifiers import absolute_iri
-
-from ..errors import InputError
 
 
 def expand_curie(value: str, prefixes: Mapping[str, str]) -> str:

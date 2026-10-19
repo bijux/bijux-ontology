@@ -25,7 +25,7 @@ from bijux_ontology.vocabulary.annotations.graphs import (
     inspect_annotation_graph,
 )
 from bijux_ontology.vocabulary.authoring import author_vocabulary
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.obo import read_obo_records
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 

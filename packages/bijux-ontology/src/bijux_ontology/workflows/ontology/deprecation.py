@@ -4,9 +4,9 @@ from collections.abc import Sequence
 
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.reports import Issue
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.builtins import Regime
 from bijux_ontology.vocabulary.deprecation import replacement_candidates
-from bijux_ontology.vocabulary.inspection import VocabularyView
 
 
 def check_deprecated_terms(

@@ -11,9 +11,9 @@ from bijux_ontology.rdf.roles.types import TermPosition
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Report
+from bijux_ontology.vocabulary.browsing.results import Deprecation, TermInfo
 from bijux_ontology.vocabulary.comparison import VocabularyChanges
 from bijux_ontology.vocabulary.facts.types import FactPredicate, SelectedFact
-from bijux_ontology.vocabulary.results import Deprecation, TermInfo
 
 
 @dataclass(frozen=True)

@@ -30,7 +30,7 @@ from bijux_ontology.vocabulary.authoring import (
     SchemeMembership,
     author_vocabulary,
 )
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.obo import read_obo_records
 
 E = Namespace("urn:authoring:")

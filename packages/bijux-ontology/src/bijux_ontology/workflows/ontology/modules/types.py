@@ -7,7 +7,7 @@ from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.owl.obligations import ObligationResult, OntologyObligation
 from bijux_ontology.owl.properties import PropertyContract
 from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 
 @dataclass(frozen=True)

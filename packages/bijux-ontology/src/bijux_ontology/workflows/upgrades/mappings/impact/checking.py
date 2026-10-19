@@ -16,7 +16,7 @@ from bijux_ontology.limits import (
     retain_report,
 )
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.mappings.checking import check_mappings
 from bijux_ontology.vocabulary.mappings.composition.checking import _input
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence

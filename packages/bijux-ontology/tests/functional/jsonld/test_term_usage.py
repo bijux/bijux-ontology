@@ -12,7 +12,7 @@ from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector
 from bijux_ontology.jsonld.term_usage import TermUsageRegion, check_term_usages
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
 requires_processor = pytest.mark.skipif(
     importlib.util.find_spec("pyld") is None, reason="maintained context processing"

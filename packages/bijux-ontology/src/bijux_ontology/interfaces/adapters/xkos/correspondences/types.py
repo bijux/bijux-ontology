@@ -11,7 +11,7 @@ from bijux_ontology.rdf.migrations.values.types import ValueMap
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 XKOS = Namespace("http://rdf-vocabulary.ddialliance.org/xkos#")
 Resource = URIRef | BNode

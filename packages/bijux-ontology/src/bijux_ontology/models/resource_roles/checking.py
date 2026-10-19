@@ -18,7 +18,10 @@ from bijux_ontology.rdf.roles.types import TermRole
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .types import RoleUse

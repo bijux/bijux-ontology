@@ -8,8 +8,8 @@ from rdflib.term import Node
 
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.reports import Issue
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.results import Edge, Selection
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 
 _MEMBERSHIP = tuple(map(str, (SKOS.inScheme, SKOS.topConceptOf, SKOS.hasTopConcept)))
 

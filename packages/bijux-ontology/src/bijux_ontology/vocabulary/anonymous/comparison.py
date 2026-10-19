@@ -12,9 +12,9 @@ from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Report
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.facts.projection import FactProjection
 from bijux_ontology.vocabulary.facts.types import FactGraph, SelectedFact
-from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import AnonymousChange, AnonymousDifferences, NamedAttachment

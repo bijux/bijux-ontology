@@ -17,7 +17,7 @@ from bijux_ontology.interfaces.adapters.sdrf import (
     prepare_sdrf_terminology,
 )
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

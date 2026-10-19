@@ -5,8 +5,8 @@ from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.navigation import (
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.navigation import (
     collection_members,
     neighbours,
     scheme_members,

@@ -21,7 +21,7 @@ from bijux_ontology.interfaces.adapters.go.annotations import (
     write_go_annotations,
 )
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.registry.types import (
     IdentifierRegistry,
     NamespaceContribution,

@@ -24,8 +24,8 @@ from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Report
 from bijux_ontology.skos.subsets import select_concepts
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.facts.types import FactPredicate
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.registry.types import (
     IdentifierRegistry,
     NamespaceContribution,

@@ -29,9 +29,9 @@ from bijux_ontology.limits import Limits
 from bijux_ontology.models.checking import check_models
 from bijux_ontology.rdf.literals import Regime as ModelRegime
 from bijux_ontology.reports import Report
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.builtins import Regime
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
 from bijux_ontology.workflows.projects.bundles import load_bundle
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project

@@ -9,8 +9,8 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 

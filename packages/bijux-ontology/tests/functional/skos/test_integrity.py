@@ -9,7 +9,7 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.skos.checking import XL, check_skos
 from bijux_ontology.skos.xl import describe_xl_label, xl_labels
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/")

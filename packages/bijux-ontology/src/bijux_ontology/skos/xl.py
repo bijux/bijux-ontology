@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from rdflib import BNode, Namespace, URIRef
 
 from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.results import Edge, Selection
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 
 from ..errors import LimitExceeded
 from ..reports import Issue, Report

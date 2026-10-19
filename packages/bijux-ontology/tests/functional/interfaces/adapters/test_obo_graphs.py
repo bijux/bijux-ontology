@@ -21,7 +21,7 @@ from bijux_ontology.vocabulary.annotations.graphs.reading import (
     inspect_annotation_graph,
 )
 from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationStatement
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.obo.reading import read_obo_records
 from bijux_ontology.vocabulary.restrictions.projection import project_restrictions
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary

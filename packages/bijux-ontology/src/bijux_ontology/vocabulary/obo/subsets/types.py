@@ -10,7 +10,7 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.vocabulary.browsing.results import Edge
 
 
 @dataclass(frozen=True)

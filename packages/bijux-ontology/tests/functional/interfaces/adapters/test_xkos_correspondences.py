@@ -17,7 +17,7 @@ from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.values.types import ValueMap
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 T = URIRef("urn:correspondence:table")
 OLD = URIRef("urn:classification:old")

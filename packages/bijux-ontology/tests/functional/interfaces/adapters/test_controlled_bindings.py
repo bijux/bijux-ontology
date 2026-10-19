@@ -46,7 +46,7 @@ from bijux_ontology.shacl.authoring.types import (
 )
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.skos.subsets.selection import select_concepts
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
 EX = Namespace("https://example.org/controlled/")
 

@@ -12,9 +12,9 @@ from bijux_ontology.vocabulary.accessions.types import (
     AccessionObservation,
 )
 from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationGraph
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge, TermInfo
 from bijux_ontology.vocabulary.obo.types import OboAttachment, OboRecord, OboRecords
-from bijux_ontology.vocabulary.results import Edge, TermInfo
 
 
 @dataclass(frozen=True)

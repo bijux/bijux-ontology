@@ -25,7 +25,7 @@ from bijux_ontology.vocabulary.annotations.graphs.types import (
     AnnotationLiteralRepair,
     AnnotationValueEdit,
 )
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 AnnotationValue = URIRef | BNode | Literal
 

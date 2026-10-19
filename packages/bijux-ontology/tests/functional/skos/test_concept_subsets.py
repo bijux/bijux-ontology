@@ -26,8 +26,8 @@ from bijux_ontology.reports import AcceptancePolicy, IssueSelection, Report
 from bijux_ontology.skos.publication.types import ConceptReachability
 from bijux_ontology.skos.subsets.selection import select_concepts
 from bijux_ontology.skos.subsets.types import ConceptSubset
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.collections.types import CollectionOccurrence
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 
 EX = Namespace("https://example.org/")
 

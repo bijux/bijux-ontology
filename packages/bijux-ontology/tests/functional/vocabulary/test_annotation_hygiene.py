@@ -37,7 +37,7 @@ from bijux_ontology.vocabulary.annotations.hygiene import (
     check_annotation_hygiene,
     repair_annotation_hygiene,
 )
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
 E = Namespace("urn:hygiene:")
 OLD = Literal("Cell ", lang="en")

@@ -16,10 +16,13 @@ from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.anonymous.comparison import compare_anonymous
 from bijux_ontology.vocabulary.anonymous.types import AnonymousDifferences
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
+from bijux_ontology.vocabulary.browsing.results import TermInfo
 from bijux_ontology.vocabulary.facts.comparison import compare_selected_facts
 from bijux_ontology.vocabulary.facts.types import FactSelection, SelectedFactDifferences
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.results import TermInfo
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.types import source_role
 from bijux_ontology.vocabulary.sources.view import Vocabulary

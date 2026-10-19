@@ -13,9 +13,14 @@ from bijux_ontology.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import (
+    Deprecation,
+    Edge,
+    Selection,
+    TermInfo,
+)
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
-from bijux_ontology.vocabulary.results import Deprecation, Edge, Selection, TermInfo
 
 _ALTERNATIVE = URIRef("http://www.geneontology.org/formats/oboInOwl#hasAlternativeId")
 IdentifierMode = Choice["literal", "curie", "iri"]

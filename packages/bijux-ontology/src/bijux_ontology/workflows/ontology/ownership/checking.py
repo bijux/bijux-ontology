@@ -12,6 +12,7 @@ from bijux_ontology.rdf.roles.types import TermRole
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Location, Report
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.facts.comparison import (
     _collect,
     _graph_selected,
@@ -19,7 +20,6 @@ from bijux_ontology.vocabulary.facts.comparison import (
     compare_selected_facts,
 )
 from bijux_ontology.vocabulary.facts.types import FactGraph, FactSelection, SelectedFact
-from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import OwnerClaim, OwnershipCheck, OwnershipEvidence

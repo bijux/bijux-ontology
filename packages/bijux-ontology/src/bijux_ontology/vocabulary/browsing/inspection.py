@@ -7,17 +7,13 @@ from typing import TypeVar
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.constructs import unsupported_constructs
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.snapshots import copy_graph
-from bijux_ontology.vocabulary.identifiers import expand_curie
-from bijux_ontology.vocabulary.sources.loading import load_vocabulary
-from bijux_ontology.vocabulary.sources.view import Vocabulary
-
-from ..errors import InputError, LimitExceeded
-from ..reports import Report
-from .results import (
+from bijux_ontology.reports import Report
+from bijux_ontology.vocabulary.browsing.results import (
     Annotation,
     Deprecation,
     Description,
@@ -29,6 +25,9 @@ from .results import (
     Summary,
     TermInfo,
 )
+from bijux_ontology.vocabulary.registry.prefixes import expand_curie
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 T = TypeVar("T")
 

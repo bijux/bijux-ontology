@@ -12,7 +12,10 @@ from rdflib.namespace import OWL, RDF, RDFS
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.accessions.types import AccessionRule
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
 from bijux_ontology.vocabulary.obo.cross_references import (
     CrossReferenceCheck,
     LocalCatalogue,

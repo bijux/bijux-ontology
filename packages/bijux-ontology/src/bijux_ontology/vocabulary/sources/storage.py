@@ -14,9 +14,9 @@ from bijux_ontology.rdf.stores.queries import query_snapshot
 from bijux_ontology.rdf.stores.types import StoredRdf
 from bijux_ontology.rdf.terms import bound_text, validate_triple
 from bijux_ontology.reports import Report
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Selection, TermInfo
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.results import Selection, TermInfo
 
 
 def _project(

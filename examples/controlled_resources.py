@@ -11,8 +11,8 @@ from bijux_ontology.jsonld.resources import (
     context_document_loader,
 )
 from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 LABEL = "https://vocabulary.example/label"

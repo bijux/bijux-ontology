@@ -10,7 +10,7 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.relation_paths.types import (
     RelationRepeat,
     RelationSequence,

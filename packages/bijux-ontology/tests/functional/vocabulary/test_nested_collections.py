@@ -11,8 +11,8 @@ from rdflib.term import Node
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.structure import iter_rdf_list
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.collections import expand_collection
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 
 EX = Namespace("https://example.org/collections/")
 
@@ -81,7 +81,7 @@ def test_unordered_children_and_extra_direct_assertions_cannot_gain_order() -> N
 def test_shared_blank_subcollection_decodes_once_but_retains_each_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import bijux_ontology.vocabulary.navigation as navigation
+    import bijux_ontology.vocabulary.browsing.navigation as navigation
 
     graph = Graph()
     shared = BNode()

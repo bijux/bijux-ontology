@@ -42,7 +42,10 @@ from bijux_ontology.vocabulary.annotations.graphs.types import (
     AnnotationLiteralRepair,
     AnnotationValueEdit,
 )
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
 from bijux_ontology.vocabulary.sources.types import OwnedSource
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

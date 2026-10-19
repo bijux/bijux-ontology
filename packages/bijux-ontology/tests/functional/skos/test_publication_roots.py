@@ -11,7 +11,7 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.publication import TopConceptPolicy, check_top_concepts
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
 EX = Namespace("https://example.org/publication/")
 

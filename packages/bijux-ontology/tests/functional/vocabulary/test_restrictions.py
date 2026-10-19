@@ -9,7 +9,7 @@ from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.restrictions import (
     existential_path,
     project_restrictions,

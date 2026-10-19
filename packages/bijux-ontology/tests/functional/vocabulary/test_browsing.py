@@ -14,8 +14,8 @@ from bijux_ontology.vocabulary.browsing import (
     statements_page,
     terms_page,
 )
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.results import Edge, SearchMatch
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.results import Edge, SearchMatch
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/")

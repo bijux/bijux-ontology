@@ -16,7 +16,8 @@ from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge
 from bijux_ontology.vocabulary.relation_paths.automaton import Automaton, named
 from bijux_ontology.vocabulary.relation_paths.edges import (
     _edge,
@@ -25,7 +26,6 @@ from bijux_ontology.vocabulary.relation_paths.edges import (
 )
 from bijux_ontology.vocabulary.relation_paths.types import RelationInverse, RelationStep
 from bijux_ontology.vocabulary.restrictions.types import RestrictionProjection
-from bijux_ontology.vocabulary.results import Edge
 
 from .types import (
     AnnotationPopulation,

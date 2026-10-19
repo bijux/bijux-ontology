@@ -13,7 +13,7 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.skos.label_relations import XLRelationPolicy, check_xl_relations
 from bijux_ontology.skos.xl import XL
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/label-relations/")

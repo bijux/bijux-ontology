@@ -23,8 +23,8 @@ from bijux_ontology.rdf.stores import (
 from bijux_ontology.rdf.stores.native import DeclarationReader
 from bijux_ontology.rdf.stores.protocol import scope_data
 from bijux_ontology.reports import Issue
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.storage import (
     check_stored_terms,
     inspect_stored_terms,

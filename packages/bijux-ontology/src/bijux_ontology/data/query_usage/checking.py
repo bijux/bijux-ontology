@@ -13,8 +13,8 @@ from bijux_ontology.limits import (
     retain_report,
 )
 from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

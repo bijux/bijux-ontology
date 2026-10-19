@@ -8,8 +8,8 @@ from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.errors import InputError
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.reports import Report
+from bijux_ontology.vocabulary.browsing.results import Deprecation
 from bijux_ontology.vocabulary.obo.identifiers import AlternativeIdResolution
-from bijux_ontology.vocabulary.results import Deprecation
 
 GoFormat = Literal["gaf", "gpad"]
 GoRole = Literal[

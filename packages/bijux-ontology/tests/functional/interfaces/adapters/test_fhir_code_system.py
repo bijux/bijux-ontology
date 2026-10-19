@@ -24,7 +24,7 @@ from bijux_ontology.vocabulary.annotations.types import (
     AnnotationRequirement,
     LanguageRequirement,
 )
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 CodeSystem = pytest.importorskip("fhir.resources.codesystem").CodeSystem
 

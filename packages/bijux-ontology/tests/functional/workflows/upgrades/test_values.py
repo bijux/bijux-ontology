@@ -24,7 +24,7 @@ from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Report
 from bijux_ontology.skos.subsets.selection import select_concepts
 from bijux_ontology.skos.subsets.types import ConceptSubset
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.workflows.upgrades.values import (
     ControlledField,
     ValueReplacement,

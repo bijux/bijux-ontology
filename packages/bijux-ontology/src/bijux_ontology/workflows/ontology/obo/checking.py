@@ -17,12 +17,15 @@ from bijux_ontology.vocabulary.annotations.types import (
     AnnotationCoverage,
     AnnotationRequirement,
 )
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
+from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 from bijux_ontology.vocabulary.obo.reading import read_obo_records
 from bijux_ontology.vocabulary.obo.subsets.reading import read_obo_subsets
 from bijux_ontology.vocabulary.obo.subsets.types import OboSubsets
 from bijux_ontology.vocabulary.obo.types import OboRecord, OboRecords
-from bijux_ontology.vocabulary.results import Edge, Selection
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.upgrades.lifecycle.checking import check_lifecycle
 from bijux_ontology.workflows.upgrades.lifecycle.types import (
