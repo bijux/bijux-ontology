@@ -312,6 +312,19 @@ _CODES = {
         "markup_invalid markup_unverified markup_value_changed".split()
     ),
     "models": frozenset(
+        "logical_coemission_conflict "
+        "logical_conditional_conflict_unverified "
+        "logical_consistency_unverified "
+        "logical_declaration_unverified "
+        "logical_emission_conflict "
+        "logical_input_error "
+        "logical_not_executed "
+        "logical_question_unverified "
+        "logical_scenario_unverified "
+        "logical_types_unsatisfiable "
+        "logical_unverified "
+        "logical_value_unverified "
+        "required_subsumption_not_entailed "
         "artifact_input_error artifact_incompatible "
         "direction_unverified contextual_direction_unverified "
         "emission_group_conflict emission_group_unverified "
@@ -341,6 +354,7 @@ _CODES = {
         "datatype_unverified datatype_conflict datatype_not_included "
         "datatype_not_disjoint datatypes_unverified datatypes_input_error "
         "datatypes_input_loss datatypes_profile_unsupported "
+        "models_input_loss models_profile_unsupported "
         "rename_postconditions_missing rename_postcondition_unverified "
         "rename_base_mismatch rename_unverified rename_profile_violation "
         "rename_target_collision rename_builtin_source rename_module_scope "

@@ -144,3 +144,13 @@ application value constraints remain required unknown. Explicit branch selection
 through `check_datatype_branches` retains original field identity and indices;
 combined consumers own coverage of the remaining branches. Class-context and
 model co-emission obligations belong to model compatibility.
+
+`models.compatibility.check_model_compatibility(backend, source, declarations)`
+checks a finite automatic subset of existing model contracts. Required endpoint
+subsumption, possible type satisfiability and declared co-emission contradictions
+remain separate answers at original model/field locations. Anonymous intersection
+and existential consequences use actual reasoning; literal branches delegate to
+the datatype checker. One captured RDF import closure supports both operations.
+Unsupported contexts and uncovered scenarios remain unknown. Logical existence
+or cardinality never certifies emitted required fields; use ordinary model/output
+checking for those obligations.
