@@ -9,6 +9,7 @@ from typing import cast
 from rdflib.namespace import RDF, XSD
 
 from bijux_ontology._json import own_json
+from bijux_ontology.absence import Absent
 from bijux_ontology.declarations.types import FieldDeclaration, ValueDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
@@ -74,6 +75,7 @@ def _expectation(
         value_kind=_KINDS.get(value.kind),
         datatype=value.datatype,
         language=value.language,
+        direction=value.direction,
         types=value.types or None,
         container=_CONTAINERS[value.container],
         reverse=field.reverse,
@@ -91,10 +93,10 @@ def _shape(value: object) -> str:
     )
 
 
-def _charge_text(text: str | None, budget: Budget) -> None:
+def _charge_text(text: str | Absent | None, budget: Budget) -> None:
     """Bound metadata used in generation and report paths before copying it."""
     budget.consume("work")
-    if text is not None:
+    if isinstance(text, str):
         if len(text) > budget.limits.max_bytes:
             raise LimitExceeded("Context probe metadata exceeds max_bytes")
         size = len(text.encode("utf-8"))
@@ -283,17 +285,18 @@ def probe_context(
                     _charge_text(text, operation)
                 for branch, value in enumerate(field.values):
                     operation.consume("work")
-                    for text in chain(
+                    for value_text in chain(
                         (
                             value.kind,
                             value.datatype,
                             value.language,
+                            value.direction,
                             value.container,
                             value.model,
                         ),
                         value.types,
                     ):
-                        _charge_text(text, operation)
+                        _charge_text(value_text, operation)
                     explicit = (field.name, branch) in lookup
                     requested += 1 if explicit else max(1, len(value.samples))
                     if requested > operation.limits.max_states:

@@ -85,6 +85,20 @@ def check_occurrences(
             continue
         traits = item.traits
         if traits.kind == "literal":
+            if traits.direction is not None:
+                if (
+                    requirement.minimum_values is not None
+                    or requirement.maximum_values is not None
+                ):
+                    issues.append(
+                        Issue(
+                            "emission.cardinality_unverified",
+                            "Directional RDF term correspondence is not established",
+                            where,
+                            kind="unverified",
+                        )
+                    )
+                continue
             value = item.value
             if not isinstance(value, dict) or "@value" not in value:
                 issues.append(

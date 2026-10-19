@@ -1,5 +1,6 @@
 """Pure actual-value contract matching shared by RDF and JSON-LD outputs."""
 
+from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import (
     ModelDeclaration,
     SubjectIdentity,
@@ -36,10 +37,10 @@ def matches_value(
             return False
         if value.datatype is not None and value.datatype != traits.datatype:
             return False
-        return not (
-            value.language is not None
-            and value.language.lower() != (traits.language or "").lower()
-        )
+        return trait_matches(
+            value.language, traits.language, fold=True
+        ) and trait_matches(value.direction, traits.direction)
+
     if value.kind == "iri" and traits.kind != "iri":
         return False
     if value.kind == "object" and traits.kind not in {"node", "iri", "blank"}:
@@ -55,3 +56,14 @@ def matches_value(
     if required - set(traits.types):
         return None if traits.kind in {"iri", "blank"} and not traits.types else False
     return True
+
+
+def trait_matches(
+    required: str | Absent | None, actual: str | None, *, fold: bool = False
+) -> bool:
+    """Compare required, absent and unchecked metadata without rewriting values."""
+    if required is None:
+        return True
+    if required is ABSENT:
+        return actual is None
+    return required.lower() == (actual or "").lower() if fold else required == actual

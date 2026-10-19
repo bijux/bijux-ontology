@@ -3,7 +3,7 @@
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
-from typing import TYPE_CHECKING, get_args
+from typing import TYPE_CHECKING, Literal, cast, get_args
 
 from rdflib import Graph
 
@@ -18,6 +18,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
+from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import object_key
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
@@ -82,8 +83,9 @@ def _branch(item: ObservedOccurrence, model: str | None) -> ValueDeclaration:
     if traits.kind == "literal":
         return ValueDeclaration(
             "literal",
-            datatype=traits.datatype,
+            datatype=traits.datatype if traits.direction is None else None,
             language=traits.language,
+            direction=cast(Literal["ltr", "rtl"] | None, traits.direction),
             container=container,
         )
     if traits.kind in {"iri", "blank", "node"}:
@@ -367,6 +369,7 @@ def check_instance(
     model: str | None = None,
     base: str | None = None,
     document_loader: DocumentLoader | None = None,
+    rdf_direction: DirectionPolicy | None = None,
     limits: Limits | None = None,
 ) -> InstanceCheck:
     """Dump once, check one supported JSON sample, and return its owned output.
@@ -385,6 +388,8 @@ def check_instance(
     this actual sample and its options, never universal serializer behavior.
     Limits cover owned semantic work; caller serializer code runs in-process.
     """
+    if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
+        raise InputError("Unsupported RDF direction policy")
     try:
         from pydantic import BaseModel
     except ImportError as error:
@@ -509,6 +514,7 @@ def check_instance(
             else None,
             base=base,
             document_loader=loader,
+            rdf_direction=rdf_direction,
             limits=selected,
             budget=budget,
         )

@@ -17,6 +17,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     TermDeclaration,
 )
+from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.classes import ClassContracts
 from bijux_ontology.owl.obligations import (
@@ -32,8 +33,10 @@ from bijux_ontology.vocabulary.view import Vocabulary
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report, combine_reports
 from .constraints import _emission_issues, _field_issues, _value_contract_issues
+from .direction import project_direction
 from .propagation import ModelContracts
 from .registry import index_models
+from .value_matching import trait_matches
 
 
 def check_models(
@@ -44,6 +47,7 @@ def check_models(
     regime: Regime = "application",
     limits: Limits | None = None,
     budget: Budget | None = None,
+    rdf_direction: DirectionPolicy | None = None,
 ) -> Report:
     """Check finite model declarations against explicit supplied RDF statements.
 
@@ -51,6 +55,8 @@ def check_models(
     Domains/ranges constrain each present field occurrence; they never form a
     closed-world whitelist. Optional and union branches remain independent.
     """
+    if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
+        raise InputError("Unknown RDF direction policy")
     if regime not in ("application", "rdf", "owl-dl"):
         raise InputError("Unknown semantic regime")
     if budget is not None and limits is not None and budget.limits != limits:
@@ -82,11 +88,51 @@ def check_models(
                     for sample_index, sample in enumerate(branch.samples):
                         budget.consume("work")
                         sample_location = f"{branch_location}.samples[{sample_index}]"
+                        if (
+                            rdf_direction is not None
+                            and sample.datatype is not None
+                            and str(sample.datatype).startswith(
+                                "https://www.w3.org/ns/i18n#"
+                            )
+                        ):
+                            _, projected = project_direction(
+                                Graph(), sample, rdf_direction, budget
+                            )
+                            if projected is None:
+                                issues.append(
+                                    Issue(
+                                        "models.direction_unverified",
+                                        "Sample direction encoding is not qualified",
+                                        sample_location,
+                                        kind="unverified",
+                                    )
+                                )
+                            elif (
+                                branch.datatype is not None
+                                and branch.datatype != str(sample.datatype)
+                                or not trait_matches(
+                                    branch.language, projected.language, fold=True
+                                )
+                                or not trait_matches(
+                                    branch.direction, projected.direction
+                                )
+                            ):
+                                issues.append(
+                                    Issue(
+                                        "models.sample_contract_conflict",
+                                        "Sample metadata differs "
+                                        "from its declared branch",
+                                        sample_location,
+                                    )
+                                )
+                            continue
                         issues.extend(
                             check_literal(sample, location=sample_location).issues
                         )
                         expected = (
-                            str(RDF.langString) if branch.language else branch.datatype
+                            str(RDF.langString)
+                            if isinstance(branch.language, str)
+                            else branch.datatype
                         )
                         actual = str(
                             sample.datatype
@@ -95,9 +141,10 @@ def check_models(
                         if (
                             expected is not None
                             and expected != actual
-                            or branch.language is not None
-                            and branch.language.lower()
-                            != (sample.language or "").lower()
+                            or not trait_matches(
+                                branch.language, sample.language, fold=True
+                            )
+                            or not trait_matches(branch.direction, None)
                         ):
                             issues.append(
                                 Issue(
@@ -195,7 +242,13 @@ def check_models(
                 )
             issues.extend(_emission_issues(model, classes, contracts))
             count, findings = _field_issues(
-                model, registry, classes, sources, regime, contracts
+                model,
+                registry,
+                classes,
+                sources,
+                regime,
+                contracts,
+                rdf_direction=rdf_direction,
             )
             checked += count
             issues.extend(findings)
@@ -214,7 +267,13 @@ def check_models(
                     )
                 )
             count, findings = _field_issues(
-                contextual, registry, classes, sources, regime, contracts
+                contextual,
+                registry,
+                classes,
+                sources,
+                regime,
+                contracts,
+                rdf_direction=rdf_direction,
             )
             checked += count
             contextual_issues.extend(

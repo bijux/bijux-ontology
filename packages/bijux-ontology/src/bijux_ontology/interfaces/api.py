@@ -48,6 +48,7 @@ from bijux_ontology.jsonld.flattening import (
     FlattenedDocument,
     flatten_document,
 )
+from bijux_ontology.jsonld.lists import ExpectedList
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.preparation import JSONLDPreparation, prepare_jsonld
 from bijux_ontology.jsonld.resources import (
@@ -68,6 +69,13 @@ from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
 from bijux_ontology.models.context_probes.checking import probe_context
 from bijux_ontology.models.context_probes.types import ContextProbe, ProbeSample
+from bijux_ontology.models.corpus import (
+    BranchCoverage,
+    CorpusCheck,
+    ScenarioCoverage,
+    SerializerCase,
+    check_serializer_corpus,
+)
 from bijux_ontology.models.emission import ModelUsage, check_emission
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
@@ -99,6 +107,7 @@ from bijux_ontology.reports import (
     combine_reports,
 )
 from bijux_ontology.skos.checking import check_skos
+from bijux_ontology.skos.collections import check_collection_sequence
 from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.comparison import (
@@ -149,6 +158,7 @@ __all__ = [
     "Absent",
     "AcceptancePolicy",
     "ArrayItems",
+    "BranchCoverage",
     "Budget",
     "CanonicalRDF",
     "Change",
@@ -161,10 +171,12 @@ __all__ = [
     "ContractObligation",
     "ContractResult",
     "CorpusBranch",
+    "CorpusCheck",
     "CorpusWitness",
     "DataView",
     "EntitySelector",
     "ExecutionResult",
+    "ExpectedList",
     "EmissionCondition",
     "EmissionCoverage",
     "EmissionGroup",
@@ -216,8 +228,10 @@ __all__ = [
     "RegistryMerge",
     "Report",
     "ResourceError",
+    "ScenarioCoverage",
     "Selection",
     "SourceSelector",
+    "SerializerCase",
     "SubjectIdentity",
     "TemplateKey",
     "TermDeclaration",
@@ -235,6 +249,7 @@ __all__ = [
     "assess_models",
     "assess_upgrade",
     "canonicalize_rdf",
+    "check_collection_sequence",
     "check_context",
     "check_contract",
     "check_data_usage",
@@ -244,6 +259,7 @@ __all__ = [
     "check_ontology",
     "check_project",
     "check_rdf_emission",
+    "check_serializer_corpus",
     "check_skos",
     "check_vocabulary",
     "combine_reports",

@@ -207,9 +207,13 @@ shacl = [
 templates = [
     { name = "uri-template" },
 ]
+xsd = [
+    { name = "elementpath" },
+]
 
 [package.metadata]
 requires-dist = [
+    { name = "elementpath", marker = "extra == 'xsd'", specifier = ">=5.1.4,<6" },
     { name = "linkml-runtime", marker = "extra == 'linkml'", specifier = ">=1.12.1,<2" },
     { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2.11,<3" },
     { name = "pyld", marker = "extra == 'jsonld'", specifier = ">=3.3,<4" },
@@ -219,7 +223,7 @@ requires-dist = [
     { name = "rdflib", specifier = ">=7.6,<8" },
     { name = "uri-template", marker = "extra == 'templates'", specifier = ">=1.3,<2" },
 ]
-provides-extras = ["jsonld", "shacl", "pydantic", "linkml", "templates"]
+provides-extras = ["jsonld", "shacl", "pydantic", "linkml", "xsd", "templates"]
 
 [[package]]
 name = "bijux-ontology-dev"
@@ -233,7 +237,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
-    { name = "bijux-ontology", extra = ["jsonld", "linkml", "pydantic", "shacl", "templates"] },
+    { name = "bijux-ontology", extra = ["jsonld", "linkml", "pydantic", "shacl", "templates", "xsd"] },
     { name = "bijux-ontology-dev" },
     { name = "build" },
     { name = "codespell" },
@@ -254,7 +258,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bijux-ontology", extras = ["jsonld", "shacl", "pydantic", "linkml", "templates"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology", extras = ["jsonld", "shacl", "pydantic", "linkml", "templates", "xsd"], editable = "packages/bijux-ontology" },
     { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
     { name = "build", specifier = ">=1.2,<2" },
     { name = "codespell", specifier = ">=2.4,<3" },
@@ -778,6 +782,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/39/a4/5180d9afc57e8fca05601dd652bdff19604c218814037fe90ffc7625a50a/docutils-0.23.tar.gz", hash = "sha256:746f5060322511280a1e50eb76846ed6bf2342984b2ac04dc42caa1a8d78799e", size = 2303823, upload-time = "2026-05-27T17:41:06.934Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/32/91/30151a39f7570f448ed84529390628a651d7f27c87d73c9b887f8189695e/docutils-0.23-py3-none-any.whl", hash = "sha256:25d013af9bf23bc1c7b2b093dff4208166c53a94786c9e447808335ef1185fea", size = 634701, upload-time = "2026-05-27T17:40:58.442Z" },
+]
+
+[[package]]
+name = "elementpath"
+version = "5.1.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/9d/766386c47959bb8b014242af8770c869350884a3c3f7054375576e11f30a/elementpath-5.1.4.tar.gz", hash = "sha256:3c912a9c41311ac5244c038867670d7c0b0fec0e444813608e5b846dbb3428ac", size = 381114, upload-time = "2026-08-08T20:29:22.963Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/b0/b709cc33ccb0288f41f2d92dfd754d2ccf925cb9277a66effbc132cd004c/elementpath-5.1.4-py3-none-any.whl", hash = "sha256:5ec8d7bb44b16c98414a6a95e20cb150f3cbfc3cac65edc14773288c7a937376", size = 261881, upload-time = "2026-08-08T20:29:20.649Z" },
 ]
 
 [[package]]

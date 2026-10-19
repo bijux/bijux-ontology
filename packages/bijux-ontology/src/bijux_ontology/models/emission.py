@@ -1,8 +1,10 @@
 """Explicit representative JSON-LD output compared with model declarations."""
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from dataclasses import KW_ONLY, dataclass, replace
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from rdflib import RDF, Literal, URIRef
 
@@ -14,6 +16,7 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.jsonld.checking import prepare_usages
+from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import (
     EntityInventory,
     EntityKey,
@@ -47,11 +50,15 @@ from .bindings import (
     source_node_traits,
 )
 from .coverage import owns, predicate_issues, source_issues, source_properties
+from .direction import DirectionCheck
 from .emission_groups import TermKey, check_groups
 from .occurrences import check_occurrences
 from .registry import index_models
 from .value_matching import identity_matches as _identity_matches
 from .value_matching import matches_value
+
+if TYPE_CHECKING:
+    from .corpus.types import _CorpusEvidence
 
 
 @dataclass(frozen=True)
@@ -107,6 +114,7 @@ def _matches(
     occurrence: ObservedOccurrence,
     registry: dict[str, ModelDeclaration],
     inventory: EntityInventory | None = None,
+    rdf_direction: DirectionPolicy | None = None,
 ) -> bool | None:
     """Resolve actual joined descriptions before shared scalar contract matching."""
     traits = occurrence.traits
@@ -119,6 +127,19 @@ def _matches(
         description = inventory.get(key) if key is not None else None
         if description is not None and description.described:
             traits = replace(traits, types=description.types)
+    if value.kind == "literal" and traits.direction is not None:
+        if rdf_direction == "compound-literal" and value.datatype is not None:
+            return False
+        if rdf_direction == "i18n-datatype":
+            traits = replace(
+                traits,
+                datatype=(
+                    "https://www.w3.org/ns/i18n#"
+                    + (traits.language or "").lower()
+                    + "_"
+                    + traits.direction
+                ),
+            )
     return matches_value(
         value, traits, registry, container=occurrence.container, empty=occurrence.empty
     )
@@ -129,8 +150,11 @@ def _literal_result(
     where: str,
     budget: Budget,
     native: dict[str, Literal],
+    direction_check: DirectionCheck | None = None,
 ) -> Report:
     """Validate actual lexical values, obtaining native spelling from PyLD itself."""
+    if direction_check is not None:
+        direction_check.observe(occurrence.traits)
     raw = occurrence.value
     if not isinstance(raw, dict) or "@value" not in raw:
         raise RuntimeError("Observed literal lacks its expanded value")
@@ -216,6 +240,8 @@ def _group_terms(
                 continue
             return None
         traits = item.traits
+        if traits.direction is not None:
+            return None
         if traits.identifier_kind == "iri" and traits.identifier is not None:
             keys.append(term_key(URIRef(traits.identifier)))
         elif traits.kind == "literal":
@@ -251,6 +277,8 @@ def check_emission(
     allowed_drops: frozenset[str] = frozenset(),
     limits: Limits | None = None,
     budget: Budget | None = None,
+    rdf_direction: DirectionPolicy | None = None,
+    _corpus: _CorpusEvidence | None = None,
 ) -> Report:
     """Check selected actual outputs, without claiming all hypothetical instances.
 
@@ -263,6 +291,8 @@ def check_emission(
     shared standards-processed usage snapshot, never a second expansion engine.
     Type checks compare explicit emitted types, without ontology entailment.
     """
+    if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
+        raise InputError("Unknown RDF direction policy")
     if budget is not None and limits is not None and budget.limits != limits:
         raise InputError("Explicit limits conflict with the shared operation budget")
     selected = limits or (budget.limits if budget is not None else Limits())
@@ -271,6 +301,7 @@ def check_emission(
     checked = 0
     complete = True
     native_literals: dict[str, Literal] = {}
+    direction_check = DirectionCheck(rdf_direction)
     try:
         registry = index_models(models, budget, issues)
         for declaration in registry.values():
@@ -578,9 +609,19 @@ def check_emission(
                 for fact in facts:
                     budget.consume("work", 1 + len(field.values))
                     matches = tuple(
-                        _matches(value, fact, registry, prepared.entities)
+                        _matches(
+                            value, fact, registry, prepared.entities, rdf_direction
+                        )
                         for value in field.values
                     )
+                    if _corpus is not None:
+                        _corpus.branch(
+                            binding,
+                            model.identifier,
+                            field.name,
+                            matches,
+                            empty=fact.empty,
+                        )
                     if True not in matches:
                         issues.append(
                             Issue(
@@ -594,7 +635,7 @@ def check_emission(
                         )
                     if fact.traits.kind == "literal":
                         result = _literal_result(
-                            fact, field_where, budget, native_literals
+                            fact, field_where, budget, native_literals, direction_check
                         )
                         checked += result.checked
                         issues.extend(result.issues)
@@ -603,7 +644,9 @@ def check_emission(
                         value.model
                         for value in field.values
                         if value.model is not None
-                        and _matches(value, fact, registry, prepared.entities)
+                        and _matches(
+                            value, fact, registry, prepared.entities, rdf_direction
+                        )
                         is not False
                     }
                     child_key = object_key(fact)
@@ -818,13 +861,28 @@ def check_emission(
                             f"{location(path)}[{index}]",
                             budget,
                             native_literals,
+                            direction_check,
                         )
                         checked += result.checked
                         issues.extend(result.issues)
                     matches = tuple(
-                        _matches(value, occurrence, registry, prepared.entities)
+                        _matches(
+                            value,
+                            occurrence,
+                            registry,
+                            prepared.entities,
+                            rdf_direction,
+                        )
                         for value in field.values
                     )
+                    if _corpus is not None:
+                        _corpus.branch(
+                            binding,
+                            model.identifier,
+                            field.name,
+                            matches,
+                            empty=occurrence.empty,
+                        )
                     if True not in matches:
                         issues.append(
                             Issue(
@@ -866,7 +924,13 @@ def check_emission(
                         value.model
                         for value in field.values
                         if value.model is not None
-                        and _matches(value, occurrence, registry, prepared.entities)
+                        and _matches(
+                            value,
+                            occurrence,
+                            registry,
+                            prepared.entities,
+                            rdf_direction,
+                        )
                         is not False
                     }
                     if not targets:
@@ -1022,7 +1086,11 @@ def check_emission(
                 )
         for binding in bindings:
             model = registry.get(binding.model)
-            if model is None or not model.emission_groups:
+            if model is None or not (
+                model.emission_groups
+                or _corpus is not None
+                and _corpus.fields(model.identifier)
+            ):
                 continue
             states: dict[str, bool | None] = {}
             terms: dict[str, tuple[TermKey, ...] | None] = {}
@@ -1033,6 +1101,8 @@ def check_emission(
                 for case in group.scenarios
                 if case.condition is not None
             )
+            if _corpus is not None:
+                needed.update(_corpus.fields(model.identifier))
             entity = binding.reference is not None or binding.entity
             key = entity_for(binding) if entity else None
             description = prepared.entities.get(key) if key is not None else None
@@ -1110,9 +1180,19 @@ def check_emission(
                         budget.consume("work", 1 + len(field.values))
                         field_where = f"{location(binding.path)}.{field.name}"
                         matches = tuple(
-                            _matches(value, fact, registry, prepared.entities)
+                            _matches(
+                                value, fact, registry, prepared.entities, rdf_direction
+                            )
                             for value in field.values
                         )
+                        if _corpus is not None:
+                            _corpus.branch(
+                                binding,
+                                model.identifier,
+                                field.name,
+                                matches,
+                                empty=fact.empty,
+                            )
                         if True not in matches:
                             issues.append(
                                 Issue(
@@ -1127,7 +1207,11 @@ def check_emission(
                             )
                         if fact.traits.kind == "literal":
                             result = _literal_result(
-                                fact, field_where, budget, native_literals
+                                fact,
+                                field_where,
+                                budget,
+                                native_literals,
+                                direction_check,
                             )
                             checked += result.checked
                             issues.extend(result.issues)
@@ -1135,7 +1219,9 @@ def check_emission(
                             value.model
                             for value in field.values
                             if value.model is not None
-                            and _matches(value, fact, registry, prepared.entities)
+                            and _matches(
+                                value, fact, registry, prepared.entities, rdf_direction
+                            )
                             is not False
                         }
                         matched_child = False
@@ -1178,12 +1264,15 @@ def check_emission(
                     if selected_facts is None or not source_complete
                     else _group_terms(selected_facts, native_literals, budget)
                 )
+            if _corpus is not None:
+                _corpus.scope(binding, states, terms)
             checked += len(model.emission_groups)
             issues.extend(
                 check_groups(
                     model,
                     states,
                     terms,
+                    _corpus=_corpus,
                     where=f"entity[{binding.reference}]"
                     if binding.reference is not None
                     else location(binding.path),
@@ -1194,6 +1283,16 @@ def check_emission(
         checked += mapping.checked
         issues.extend(mapping.issues)
         complete = mapping.complete
+        preservation = direction_check.check(
+            prepared._document,
+            base=base,
+            loader=prepared._loader,
+            budget=budget,
+        )
+        if preservation is not None:
+            checked += preservation.checked
+            list.extend(issues, preservation.issues)
+            complete = complete and preservation.complete
     except LimitExceeded as error:
         complete = False
         issues.exhausted(str(error))

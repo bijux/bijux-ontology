@@ -35,6 +35,9 @@ linkml = [
 templates = [
     "uri-template>=1.3,<2",
 ]
+xsd = [
+    "elementpath>=5.1.4,<6",
+]
 
 [tool.hatch.build.targets.wheel]
 core-metadata-version = "2.4"

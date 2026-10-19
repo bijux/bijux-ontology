@@ -28,6 +28,7 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "serialization": frozenset(("coverage_missing",)),
     "selector": frozenset(
         "parent_count_mismatch count_mismatch "
         "structure_mismatch binding_unverified".split()
@@ -39,6 +40,7 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "list_group_mismatch list_order_mismatch list_unverified "
         "probe_unverified "
         "change_unverified before_input_error after_input_error "
         "container_mismatch datatype_mismatch "
@@ -47,7 +49,8 @@ _CODES = {
         "input_error invalid_path language_mismatch mapping_mismatch "
         "omission_invalid omission_unverified required_scope_excluded "
         "order_mismatch order_unverified property_dropped property_omitted "
-        "rdf_direction_loss rdf_empty_graph_loss rdf_identifier_loss "
+        "rdf_direction_unverified rdf_direction_loss rdf_empty_graph_loss "
+        "rdf_identifier_loss "
         "rdf_interoperability_unverified rdf_language_invalid rdf_literal_loss "
         "rdf_output_unverified reverse_mismatch serialization_unverified "
         "term_dropped types_mismatch unsupported_check usage_dropped "
@@ -85,6 +88,7 @@ _CODES = {
         "datatype_unverified lexical_invalid lexical_unverified".split()
     ),
     "models": frozenset(
+        "direction_unverified contextual_direction_unverified "
         "emission_group_conflict emission_group_unverified "
         "scenario_coverage_unverified emission_scenario_conflict "
         "scenario_condition_conflict scenario_condition_unverified "
@@ -135,6 +139,8 @@ _CODES = {
         "implicit_target_unverified nonconformance sparql_unverified".split()
     ),
     "skos": frozenset(
+        "policy.collection_sequence_mismatch policy.collection_size_mismatch "
+        "policy.collection_duplicate_member "
         "collection_member_role_conflict label_role_conflict mapping_conflict "
         "mapping_target_kind mapping_target_unresolved "
         "policy.collection_member_shape policy.cross_scheme_hierarchy "
@@ -174,6 +180,12 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "serialization": (
+        "required representative serializer coverage",
+        "Actual cases do not establish every selected alternative or scenario.",
+        "Supply unambiguous cases for each required branch and retain failed samples.",
+        'BranchCoverage("record", "value", 0)',
+    ),
     "selector": (
         "explicit JSON-LD match coverage",
         "Selected parents lack required matches or actual bindings are ambiguous.",

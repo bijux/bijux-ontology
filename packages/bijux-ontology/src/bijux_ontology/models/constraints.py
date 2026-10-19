@@ -14,12 +14,14 @@ from rdflib import Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 from rdflib.term import Node
 
+from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     TermDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget
 from bijux_ontology.owl.classes import ClassContracts
@@ -95,10 +97,18 @@ def _literal_comparison(
     classes: ClassContracts,
     regime: Regime,
     budget: Budget,
+    *,
+    encoded: bool = False,
 ) -> list[Issue]:
-    datatype = str(RDF.langString) if value.language else value.datatype
+    datatype = (
+        str(RDF.langString) if isinstance(value.language, str) else value.datatype
+    )
     issues: list[Issue] = []
-    if datatype and datatype_relation(datatype, datatype, regime=regime) == "unknown":
+    if (
+        not encoded
+        and datatype
+        and datatype_relation(datatype, datatype, regime=regime) == "unknown"
+    ):
         issues.append(
             Issue(
                 "models.datatype_unverified",
@@ -174,6 +184,8 @@ def _branch_issues(
     contract: PropertyContract,
     regime: Regime,
     budget: Budget,
+    *,
+    rdf_direction: DirectionPolicy | None = None,
 ) -> list[Issue]:
     issues: list[Issue] = []
     if (
@@ -214,11 +226,88 @@ def _branch_issues(
                 PropertyContract((), ()),
                 regime,
                 budget,
+                rdf_direction=rdf_direction,
             )
         )
         return issues
     if value.kind == "unknown":
         return issues
+    if (
+        value.kind == "literal"
+        and value.direction is None
+        and value.datatype is None
+        and rdf_direction is not None
+    ):
+        if rdf_direction == "compound-literal":
+            if (
+                field.reverse
+                or contract.object_property
+                or contract.literal_value
+                or contract.values
+            ):
+                return [
+                    Issue(
+                        "models.direction_unverified",
+                        "Unchecked direction permits either a physical literal "
+                        "or a compound resource",
+                        location,
+                        kind="unverified",
+                    )
+                ]
+            return issues
+        # The literal kind is stable under i18n encoding, but its datatype is
+        # conditional on direction. A language tag cannot promise langString.
+        value = replace(value, language=None)
+    encoded = isinstance(value.direction, str)
+    declared_datatype = value.datatype
+    if encoded:
+        if rdf_direction is None:
+            return [
+                Issue(
+                    "models.direction_unverified",
+                    "Directional output requires an explicit RDF representation policy",
+                    location,
+                    kind="unverified",
+                )
+            ]
+        if rdf_direction == "compound-literal":
+            if value.datatype is not None:
+                issues.append(
+                    Issue(
+                        "models.value_kind_conflict",
+                        "A compound literal is a physical RDF resource, "
+                        "not a typed literal",
+                        location,
+                    )
+                )
+            value = ValueDeclaration("object")
+        else:
+            language = value.language
+            datatype = (
+                "https://www.w3.org/ns/i18n#"
+                + (language.lower() if isinstance(language, str) else "")
+                + "_"
+                + str(value.direction)
+                if language is ABSENT or isinstance(language, str)
+                else None
+            )
+            if value.datatype is not None and (
+                datatype is not None
+                and value.datatype != datatype
+                or not value.datatype.startswith("https://www.w3.org/ns/i18n#")
+                or not value.datatype.endswith("_" + str(value.direction))
+            ):
+                issues.append(
+                    Issue(
+                        "models.datatype_conflict",
+                        "Explicit physical datatype differs from the "
+                        "selected direction encoding",
+                        location,
+                        expected=value.datatype,
+                        actual=datatype,
+                    )
+                )
+            value = ValueDeclaration("literal", datatype=datatype or value.datatype)
     child = registry.get(value.model) if value.model else None
     types = tuple(dict.fromkeys((*value.types, *(child.types if child else ()))))
     if value.types:
@@ -256,18 +345,33 @@ def _branch_issues(
         )
     constraints = contract.values
     if literal:
-        datatype = str(RDF.langString) if value.language else value.datatype
-        if datatype:
+        datatype = (
+            str(RDF.langString) if isinstance(value.language, str) else value.datatype
+        )
+        checked_datatype = declared_datatype if encoded else datatype
+        if checked_datatype:
             issues.extend(
                 check_vocabulary(
                     vocabulary,
-                    [TermDeclaration(datatype, (str(RDFS.Datatype),), location)],
+                    [
+                        TermDeclaration(
+                            checked_datatype, (str(RDFS.Datatype),), location
+                        )
+                    ],
                     regime="owl-dl" if regime == "owl-dl" else "rdf",
                     budget=budget,
                 ).issues
             )
         issues.extend(
-            _literal_comparison(value, constraints, location, classes, regime, budget)
+            _literal_comparison(
+                value,
+                constraints,
+                location,
+                classes,
+                regime,
+                budget,
+                encoded=encoded and declared_datatype is None,
+            )
         )
     else:
         issues.extend(
@@ -283,6 +387,8 @@ def _field_issues(
     vocabulary: Vocabulary,
     regime: Regime,
     contracts: ModelContracts,
+    *,
+    rdf_direction: DirectionPolicy | None = None,
 ) -> tuple[int, list[Issue]]:
     if model.emission_groups:
         states = declaration_states(model, contracts.budget)
@@ -321,6 +427,7 @@ def _field_issues(
                     vocabulary,
                     regime,
                     contracts,
+                    rdf_direction=rdf_direction,
                 )
                 checked += count
                 group_issues.extend(findings)
@@ -408,6 +515,7 @@ def _field_issues(
                     contract,
                     regime,
                     contracts.budget,
+                    rdf_direction=rdf_direction,
                 )
             )
     return checked, issues
@@ -471,7 +579,9 @@ def _emission_issues(
                     else ValueTraits("iri", identifier=str(term), identifier_kind="iri")
                 )
                 matches = tuple(
-                    matches_value(value, traits, {model.identifier: model})
+                    None
+                    if isinstance(value.direction, str)
+                    else matches_value(value, traits, {model.identifier: model})
                     for value in fields_by_name[condition.field].values
                 )
                 if True not in matches:

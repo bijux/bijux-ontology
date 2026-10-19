@@ -7,9 +7,10 @@ from typing import Literal as Choice
 from rdflib import Literal
 from rdflib.namespace import RDF, XSD
 
-from ..errors import InputError
+from ..errors import InputError, ResourceError
 from ..reports import Issue, Report
 from .identifiers import absolute_iri, language_tag
+from .xsd_lexicals import XSD_LEXICAL_TYPES, xsd_lexical
 
 DatatypeRelation = Choice["equal", "subset", "overlap", "disjoint", "unknown"]
 Regime = Choice["application", "rdf", "owl-dl"]
@@ -82,6 +83,12 @@ def datatype_relation(
     if regime not in ("application", "rdf", "owl-dl"):
         raise InputError("Unknown semantic regime")
     left, right = _chain(actual), _chain(required)
+    if (
+        actual == required
+        and actual.startswith(str(XSD))
+        and left[0] in XSD_LEXICAL_TYPES
+    ):
+        return "equal"
     supported = _ROOTS | {str(RDF.langString)}
     if left[-1] not in supported or right[-1] not in supported:
         return "unknown"
@@ -186,7 +193,7 @@ def _lexical(text: str, datatype: str) -> bool | None:
     if local == "language":
         # XSD's lexical grammar is broader than well-formed RDF language tags.
         return bool(re.fullmatch(r"[a-zA-Z]{1,8}(?:-[a-zA-Z0-9]{1,8})*", text))
-    return None
+    return xsd_lexical(text, local)
 
 
 def check_literal(value: Literal, *, location: str = "") -> Report:
@@ -200,6 +207,7 @@ def check_literal(value: Literal, *, location: str = "") -> Report:
     datatype = str(value.datatype or (RDF.langString if value.language else XSD.string))
     absolute_iri(datatype, location=location)
     valid: bool | None
+    unavailable: str | None = None
     if value.language:
         language_tag(value.language, location=location)
         valid = datatype == str(RDF.langString)
@@ -219,7 +227,11 @@ def check_literal(value: Literal, *, location: str = "") -> Report:
             ),
         )
     else:
-        valid = _lexical(str(value), datatype)
+        try:
+            valid = _lexical(str(value), datatype)
+        except ResourceError as error:
+            valid = None
+            unavailable = str(error)
     if valid is True:
         return Report("literal", 1)
     return Report(
@@ -232,7 +244,7 @@ def check_literal(value: Literal, *, location: str = "") -> Report:
                 else "literal.datatype_unverified",
                 "Lexical form is outside the datatype value space"
                 if valid is False
-                else "Datatype lexical validation is unsupported",
+                else unavailable or "Datatype lexical validation is unsupported",
                 location,
                 kind="finding" if valid is False else "unverified",
                 actual=datatype,

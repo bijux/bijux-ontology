@@ -46,6 +46,13 @@ Queries can project those exact source terms. RDFLib query constants, casts and
 `rdf.literal_conversion_unverified`; SHACL preflight retains the same boundary.
 Explicit `preserve_literals=False` permits normalization at source preparation.
 
+Install `bijux-ontology[xsd]` for finite XSD 1.1 lexical checks of durations,
+binary forms, partial Gregorian dates and ASCII Name/NCName/NMTOKEN values.
+Raw spelling is checked without XML whitespace preprocessing or term replacement.
+QName, document-dependent types and non-ASCII names remain unverified. Core
+`xsd:anyURI` checks XML character validity, including relative strings and spaces;
+it does not validate or resolve an RDF IRI. Custom datatype relations stay unknown.
+
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
 `run_query_rules(source, load_query_rules(Path("rules.json")))` checks named
@@ -61,6 +68,13 @@ Required empty suites/data selections, query errors, answer disagreements and
 exhaustion remain distinct. `allow_empty=True` explicitly excludes only the
 nonempty-data requirement. Project jobs use `kind: "query-rules"`, a named RDF
 `source` and a `rules` filename; every rule retains its own scope.
+
+Use `check_serializer_corpus(cases, models, vocabulary=vocabulary,
+required_branches=(BranchCoverage("record", "value", 0),))` to require actual
+sample coverage. Each `SerializerCase` calls its serializer once with owned
+options and retains checked output. `ScenarioCoverage` selects declared emission
+scenarios. Overlapping alternatives need an actual unambiguous discriminator;
+coverage never hides a failing sample or proves universal output correctness.
 
 `probe_context(context, [ContextProbe(model, type_values=("Record",))])`
 qualifies generated representatives for explicitly declared field branches
@@ -86,6 +100,13 @@ under both policy choices. Reports list expanded conditions and the chosen basis
 The CLI exposes `--profile` and `--hierarchy-basis`; SKOS project jobs accept
 `profile` and `hierarchy_basis`.
 
+Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
+expected=(first_iri, second_iri), unique_members=True)` for authored list order.
+`minimum_size`/`maximum_size` count every position; duplicates remain visible.
+`collection_members(view, iri, ordered=True)` exposes each immutable member's
+zero-based `position`; direct `skos:member` assertions have no position. Missing
+or ambiguous lists remain unverified, and proved violations survive bad tails.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
@@ -96,6 +117,19 @@ graph. Ordinary path bindings keep per-source-object required fields; `entity=Tr
 explicitly joins their facts. Unsupplied references remain unknown unless
 `closed=True` requires a local description. Identity checks perform no OWL
 equality, inequality or classification.
+
+Use `ContextExpectation(path, lists=(ExpectedList((first, second)),))` to
+check complete RDF lists. Outer list occurrences are unordered; each list keeps
+its own member order and duplicates. Explicit expanded literal objects and
+absolute `@id` references express exact RDF terms. Anonymous member identity
+stays unverified. JSON expectation files accept `lists: [[first, second]]`;
+the existing `ordered_values` contract still describes one complete list.
+
+RDF direction encodings use the explicit `direction="i18n-datatype"` or
+`direction="compound-literal"` conversion policy. If maintained conversion cannot
+distinguish directional siblings on the same RDF edge, preservation stays
+unverified and `prepare_jsonld` returns no owned source. Separate list positions,
+subjects, graphs and predicates retain their distinct scopes.
 
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
 
@@ -208,6 +242,16 @@ owned `output`, the contextual `document`, and combined declaration/output check
 Pass an adapter’s `declaration_report` to retain extraction limitations. This is
 sampled evidence; it does not prove every possible serializer output. Callbacks
 execute in-process.
+
+`ValueDeclaration` treats `language=None` and `direction=None` as unchecked;
+`ABSENT` requires absence. Languages compare without case, while `ltr` and `rtl`
+compare exactly. Model and serializer checks accept `rdf_direction="i18n-datatype"`
+or `"compound-literal"` to qualify supported directional output. Physical RDF
+datatypes and resource kinds still govern range checks. Ambiguous compound
+resources, unsupported encodings and unresolved source-to-RDF counts remain
+unverified. `PreparedModels(..., rdf_direction=...)` freezes that policy for
+its fresh checks. Pydantic sample checks and serializer corpus checks accept the
+same keyword separately from actual serializer options.
 
 For ordinary nested Pydantic models, an authoritative context can supply the RDF
 mappings without duplicate primitive declarations:
