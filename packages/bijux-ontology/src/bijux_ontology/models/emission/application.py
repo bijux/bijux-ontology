@@ -10,7 +10,7 @@ from rdflib.term import Node
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
 from bijux_ontology.rdf.patterns import matches_pattern
 from bijux_ontology.rdf.terms import term_key
@@ -19,16 +19,7 @@ from bijux_ontology.reports import Report
 
 def _text(value: str, budget: Budget) -> str:
     """Bound each scalar and cumulative retained comparison text."""
-    if len(value) > budget.limits.max_bytes:
-        raise LimitExceeded("Application value text exceeds max_bytes")
-    try:
-        size = len(value.encode("utf-8"))
-    except UnicodeEncodeError as error:
-        raise InputError("Application values require valid Unicode") from error
-    if size > budget.limits.max_bytes:
-        raise LimitExceeded("Application value text exceeds max_bytes")
-    budget.consume("bytes", size)
-    budget.consume("work", len(value) + 1)
+    bound_text(value, budget)
     return value
 
 

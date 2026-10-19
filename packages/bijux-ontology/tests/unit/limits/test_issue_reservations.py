@@ -2,13 +2,20 @@
 
 import gc
 import json
+import tracemalloc
 import weakref
 
 import pytest
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.reports import Issue, Location, Report, report_from_data
 
 
@@ -131,3 +138,27 @@ def test_invalid_worker_receipt_cannot_authorize_a_finding() -> None:
             )
         with pytest.raises(LimitExceeded):
             IssueCollector(host).append(report.issues[0])
+
+
+@pytest.mark.parametrize("boundary", ["issue", "term"])
+def test_unicode_metadata_stops_before_allocating_its_full_encoding(
+    boundary: str,
+) -> None:
+    """A depleted operation cannot allocate an oversized diagnostic or RDF term."""
+    text = "🧬" * 400000
+    finding = Issue("literal.invalid", text)
+    budget = Budget(Limits(max_total_bytes=32768 if boundary == "issue" else 500000))
+    tracemalloc.start()
+    try:
+        with pytest.raises(LimitExceeded):
+            if boundary == "issue":
+                IssueCollector(budget).append(finding)
+            else:
+                bound_text(text, budget)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 100000
+    valid = Budget(Limits(max_bytes=4, max_total_bytes=4))
+    bound_text("🧬", valid)
+    assert valid.remaining("bytes") == 0
