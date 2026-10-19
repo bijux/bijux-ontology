@@ -188,6 +188,16 @@ proved logical findings. Smallest size, subset minimality and complete enumerati
 are not claimed. Anonymous support and unavailable tautology justifications remain
 unknown; generated signature declarations are separate replay scaffolding.
 
+`integration.check_integration` compares explicitly selected `TheoryCombination`
+deployments from separately owned `TheoryComponent` originals. Supply the named
+classes and consumer entailments that must hold. Original modules retain their
+native import identities; conflicting versions cannot overwrite one another.
+Inspect each original, the unbridged union and any explicitly authored OWL bridge
+separately. Newly established interactions have rechecked native justifications
+and exact source owners; pre-existing failures are preserved without new blame.
+Completion covers the selected combinations and obligations only; unselected
+subsets, absent imports or exhausted explanation work receive no certificate.
+
 `locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
 for an explicit typed signature. Choose flattened imports, retained annotations
 and a fresh module identity. Inspect original annotated axiom owners and separate
@@ -201,6 +211,16 @@ theories. Proposals need joint verification with `prepare_reduction`: individual
 redundancy does not authorize the union. Choose retained annotations and read-only
 imports, and supply nonempty consumer entailments. Original inconsistency blocks
 proof; publish only verified candidates with `axioms.changes.write_axiom_change`.
+
+`imports.extract_mireot` runs maintained ROBOT extraction with explicit same-role
+`MireotBoundary` lower/upper pairs and `MireotRetention` property, axiom and
+annotation requirements. Supply an import-free Functional source, distinct module
+identity/version and nonempty consumer entailments. Actual hierarchy and
+before/after proofs qualify the selected scope; missing boundaries or omitted
+required content publish no output. Paired Functional and Turtle outputs must
+preserve the same annotated axioms and headers. This syntactic import profile
+claims no locality or universal consequence preservation; it reuses the explicit
+pinned `robot.prepare_robot_backend` runtime and its separate sealing allowance.
 
 `repairs.propose_repairs` checks finite alternatives from one established native
 inconsistency justification. Supply nonempty consumer entailments, exact protected
@@ -224,6 +244,12 @@ backend revision. `with sessions.ReasoningSession(theory)` loads and classifies
 once, then recomputes supported queries and batches. Capture and `bind` a new
 theory for changed imports or backend semantics; external mutable inputs are
 not watched. An optional fixed Budget is cumulative across requests.
+`session.query_classes(expression, direct=False)` retrieves actual named subclass
+and equivalent groups for supported typed intersections, unions, complements and
+existential/universal restrictions. Inspect separate expression satisfiability,
+global consistency, native node flags and enumeration completeness. Strings have
+no implicit label resolver; unsupported or fresh-role requests remain unverified.
+Direct and transitive views reuse the same classification without caching answers.
 `session.project` exports explicitly bounded subclass/existential domains as
 a separate ordinary RDF artifact, retaining quantifiers and unknown pairs.
 Its raw required-axiom answers remain inspectable separately from pair coverage;

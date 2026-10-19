@@ -19,7 +19,7 @@ from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.types import NamedEntity, ProjectedAxiom
+from ..axioms.types import ClassExpression, NamedEntity, ProjectedAxiom
 from ..backend.bundles import qualify_backend
 from ..backend.execution import qualify_capability, result_counter, result_text
 from ..backend.qualification import (
@@ -32,6 +32,7 @@ from ..backend.qualification import (
 from ..backend.types import BackendCapability
 from ..entailment.encoding import UnsupportedQuery, capture_obligations, encode_axiom
 from ..entailment.types import EntailmentAnswer, EntailmentCheck
+from ..queries.types import ClassQueryResult
 from ..relationships.checking import _groups, _query
 from ..relationships.types import InferredAnswer, InferredContracts, InferredQuery
 from .preparation import encode_request, stage_theory
@@ -800,6 +801,33 @@ class ReasoningSession:
             capability,
             consistency,
             report,
+        )
+
+    def query_classes(
+        self,
+        expression: ClassExpression,
+        *,
+        direct: bool = False,
+        max_results: int = 10_000,
+        theory: PreparedReasoningTheory | None = None,
+        limits: Limits | None = None,
+        budget: Budget | None = None,
+        timeout: float = 30,
+        cancel: Event | None = None,
+    ) -> ClassQueryResult:
+        """Retrieve actual named class groups for a supported typed expression."""
+        from ..queries.checking import query_classes
+
+        return query_classes(
+            self,
+            expression,
+            direct=direct,
+            max_results=max_results,
+            theory=theory,
+            limits=limits,
+            budget=budget,
+            timeout=timeout,
+            cancel=cancel,
         )
 
     def project(

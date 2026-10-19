@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "arrow": frozenset(
+        "null_rejected nan_rejected stream_unverified input_error "
+        "remaining_unverified".split()
+    ),
     "templates": frozenset(
         "row_input_error native_row_error row_output_missing "
         "unrequested_output unverified input_error".split()
@@ -282,6 +286,7 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "aggregate_unverified aggregate_mismatch aggregate_input_error "
         "stream_unverified stream_global_unverified "
         "consolidation_unverified consolidation_conflict consolidation_input_error "
         "layout_unverified layout_count_mismatch layout_graph_forbidden "
@@ -392,6 +397,11 @@ _CODES = {
         "locality_unverified locality_input_error "
         "reduction_unverified reduction_input_error "
         "repairs_unverified repairs_input_error "
+        "integration_class_unverified integration_contract_unverified "
+        "integration_comparison_unverified integration_unverified "
+        "integration_input_error "
+        "mireot_unusable_class mireot_boundary mireot_required_axiom_absent "
+        "mireot_retention_failed mireot_unverified mireot_input_error "
         "upgrade_regression upgrade_unverified upgrade_unmatched_consumer "
         "upgrade_explanation_unverified upgrade_input_error "
         "reasoning_session_unverified reasoning_session_input_error "
@@ -584,6 +594,15 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "arrow": (
+        "explicit column bindings over one owned Arrow record stream",
+        "A located value violates policy or required stream coverage is incomplete.",
+        "Inspect batch, row, physical column and retained native scalar; supply "
+        "explicit datatype/list/timezone and distinct null/NaN rules, unchanged "
+        "supported schemas, compatible compiled limits and a complete stream.",
+        "with open_arrow_records(reader, contract, emit_rdf=True) as checked: "
+        "results = tuple(checked)",
+    ),
     "templates": (
         "explicit native ROBOT rows and selected generated ontology obligations",
         "A row, native output assertion or consumer proof fails or is unverified.",

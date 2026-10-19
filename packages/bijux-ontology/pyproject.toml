@@ -19,6 +19,9 @@ dependencies = [
 bijux-ontology = "bijux_ontology.interfaces.cli:main"
 
 [project.optional-dependencies]
+arrow = [
+    "pyarrow==26.0.0",
+]
 biolink = [
     "bmt==1.5.0",
     "linkml-runtime==1.12.1",

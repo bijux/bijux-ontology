@@ -288,6 +288,16 @@ singleton keys and named records in one graph. Keep its projection report
 alongside backend results, select the same graph, and use `trusted_sparql=True`
 for SHACL validation. Unsupported policies never acquire a verified projection.
 
+`data.aggregates.check_aggregates(groups, AggregateContract(...))` checks explicit
+`AggregateGroup` populations of scoped `KeyRecord` members against supplied RDF
+declared values or bounds. Select entity/occurrence counting, exact RDF distinct
+values, count/sum/min/max, missing-value and empty-group policies. Numeric sums
+use exact integer/decimal arithmetic; select dimensionless values or require the
+same explicit unit at every member path. Repeated descriptions retain their
+contributions; missing partitions, incompatible units and unsupported quantities
+remain unverified. Answers retain the original bound, exact rational result and
+contribution records. No aggregate implies OWL equality or inferred completeness.
+
 Use `check_record_topology(source, records, contract, roots=record_ids,
 complete=True, closure="closed")` for explicit application reachability,
 ownership and cycle rules. `TopologyRelation` selects each path's policy roles;
@@ -1923,3 +1933,15 @@ remain unverified. The isolated POSIX worker bounds native output files and
 retains native, model and relationship reports separately. Its pinned RDF
 dependencies belong to that environment; the ordinary core installation stays
 independently usable.
+
+Install `bijux-ontology[arrow]` for the qualified PyArrow 26.0.0 profile.
+`interfaces.adapters.arrow.prepare_arrow_contract` binds a `PreparedModels` plan
+to explicit subject, physical column, predicate, datatype, list and graph choices.
+Use `with open_arrow_records(reader, contract) as checked` and consume its batches;
+`emit_rdf=True` also retains owned RDF snapshots. Native scalars, dictionary
+values, row/column locations and raw model reports remain available. The finite
+profile preserves decimal128, explicit timestamp zones at s/ms/us resolution,
+one-dimensional lists and distinct null/NaN policies. Required unknown metadata,
+extensions, changed schemas or failed producers leave coverage incomplete.
+Validation consumes/closes a supplied native reader; Table/C-stream imports use
+maintained Arrow ownership. Producer callbacks are cooperative in-process work.
