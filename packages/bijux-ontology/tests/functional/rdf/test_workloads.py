@@ -1,6 +1,7 @@
 """Real maintained local engines over explicit owned finite consumer workloads."""
 
 import threading
+from dataclasses import FrozenInstanceError
 from typing import cast
 
 import pytest
@@ -8,7 +9,11 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.queries.native.capture import capture_selected_input
+from bijux_ontology.rdf.queries.native.observation import observe_query
+from bijux_ontology.rdf.queries.native.types import NativeQueryInput
 from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
@@ -287,3 +292,30 @@ def test_native_filter_loss_keeps_the_capable_engine_observation() -> None:
         engine.answer is not None and engine.answer.answer is False
         for engine in result.queries[1].engines
     )
+
+
+def test_frozen_native_input_keeps_selected_duplicates_and_unbound_rows() -> None:
+    source = _source()
+    operation = Operation(None, None, 30, None)
+    selected = capture_selected_input(source, QueryScope("default"), (), operation)
+    with pytest.raises(FrozenInstanceError):
+        selected.scope = QueryScope("union")  # type: ignore[misc]
+    with pytest.raises(InputError, match="capture_selected_input"):
+        NativeQueryInput()
+    # A later public declaration is a different selection, not an instruction to
+    # reinterpret the already captured native operation's physical input.
+    source.graph_name = str(EX.named)
+    source.union = True
+    query = (
+        PREFIX
+        + "SELECT ?missing WHERE {?s ex:number ?n OPTIONAL {?s ex:absent ?missing}}"
+    )
+    for config in (EngineConfig("rdflib"), EngineConfig("pyoxigraph")):
+        observed = observe_query(
+            "captured-default", query, config, selected, 10, operation
+        )
+        assert observed.status == "completed", observed.report.to_dict()
+        assert observed.version and observed.python_version
+        assert observed.answer is not None and observed.answer.external_complete is True
+        assert observed.answer.variables == ("missing",)
+        assert observed.answer.rows == ((None,), (None,))

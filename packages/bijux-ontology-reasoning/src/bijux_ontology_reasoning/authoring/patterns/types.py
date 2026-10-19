@@ -9,8 +9,8 @@ from rdflib import URIRef
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.queries import QueryScope
+from bijux_ontology.rdf.queries.native.types import EngineAnswer
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
-from bijux_ontology.rdf.workloads.types import EngineAnswer
 from bijux_ontology.resources.files import FileSnapshot
 
 
