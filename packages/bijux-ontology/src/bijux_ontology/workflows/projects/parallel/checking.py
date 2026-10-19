@@ -18,6 +18,7 @@ from bijux_ontology.diagnostics.reports import (
     combine_reports,
     report_from_data,
 )
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import (
     Budget,
@@ -369,8 +370,8 @@ def check_project_parallel(
                         result = future.result()
                         # Adoption still runs after cancellation: already bounded
                         # receipts must remain paid and completed reports survive.
-                        for kind, amount in result.consumed:
-                            operation.consume_completed(kind, amount)
+                        delegated = DelegatedAllowance(operation, grants[index])
+                        delegated.settle(dict(result.consumed))
                         try:
                             operation.shared._register_transferred_report(
                                 result.report,
@@ -378,11 +379,7 @@ def check_project_parallel(
                                 max_references=cap // 4,
                             )
                         except (InputError, LimitExceeded):
-                            consumed = dict(result.consumed)
-                            for kind, allowance in grants[index].items():
-                                operation.consume_completed(
-                                    kind, allowance - consumed[kind]
-                                )
+                            delegated.forfeit()
                             result = ParallelJobResult(
                                 names[index],
                                 "interrupted",
