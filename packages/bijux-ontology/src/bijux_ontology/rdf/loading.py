@@ -248,6 +248,8 @@ def prepare_native(preparation: SourcePreparation) -> PreparedSource:
         literal_fidelity=fidelity,
         max_triples=max_triples,
         graph_fidelity=graph_fidelity,
+        graph_name=resource.graph_name,
+        union=resource.union,
     )
 
 

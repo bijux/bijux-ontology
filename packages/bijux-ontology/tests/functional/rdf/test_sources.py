@@ -229,3 +229,31 @@ def test_public_dispatch_preserves_identity_and_charges_one_source(
     ]
     with pytest.raises(LimitExceeded, match="max_resources"):
         prepare_source(source, budget=budget)
+
+
+def test_resource_selection_retains_dataset_and_rejects_conflicting_choices() -> None:
+    source = RdfSource(
+        "<urn:Default> <urn:p> <urn:o>. <urn:graph> { <urn:Named> <urn:p> <urn:o>. }",
+        format="trig",
+        graph_name="urn:graph",
+    )
+    prepared = prepare_source(source)
+    assert set(prepared.graph().subjects()) == {URIRef("urn:Named")}
+    assert set(prepared.dataset().default_graph.subjects()) == {URIRef("urn:Default")}
+    assert set(prepared.dataset().graph(URIRef("urn:graph")).subjects()) == {
+        URIRef("urn:Named")
+    }
+    assert set(prepared.graph("urn:graph")) == set(prepared.graph())
+    with pytest.raises(InputError, match="conflicts"):
+        prepared.graph("@default")
+    with pytest.raises(InputError, match="conflicts"):
+        prepared.graph(union=True)
+    invalid: list[dict[str, Any]] = [
+        {"graph_name": "@default", "union": True},
+        {"graph_name": "_:graph"},
+        {"graph_name": BNode("graph")},
+        {"union": "false"},
+    ]
+    for options in invalid:
+        with pytest.raises(InputError):
+            RdfSource(source.content, format="trig", **options)

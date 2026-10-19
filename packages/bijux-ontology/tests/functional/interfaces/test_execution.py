@@ -1,0 +1,188 @@
+"""Real owned workers preserve semantics and never turn execution loss into truth."""
+
+import os
+import sys
+import time
+from pathlib import Path
+from threading import Event, Thread
+
+import pytest
+
+from bijux_ontology import Limits, WorkerExecutor, check_context, expectations_from_data
+
+
+def test_supported_operations_agree_and_resources_stay_explicit(tmp_path: Path) -> None:
+    document = {"@context": "urn:context", "@id": "urn:record", "name": "Text"}
+    resources = {"urn:context": {"@context": {"name": "urn:name"}}}
+    expectations = [{"path": ["name"], "predicate": "urn:name"}]
+    executor = WorkerExecutor(artifacts=tmp_path)
+    result = executor.run(
+        "context",
+        {
+            "document": document,
+            "resources": resources,
+            "expectations": expectations,
+        },
+    )
+    from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+
+    direct = check_context(
+        document,
+        expectations_from_data(expectations),
+        document_loader=OfflineDocumentLoader(resources),
+    )
+    assert result.report == direct and direct.verified
+    missing = executor.run(
+        "context", {"document": document, "expectations": expectations}
+    )
+    assert missing.report.outcome == "input_error"
+    flat = executor.run("flatten", {"document": document, "resources": resources})
+    assert flat.report.verified and isinstance(flat.data, dict)
+    assert flat.data["document"] == [
+        {"@id": "urn:record", "urn:name": [{"@value": "Text"}]}
+    ]
+    assert executor.run(
+        "serialization", {"before": {"urn:p": "x"}, "after": {"urn:p": "x"}}
+    ).report.verified
+    assert executor.run(
+        "vocabulary",
+        {
+            "source": "<urn:A> a <http://www.w3.org/2002/07/owl#Class>.",
+            "format": "turtle",
+            "terms": ["urn:A"],
+        },
+    ).report.verified
+    models = [
+        {
+            "identifier": "record",
+            "types": [],
+            "fields": [
+                {
+                    "name": "name",
+                    "predicate": "urn:name",
+                    "values": [{"kind": "literal"}],
+                    "emission": "guaranteed",
+                }
+            ],
+        }
+    ]
+    assert executor.run(
+        "emission",
+        {
+            "document": document,
+            "resources": resources,
+            "models": models,
+            "usages": [{"model": "record"}],
+        },
+    ).report.verified
+    unsupported = executor.run("arbitrary-function", {})
+    assert unsupported.report.outcome == "input_error"
+    assert not list(tmp_path.iterdir())
+
+
+def test_deadline_input_cap_and_live_cancellation_retain_completed_findings(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "small.ttl").write_text("<urn:A> <urn:p> <urn:o>.")
+    (tmp_path / "inventory.json").write_text('["urn:Missing"]')
+    large = "\n".join(f"<urn:n{i}> <urn:p> <urn:o>." for i in range(50000))
+    (tmp_path / "large.ttl").write_text(large)
+    configuration = {
+        "version": 1,
+        "rdf": {"small": {"path": "small.ttl"}, "large": {"path": "large.ttl"}},
+        "checks": [
+            {
+                "name": "membership",
+                "kind": "vocabulary",
+                "source": "small",
+                "inventory": "inventory.json",
+            },
+            {
+                "name": "expensive",
+                "kind": "vocabulary",
+                "source": "large",
+                "inventory": "inventory.json",
+            },
+        ],
+    }
+    root = tmp_path / "runs"
+    cancellation = Event()
+
+    def cancel_after_evidence() -> None:
+        """Cancel actual ongoing work after the first independent scope completes."""
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline and not cancellation.is_set():
+            if any(path.stat().st_size for path in root.glob("*/completed.jsonl")):
+                cancellation.wait(0.05)
+                cancellation.set()
+                return
+            cancellation.wait(0.01)
+
+    watcher = Thread(target=cancel_after_evidence)
+    watcher.start()
+    try:
+        result = WorkerExecutor(artifacts=root, timeout=15).run(
+            "project",
+            {
+                "configuration": configuration,
+                "directory": str(tmp_path),
+            },
+            cancellation=cancellation,
+        )
+    finally:
+        cancellation.set()
+        watcher.join()
+    assert result.report.outcome == "exhausted"
+    assert {issue.code for issue in result.report.issues} >= {
+        "execution.cancelled",
+        "vocabulary.term_missing",
+    }
+    bounded = WorkerExecutor(artifacts=root, timeout=0.05).run(
+        "vocabulary", {"source": large, "format": "turtle", "terms": ["urn:A"]}
+    )
+    assert "execution.deadline" in {issue.code for issue in bounded.report.issues}
+    capped = WorkerExecutor(artifacts=root, limits=Limits(max_total_bytes=1000)).run(
+        "vocabulary", {"source": large}
+    )
+    assert capped.report.outcome == "exhausted"
+    assert not list(root.iterdir())
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX executable fault runtimes")
+@pytest.mark.parametrize("fault", ["crash", "malformed", "protocol", "oversized"])
+def test_faulty_explicit_runtimes_cannot_return_agreement(
+    tmp_path: Path, fault: str
+) -> None:
+    runtime = tmp_path / "runtime"
+    actions = {
+        "crash": "raise SystemExit(7)",
+        "malformed": "(work / 'result.json').write_text('{')",
+        "protocol": "(work / 'result.json').write_text(json.dumps({'protocol': 99}))",
+        "oversized": "(work / 'result.json').write_text('x' * 5000)",
+    }
+    runtime.write_text(
+        f"#!{sys.executable}\nimport json, sys\nfrom pathlib import Path\n"
+        f"work=Path(sys.argv[-2]).parent\n{actions[fault]}\n"
+    )
+    runtime.chmod(0o700)
+    result = WorkerExecutor(
+        python=runtime, artifacts=tmp_path / "runs", limits=Limits(max_total_bytes=2048)
+    ).run("context", {})
+    assert not result.report.verified
+    assert result.report.outcome == (
+        "exhausted" if fault == "oversized" else "input_error"
+    )
+    assert result.report.issues
+
+
+def test_missing_runtime_and_explicit_memory_request_are_non_successful(
+    tmp_path: Path,
+) -> None:
+    missing = WorkerExecutor(
+        python=tmp_path / "absent", artifacts=tmp_path / "runs"
+    ).run("context", {})
+    assert missing.report.outcome == "input_error"
+    memory = WorkerExecutor(memory_bytes=1, artifacts=tmp_path / "runs").run(
+        "context", {}
+    )
+    assert not memory.report.verified

@@ -78,5 +78,7 @@ def prepare_source(
         effective_url=effective,
         literal_fidelity=converted.source.literal_fidelity,
         graph_fidelity=converted.source.graph_fidelity,
+        graph_name=preparation.resource.graph_name,
+        union=preparation.resource.union,
         max_triples=max_triples,
     )

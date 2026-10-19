@@ -54,7 +54,9 @@ _CODES = {
         "required_occurrence_missing types_mismatch value_mismatch "
         "value_unverified".split()
     ),
-    "execution": frozenset("cancelled deadline incomplete limit_exceeded".split()),
+    "execution": frozenset(
+        "cancelled deadline incomplete limit_exceeded worker_failed".split()
+    ),
     "input": frozenset(
         "coverage_scope_missing empty_coverage empty_scope invalid "
         "literal_declaration_conflict model_identity_conflict "
@@ -96,6 +98,8 @@ _CODES = {
     ),
     "shacl": frozenset(
         "backend_warning execution_incomplete feature_unverified "
+        "function_unavailable function_malformed capability_unavailable "
+        "constraint_unavailable constraint_malformed constraint_not_evaluated "
         "coverage_minimum coverage_missing coverage_pair_missing coverage_incomplete "
         "shapes_invalid unavailable "
         "failure input_error exhausted "

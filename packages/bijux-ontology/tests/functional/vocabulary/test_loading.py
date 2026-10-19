@@ -215,3 +215,95 @@ def test_required_graph_aliases_use_blank_node_aware_agreement() -> None:
                 str(EX.B): changed,
             },
         )
+
+
+@pytest.mark.parametrize("role", ["import", "lookup"])
+def test_resource_graph_selections_exclude_unrelated_declarations_and_imports(
+    role: str,
+) -> None:
+    from rdflib.namespace import RDFS
+
+    root = Graph().add((EX.Root, RDFS.subClassOf, EX.Image))
+    source = RdfSource(
+        "@prefix ex:<https://example.org/>. "
+        "@prefix owl:<http://www.w3.org/2002/07/owl#>. "
+        "ex:ontology { ex:Image a owl:Class. } "
+        "ex:application { ex:Poison a owl:Class; owl:imports ex:Unsupplied. "
+        "ex:Image a owl:DatatypeProperty. }",
+        format="trig",
+        graph_name=str(EX.ontology),
+    )
+    if role == "import":
+        root.add((EX.Root, OWL.imports, EX.Document))
+        view = load_vocabulary(root, imports={str(EX.Document): source})
+    else:
+        view = load_vocabulary(root, lookup=[source])
+    assert check_vocabulary(
+        view, [TermDeclaration(str(EX.Image), (str(OWL.Class),))], check_references=True
+    ).verified
+    absent = check_vocabulary(view, [TermDeclaration(str(EX.Poison))])
+    assert [issue.code for issue in absent.issues] == ["vocabulary.term_missing"]
+    unselected = RdfSource(source.content, format="trig")
+    with pytest.raises(InputError, match="graph name"):
+        if role == "import":
+            load_vocabulary(root, imports={str(EX.Document): unselected})
+        else:
+            load_vocabulary(root, lookup=[unselected])
+    with pytest.raises(InputError, match="absent"):
+        load_vocabulary(
+            Graph(),
+            lookup=[
+                RdfSource(source.content, format="trig", graph_name=str(EX.absent))
+            ],
+        )
+
+
+@pytest.mark.parametrize("selection", ["@default", str(EX.ontology), "union"])
+def test_dataset_resource_bindings_survive_reparsing_and_import_cycles(
+    selection: str,
+) -> None:
+    root = RdfSource(
+        Graph().add((EX.Root, OWL.imports, EX.Document)), document_iri=str(EX.Root)
+    )
+    imported = RdfSource(
+        "@prefix ex:<https://example.org/>. "
+        "@prefix owl:<http://www.w3.org/2002/07/owl#>. "
+        "ex:Default a owl:Class. "
+        "ex:ontology { ex:Image a owl:Class. ex:Document owl:imports ex:Root. }",
+        format="trig",
+        graph_name=None if selection == "union" else selection,
+        union=selection == "union",
+    )
+    expected = {EX.Default} if selection == "@default" else {EX.Image}
+    if selection == "union":
+        expected.add(EX.Default)
+    for _ in range(2):
+        view = load_vocabulary(root, imports={str(EX.Document): imported})
+        assert len(view.imports) == 1
+        assert set(view.imports[0].subjects(RDF.type, OWL.Class)) == expected
+
+
+def test_import_alias_agreement_uses_selected_content_without_hidden_graphs() -> None:
+    from dataclasses import replace
+
+    root = Graph().add((EX.Root, OWL.imports, EX.A))
+    root.add((EX.Root, OWL.imports, EX.B))
+    source = RdfSource(
+        "@prefix ex:<https://example.org/>. "
+        "ex:ontology { ex:Image ex:p ex:o. } "
+        "ex:application { ex:Other ex:p ex:o. }",
+        format="trig",
+        graph_name=str(EX.ontology),
+        effective_url=str(EX.B),
+    )
+    different_selection = replace(source, graph_name=str(EX.application))
+    with pytest.raises(ResourceError, match="alias"):
+        load_vocabulary(
+            root, imports={str(EX.A): source, str(EX.B): different_selection}
+        )
+    changed_hidden = replace(
+        source, content=str(source.content).replace("ex:Other", "ex:Changed")
+    )
+    view = load_vocabulary(root, imports={str(EX.A): source, str(EX.B): changed_hidden})
+    assert len(view.imports) == 1
+    assert set(view.imports[0]) == {(EX.Image, EX.p, EX.o)}

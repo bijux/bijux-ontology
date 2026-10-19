@@ -1,10 +1,8 @@
 """A real owned subprocess deadline for expensive console checks."""
 
-import contextlib
 import json
 import math
 import os
-import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -16,26 +14,10 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.interfaces.cli.checkpoints import read_completed
 from bijux_ontology.interfaces.cli.protocol import report_from_data
 from bijux_ontology.interfaces.cli.results import CommandResult
+from bijux_ontology.interfaces.execution.transport import stop_process
 from bijux_ontology.limits import Limits
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
-
-
-def _stop(process: subprocess.Popen[bytes]) -> None:
-    if os.name == "posix":
-        with contextlib.suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGTERM)
-    elif process.poll() is None:
-        process.terminate()
-    try:
-        process.wait(timeout=0.2)
-    except subprocess.TimeoutExpired:
-        if os.name == "posix":
-            with contextlib.suppress(ProcessLookupError):
-                os.killpg(process.pid, signal.SIGKILL)
-        else:
-            process.kill()
-        process.wait()
 
 
 def execute_bounded(
@@ -104,7 +86,7 @@ def execute_bounded(
         except KeyboardInterrupt:
             stopped = "execution.cancelled"
         finally:
-            _stop(process)
+            stop_process(process)
             reader.join(timeout=1)
             if process.stderr is not None and not reader.is_alive():
                 process.stderr.close()

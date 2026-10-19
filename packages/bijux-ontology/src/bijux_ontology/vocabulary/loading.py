@@ -49,7 +49,6 @@ def load_vocabulary(
     imported = required_imports(
         prepared,
         local,
-        source,
         imports,
         budget=budget,
         preserve_literals=preserve_literals,

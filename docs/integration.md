@@ -11,6 +11,11 @@ owned_namespaces=("http://bia/",))` for local membership; add
 `require_coverage=True` and `coverage_terms=selected_owned_iris` for reverse coverage.
 Ownership and accepted RDF kinds are explicit caller contracts.
 
+Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
+`graph_name="@default"`, or `union=True`. Imports, lookup resources and prepared
+SHACL inputs retain that selection. `prepared.dataset()` still exports every
+original graph; conflicting graph overrides fail explicitly.
+
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
@@ -34,6 +39,11 @@ requires completed root target evaluations when passed as `coverage=` to
 `validate_shapes`. Inspect `result.coverage` separately from `conforms` and
 `conformance_report`; a targetless shape can conform while required coverage fails.
 Nested conditional constraint execution is not inferred from root coverage.
+Use `required_constraints=(ShaclConstraintRequirement(shape_iri, parameter_iri),)`
+for explicit supported parameter/component bindings and inspect `result.constraints`
+for execution coverage. A required nested-only constraint remains unverified.
+Trusted SPARQL queries with unavailable function calls are rejected before validation;
+`trusted_sparql=True` alone does not enable function implementations.
 
 Use `check_contract` for required consumer acceptance. Name each `ContractObligation`,
 provide its check callback and set `minimum_checked` or explicit
@@ -58,3 +68,17 @@ so another finding at the same broad location remains rejected. Approval can mak
 `result.accepted` true while `require_verified()` still rejects unverified truth.
 
 Evaluate a fixed wheel in a dependency-consistent environment on the consumer’s supported interpreter. Check installed import origin, run real integration cases and include a deliberate missing-term or incorrect-mapping case. The consumer remains responsible for required input fields, domain decisions and dependency migration.
+
+Use `WorkerExecutor(python=installed_python, timeout=30, limits=Limits(...))`
+for bounded embedding. `run("context", {"document": output, "expectations":
+expectation_data, "resources": contexts, "base": logical_base})` transfers JSON
+resources and returns a raw `report`. Supported operations also include
+`emission`, `serialization`, `flatten`, `vocabulary` and `project`; declarations
+use their existing JSON codecs. `project` takes `configuration` and an absolute
+`directory`, retaining completed scopes on cancellation or deadline.
+
+The trusted worker interpreter must already contain the package and requested
+extras. No environment installation occurs. `memory_bytes=` requests the platform
+address-space limit and fails explicitly when unavailable; cancellation accepts a
+`threading.Event`. Worker crashes, protocol failures and limits never verify.
+Synchronous calls keep their existing execution behavior.

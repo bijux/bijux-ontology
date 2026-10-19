@@ -16,6 +16,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.documents.export import RDFExport, export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.interfaces.execution.executor import ExecutionResult, WorkerExecutor
 from bijux_ontology.jsonld.checking import PreparedUsages, check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.comparison import (
@@ -97,6 +98,7 @@ __all__ = [
     "ContractObligation",
     "ContractResult",
     "DataView",
+    "ExecutionResult",
     "FieldDeclaration",
     "FlatNode",
     "FlattenedDocument",
@@ -131,6 +133,7 @@ __all__ = [
     "Vocabulary",
     "VocabularyChanges",
     "VocabularyView",
+    "WorkerExecutor",
     "assess_upgrade",
     "check_context",
     "check_contract",

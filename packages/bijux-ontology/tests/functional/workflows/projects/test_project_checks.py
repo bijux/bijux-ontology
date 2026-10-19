@@ -292,3 +292,65 @@ def test_project_graph_selections_keep_views_and_job_failures_independent(
     assert result.children[1].outcome == "input_error"
     assert "Expected a boolean" in result.children[1].issues[0].message
     assert result.exit_code() == 2
+
+
+def test_project_resource_selections_apply_to_imports_and_lookup_snapshots(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "root.ttl").write_text(
+        f"<{EX}Root> <http://www.w3.org/2002/07/owl#imports> <{EX}Document>."
+    )
+    (tmp_path / "import.trig").write_text(
+        "@prefix ex:<https://example.org/>. "
+        "@prefix owl:<http://www.w3.org/2002/07/owl#>. "
+        "ex:ontology { ex:Imported a owl:Class. } "
+        "ex:application { ex:Poison a owl:Class; owl:imports ex:Unsupplied. }"
+    )
+    (tmp_path / "lookup.trig").write_text(
+        "@prefix ex:<https://example.org/>. "
+        "@prefix owl:<http://www.w3.org/2002/07/owl#>. "
+        "ex:Lookup a owl:Class. ex:application { ex:Hidden a owl:Class. }"
+    )
+    (tmp_path / "inventory.json").write_text(
+        json.dumps([EX + "Imported", EX + "Lookup"])
+    )
+    config = ProjectConfig(
+        {
+            "version": 1,
+            "rdf": {
+                "root": {"path": "root.ttl"},
+                "import": {
+                    "path": "import.trig",
+                    "iri": EX + "Document",
+                    "graph_name": EX + "ontology",
+                },
+                "lookup": {"path": "lookup.trig", "graph_name": "@default"},
+            },
+            "checks": [
+                {
+                    "name": "selected",
+                    "kind": "vocabulary",
+                    "source": "root",
+                    "lookup": ["lookup"],
+                    "inventory": "inventory.json",
+                }
+            ],
+        },
+        directory=tmp_path,
+    )
+    assert config.explain()["rdf"] == {
+        name: {
+            "path": str(item.content),
+            "format": None,
+            "iri": item.document_iri,
+            "effective_url": None,
+            "graph_name": item.graph_name,
+            "union": False,
+        }
+        for name, item in config.rdf.items()
+    }
+    assert check_project(config).verified
+    (tmp_path / "inventory.json").write_text(json.dumps([EX + "Poison", EX + "Hidden"]))
+    report = check_project(config)
+    assert {issue.code for issue in report.issues} == {"vocabulary.term_missing"}
+    assert len(report.issues) == 2
