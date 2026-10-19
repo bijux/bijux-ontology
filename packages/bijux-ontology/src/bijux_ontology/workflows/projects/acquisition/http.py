@@ -28,6 +28,7 @@ class _Response:
     payload: bytes
     link: str
     content_type: str = ""
+    headers: tuple[tuple[str, str], ...] = ()
 
 
 class _Redirects(HTTPRedirectHandler):
@@ -149,6 +150,8 @@ class HttpAcquisition:
                 ):
                     if len(response.headers.get_all(name, [])) > 1:
                         raise InputError("Ambiguous acquisition response headers")
+                self.budget.consume("bytes", 64 * len(response.headers))
+                headers = tuple(response.headers.items())
                 charset = response.headers.get_content_charset()
                 if charset is not None and charset.lower() not in ("utf-8", "utf8"):
                     raise InputError("Acquisition supports explicit UTF-8 media only")
@@ -225,7 +228,7 @@ class HttpAcquisition:
             len(expanded),
             hashlib.sha256(expanded).hexdigest(),
         )
-        result = _Response(resource, expanded, link, content_type)
+        result = _Response(resource, expanded, link, content_type, headers)
         if fresh:
             return result
         before = self.responses.get(effective)

@@ -43,7 +43,8 @@ def _exited_unreaped(process: subprocess.Popen[bytes]) -> None:
 
 
 @pytest.mark.skipif(
-    not hasattr(os, "WNOWAIT"), reason="Requires unreaped exit observation"
+    not callable(getattr(os, "waitid", None)) or not hasattr(os, "WNOWAIT"),
+    reason="Requires unreaped exit observation",
 )
 @pytest.mark.parametrize(
     "stop",
@@ -67,7 +68,13 @@ def test_real_exited_unreaped_group_is_reaped_without_permission_failure(
             process.wait(timeout=1)
 
 
-def test_exited_leader_does_not_skip_term_ignoring_descendant(tmp_path: Path) -> None:
+@pytest.mark.parametrize("transient_denial", [False, True])
+def test_exited_leader_does_not_skip_term_ignoring_descendant(
+    tmp_path: Path,
+    transient_denial: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Final escalation proves cleanup even after a transient TERM group error."""
     child_file = tmp_path / "child.pid"
     child = (
         "import os,signal,time; from pathlib import Path; "
@@ -82,11 +89,25 @@ def test_exited_leader_does_not_skip_term_ignoring_descendant(tmp_path: Path) ->
     )
     process = subprocess.Popen([sys.executable, "-c", leader], start_new_session=True)
     child_pid: int | None = None
+    sentinel = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True
+    )
+    real_killpg = os.killpg
+
+    def denied_term(group: int, sig: int) -> None:
+        """Deny the owned group's graceful attempt, leaving real escalation intact."""
+        if group == process.pid and sig == signal.SIGTERM:
+            raise PermissionError("transient graceful group permission denial")
+        real_killpg(group, sig)
+
+    if transient_denial:
+        monkeypatch.setattr(os, "killpg", denied_term)
     try:
         process.wait(timeout=3)
         child_pid = int(child_file.read_text())
         os.kill(child_pid, 0)
         processes.stop_owned_process(process)
+        assert process.returncode == 0 and sentinel.poll() is None
         deadline = time.monotonic() + 2
         while True:
             try:
@@ -96,6 +117,8 @@ def test_exited_leader_does_not_skip_term_ignoring_descendant(tmp_path: Path) ->
             assert time.monotonic() < deadline
             time.sleep(0.005)
     finally:
+        sentinel.kill()
+        sentinel.wait(timeout=1)
         if child_pid is not None:
             with suppress(ProcessLookupError):
                 os.kill(child_pid, signal.SIGKILL)

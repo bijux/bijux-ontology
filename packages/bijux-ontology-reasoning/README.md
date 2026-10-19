@@ -198,6 +198,15 @@ and exact source owners; pre-existing failures are preserved without new blame.
 Completion covers the selected combinations and obligations only; unselected
 subsets, absent imports or exhausted explanation work receive no certificate.
 
+`bridges.check_mapping_bridges` checks explicit `BridgeInterpretation` approvals
+of original SSSOM `MappingOccurrence` rows. Choose declared class/property facets
+and nonempty protected entailments; an exactMatch relation or confidence never
+supplies an OWL interpretation. Original source and unbridged union baselines stay
+separate from the joint bridge. Rechecked native justifications correlate candidate
+rows through exact original module ownership, preserving duplicate occurrences
+and pre-existing failures without new blame. Unsupported qualifiers and endpoint
+facets remain unverified; completion covers only the selected obligations.
+
 `locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
 for an explicit typed signature. Choose flattened imports, retained annotations
 and a fresh module identity. Inspect original annotated axiom owners and separate
@@ -244,6 +253,16 @@ backend revision. `with sessions.ReasoningSession(theory)` loads and classifies
 once, then recomputes supported queries and batches. Capture and `bind` a new
 theory for changed imports or backend semantics; external mutable inputs are
 not watched. An optional fixed Budget is cumulative across requests.
+`session.realize(queries)` retrieves independently qualified named types,
+instances, object values, same/different individuals and supported data values.
+Use typed `IndividualQuery` records and explicit depth for types/instances. Actual
+native node policy remains visible; BY_NAME nodes do not imply sameAs groups.
+Data values use native entailment over supplied assertion literals, restricted to
+positive named assertions and data sub/equivalent-property axioms. Other logical
+data constructs make that family unverified while supported families stay usable.
+Returned literal representatives retain their metadata; they do not enumerate all
+RDF spellings of equal logical values. Absence asserts no negation and existential
+restrictions manufacture no named witnesses.
 `session.query_classes(expression, direct=False)` retrieves actual named subclass
 and equivalent groups for supported typed intersections, unions, complements and
 existential/universal restrictions. Inspect separate expression satisfiability,
@@ -254,3 +273,14 @@ Direct and transitive views reuse the same classification without caching answer
 a separate ordinary RDF artifact, retaining quantifiers and unknown pairs.
 Its raw required-axiom answers remain inspectable separately from pair coverage;
 no class-instance assertions or complete inventory of all fillers is implied.
+
+`modules.prepare_module_refactor` moves exact annotated axioms or explicitly
+inlines owned local modules as one candidate set. Supply exact `axiom_base`
+preconditions for every original, unchanged required consumer contracts, explicit
+import/provider changes and a selected `TheoryCombination` deployment. Actual
+consumer import closures and native joint consistency/entailments are checked
+before and after; a synthetic all-source union cannot establish consumer access.
+Protected axioms and read-only sources remain intact. Namespace transfers are
+explicit policy records; no IRI spelling establishes ownership. Legal import
+cycles are supported. Any failed obligation withholds all candidate module bytes;
+passing the finite selected obligations does not establish full equivalence.

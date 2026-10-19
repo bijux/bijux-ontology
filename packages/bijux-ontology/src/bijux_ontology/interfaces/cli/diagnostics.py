@@ -331,6 +331,19 @@ _CODES = {
         "required_occurrence_missing types_mismatch value_mismatch "
         "value_unverified".split()
     ),
+    "finding_stream": frozenset("failed exhausted".split()),
+    "corpus": frozenset(
+        "record_unverified input_error key_source_unverified "
+        "checkpoint_unverified".split()
+    ),
+    "revision": frozenset("preparation_unverified input_error".split()),
+    "geospatial": frozenset(
+        "invalid_lexical invalid_geometry unavailable relation input_error".split()
+    ),
+    "endpoint": frozenset(
+        "completeness_unverified blank_scope_unverified slice_incomplete "
+        "acquisition_unverified input_error".split()
+    ),
     "execution": frozenset(
         "cancelled deadline incomplete limit_exceeded worker_failed".split()
     ),
@@ -400,11 +413,17 @@ _CODES = {
         "integration_class_unverified integration_contract_unverified "
         "integration_comparison_unverified integration_unverified "
         "integration_input_error "
+        "module_base_mismatch module_provider_unreachable "
+        "module_change_precondition module_refactoring_unverified "
+        "module_refactoring_input_error "
+        "bridge_attribution_unverified bridge_semantics_unverified "
+        "bridge_unverified bridge_input_error "
         "mireot_unusable_class mireot_boundary mireot_required_axiom_absent "
         "mireot_retention_failed mireot_unverified mireot_input_error "
         "upgrade_regression upgrade_unverified upgrade_unmatched_consumer "
         "upgrade_explanation_unverified upgrade_input_error "
         "reasoning_session_unverified reasoning_session_input_error "
+        "realization "
         "emitted_record_unverified emitted_unverified emitted_input_error "
         "rename_postconditions_missing rename_postcondition_unverified "
         "rename_base_mismatch rename_unverified rename_profile_violation "
@@ -499,6 +518,7 @@ _CODES = {
         "path_unverified finding_unverified "
         "function_unavailable function_malformed function_untrusted "
         "function_recursive capability_unavailable "
+        "jena_unavailable jena_input_error jena_capability_unavailable "
         "constraint_unavailable constraint_malformed constraint_not_evaluated "
         "coverage_minimum coverage_missing coverage_pair_missing coverage_incomplete "
         "shapes_invalid unavailable "
@@ -936,6 +956,43 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Check the selected output path and model alternatives; examples "
         "do not prove all outputs.",
         '{"@id":"https://example.org/item","@type":"https://example.org/Image"}',
+    ),
+    "finding_stream": (
+        "actual record findings and selected export completion",
+        "The producer, record check or finding sink stopped before full delivery.",
+        "Inspect raw counts, semantic completion and export completion separately; "
+        "retained samples do not replace complete findings.",
+        "stream_model_findings(plan, records, usages, sink=sink)",
+    ),
+    "corpus": (
+        "qualified record outcomes and checkpoint durability",
+        "A record, global key obligation or saved checkpoint did not verify.",
+        "Inspect semantic and checkpoint reports separately; reuse requires exact "
+        "record and preparation identities. Global keys run again.",
+        "ResumeCorpus(path).run(lease, records, keys=keys)",
+    ),
+    "revision": (
+        "complete prepared semantic revision",
+        "A required context, model, import or shape preparation did not verify.",
+        "Inspect exact closed inputs and preparation reports before activation; "
+        "keep the currently active revision for new requests.",
+        "prepare_revision(models, ontology, expected=identity)",
+    ),
+    "geospatial": (
+        "explicit geometry values and spatial relationships",
+        "A supported geometry or relation fails, or native interpretation "
+        "remains unavailable.",
+        "Inspect original literal, CRS, axis order and explicit distance unit; "
+        "RDF identity and topology are separate obligations.",
+        "GeometryValue('point', Literal('POINT(15 45)', datatype=WKT))",
+    ),
+    "endpoint": (
+        "explicit endpoint triple extraction",
+        "The selected response or whole snapshot cannot establish complete "
+        "consistent extraction.",
+        "Inspect version, total and truncation receipts, requested page bounds "
+        "and exact RDF scope; normal validation remains offline.",
+        "acquire_endpoint(url, query=EndpointQuery(), policy=policy)",
     ),
     "execution": (
         "requested execution",

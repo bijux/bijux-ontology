@@ -101,9 +101,12 @@ sssom = [
 core-metadata-version = "2.4"
 packages = ["src/bijux_ontology"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"java" = "bijux_ontology/java"
+
 [tool.hatch.build.targets.sdist]
 core-metadata-version = "2.4"
-include = ["src", "tests", "pyproject.toml", "README.md", "LICENSE"]
+include = ["src", "tests", "java", "pyproject.toml", "README.md", "LICENSE"]
 
 [tool.hatch.build.targets.sdist.force-include]
 "../../docs" = "docs"

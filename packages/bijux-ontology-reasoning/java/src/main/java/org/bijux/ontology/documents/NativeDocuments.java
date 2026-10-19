@@ -534,6 +534,66 @@ public final class NativeDocuments {
         return result;
     }
 
+    /** Export maintained RDF views only after exact native structure and loader qualification. */
+    public static Map<String,Object> checkedRdfModules(Loaded input, Path directory,
+            int cap, int maximum, int resources) throws Exception {
+        if (input.documents == null) throw new IOException("Native original modules required");
+        OWLOntologyManager manager = input.ontology.getOWLOntologyManager();
+        Map<Integer,OWLOntology> originals = new TreeMap<>();
+        for (OWLOntology ontology : manager.getOntologies()) {
+            Integer index = input.owners.get(manager.getOntologyDocumentIRI(ontology).toString());
+            if (index == null || originals.put(index, ontology) != null)
+                throw new IOException("Unowned or duplicate native RDF module");
+        }
+        if (originals.size() != input.documents.size() || originals.size() > resources)
+            throw new IOException("Native RDF view requires the exact loaded source inventory");
+        com.fasterxml.jackson.databind.node.ObjectNode request =
+            new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode();
+        request.put("max_bytes", cap); request.put("max_issues", maximum);
+        request.put("max_resources", resources); request.put("root", 0);
+        com.fasterxml.jackson.databind.node.ArrayNode documents = request.putArray("documents");
+        com.fasterxml.jackson.databind.node.ObjectNode aliases = request.putObject("aliases");
+        for (Map.Entry<String,Integer> alias : input.aliases.entrySet())
+            aliases.put(alias.getKey(), alias.getValue());
+        long written = 0;
+        List<Map<String,Object>> modules = new ArrayList<>();
+        for (Map.Entry<Integer,OWLOntology> entry : originals.entrySet()) {
+            int index = entry.getKey();
+            Path output = directory.resolve("module-" + index + ".ttl");
+            try (OutputStream stream = new CappedOutput(
+                    Files.newOutputStream(output, StandardOpenOption.CREATE_NEW), cap - written)) {
+                manager.saveOntology(entry.getValue(), new TurtleDocumentFormat(), stream);
+            }
+            long size = Files.size(output); written += size;
+            com.fasterxml.jackson.databind.node.ObjectNode document = documents.addObject();
+            document.put("id", input.documents.get(index).effective);
+            document.put("path", output.toAbsolutePath().normalize().toString());
+            Map<String,Object> record = new LinkedHashMap<>();
+            record.put("document", index); record.put("bytes", size); modules.add(record);
+        }
+        Loaded restored = loadRdfRequest(request, directory);
+        List<Map<String,Object>> changes = new ArrayList<>();
+        for (Map<String,Object> metadata : restored.loaders) {
+            if (!Boolean.TRUE.equals(metadata.get("present"))
+                    || !(metadata.get("unparsed") instanceof Number)
+                    || ((Number) metadata.get("unparsed")).longValue() != 0
+                    || !(metadata.get("guessed") instanceof Number)
+                    || ((Number) metadata.get("guessed")).longValue() != 0)
+                throw new IOException("Native RDF view lacks complete actual loader qualification");
+        }
+        for (OWLOntology ontology : restored.ontology.getOWLOntologyManager().getOntologies()) {
+            Integer index = restored.owners.get(
+                ontology.getOWLOntologyManager().getOntologyDocumentIRI(ontology).toString());
+            if (index == null || !originals.containsKey(index))
+                throw new IOException("Reread RDF module has another owner");
+            compare(originals.get(index), ontology, changes, cap, maximum);
+        }
+        Map<String,Object> result = new LinkedHashMap<>();
+        result.put("changes", changes); result.put("modules", modules);
+        result.put("loaders", restored.loaders); result.put("qualified", changes.isEmpty());
+        return result;
+    }
+
     /** Serialize selected owned modules together and reread the exact original alias closure. */
     public static Map<String,Object> checkedWriteModules(Loaded input, Path job, Set<Integer> owned,
             JsonNode selectedProfiles, int cap, int maximum, int resources) throws Exception {
