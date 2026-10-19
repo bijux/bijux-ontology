@@ -480,3 +480,28 @@ def test_order_expectations_do_not_concatenate_separate_lists(
         ]
     ).verified
     assert document == before
+
+
+def test_anonymous_graph_selections_require_proven_original_scope() -> None:
+    document = {
+        "@context": {"p": EX + "p"},
+        "@graph": [
+            {"@graph": [{"@id": EX + "subject", "p": "same"}]},
+            {"@graph": [{"@id": EX + "subject", "p": "same"}]},
+        ],
+    }
+    prepared = prepare_usages(document)
+    for index in (0, 1):
+        path = ("@graph", index, "@graph", 0, "p")
+        selected = prepared.observe(path)
+        assert selected.limitation is not None
+        assert not selected.occurrences
+        assert not prepared.check([ContextExpectation(path, EX + "p")]).verified
+    whole = prepared.observe(("@graph",))
+    assert whole.limitation is None
+    assert {item.graph_identity for item in whole.occurrences} == {0, 1}
+    assert prepared.check([ContextExpectation(("@graph",), EX + "p")]).verified
+    same_graph = prepare_usages(
+        {"@context": {"p": EX + "p"}, "@id": EX + "subject", "p": ["same", "same"]}
+    )
+    assert same_graph.check([ContextExpectation(("p", 0), EX + "p")]).verified
