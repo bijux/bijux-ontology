@@ -77,12 +77,29 @@ public final class EntailmentChecks {
     /** Never run an ordinary positive or negative consumer proof under inconsistency. */
     public static Map<String,Object> evaluate(JsonNode request, Path job,
             Map<String,Object> result) throws Exception {
+        result.put("answers", new ArrayList<Map<String,Object>>());
+        try (QualifiedReasoning input = QualifiedReasoning.open(request, job, result)) {
+            if (input == null) return result;
+            return evaluatePrepared(request, input, result);
+        } catch (TimeOutException | WorkerProtocol.OutputLimit exhausted) {
+            result.put("status", "exhausted");
+        } catch (OutOfMemoryError | StackOverflowError exhausted) {
+            result.put("status", "exhausted");
+        } catch (Exception unsupported) {
+            result.put("qualified", false);
+            result.put("error", unsupported.getClass().getSimpleName());
+        }
+        return result;
+    }
+
+    /** Evaluate finite queries on an already qualified, caller-owned unchanged theory. */
+    public static Map<String,Object> evaluatePrepared(JsonNode request, QualifiedReasoning input,
+            Map<String,Object> result) throws Exception {
         int cap = WorkerProtocol.positive(request.path("max_bytes"));
         int maximum = WorkerProtocol.positive(request.path("max_nodes"));
         List<Map<String,Object>> answers = new ArrayList<>();
         result.put("answers", answers);
-        try (QualifiedReasoning input = QualifiedReasoning.open(request, job, result)) {
-            if (input == null) return result;
+        try {
             boolean consistent = input.reasoner.isConsistent();
             result.put("consistent", consistent);
             if (!consistent) return result;
@@ -111,6 +128,7 @@ public final class EntailmentChecks {
                 }
                 answers.add(answer);
             }
+
         } catch (TimeOutException | WorkerProtocol.OutputLimit exhausted) {
             result.put("status", "exhausted");
         } catch (OutOfMemoryError | StackOverflowError exhausted) {
