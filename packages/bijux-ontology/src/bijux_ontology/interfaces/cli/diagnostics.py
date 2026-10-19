@@ -34,6 +34,20 @@ _CODES = {
         "family_unknown native_capacity backend_unavailable backend_unsupported "
         "backend_failed".split()
     ),
+    "cube": frozenset(
+        "constraint_unverified ic0_datatype_conflict "
+        "ic10_slice_dimension_missing ic11_dimension_missing "
+        "ic12_duplicate_coordinates ic13_attribute_missing "
+        "ic14_measure_missing ic15_measure_value_missing "
+        "ic16_multiple_measures ic17_measure_group_incomplete "
+        "ic18_slice_dataset_conflict ic19_code_not_member "
+        "ic1_dataset_cardinality ic20_code_not_reachable "
+        "ic21_code_not_reachable ic2_structure_cardinality "
+        "ic3_measure_undeclared ic4_dimension_range_missing "
+        "ic5_code_list_missing ic6_nonattribute_optional "
+        "ic7_slice_key_undeclared ic8_slice_key_inconsistent "
+        "ic9_slice_structure_cardinality input_error scope_unverified ".split()
+    ),
     "extraction": frozenset(
         "plan_unverified shape_unverified reference_invalid".split()
     ),
@@ -410,6 +424,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "and actual method identity; retain missing terms and incomplete work "
         "rather than shrinking the population.",
         "resnik_similarity(population, left, right)",
+    ),
+    "cube": (
+        "selected RDF Data Cube structure and observation integrity",
+        "A Cube integrity obligation fails or cannot be established in scope.",
+        "Supply one physical graph, complete dataset and code-list inventories "
+        "and actual DSDs; inspect each constraint receipt and located observation.",
+        "check_cube(source, complete=True, code_lists_complete=code_lists)",
     ),
     "extraction": (
         "explicit selected instance paths and reference descriptions",

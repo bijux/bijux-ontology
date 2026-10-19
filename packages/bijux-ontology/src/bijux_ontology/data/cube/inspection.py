@@ -1,0 +1,251 @@
+"""Bounded supplied Cube structures and shared native coordinate extraction."""
+
+from collections.abc import Iterator
+from dataclasses import replace
+from typing import cast
+
+from rdflib import BNode, Literal, URIRef
+from rdflib.namespace import RDF, XSD
+from rdflib.term import Node
+
+from bijux_ontology.data.keys.checking import _relation
+from bijux_ontology.data.keys.extraction import _Key, _KeyExtraction
+from bijux_ontology.data.keys.types import KeyRecord
+from bijux_ontology.declarations.keys import KeyComponent, KeyContract
+from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.terms import bound_node
+
+from .normalization import QB
+from .types import CubeComponent, CubeObservation, CubeStructure
+
+Resource = URIRef | BNode
+
+
+class CubeRead:
+    """One operation's typed graph observations, without another RDF index engine."""
+
+    def __init__(
+        self, source: PreparedSource, graph_name: GraphSelection | None, budget: Budget
+    ) -> None:
+        self.source = source
+        self.graph_name = graph_name
+        self.budget = budget
+        self.graph = source._read(graph_name, budget=budget)
+        self.datasets = self.typed(QB.DataSet)
+        self.slices = self.typed(QB.Slice)
+        self.keys = self.typed(QB.SliceKey)
+        self.structures = self._structures()
+        self.observations = self._observations()
+        budget.consume("states", len(self.structures))
+        budget.consume("bytes", 64 * len(self.structures))
+        self.by_dsd = {dsd.identifier: dsd for dsd in self.structures}
+        self.coordinates: dict[tuple[Resource, Node], Coordinates] = {}
+
+    def values(self, subject: Node, predicate: URIRef) -> tuple[Node, ...]:
+        """Capture actual RDF values with charges before retaining each reference."""
+        result: list[Node] = []
+        for value in self.graph.objects(subject, predicate):
+            self.budget.consume("work")
+            self.budget.consume("states")
+            self.budget.consume("bytes", 16)
+            bound_node(value, self.budget)
+            result.append(value)
+        return tuple(result)
+
+    def subjects(self, predicate: URIRef, obj: Node) -> tuple[Node, ...]:
+        """Capture inverse links in the same selected owned graph."""
+        result: list[Node] = []
+        for value in self.graph.subjects(predicate, obj):
+            self.budget.consume("work")
+            self.budget.consume("states")
+            self.budget.consume("bytes", 16)
+            bound_node(value, self.budget)
+            result.append(value)
+        return tuple(result)
+
+    def typed(self, kind: URIRef) -> tuple[Resource, ...]:
+        """Ordinary RDF subjects are resources, never inferred from IRI spelling."""
+        return cast(tuple[Resource, ...], self.subjects(RDF.type, kind))
+
+    def properties(self, dsd: Node, kind: URIRef) -> tuple[URIRef, ...]:
+        """Resolve declared component properties using their actual normalized type."""
+        result: list[URIRef] = []
+        for spec in self.values(dsd, QB.component):
+            for prop in self.values(spec, QB.componentProperty):
+                self.budget.consume("work", 1 + len(result))
+                if (
+                    isinstance(prop, URIRef)
+                    and (prop, RDF.type, kind) in self.graph
+                    and prop not in result
+                ):
+                    self.budget.consume("states")
+                    self.budget.consume("bytes", 16)
+                    result.append(prop)
+        return tuple(result)
+
+    def _structures(self) -> tuple[CubeStructure, ...]:
+        """Retain declared and referenced DSDs, including incomplete definitions."""
+        typed = self.typed(QB.DataStructureDefinition)
+        self.budget.consume("bytes", 64 + 8 * len(typed))
+        identifiers = list(typed)
+        for data in self.datasets:
+            for dsd in self.values(data, QB.structure):
+                if isinstance(dsd, URIRef | BNode) and dsd not in identifiers:
+                    self.budget.consume("states")
+                    self.budget.consume("bytes", 16)
+                    identifiers.append(dsd)
+        result: list[CubeStructure] = []
+        for dsd in identifiers:
+            components: list[CubeComponent] = []
+            for spec in self.values(dsd, QB.component):
+                self.budget.consume("states")
+                self.budget.consume("bytes", 128)
+                components.append(
+                    CubeComponent(
+                        spec,
+                        self.values(spec, QB.componentProperty),
+                        self.values(spec, QB.componentRequired),
+                        self.values(spec, QB.componentAttachment),
+                    )
+                )
+            result.append(CubeStructure(dsd, tuple(components)))
+        return tuple(result)
+
+    def _observations(self) -> tuple[CubeObservation, ...]:
+        """Expose actual predicates and terms without erasing inherited conflicts."""
+        result: list[CubeObservation] = []
+        for subject in self.typed(QB.Observation):
+            predicates: set[URIRef] = set()
+            for predicate in self.graph.predicates(subject):
+                self.budget.consume("work")
+                self.budget.consume("states")
+                self.budget.consume("bytes", 64)
+                predicates.add(cast(URIRef, predicate))
+            self.budget.consume("bytes", 64 + 32 * len(predicates))
+            result.append(
+                CubeObservation(
+                    subject,
+                    self.values(subject, QB.dataSet),
+                    tuple(
+                        (predicate, self.values(subject, predicate))
+                        for predicate in predicates
+                    ),
+                )
+            )
+        return tuple(result)
+
+    def data_structures(self) -> Iterator[tuple[Resource, Node]]:
+        """Yield actual dataset/structure links without silently selecting one."""
+        for data in self.datasets:
+            for dsd in self.values(data, QB.structure):
+                yield data, dsd
+
+    def coordinate_rows(
+        self, data: Resource, dsd: Node, issues: IssueCollector
+    ) -> "Coordinates":
+        """Share one native extraction across coordinate and measure-group checks."""
+        key = data, dsd
+        if key not in self.coordinates:
+            self.budget.consume("states")
+            self.budget.consume("bytes", 128)
+            self.coordinates[key] = Coordinates(self, data, dsd, issues)
+        return self.coordinates[key]
+
+
+class Coordinates:
+    """Cube-only application of existing scoped key extraction and equality."""
+
+    def __init__(
+        self, read: CubeRead, data: Resource, dsd: Node, issues: IssueCollector
+    ) -> None:
+        self.dimensions = read.properties(dsd, QB.DimensionProperty)
+        components: list[KeyComponent] = []
+        for dim in self.dimensions:
+            semantic = False
+            for obs in read.observations:
+                read.budget.consume("work", 1 + len(obs.datasets))
+                if data in obs.datasets:
+                    for value in read.values(obs.subject, dim):
+                        if isinstance(value, Literal) and value.datatype not in (
+                            None,
+                            XSD.string,
+                            RDF.langString,
+                        ):
+                            semantic = True
+            components.append(
+                KeyComponent(dim, equality="sparql-1.1" if semantic else "rdf-term")
+            )
+        self.contract = (
+            KeyContract(
+                str(data),
+                tuple(components),
+                absence="unverified",
+                multiplicity="unverified",
+            )
+            if components
+            else None
+        )
+        records = []
+        for obs in read.observations:
+            read.budget.consume("work")
+            if data in obs.datasets:
+                read.budget.consume("states")
+                read.budget.consume("bytes", 128)
+                records.append(
+                    KeyRecord(
+                        str(obs.subject),
+                        read.source,
+                        obs.subject,
+                        graph_name=read.graph_name,
+                    )
+                )
+        self.count = len(records)
+        self.keys: tuple[_Key, ...] = ()
+        if self.contract is not None:
+            read.budget.consume("bytes", 64 + 16 * len(records))
+            self.keys = tuple(
+                _KeyExtraction(
+                    records, self.contract, read.budget, issues, len(records)
+                )
+            )
+
+    def relation(
+        self,
+        left: _Key,
+        right: _Key,
+        budget: Budget,
+        issues: IssueCollector,
+        *,
+        measures: bool = False,
+    ) -> str:
+        """Use SPARQL-aware native key relations for the exact selected coordinates."""
+        assert self.contract is not None
+        contract = self.contract
+        if measures:
+            positions = tuple(
+                index
+                for index, dim in enumerate(self.dimensions)
+                if dim != QB.measureType
+            )
+            if not positions:
+                return "equal"
+            budget.consume("states", 6 * len(positions))
+            budget.consume("bytes", 256 + 64 * len(positions))
+            left = replace(
+                left,
+                values=tuple(left.values[index] for index in positions),
+                tokens=tuple(left.tokens[index] for index in positions),
+            )
+            right = replace(
+                right,
+                values=tuple(right.values[index] for index in positions),
+                tokens=tuple(right.tokens[index] for index in positions),
+            )
+            contract = replace(
+                contract,
+                components=tuple(contract.components[index] for index in positions),
+            )
+        relation, pending = _relation(left, right, contract, budget)
+        issues.extend(pending)
+        return relation

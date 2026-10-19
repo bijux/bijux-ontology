@@ -1368,6 +1368,14 @@ unselected metadata remain informational; incomplete baseline or consumer scope
 stays unknown. Selected identifier qualifiers need qualified prefix interpretation;
 selected `curie_map` metadata compares the actual retained prefix maps.
 
+`bijux_ontology.data.cube.check_cube` checks supplied Data Cube structures,
+observations, slices and code lists in one physical graph. `complete=True`
+declares the supplied observation inventory; named code-list closure is separate.
+Its owned normalized view preserves the asserted input. Inspect all IC0–IC21
+coverage receipts: IC0 supports builtin literals and direct datatype ranges;
+unsupported entailment or comparisons, missing DSDs and open code lists remain
+unknown. Coordinate checks reuse native compound keys and literal comparison.
+
 `workflows.upgrades.instances.compare_instance_releases` compares selected
 instance records independently of schema changes. Supply physical entity scopes,
 explicit identity pairs and `InstanceFieldPolicy` paths for immutable, append-only
