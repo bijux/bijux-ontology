@@ -186,12 +186,14 @@ name = "bijux-ontology"
 version = "0.1.0"
 source = { editable = "packages/bijux-ontology" }
 dependencies = [
-    { name = "pyld" },
     { name = "pyoxigraph" },
     { name = "rdflib" },
 ]
 
 [package.optional-dependencies]
+jsonld = [
+    { name = "pyld" },
+]
 linkml = [
     { name = "linkml-runtime" },
 ]
@@ -207,13 +209,13 @@ shacl = [
 requires-dist = [
     { name = "linkml-runtime", marker = "extra == 'linkml'", specifier = ">=1.12.1,<2" },
     { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2.11,<3" },
-    { name = "pyld", specifier = ">=3.3,<4" },
+    { name = "pyld", marker = "extra == 'jsonld'", specifier = ">=3.3,<4" },
     { name = "pyoxigraph", specifier = ">=0.5.11,<0.6" },
     { name = "pyparsing", marker = "extra == 'shacl'", specifier = ">=3.2,<4" },
     { name = "pyshacl", marker = "extra == 'shacl'", specifier = ">=0.40.1,<0.41" },
     { name = "rdflib", specifier = ">=7.6,<8" },
 ]
-provides-extras = ["shacl", "pydantic", "linkml"]
+provides-extras = ["jsonld", "shacl", "pydantic", "linkml"]
 
 [[package]]
 name = "bijux-ontology-dev"
@@ -227,7 +229,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
-    { name = "bijux-ontology", extra = ["linkml", "pydantic", "shacl"] },
+    { name = "bijux-ontology", extra = ["jsonld", "linkml", "pydantic", "shacl"] },
     { name = "bijux-ontology-dev" },
     { name = "build" },
     { name = "codespell" },
@@ -248,7 +250,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bijux-ontology", extras = ["shacl", "pydantic", "linkml"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology", extras = ["jsonld", "shacl", "pydantic", "linkml"], editable = "packages/bijux-ontology" },
     { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
     { name = "build", specifier = ">=1.2,<2" },
     { name = "codespell", specifier = ">=2.4,<3" },

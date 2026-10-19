@@ -19,7 +19,12 @@ from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource, copy_graph
 from bijux_ontology.rdf.sources import Payload, RdfSource
-from bijux_ontology.reports import Issue, IssueKind, Report, Severity
+from bijux_ontology.reports import Issue, IssueKind, Report, Severity, combine_reports
+from bijux_ontology.shacl.coverage import (
+    ShaclCoverage,
+    ShaclCoverageContract,
+    read_coverage,
+)
 from bijux_ontology.shacl.transport import execute_backend
 from bijux_ontology.vocabulary.loading import load_vocabulary
 
@@ -65,6 +70,8 @@ class ShaclResult:
         shapes: tuple[str, ...] = (),
         preflight: bool = False,
         shapes_count: int | None = None,
+        coverage: ShaclCoverage | None = None,
+        conformance_report: Report | None = None,
     ) -> None:
         self.report = report
         self.conforms = conforms
@@ -75,6 +82,8 @@ class ShaclResult:
         self.shapes = shapes
         self.preflight = preflight
         self.shapes_count = shapes_count
+        self.coverage = coverage
+        self.conformance_report = conformance_report or report
         self._graph = Graph()
         if graph is not None:
             self._graph += graph
@@ -232,6 +241,7 @@ def validate_shapes(
     mode: str = "targets",
     preflight: bool = False,
     allow_empty: bool = False,
+    coverage: ShaclCoverageContract | None = None,
     limits: Limits | None = None,
     timeout: float | None = 30.0,
 ) -> ShaclResult:
@@ -246,6 +256,8 @@ def validate_shapes(
     Zero discovered shapes are an empty required scope by default. Explicit
     allow_empty=True makes it not applicable, never verified. Raw backend
     conformance and its RDF report remain available either way.
+    An optional ``coverage`` contract additionally requires evaluated root
+    targets; it changes no raw conformance or targetless-shape semantics.
     Supporting ontology axioms are mixed
     into the backend data graph without running an inference engine. Dataset
     union or graph selection is deliberate; returned conformance covers exactly
@@ -261,6 +273,8 @@ def validate_shapes(
         type(value) is not bool for value in (trusted_sparql, preflight, allow_empty)
     ):
         raise InputError("trusted_sparql, preflight and allow_empty must be booleans")
+    if coverage is not None and not isinstance(coverage, ShaclCoverageContract):
+        raise InputError("coverage requires a ShaclCoverageContract")
     if isinstance(focus_nodes, (str, bytes)) or isinstance(use_shapes, (str, bytes)):
         raise InputError("Node and shape selections require sequences of absolute IRIs")
     if mode not in ("targets", "pairs"):
@@ -350,6 +364,7 @@ def validate_shapes(
             "focus_nodes": focus if mode == "targets" else (),
             "selected_shapes": selected_shapes,
             "preflight": preflight,
+            "coverage": coverage is not None,
         }
     ).encode()
     if len(payload) > selected.max_total_bytes:
@@ -453,11 +468,20 @@ def validate_shapes(
         complete=not response.get("warnings") and (shapes_count > 0 or allow_empty),
         families=families,
     )
+    evaluated_coverage = (
+        read_coverage(response.get("coverage"), coverage, selected)
+        if coverage is not None
+        else None
+    )
     return ShaclResult(
-        report,
+        combine_reports("shacl", report, evaluated_coverage.report)
+        if evaluated_coverage is not None
+        else report,
         conforms=bool(response["conforms"]),
         backend=backend,
         graph=report_graph,
         findings=findings,
+        coverage=evaluated_coverage,
+        conformance_report=report,
         **metadata,
     )

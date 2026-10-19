@@ -9,10 +9,10 @@ import pytest
 
 
 def test_installed_api_and_independent_example(
-    installed: tuple[Path, Path, dict[str, str]],
+    installed_jsonld: tuple[Path, Path, dict[str, str]],
     distribution: tuple[Path, Path, dict[str, str]],
 ) -> None:
-    python, work, env = installed
+    python, work, env = installed_jsonld
     result = subprocess.run(
         [
             str(python),
@@ -30,6 +30,11 @@ def test_installed_api_and_independent_example(
             "required = bijux_ontology.check_contract(["
             "bijux_ontology.ContractObligation('vocabulary', lambda: r)]); "
             "assert required.accepted and required.require_verified().verified; "
+            "flat = bijux_ontology.flatten_document({'@id':'urn:record', "
+            "'urn:name':'Text'}, correspondence=True); "
+            "assert flat.report.verified and flat.correspondence_report.verified; "
+            "assert flat.bind('urn:record').value['urn:name'] "
+            "== [{'@value':'Text'}]; "
             "assert Path(bijux_ontology.__file__).is_relative_to("
             "Path('env').resolve()); "
             "print(json.dumps(r.to_dict()))",
@@ -95,10 +100,10 @@ def test_installed_cli_vocabulary_outcomes(
 
 @pytest.mark.parametrize("action", ["models", "context"])
 def test_installed_cli_routes_real_model_and_context_checks(
-    installed: tuple[Path, Path, dict[str, str]],
+    installed_jsonld: tuple[Path, Path, dict[str, str]],
     action: str,
 ) -> None:
-    python, work, env = installed
+    python, work, env = installed_jsonld
     if action == "models":
         (work / "declarations.json").write_text(
             json.dumps(

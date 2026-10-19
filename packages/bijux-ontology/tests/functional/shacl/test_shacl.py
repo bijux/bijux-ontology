@@ -1,11 +1,13 @@
 """Real optional backend conformance, explicit feature boundaries and isolation."""
 
 import pytest
-from rdflib import BNode, Graph, Literal, Namespace, URIRef
+from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 
 from bijux_ontology.errors import InputError
+from bijux_ontology.limits import Limits
 from bijux_ontology.shacl import validate_shapes
+from bijux_ontology.shacl.coverage import ShaclCoverageContract
 
 EX = Namespace("https://example.org/")
 
@@ -214,6 +216,14 @@ def test_empty_or_swapped_shapes_do_not_verify_an_unperformed_required_scope() -
     targetless = Graph().add((EX.Shape, RDF.type, SH.NodeShape))
     valid = validate_shapes(data, targetless)
     assert valid.shapes_count == 1 and valid.report.verified
+    assert valid.coverage is None
+    required = validate_shapes(
+        data, targetless, coverage=ShaclCoverageContract(minimum_focus=1)
+    )
+    assert required.conforms is True and required.conformance_report.verified
+    assert required.report.outcome == "disagreement"
+    assert required.coverage is not None and required.coverage.targets == ()
+    assert required.coverage.report.issues[0].code == "shacl.coverage_minimum"
     filtered = validate_shapes(data, shapes, focus_nodes=(str(EX.other),))
     assert filtered.shapes_count is not None and filtered.shapes_count > 0
     assert filtered.report.verified
@@ -248,6 +258,94 @@ def test_selected_metadata_cannot_verify_even_alongside_a_valid_shape(
     assert not result.report.complete and not result.report.verified
     assert str(EX.Metadata) in result.report.issues[0].message
     assert frozenset(shapes) == before
+
+
+def test_target_coverage_applies_filters_deactivation_and_required_pairs() -> None:
+    data = Graph()
+    for node in (EX.record, EX.other):
+        data.add((node, RDF.type, EX.Record))
+        data.add((node, EX["count"], Literal(1)))
+    shapes = shapes_graph()
+    contract = ShaclCoverageContract(
+        minimum_focus=2,
+        focus_nodes=(str(EX.record), str(EX.other)),
+        pairs=((str(EX.Shape), str(EX.record)), (str(EX.Shape), str(EX.other))),
+    )
+    covered = validate_shapes(data, shapes, coverage=contract)
+    assert covered.report.verified and covered.coverage is not None
+    assert covered.coverage.report.verified
+    assert {(item.shape, item.focus_node) for item in covered.coverage.targets} == {
+        (EX.Shape, EX.record),
+        (EX.Shape, EX.other),
+    }
+    shapes.add((EX.OtherShape, SH.targetNode, EX.record))
+    distinct = validate_shapes(
+        data, shapes, coverage=ShaclCoverageContract(minimum_focus=3)
+    )
+    assert distinct.conforms is True and distinct.coverage is not None
+    assert len(distinct.coverage.targets) == 3
+    assert distinct.coverage.report.issues[0].actual == "2"
+    shapes.remove((EX.OtherShape, None, None))
+    filtered = validate_shapes(
+        data, shapes, focus_nodes=(str(EX.record),), coverage=contract
+    )
+    assert filtered.conforms is True and filtered.conformance_report.verified
+    assert filtered.coverage is not None and not filtered.coverage.report.verified
+    assert {issue.code for issue in filtered.coverage.report.issues} == {
+        "shacl.coverage_minimum",
+        "shacl.coverage_missing",
+        "shacl.coverage_pair_missing",
+    }
+    shapes.add((EX.Shape, SH.deactivated, Literal(True)))
+    deactivated = validate_shapes(data, shapes, coverage=contract)
+    assert deactivated.conforms is True and not deactivated.report.verified
+    assert deactivated.coverage is not None
+    assert deactivated.coverage.targets == ()
+    assert deactivated.coverage.deactivated_shapes == (EX.Shape,)
+    shapes.remove((EX.Shape, SH.deactivated, None))
+    forced = validate_shapes(
+        Graph(),
+        shapes,
+        focus_nodes=(str(EX.forced),),
+        use_shapes=(str(EX.Shape),),
+        mode="pairs",
+        coverage=ShaclCoverageContract(pairs=((str(EX.Shape), str(EX.forced)),)),
+    )
+    assert forced.conforms is False and forced.coverage is not None
+    assert forced.coverage.report.verified
+    assert not forced.report.verified
+
+
+def test_target_coverage_respects_graph_ontology_and_incomplete_enumeration() -> None:
+    data = Dataset()
+    data.graph(EX.Selected).add((EX.record, RDF.type, EX.Child))
+    data.graph(EX.Excluded).add((EX.outside, RDF.type, EX.Parent))
+    ontology = Graph().add((EX.Child, RDFS.subClassOf, EX.Parent))
+    shapes = Graph().add((EX.Shape, RDF.type, SH.NodeShape))
+    shapes.add((EX.Shape, SH.targetClass, EX.Parent))
+    result = validate_shapes(
+        data,
+        shapes,
+        graph_name=EX.Selected,
+        ontology=ontology,
+        coverage=ShaclCoverageContract(focus_nodes=(str(EX.record),)),
+    )
+    assert result.report.verified and result.coverage is not None
+    assert {item.focus_node for item in result.coverage.targets} == {EX.record}
+    shapes = Graph().add((EX.Shape, RDF.type, SH.NodeShape))
+    shapes.add((EX.Shape, SH.targetNode, EX.record))
+    shapes.add((EX.Shape, SH.targetNode, EX.other))
+    exhausted = validate_shapes(
+        Graph(),
+        shapes,
+        limits=Limits(max_states=1),
+        coverage=ShaclCoverageContract(minimum_focus=2),
+    )
+    assert exhausted.conforms is True and exhausted.conformance_report.verified
+    assert exhausted.coverage is not None
+    assert exhausted.coverage.report.outcome == "exhausted"
+    assert not exhausted.coverage.report.complete and not exhausted.report.verified
+    assert len(exhausted.coverage.targets) == 1
 
 
 def test_selected_implicit_and_empty_referenced_shapes_keep_their_constraints() -> None:

@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import tarfile
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -74,6 +75,7 @@ def _install_distribution(
     work: Path,
     *,
     extras: bool,
+    jsonld: bool = False,
 ) -> tuple[Path, Path, dict[str, str]]:
     """Install locked dependencies separately from the local project wheel."""
     wheel, root, env = distribution
@@ -91,7 +93,7 @@ def _install_distribution(
             "--package",
             "bijux-ontology",
             "--no-emit-workspace",
-            *(["--all-extras"] if extras else []),
+            *(["--all-extras"] if extras else ["--extra", "jsonld"] if jsonld else []),
             "--format",
             "requirements-txt",
             "--output-file",
@@ -102,6 +104,20 @@ def _install_distribution(
     run(["uv", "venv", "--python", sys.executable, str(work / "env")])
     scripts = work / "env" / ("Scripts" if os.name == "nt" else "bin")
     python = scripts / ("python.exe" if os.name == "nt" else "python")
+    selected_extras = (
+        list(
+            tomllib.loads((root / "pyproject.toml").read_text())["project"][
+                "optional-dependencies"
+            ]
+        )
+        if extras
+        else ["jsonld"]
+        if jsonld
+        else []
+    )
+    target = str(wheel) + (
+        "[" + ",".join(selected_extras) + "]" if selected_extras else ""
+    )
     run(
         [
             "uv",
@@ -119,10 +135,9 @@ def _install_distribution(
             "pip",
             "install",
             "--offline",
-            "--no-deps",
             "--python",
             str(python),
-            str(wheel),
+            target,
         ]
     )
     run(["uv", "pip", "check", "--python", str(python)])
@@ -143,6 +158,20 @@ def installed(
     """Expose the installed core-only wheel, outside every source checkout."""
     return _install_distribution(
         distribution, tmp_path_factory.mktemp("installed-core"), extras=False
+    )
+
+
+@pytest.fixture(scope="session")
+def installed_jsonld(
+    distribution: tuple[Path, Path, dict[str, str]],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[Path, Path, dict[str, str]]:
+    """Expose the wheel with its JSON-LD capability and no framework extras."""
+    return _install_distribution(
+        distribution,
+        tmp_path_factory.mktemp("installed-jsonld"),
+        extras=False,
+        jsonld=True,
     )
 
 

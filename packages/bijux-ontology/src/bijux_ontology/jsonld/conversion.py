@@ -3,7 +3,6 @@
 from dataclasses import dataclass, replace
 from typing import Literal, cast
 
-from pyld import jsonld  # type: ignore[import-untyped]
 from pyoxigraph import Literal as RdfLiteral
 from pyoxigraph import RdfFormat, parse
 
@@ -20,6 +19,7 @@ from .resources import (
     _consume_work,
     context_resources,
 )
+from .runtime import processor
 
 DirectionPolicy = Literal["i18n-datatype", "compound-literal"]
 
@@ -257,6 +257,7 @@ def _convert_to_rdf_dataset(
     )
     if preserve and report.exit_code() != 0:
         return _DatasetConversion(None, "", report)
+    jsonld = processor()
     options: dict[str, object] = {
         "base": None,
         "documentLoader": resources,

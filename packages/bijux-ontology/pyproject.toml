@@ -12,7 +12,6 @@ license = "MIT"
 authors = [{name = "Bijan Mousavi", email = "bijan@bijux.io"}]
 dependencies = [
     "rdflib>=7.6,<8",
-    "pyld>=3.3,<4",
     "pyoxigraph>=0.5.11,<0.6",
 ]
 
@@ -20,6 +19,9 @@ dependencies = [
 bijux-ontology = "bijux_ontology.interfaces.cli:main"
 
 [project.optional-dependencies]
+jsonld = [
+    "pyld>=3.3,<4",
+]
 shacl = [
     "pyparsing>=3.2,<4",
     "pyshacl>=0.40.1,<0.41",

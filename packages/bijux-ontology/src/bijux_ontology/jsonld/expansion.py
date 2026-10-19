@@ -3,8 +3,6 @@
 from collections.abc import Callable, Iterator, Sequence
 from typing import cast
 
-from pyld import jsonld  # type: ignore[import-untyped]
-
 from bijux_ontology._json import own_json
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -18,6 +16,7 @@ from .resources import (
     _json_size,
     context_resources,
 )
+from .runtime import processor
 
 
 def expand_document(
@@ -34,6 +33,7 @@ def expand_document(
     The caller supplies every referenced document. Programmer failures in a
     custom loader propagate rather than becoming successful empty expansions.
     """
+    jsonld = processor()
     resources = context_resources(document_loader, limits=limits, budget=budget)
     operation = resources.budget
     document = own_json(

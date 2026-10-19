@@ -30,12 +30,14 @@ class DiagnosticExplanation:
 _CODES = {
     "adapter": frozenset(
         "alias_unverified class_mapping_unverified computed_output_unverified "
-        "emission_unverified excluded_emission_conflict mapping_unverified "
+        "emission_unverified excluded_emission_conflict mapping_conflict "
+        "mapping_unverified "
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
         "change_unverified before_input_error after_input_error "
         "container_mismatch datatype_mismatch "
+        "flatten_correspondence_unverified flatten_input_error "
         "direction_mismatch identifier_kind_mismatch identifier_mismatch "
         "input_error invalid_path language_mismatch mapping_mismatch "
         "order_mismatch order_unverified property_dropped property_omitted "
@@ -94,6 +96,7 @@ _CODES = {
     ),
     "shacl": frozenset(
         "backend_warning execution_incomplete feature_unverified "
+        "coverage_minimum coverage_missing coverage_pair_missing coverage_incomplete "
         "shapes_invalid unavailable "
         "failure input_error exhausted "
         "implicit_target_unverified nonconformance sparql_unverified".split()
