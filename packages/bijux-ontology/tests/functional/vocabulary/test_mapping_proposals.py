@@ -171,7 +171,7 @@ def test_reviewed_native_rows_preserve_explicit_predicate_and_qualifications() -
         chosen,
         str(SKOS.closeMatch),
         JUSTIFICATION,
-        (("comment", "reviewed exact synonym"),),
+        (("comment", 'reviewed exact synonym: اسم "cardiac"'),),
     )
     result = approve_mapping_proposals(
         proposals,
@@ -190,7 +190,10 @@ def test_reviewed_native_rows_preserve_explicit_predicate_and_qualifications() -
     )
     assert dict(row.cells)[
         "comment"
-    ] == "reviewed exact synonym" and "confidence" not in dict(row.cells)
+    ] == 'reviewed exact synonym: اسم "cardiac"' and "confidence" not in dict(row.cells)
+    assert result.mapping_set.source.startswith(
+        b'# mapping_set_id: "urn:review:mappings"\n# license: "https://creativecommons.org/publicdomain/zero/1.0/"\n'
+    )
     assert export_sssom(result.mapping_set).report.verified
     checked = check_mappings(
         result.mapping_set,

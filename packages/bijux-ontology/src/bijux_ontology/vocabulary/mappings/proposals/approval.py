@@ -1,10 +1,6 @@
 """Explicit reviewed rows through maintained SSSOM parsing and serialization."""
 
-import csv
-import json
-import time
 from collections.abc import Sequence
-from io import StringIO
 from threading import Event
 from typing import cast
 
@@ -20,7 +16,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
 
-from ..interchange import read_sssom
+from ..production import produce_mapping_table
 from ..types import MappingRead, _iri
 from .types import MappingApproval, MappingProposals
 
@@ -157,47 +153,19 @@ def approve_mapping_proposals(
                     columns.append(name)
             rows.append(row)
             expected.append(values)
-        # JSON flow scalars/maps are YAML, the maintained SSSOM metadata format.
-        # Reserve escaped framing and the complete rectangular CSV before writing.
-        operation.consume("work", len(rows) * len(columns))
-        operation.consume("states", len(rows) * len(columns))
-        estimate = 4096 + 12 * (
-            len(identifier)
-            + len(licensing)
-            + sum(len(k) + len(v) for k, v in prefixes.items())
-            + sum(map(len, columns))
-            + sum(sum(len(v) for v in row.values()) for row in rows)
-            + len(rows) * len(columns)
-        )
-        operation.consume("bytes", estimate)
-        operation.consume("work", estimate)
-        stream = StringIO()
-        for name, metadata_value in (
-            ("mapping_set_id", identifier),
-            ("license", licensing),
-            ("curie_map", prefixes),
-        ):
-            stream.write(
-                "# "
-                + name
-                + ": "
-                + json.dumps(metadata_value, ensure_ascii=True)
-                + "\n"
-            )
-        writer = csv.DictWriter(
-            stream, fieldnames=columns, delimiter="\t", lineterminator="\n"
-        )
-        writer.writeheader()
-        writer.writerows(rows)
-        content = stream.getvalue().encode("utf-8")
-        if len(content) > operation.limits.max_bytes:
-            raise LimitExceeded("Approved mapping source exceeds max_bytes")
-        native = read_sssom(
-            content,
+        native = produce_mapping_table(
+            columns,
+            rows,
+            metadata={
+                "mapping_set_id": identifier,
+                "license": licensing,
+                "curie_map": prefixes,
+            },
             mapping_set_id=identifier,
             license=licensing,
-            budget=operation,
-            timeout=max(0.001, operation.deadline - time.monotonic()),
+            prefixes=prefixes,
+            operation=operation,
+            framing="field-lines",
             cancel=cancel,
         )
         retain_report(native.report, operation, issues)

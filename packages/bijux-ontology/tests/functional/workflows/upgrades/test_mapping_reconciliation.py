@@ -123,6 +123,11 @@ def test_review_groups_all_duplicate_witnesses_and_explicit_choice_rechecks(
     )
     assert [row.object for row in result.mapping_set.rows] == [str(EX.B)]
     assert result.reconciliation is plan and result.resolution is resolution
+    assert result.mapping_set.source.startswith(b'# {"')
+    assert (
+        b'"mapping_set_id":"urn:approved:mappings"'
+        in result.mapping_set.source.splitlines()[0]
+    )
     exported = export_sssom(result.mapping_set)
     assert exported.report.verified and exported.content is not None
     reread = read_sssom(
