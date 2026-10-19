@@ -749,3 +749,47 @@ real serializer once with its supplied options and return the exact checked outp
 Schema `required` and `additionalProperties` remain JSON rules; RDF occurrence
 guarantees require explicit `OutputRequirement` records. Missing mappings,
 unavailable offline references and unsupported applicators remain unverified.
+
+`bijux_ontology.vocabulary.obo.subsets.read_obo_subsets(view, closed=True)` reads
+explicit OBO-in-OWL subset definitions and their original membership assertions.
+Use `.select(subset_iri)` as `ValueConstraints(enumeration=...)` in ordinary model
+checks. Only a complete closed inventory establishes absence; open, undefined or
+anonymous membership remains explicit in the returned reports. Subsets do not
+imply SKOS schemes or logical ontology modules.
+
+`bijux_ontology.rdf.migrations.lists.migrate_list` accepts a `ListTarget` naming
+one exact incoming edge and a `ListInsert`, `ListRemove` or `ListReorder` action.
+Supply exact `expected_before` and `expected_after` RDF-term tuples and ordinary
+migration checks. Dataset targets require an explicit physical graph. Changed
+lists receive fresh cells; original cells, annotations and shared-tail siblings
+remain intact. Actual after-checks and explicit accepted export use the same
+migration gates as value and graph changes.
+
+`bijux_ontology.interfaces.adapters.vocabulary_bindings.generate_vocabulary_bindings`
+returns candidate Python source and a required report for explicitly selected
+vocabulary IRIs. Use `names` for IRI-to-name overrides, `aliases` for additional
+name-to-IRI bindings, and `invalid_names="normalize"` to request safe identifiers.
+Reserved names and normalized collisions remain unresolved. Generated modules
+expose exact RDFLib constants, immutable `TERMS`, and typed `INVENTORY` usable by
+`namespace_inventory`; unknown members never expand to new IRIs. Optional
+`annotations` select literal documentation without executing ontology text.
+
+`bijux_ontology.data.foreign_references` provides `ForeignReferenceContract`,
+`prepare_foreign_targets` and `check_foreign_references`. Supply scoped `KeyRecord`
+corpora, aligned source/target `KeyContract` policies, and explicit completeness.
+Reuse the prepared target index across source batches. Results retain actual
+source keys and matched target records; open or incomplete lookup cannot prove
+absence, while known excess matches still fail. An optional `target_model` runs
+ordinary native RDF model checks on each matched owned target. These are
+application reference obligations, independent of OWL identity assertions.
+
+`bijux_ontology.interfaces.adapters.jsonschema.generation.compile_output_schema`
+compiles explicit models and root names into JSON Schema 2020-12 plus linked RDF
+mappings and annotations. `JsonRepresentation` selects native scalars, arrays or
+explicit `@list` wrappers. Inspect `translations` and the required `report` for
+untranslated or changed obligations; `.validate(actual_output)` checks JSON
+conformance separately. JSON validation establishes neither RDF context/subject
+semantics nor exact RDF numeric identity. Ordinary array length does not prove
+RDF distinct-value counts. The existing importer accepts the documented finite
+scalar/local-definition subset; general unions and list wrappers remain outside
+that importer's supported scope. Install `[jsonschema]` to request compilation.

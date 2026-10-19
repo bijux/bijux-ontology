@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "schema": frozenset(
+        "translation_invalid translation_unverified "
+        "output_invalid output_unverified".split()
+    ),
     "roles": frozenset(
         "role_unverified punning_forbidden instance_type_missing "
         "bridge_unverified type_conflict profile_unavailable".split()
@@ -38,7 +42,9 @@ _CODES = {
     ),
     "obo": frozenset(
         "attachment_shape attachment_unverified base_missing "
-        "synonym_type_shape value_kind".split()
+        "synonym_type_shape value_kind "
+        "subset_undefined subset_definition_kind subset_membership_kind "
+        "subset_unverified".split()
     ),
     "annotations": frozenset(
         "minimum_missing maximum_exceeded language_minimum_missing "
@@ -83,6 +89,8 @@ _CODES = {
         "topology_reference_missing topology_reference_unverified "
         "topology_roots_unverified topology_scope_unverified "
         "topology_target_invalid topology_unreachable "
+        "foreign_target_duplicate foreign_lookup_unverified foreign_missing "
+        "foreign_ambiguous foreign_source_unverified "
         "key_absent key_multiple key_collision key_binding_unverified "
         "key_path_unverified key_normalization_unverified "
         "key_comparison_unverified key_corpus_unverified key_projection_unverified "
@@ -162,7 +170,8 @@ _CODES = {
         "graph_inventory_conflict graph_route_scope graph_route_collision "
         "migration_contracts_unverified migration_acceptance_unverified "
         "value_migration_rejected value_migration_collision "
-        "value_migration_unverified "
+        "value_migration_unverified list_migration_rejected "
+        "list_migration_unverified "
         "patch_unverified patch_precondition_failed patch_removal_missing "
         "patch_postcondition_failed "
         "literal_conversion_unverified "
@@ -247,7 +256,7 @@ _CODES = {
         "fact_role_unverified fact_attribution_unverified fact_graph_unverified "
         "coverage_gap coverage_source_missing declaration_conflict "
         "entity_kind_mismatch fact_changed reference_kind_mismatch reference_missing "
-        "term_missing unknown_reserved_term "
+        "term_missing unknown_reserved_term binding_name_unresolved "
         "registry_alias_conflict registry_canonical_conflict "
         "identifier_template_unverified identifier_template_mismatch "
         "identifier_collision identifier_input_error".split()
@@ -256,6 +265,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "schema": (
+        "explicit serialized JSON output contracts",
+        "A selected JSON assertion fails or an RDF obligation lacks translation.",
+        "Inspect the generated schema, linked RDF mappings and each translation; "
+        "validate actual serializer output separately from RDF equivalence.",
+        "compile_output_schema(models, roots, schema_iri=resource).validate(output)",
+    ),
     "profile": (
         "explicit offline validation profiles",
         "Selected profile resources or obligations conflict or lack qualification.",

@@ -3,6 +3,8 @@
 import ast
 import graphlib
 import importlib.util
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -103,6 +105,32 @@ def facades(dependencies: dict[str, set[str]]) -> set[str]:
             else root.joinpath(*module.split(".")).with_suffix(".py")
         )
         for node in ast.parse(source.read_text(encoding="utf-8")).body:
+            if module in {"bijux_ontology", "bijux_ontology.shacl"}:
+                if isinstance(node, ast.If):
+                    assert (
+                        isinstance(node.test, ast.Name)
+                        and node.test.id == "TYPE_CHECKING"
+                    )
+                    assert not node.orelse
+                    assert all(isinstance(item, ast.ImportFrom) for item in node.body)
+                    continue
+                if isinstance(node, ast.FunctionDef):
+                    assert node.name in {"__getattr__", "__dir__"}
+                    continue
+                if (
+                    module == "bijux_ontology.shacl"
+                    and isinstance(node, ast.Assign)
+                    and any(
+                        isinstance(target, ast.Name) and target.id == "_EXPORT_MODULES"
+                        for target in node.targets
+                    )
+                ):
+                    assert isinstance(node.value, ast.Dict)
+                    assert all(
+                        isinstance(item, ast.Constant) and isinstance(item.value, str)
+                        for item in (*node.value.keys, *node.value.values)
+                    )
+                    continue
             assert (
                 isinstance(node, (ast.Import, ast.ImportFrom))
                 or (
@@ -233,3 +261,57 @@ def test_library_dependencies_follow_feature_ownership(
             forbidden.append("bijux_ontology.workflows.projects.resources")
         for target in targets:
             assert not _within(target, tuple(forbidden)), f"{module} -> {target}"
+
+
+def test_narrow_imports_defer_convenience_exports_and_preserve_public_identity() -> (
+    None
+):
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            "-c",
+            """
+import sys
+import bijux_ontology as ontology
+from bijux_ontology.errors import InputError
+assert 'bijux_ontology.interfaces.api' not in sys.modules
+assert 'bijux_ontology.models.checking' not in sys.modules
+assert set(ontology.__all__) <= set(dir(ontology))
+try:
+    ontology.unsupported_name
+except AttributeError:
+    pass
+else:
+    raise AssertionError('Unknown convenience name accepted')
+assert 'bijux_ontology.interfaces.api' not in sys.modules
+import bijux_ontology.shacl as shacl
+assert 'bijux_ontology.shacl.checking' not in sys.modules
+try:
+    shacl.unsupported_name
+except AttributeError:
+    pass
+else:
+    raise AssertionError('Unknown SHACL name accepted')
+assert 'bijux_ontology.shacl.checking' not in sys.modules
+assert set(shacl.__all__) == set(shacl._EXPORT_MODULES)
+assert set(shacl.__all__) <= set(dir(shacl))
+from importlib import import_module
+for name in shacl.__all__:
+    owner = import_module(shacl._EXPORT_MODULES[name])
+    assert getattr(shacl, name) is getattr(owner, name)
+from bijux_ontology.interfaces import api
+for name in ontology.__all__:
+    assert getattr(ontology, name) is getattr(api, name), name
+assert ontology.InputError is InputError
+namespace = {}
+exec("from bijux_ontology import *", namespace)
+assert all(namespace[name] is getattr(api, name) for name in ontology.__all__)
+""",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
