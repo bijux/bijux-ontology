@@ -2,7 +2,7 @@
 
 import json
 
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.json.values import own_json
@@ -13,7 +13,7 @@ from bijux_ontology.jsonld.processing.resources import (
     _json_size,
     context_resources,
 )
-from bijux_ontology.jsonld.processing.runtime import processor
+from bijux_ontology.jsonld.processing.runtime import document_processor, processor
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
@@ -90,6 +90,17 @@ def export_jsonld(
                 None, combine_reports("jsonld.export", *reports), "json-ld"
             )
         jsonld = processor()
+        failures: list[Exception] = []
+
+        def load(url: str, options: dict[str, object]) -> dict[str, object]:
+            """Keep caller loader failures distinct from native processor faults."""
+            try:
+                return resources(url, options)
+            except Exception as error:
+                if not failures:
+                    failures.append(error)
+                raise
+
         try:
             expanded: object = jsonld.from_rdf(
                 intermediate.content.decode("utf-8"),
@@ -98,23 +109,32 @@ def export_jsonld(
             _consume_work(expanded, operation)
             operation.consume("bytes", _json_size(expanded))
             options = {
-                "base": base,
-                "documentLoader": resources,
+                "documentLoader": load,
                 "processingMode": "json-ld-1.1",
                 "contextResolver": jsonld.ContextResolver(
-                    {}, resources, max_context_urls=operation.limits.max_resources
+                    {}, load, max_context_urls=operation.limits.max_resources
                 ),
             }
+            if base is not None:
+                options["base"] = base
+            native = document_processor()
             candidate: object = (
-                jsonld.compact(expanded, owned_context, options=options)
+                native.compact(expanded, owned_context, options=options)
                 if owned_frame is None
-                else jsonld.frame(
+                else native.frame(
                     expanded,
                     {**owned_frame, "@context": owned_context},
                     options=options,
                 )
             )
-        except jsonld.JsonLdError as error:
+        except (jsonld.JsonLdError, TypeError, ValueError) as error:
+            if failures:
+                raise failures[0] from error
+            if isinstance(error, (TypeError, ValueError)):
+                raise ResourceError(
+                    "Maintained JSON-LD compaction failed without a semantic "
+                    "input diagnostic"
+                ) from error
             raise InputError(str(error)) from error
         candidate = own_json(
             candidate,
@@ -148,6 +168,8 @@ def export_jsonld(
         return RDFExport(content if accepted else None, report, "json-ld")
     except (LimitExceeded, RecursionError, OverflowError) as error:
         issue = Issue("execution.limit_exceeded", str(error), kind="exhausted")
+    except ResourceError as error:
+        issue = Issue("context.processing_unavailable", str(error), kind="unverified")
     except InputError as error:
         issue = Issue("context.input_error", str(error), kind="input_error")
     reports.append(

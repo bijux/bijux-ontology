@@ -1,13 +1,13 @@
 """Maintained framing with owned JSON and one offline resource operation."""
 
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import bound_text
 from bijux_ontology.json.values import _capture_json
 from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
     ContextResources,
 )
-from bijux_ontology.jsonld.processing.runtime import processor
+from bijux_ontology.jsonld.processing.runtime import document_processor, processor
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 
@@ -63,11 +63,17 @@ def process_frame(
             {}, load, max_context_urls=budget.limits.max_resources
         ),
     }
-    if base is not None or not isinstance(document, str):
+    if base is not None:
         options["base"] = base
     try:
-        result: object = jsonld.frame(document, frame, options=options)
-    except (jsonld.JsonLdError, RecursionError, OverflowError) as error:
+        result: object = document_processor().frame(document, frame, options=options)
+    except (
+        jsonld.JsonLdError,
+        RecursionError,
+        OverflowError,
+        TypeError,
+        ValueError,
+    ) as error:
         if failures:
             failure = failures[0]
             if isinstance(failure, (LimitExceeded, InputError)):
@@ -78,6 +84,10 @@ def process_frame(
                 ) from failure
             if not isinstance(failure, jsonld.JsonLdError):
                 raise failure from error
+        if isinstance(error, (TypeError, ValueError)):
+            raise ResourceError(
+                "Maintained JSON-LD framing failed without a semantic input diagnostic"
+            ) from error
         if isinstance(error, (RecursionError, OverflowError)):
             raise LimitExceeded(
                 "The maintained framing processor exceeded its range"

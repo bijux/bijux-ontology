@@ -255,7 +255,7 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
-        "processor_unverified "
+        "processor_unverified processing_unavailable "
         "publication_mismatch publication_unverified "
         "composition_unverified "
         "html_extraction_unverified "
@@ -1103,6 +1103,12 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "context.processing_unavailable": (
+        "Required JSON-LD processing could not be completed.",
+        "Inspect the processor diagnostic, supported PyLD installation and required "
+        "context resources; processing failure does not prove a remapping.",
+        "uv pip install 'bijux-ontology[jsonld]'",
+    ),
     "adapter.fhir_backend_unavailable": (
         "The maintained FHIR R5 model is unavailable.",
         "Install bijux-ontology[fhir] and retain the original resource and bindings.",
