@@ -28,6 +28,9 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "catalog": frozenset(
+        "extension_unverified controlled_forbidden reference_unverified input".split()
+    ),
     "discovery": frozenset(
         "identity_unverified types_unverified values_unverified input".split()
     ),
@@ -438,6 +441,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "catalog": (
+        "selected DCAT 3 records and explicit application-profile choices",
+        "A selected record fails its rule or lacks complete profile coverage.",
+        "Inspect actual entity findings, related record selection, qualified "
+        "controlled vocabularies and exact permitted external service IRIs.",
+        "check_catalog(source, bindings, profile=Dcat3Profile(...))",
+    ),
     "discovery": (
         "explicit finite record population and observed contract candidates",
         "The selected observations lack complete qualified candidate coverage.",

@@ -1729,3 +1729,13 @@ blank correspondence. `restore_reifications(candidate)` derives and checks its
 inverse. Independently parsed modern datasets, nested triple terms and ambiguous
 descriptions remain outside this reversible profile; it makes no OWL equivalence
 claim.
+
+`interfaces.adapters.dcat.prepare_catalog_profile(Dcat3Profile(...))` prepares
+reusable DCAT 3 shapes for explicit application choices. `check_catalog` checks
+selected catalog, dataset, series, distribution, service, record and period roles
+against actual SHACL and supplied theme/license vocabularies. Linked records need
+explicit selection; exact permitted external service IRIs are exceptions. Minima
+belong to the chosen profile. Shared distributions and absent download URLs are
+allowed when the selected access rule is satisfied. Select historical graphs
+explicitly; unsupported required extensions, incomplete vocabularies and missing
+related populations withhold complete profile qualification.
