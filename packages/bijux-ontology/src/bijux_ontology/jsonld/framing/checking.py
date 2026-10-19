@@ -4,8 +4,6 @@ import json
 import math
 from collections.abc import Sequence
 
-from rdflib import BNode, Literal, URIRef
-
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.inputs import capture_items
@@ -14,9 +12,7 @@ from bijux_ontology.execution.limits import (
     IssueCollector,
     Limits,
     bound_text,
-    retain_report,
 )
-from bijux_ontology.jsonld.evidence.entities import EntityKey
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.resources import (
@@ -26,53 +22,19 @@ from bijux_ontology.jsonld.processing.resources import (
 )
 from bijux_ontology.jsonld.selectors.checking import resolve_entity_associations
 from bijux_ontology.jsonld.selectors.types import EntitySelector
-from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages
+from bijux_ontology.jsonld.usages.checking import prepare_usages
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.rdf.transforms import extract_neighbourhood
 
+from .preservation import (
+    FramingPreservation,
+    adopt_report,
+    capture_predicates,
+    select_records,
+)
 from .processing import own_document, process_frame
 from .types import FramedDocument, FrameNode, FrameOmission
-
-
-def _predicates(values: tuple[str, ...], budget: Budget) -> frozenset[str]:
-    """Own finite named RDF predicates before hashing or policy comparison."""
-    if type(values) is not tuple:
-        raise InputError("Framing predicate scope requires immutable IRI tuples")
-    budget.consume("states", len(values))
-    budget.consume("bytes", 64 + 16 * len(values))
-    result = set()
-    for value in values:
-        if not isinstance(value, str) or isinstance(value, BNode | Literal):
-            raise InputError("Framing predicates require named IRI strings")
-        bound_text(value, budget)
-        absolute_iri(value)
-        result.add(str(value))
-    return frozenset(result)
-
-
-def _records(
-    view: PreparedUsages,
-    selector: EntitySelector,
-    budget: Budget,
-    issues: IssueCollector,
-    children: list[Report],
-) -> tuple[EntityKey, ...]:
-    """Retain actual quantified selection truth before adopting matched identities."""
-    if (
-        selector.coverage_unit != "rdf_entity"
-        or selector.steps
-        or selector.include_references
-    ):
-        raise InputError("Framing roots require describing RDF entity selection")
-    selection = view.select(selector)
-    retain_report(selection.report, budget, issues)
-    budget.consume("states")
-    children.append(selection.report)
-    if selection.report.outcome == "exhausted":
-        raise LimitExceeded("Framing selection exceeded the operation limits")
-    return selection.entities
 
 
 def frame_document(
@@ -117,38 +79,8 @@ def frame_document(
     exclusions: list[FrameOmission] = []
     excluded_scopes: list[str] = []
     checked = 0
-    requested = 1
+    plan: FramingPreservation | None = None
     output_base = None
-
-    def unknown(message: str) -> None:
-        """Describe unavailable scope without retaining arbitrary source metadata."""
-        issues.append(Issue("context.frame_unverified", message, kind="unverified"))
-
-    def adopt(report: Report) -> None:
-        """Apply this operation's limits before required child adoption."""
-        retain_report(report, operation, issues)
-        operation.consume("states")
-        children.append(report)
-
-    def omission(value: FrameOmission) -> None:
-        """Expose broad RDF exclusions without manufacturing source pointers."""
-        texts = (value.identifier, value.graph or "", *(value.predicates or ()))
-        estimated = 256 + 6 * sum(len(text) for text in texts)
-        if estimated > operation.limits.max_bytes:
-            raise LimitExceeded("Framing exclusion metadata exceeds max_bytes")
-        operation.consume("work", estimated)
-        operation.consume("bytes", estimated)
-        operation.consume("states")
-        encoded = json.dumps(
-            {
-                "record": value.identifier,
-                "graph": value.graph,
-                "predicates": value.predicates,
-            },
-            separators=(",", ":"),
-        )
-        exclusions.append(value)
-        excluded_scopes.append(encoded)
 
     def report() -> Report:
         """State projection scope explicitly instead of whole-dataset equality."""
@@ -156,7 +88,7 @@ def frame_document(
             "jsonld.framing",
             checked,
             tuple(issues),
-            requested=requested,
+            requested=plan.requested if plan is not None else 1,
             allow_empty=True,
             exclusions=tuple(excluded_scopes),
             children=tuple(children),
@@ -169,8 +101,8 @@ def frame_document(
             bound_text(base, operation)
             absolute_iri(base)
             output_base = base
-        selected_predicates = _predicates(predicates, operation)
-        permitted_predicates = _predicates(omitted_predicates, operation)
+        selected_predicates = capture_predicates(predicates, operation)
+        permitted_predicates = capture_predicates(omitted_predicates, operation)
         if not selected_predicates or selected_predicates & permitted_predicates:
             raise InputError(
                 "Required predicates must be nonempty and disjoint from omissions"
@@ -187,113 +119,34 @@ def frame_document(
                 )
             bound_text(output_base, operation)
             absolute_iri(output_base)
-        selected = _records(before_view, retained, operation, issues, children)
-        requested = max(1, len(selected))
-        names = []
-        selected_keys = set()
-        for key in selected:
-            operation.consume("work")
-            operation.consume("states")
-            if (
-                key.identifier is None
-                or key.identifier.startswith("_:")
-                or key.anonymous_graph
-            ):
-                unknown("Retained roots need named subject and graph identity")
-                continue
-            bound_text(key.identifier, operation)
-            names.append(key.identifier)
-            selected_keys.add(key)
-        if not names:
-            unknown("No required named record was established for retained framing")
-        permitted_keys = set()
-        for selector in omission_selectors:
-            matches = _records(before_view, selector, operation, issues, children)
-            if selector.graph != retained.graph:
-                raise InputError(
-                    "Framing record allowances must use the selected physical graph"
-                )
-            for key in matches:
-                operation.consume("work")
-                operation.consume("states")
-                if (
-                    key.identifier is None
-                    or key.identifier.startswith("_:")
-                    or key.anonymous_graph
-                ):
-                    unknown("Record omission needs established named identity")
-                    continue
-                bound_text(key.identifier, operation)
-                if key in selected_keys:
-                    raise InputError("A required framing record cannot also be omitted")
-                permitted_keys.add(key)
-                omission(FrameOmission(key.identifier, key.graph))
-        for entity in before_view.entities.entities:
-            operation.consume("work")
-            key = entity.key
-            if (
-                entity.described
-                and not key.anonymous_graph
-                and key.graph == retained.graph
-                and key.identifier is not None
-                and not key.identifier.startswith("_:")
-            ):
-                bound_text(key.identifier, operation)
-                if key not in selected_keys and key not in permitted_keys:
-                    unknown("A source record is outside the retained/omitted inventory")
+        plan = FramingPreservation(
+            retained,
+            selected_predicates,
+            permitted_predicates,
+            omitted_predicates,
+            operation,
+            issues,
+            children,
+            exclusions,
+            excluded_scopes,
+        )
+        plan.capture(before_view, omission_selectors)
+        names = plan.names
         before = prepare_jsonld(
             original, base=base, document_loader=resources, direction=direction
         )
-        adopt(before.report)
+        adopt_report(before.report, operation, issues, children)
         if before.source is None or not before.report.verified or not names:
             return FramedDocument(
                 None, output_base, None, (), tuple(exclusions), report()
             )
-        graph_name = retained.graph if retained.graph is not None else "@default"
-        before_graph = before.source._read(graph_name, budget=operation)
-        exercised_permissions = set()
-        for name in names:
-            retained_count = 0
-            excluded_predicates = set()
-            for _, predicate, value in before_graph.triples((URIRef(name), None, None)):
-                operation.consume("work")
-                bound_node(predicate, operation)
-                bound_node(value, operation)
-                if str(predicate) in selected_predicates:
-                    retained_count += 1
-                elif str(predicate) in permitted_predicates:
-                    operation.consume("states")
-                    excluded_predicates.add(str(predicate))
-                    exercised_permissions.add(str(predicate))
-                else:
-                    unknown(
-                        "A source seed predicate has no retention or omission policy"
-                    )
-            if not retained_count:
-                unknown(
-                    "A required named record supplies no selected retained assertion"
-                )
-            if excluded_predicates:
-                operation.consume("work", len(omitted_predicates))
-                operation.consume("bytes", 16 * len(excluded_predicates))
-                omission(
-                    FrameOmission(
-                        name,
-                        retained.graph,
-                        tuple(
-                            value
-                            for value in omitted_predicates
-                            if value in excluded_predicates
-                        ),
-                    )
-                )
-        if exercised_permissions != permitted_predicates:
-            unknown("A predicate omission has no observed retained-seed scope")
+        graph_name = plan.graph_name
+        plan.qualify_source(before.source)
         candidate = process_frame(original, owned_frame, resources, output_base)
         after = prepare_jsonld(
             candidate, base=output_base, document_loader=resources, direction=direction
         )
-        adopt(after.report)
+        adopt_report(after.report, operation, issues, children)
         if after.source is None or not after.report.verified:
             return FramedDocument(
                 None, output_base, None, (), tuple(exclusions), report()
@@ -307,7 +160,7 @@ def frame_document(
             minimum=len(names),
             maximum=len(names),
         )
-        established_after = _records(
+        established_after = select_records(
             after_view, after_selected, operation, issues, children
         )
         if len(established_after) != len(names):
@@ -315,30 +168,7 @@ def frame_document(
             return FramedDocument(
                 None, output_base, None, (), tuple(exclusions), report()
             )
-        for entity in after_view.entities.entities:
-            operation.consume("work")
-            key = entity.key
-            if (
-                entity.described
-                and not key.anonymous_graph
-                and key.graph == retained.graph
-                and key.identifier is not None
-                and not key.identifier.startswith("_:")
-            ):
-                bound_text(key.identifier, operation)
-                if key not in selected_keys and key not in permitted_keys:
-                    unknown("An output description is outside the projection inventory")
-        after_graph = after.source._read(graph_name, budget=operation)
-        for name in names:
-            for _, predicate, value in after_graph.triples((URIRef(name), None, None)):
-                operation.consume("work")
-                bound_node(predicate, operation)
-                bound_node(value, operation)
-                if (
-                    str(predicate) not in selected_predicates
-                    and str(predicate) not in permitted_predicates
-                ):
-                    unknown("An output seed predicate is outside the projection scope")
+        plan.qualify_output(after_view, after.source)
         extracted = []
         for source in (before.source, after.source):
             selected_source = extract_neighbourhood(
@@ -348,7 +178,7 @@ def frame_document(
                 graph_name=graph_name,
                 budget=operation,
             )
-            adopt(selected_source.report)
+            adopt_report(selected_source.report, operation, issues, children)
             if selected_source.source is not None and selected_source.report.verified:
                 extracted.append(selected_source.source)
         if len(extracted) == 2:
@@ -358,7 +188,7 @@ def frame_document(
                 budget=operation,
                 timeout_seconds=timeout_seconds,
             )
-            adopt(comparison)
+            adopt_report(comparison, operation, issues, children)
             if comparison.complete:
                 checked = len(names)
         operation.consume("states", len(names))
@@ -381,7 +211,7 @@ def frame_document(
         nodes = []
         try:
             for name, paths in zip(names, associations, strict=True):
-                adopt(paths.report)
+                adopt_report(paths.report, operation, issues, children)
                 operation.consume("states")
                 operation.consume("bytes", 96 + 16 * len(paths.paths))
                 nodes.append(FrameNode(name, retained.graph, paths.paths))
@@ -420,7 +250,7 @@ def frame_document(
                     ),
                 ),
             )
-            adopt(failure)
+            adopt_report(failure, operation, issues, children)
         except LimitExceeded:
             issues.exhausted("Framing failure metadata exceeded the operation limits")
     return FramedDocument(None, output_base, None, (), tuple(exclusions), report())
