@@ -337,6 +337,13 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "relation_graph_scope relation_identity_collision "
+        "relation_input_invalid relation_negative_unrepresentable "
+        "relation_occurrence_absent relation_occurrence_collision "
+        "relation_occurrence_overlap relation_occurrence_shared "
+        "relation_qualifier_duplicate relation_qualifier_loss "
+        "relation_qualifier_role_collision relation_representation_unverified "
+        "relation_role_cardinality relation_role_kind relation_type_loss "
         "template_not_entailed containment_unverified "
         "answer_changed answer_correspondence_unverified answer_external_unverified "
         "answer_input answer_source_unverified answer_identity_lost "

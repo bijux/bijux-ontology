@@ -1802,3 +1802,13 @@ semantic reports, and every characteristic array occurrence. The finite profile
 supports the four published core regexes; other regexes, unknown assertions,
 recursion and missing resources remain unverified. There is no submission or
 implicit checklist acquisition.
+
+`rdf.migrations.relations.migrate_relations` converts exact `BinaryOccurrence`
+quads to caller-allocated event IRIs using an explicit positive `RelationPattern`,
+directed subject/object roles and supplied qualifiers. `RelationOccurrence`
+supports an inverse only for isolated, unqualified events with one participant
+per role. Distinct events, extra types/qualifiers, datatype references, shared
+identity and existing binary-edge collisions cannot disappear. Scope and graph
+selection are explicit; event freshness concerns only the authorized snapshot.
+Original input stays untouched. Required `after_checks` qualify the candidate;
+use ordinary explicit migration acceptance/export after inspecting its report.
