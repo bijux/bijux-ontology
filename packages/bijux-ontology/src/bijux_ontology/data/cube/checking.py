@@ -20,8 +20,8 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.skos.subsets.selection import select_concepts
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView

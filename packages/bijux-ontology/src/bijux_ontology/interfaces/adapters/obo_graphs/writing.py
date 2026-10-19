@@ -9,8 +9,8 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.json.values import owned_json
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.annotations.graphs.reading import _physical
 from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationStatement

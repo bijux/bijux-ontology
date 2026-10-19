@@ -27,7 +27,7 @@ from bijux_ontology.rdf.path_traversal import (
     path_values,
 )
 from bijux_ontology.rdf.paths import capture_path
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
 from .types import PathFieldUsage

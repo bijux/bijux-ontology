@@ -10,10 +10,9 @@ from rdflib.graph import DATASET_DEFAULT_GRAPH_ID
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget
-
-from .terms import oxigraph_term
-from .trig import retain_trig_inventory
-from .xml.preparation import prepare_xml
+from bijux_ontology.rdf.sources.trig import retain_trig_inventory
+from bijux_ontology.rdf.terms import oxigraph_term
+from bijux_ontology.rdf.xml.preparation import prepare_xml
 
 RdfFormat = TypingLiteral["turtle", "nt", "xml", "trig", "nquads", "json-ld"]
 

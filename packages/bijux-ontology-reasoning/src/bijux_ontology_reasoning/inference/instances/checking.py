@@ -18,8 +18,8 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 
 from ...backend.types import OwlProfileBackend
 from ...documents.sources.rdf import capture_rdf_closure

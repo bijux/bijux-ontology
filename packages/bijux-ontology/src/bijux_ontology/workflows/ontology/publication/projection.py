@@ -23,8 +23,8 @@ from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, MigrationCheck
 from bijux_ontology.rdf.patches.planning import capture_source, plan_rdf_patch
 from bijux_ontology.rdf.patches.types import BlankNodePair, PatchUnavailable
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.rdf.transforms import Transformation, _bind
 from bijux_ontology.skos.structure import _MAPPINGS, _RELATIONS

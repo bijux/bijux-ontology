@@ -18,7 +18,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchQuad,
     PatchUnavailable,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.skos.checking import check_skos
 

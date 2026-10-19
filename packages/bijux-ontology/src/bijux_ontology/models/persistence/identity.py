@@ -14,7 +14,7 @@ from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.rdf.literals import Regime
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 from .codecs import declaration_data, json_bytes
 from .types import PreparationIdentity

@@ -28,7 +28,7 @@ from bijux_ontology.models.persistence import (
     model_preparation_identity,
 )
 from bijux_ontology.rdf.literals import Regime
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 E = "https://example.org/contracts/"
 CONTEXT = E + "context"

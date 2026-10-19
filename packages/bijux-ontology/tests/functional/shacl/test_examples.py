@@ -8,9 +8,9 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, XSD
 
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.examples import MissingValueExample, generate_examples
 
 EX = Namespace("https://example.invalid/examples/")

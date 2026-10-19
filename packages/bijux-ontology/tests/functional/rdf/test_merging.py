@@ -15,7 +15,6 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.merging import (
     MergeCorrespondence,
     MergeResolution,
@@ -26,8 +25,9 @@ from bijux_ontology.rdf.merging import (
 )
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.patches.types import BlankNodePair
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = Namespace("urn:merge:")
 

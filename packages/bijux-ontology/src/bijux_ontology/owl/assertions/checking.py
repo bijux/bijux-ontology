@@ -12,8 +12,8 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
 from .consequences import functionality, key_identities

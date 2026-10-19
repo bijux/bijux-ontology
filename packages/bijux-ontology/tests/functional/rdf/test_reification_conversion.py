@@ -12,7 +12,6 @@ from rdflib.namespace import RDF, XSD
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.reification.conversion import (
     REIFIER_CONTRACT,
     ReifierDataset,
@@ -20,7 +19,8 @@ from bijux_ontology.rdf.reification.conversion import (
     convert_reifications,
     restore_reifications,
 )
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.triple_terms import (
     TRIPLE_TERM_CONTRACT,
     prepare_triple_terms,

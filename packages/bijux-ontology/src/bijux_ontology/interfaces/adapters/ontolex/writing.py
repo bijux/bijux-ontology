@@ -12,10 +12,10 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
 from .reading import reserve

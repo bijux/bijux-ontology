@@ -14,9 +14,9 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.documents.migrations import export_migration
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations import MigrationCheck
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term, term_key
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.labels import check_label_collisions

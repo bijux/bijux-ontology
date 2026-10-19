@@ -22,7 +22,7 @@ from bijux_ontology.interfaces.adapters.typed_dict import (
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.types import ModelUsage
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = Namespace("https://example.org/catalogue#")
 TITLE = RdfField(

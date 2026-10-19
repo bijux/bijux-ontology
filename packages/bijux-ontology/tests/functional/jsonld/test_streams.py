@@ -22,7 +22,7 @@ from bijux_ontology.jsonld.streams.checking import check_jsonld_records
 from bijux_ontology.jsonld.streams.types import JSONLDRecord
 from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 EX = Namespace("https://example.org/records/")
 

@@ -13,9 +13,9 @@ from bijux_ontology.declarations.topology import TopologyContract, TopologyRelat
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Location
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = Namespace("urn:topology:")
 

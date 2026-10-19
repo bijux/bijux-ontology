@@ -11,7 +11,7 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, boun
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import Statement
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary

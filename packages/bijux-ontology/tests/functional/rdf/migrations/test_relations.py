@@ -10,7 +10,6 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.migrations import export_migration
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.migrations.relations import (
     BinaryOccurrence,
@@ -21,7 +20,8 @@ from bijux_ontology.rdf.migrations.relations import (
     migrate_relations,
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 E = Namespace("urn:relation:")
 Triple = tuple[Node, Node, Node]

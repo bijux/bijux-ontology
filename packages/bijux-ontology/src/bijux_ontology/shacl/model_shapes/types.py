@@ -8,7 +8,7 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.authoring.types import ShaclNodeShape, ShaclPropertyShape
 
 

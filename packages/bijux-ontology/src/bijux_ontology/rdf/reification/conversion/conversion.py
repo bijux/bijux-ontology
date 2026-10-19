@@ -40,8 +40,8 @@ from bijux_ontology.rdf.patches.types import (
 )
 from bijux_ontology.rdf.reification.checking import check_reifications
 from bijux_ontology.rdf.reification.types import ReificationContract
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.rdf.triple_terms.protocol import Term, encode_term

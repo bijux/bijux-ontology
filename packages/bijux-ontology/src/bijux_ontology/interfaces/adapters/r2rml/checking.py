@@ -38,11 +38,11 @@ from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.path_traversal import finite_path_steps
 from bijux_ontology.rdf.paths import capture_path
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 
 from .preparation import _call, _identifier, _Map, inspect_mapping

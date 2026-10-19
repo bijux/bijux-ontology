@@ -18,7 +18,7 @@ from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .assessment import ContractChange, _contract_changes
 

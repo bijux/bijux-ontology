@@ -13,9 +13,9 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.navigation import scheme_members

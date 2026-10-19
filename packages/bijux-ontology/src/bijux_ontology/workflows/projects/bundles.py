@@ -19,7 +19,7 @@ from bijux_ontology.jsonld.resources import (
     context_resources,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig

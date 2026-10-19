@@ -10,7 +10,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 
 
 def export_migration(

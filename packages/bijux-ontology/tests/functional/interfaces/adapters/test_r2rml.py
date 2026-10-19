@@ -36,9 +36,9 @@ from bijux_ontology.interfaces.adapters.r2rml import (
     prepare_sqlite_snapshot,
 )
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import term_key
 
 ID = URIRef("urn:example:id")

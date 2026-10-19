@@ -14,7 +14,7 @@ from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json
-from bijux_ontology.rdf.loading import _read
+from bijux_ontology.rdf.sources.loading import _read
 
 from .protocol import decode_quads, encode_quads, encode_term
 from .types import TRIPLE_TERM_CONTRACT

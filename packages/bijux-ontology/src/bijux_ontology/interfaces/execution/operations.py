@@ -32,7 +32,7 @@ from bijux_ontology.jsonld.selectors.codecs import selector_from_data
 from bijux_ontology.jsonld.selectors.types import EntitySelector
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.projects.checking import check_project

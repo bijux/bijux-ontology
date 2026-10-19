@@ -28,7 +28,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.contracts.checking import check_models
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = "https://example.org/"

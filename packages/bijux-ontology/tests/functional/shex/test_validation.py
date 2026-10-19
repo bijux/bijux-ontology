@@ -12,8 +12,8 @@ from rdflib.namespace import XSD
 
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.shex import ShexBinding, ShexSchema, validate_shex
 from bijux_ontology.shex.types import ShexResult
 

@@ -65,7 +65,7 @@ def test_explicit_local_import_dataset_join_default_named_union_and_empty_graphs
 
 
 def test_pinned_scope_and_owned_blank_graph_names() -> None:
-    from bijux_ontology.rdf.sources import RdfSource
+    from bijux_ontology.rdf.sources.types import RdfSource
 
     pinned = prepare_source(RdfSource(_dataset(), graph_name=str(EX.imports)))
     assert query_rdf(

@@ -24,8 +24,8 @@ from bijux_ontology.json.values import decode_json
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.projects.acquisition.closure import Closure
 from bijux_ontology.workflows.projects.acquisition.http import (

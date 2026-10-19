@@ -15,14 +15,14 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, boun
 from bijux_ontology.models.emission.matching import identity_matches
 from bijux_ontology.models.emission.rdf import _traits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.path_traversal import (
     PathIdentityUnavailable,
     finite_path_steps,
     path_values,
 )
 from bijux_ontology.rdf.paths import capture_path
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, term_key
 

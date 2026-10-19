@@ -95,7 +95,7 @@ def test_closed_policy_and_ignored_predicates_survive_typed_inspection() -> None
     broken.add((EX.RecordShape, SH.ignoredProperties, head))
     broken.add((head, RDF.first, Literal("not a predicate")))
     broken.add((head, RDF.rest, RDF.nil))
-    from bijux_ontology.rdf.loading import prepare_rdf
+    from bijux_ontology.rdf.sources.loading import prepare_rdf
 
     assert not inspect_shapes(prepare_rdf(broken), (EX.RecordShape,)).report.verified
 

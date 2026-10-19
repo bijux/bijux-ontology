@@ -7,7 +7,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.vocabulary.browsing.results import TermInfo
 
 ONTOLEX = Namespace("http://www.w3.org/ns/lemon/ontolex#")

@@ -25,7 +25,7 @@ from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
 

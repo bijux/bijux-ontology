@@ -19,7 +19,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.profiles.execution import freeze_data as _data
@@ -153,7 +153,7 @@ def _changes(
             lg, le = _semantics(before, budget)
             rg, re = _semantics(after, budget)
             if le and re:
-                from bijux_ontology.rdf.loading import prepare_rdf
+                from bijux_ontology.rdf.sources.loading import prepare_rdf
 
                 same = _equal(
                     prepare_rdf(lg, budget=budget),

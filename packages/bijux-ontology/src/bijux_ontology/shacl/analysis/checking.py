@@ -16,7 +16,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.profiles.types import ShapeDependency, ShapeProfile, Triple

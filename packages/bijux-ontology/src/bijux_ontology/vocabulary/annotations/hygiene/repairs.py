@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, MigrationCheck
 from bijux_ontology.rdf.patches.types import PatchUnavailable
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.annotations.graphs.reading import (
     _bound,

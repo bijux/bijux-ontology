@@ -17,8 +17,8 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.paths import bound_index
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.bindings import TermSelection, transport_roles
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.coverage import ShaclCoverageContract

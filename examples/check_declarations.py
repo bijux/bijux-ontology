@@ -1,7 +1,7 @@
 """Inspect and check explicit RDF declarations; no general OWL reasoning or network."""
 
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary

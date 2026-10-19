@@ -21,7 +21,7 @@ from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import term_data
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import PatchBlank, PatchLiteral, PatchValue
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_term, term_key
 from bijux_ontology.rdf.transforms import merge_sources
 from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values

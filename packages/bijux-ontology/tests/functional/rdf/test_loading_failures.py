@@ -26,8 +26,8 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.interfaces.execution import WorkerExecutor
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig

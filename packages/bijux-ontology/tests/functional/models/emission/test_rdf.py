@@ -31,7 +31,7 @@ from bijux_ontology.interfaces.adapters.dataclasses import model_declarations
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = Namespace("https://output.example/")
 

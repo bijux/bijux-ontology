@@ -14,8 +14,8 @@ from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 
 A, B, C = (URIRef("urn:diagnosis:" + name) for name in ("A", "B", "C"))
 _DECLARATIONS = """Declaration(Class(<urn:diagnosis:A>))

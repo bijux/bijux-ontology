@@ -9,9 +9,9 @@ from rdflib.namespace import XSD
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.algebra import rdf_set_operation
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches import BlankNodePair
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term
 
 EX = Namespace("urn:algebra:")

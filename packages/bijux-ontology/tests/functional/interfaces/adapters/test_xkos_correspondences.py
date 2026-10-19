@@ -14,9 +14,9 @@ from bijux_ontology.interfaces.adapters.xkos.correspondences import (
 )
 from bijux_ontology.interfaces.adapters.xkos.correspondences.types import XKOS as X
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.values.types import ValueMap
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 T = URIRef("urn:correspondence:table")

@@ -13,8 +13,8 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 
 from ...backend.owlapi.bundles import LOADER_PROFILE, qualify_backend
 from ...backend.types import OwlProfileBackend, ProfileDocument

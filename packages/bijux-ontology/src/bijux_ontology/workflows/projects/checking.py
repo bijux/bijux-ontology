@@ -16,8 +16,8 @@ from bijux_ontology.diagnostics.reports import (
 )
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.values import known_keys, object_value
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.inputs import ShaclJobInput, capture_job_inputs

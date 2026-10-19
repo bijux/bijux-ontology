@@ -10,7 +10,7 @@ from rdflib.query import Result
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.functions import (

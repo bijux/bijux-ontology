@@ -14,8 +14,8 @@ from bijux_ontology.interfaces.adapters.shape_interchange import (
     shacl_to_shex,
     shex_to_shacl,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.authoring import (
     ShaclClosed,
     ShaclCount,

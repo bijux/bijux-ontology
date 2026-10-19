@@ -17,7 +17,7 @@ from bijux_ontology.diagnostics.reports import (
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.json.values import decode_json
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.shacl.capabilities import (
     constraint_execution,
 )

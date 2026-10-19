@@ -18,7 +18,7 @@ from bijux_ontology.rdf.reification.types import (
     ReificationContract,
     ReificationRecord,
 )
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.rdf.transforms import _budget
 

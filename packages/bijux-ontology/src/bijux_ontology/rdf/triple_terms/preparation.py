@@ -21,7 +21,7 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 from .protocol import decode_quads, encode_quads, occurrences
 from .types import (

@@ -24,8 +24,8 @@ from bijux_ontology.rdf.migrations.values import (
     migrate_values,
 )
 from bijux_ontology.rdf.patches.planning import plan_rdf_patch
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.transforms import remap_iris
 from bijux_ontology.workflows.upgrades.plans import (

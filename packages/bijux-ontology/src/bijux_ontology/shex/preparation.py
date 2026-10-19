@@ -12,8 +12,8 @@ from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.values import decode_json, object_value, owned_json
 from bijux_ontology.rdf.entailment.protocol import encode_rows
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
 from .types import ShexBinding, ShexSchema

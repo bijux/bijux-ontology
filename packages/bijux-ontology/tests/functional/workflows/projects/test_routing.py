@@ -13,8 +13,8 @@ from rdflib.namespace import RDF
 
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.workflows.projects.profiles.composition import compose_profile
 from bijux_ontology.workflows.projects.profiles.loading import load_profile
 from bijux_ontology.workflows.projects.routing import (

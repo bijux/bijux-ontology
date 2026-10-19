@@ -26,7 +26,7 @@ from bijux_ontology.rdf.patches.types import (
     bound_term,
     validate_witness,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
 
 from .types import MergeChanges, MergeResolution, RdfMergePlan, RdfMergeResult

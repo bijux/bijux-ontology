@@ -20,9 +20,9 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.values import object_value
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.ontology.modules.checking import check_module_wiring

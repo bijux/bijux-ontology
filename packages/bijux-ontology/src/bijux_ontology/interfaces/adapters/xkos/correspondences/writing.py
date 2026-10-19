@@ -16,8 +16,8 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
 from .reading import reserve

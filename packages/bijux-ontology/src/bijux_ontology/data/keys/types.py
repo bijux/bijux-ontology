@@ -8,7 +8,7 @@ from bijux_ontology.data.query_rules.types import QueryRule
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 
 
 @dataclass(frozen=True)

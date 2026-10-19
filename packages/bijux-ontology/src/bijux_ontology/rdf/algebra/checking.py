@@ -21,7 +21,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     SnapshotWitness,
 )
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
 
 

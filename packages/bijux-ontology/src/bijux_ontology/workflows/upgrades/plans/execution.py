@@ -20,7 +20,7 @@ from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, Migrati
 from bijux_ontology.rdf.patches.applying import _materialize, apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import PatchUnavailable
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .types import MigrationPlanResult, MigrationStep, MigrationStepResult
 

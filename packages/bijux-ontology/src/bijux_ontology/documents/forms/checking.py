@@ -21,7 +21,7 @@ from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import SourceSelector
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .types import DocumentFormCheck, FormRequirement
 

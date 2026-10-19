@@ -25,7 +25,7 @@ from bijux_ontology.models.emission.serialization import InstanceCheck
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.vocabulary.comparison import VocabularyChanges
 from bijux_ontology.workflows.upgrades.anonymous import AnonymousAffectedUse
 from bijux_ontology.workflows.upgrades.assessment import AffectedUse, ContractChange

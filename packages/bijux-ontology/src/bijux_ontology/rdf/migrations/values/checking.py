@@ -32,7 +32,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     PatchValue,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, literal_term
 from bijux_ontology.rdf.transforms import Transformation
 

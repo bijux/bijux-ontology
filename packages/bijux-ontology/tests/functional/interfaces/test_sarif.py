@@ -237,8 +237,8 @@ def test_pointer_parser_region_and_iri_only_locations_are_not_conflated(
     _save(tmp_path / "locations.sarif", document)
 
     from bijux_ontology.json.values import decode_json
-    from bijux_ontology.rdf.loading import prepare_rdf
-    from bijux_ontology.rdf.sources import RdfSource
+    from bijux_ontology.rdf.sources.loading import prepare_rdf
+    from bijux_ontology.rdf.sources.types import RdfSource
 
     with pytest.raises(InputError) as malformed_json:
         decode_json('{"😀": }')

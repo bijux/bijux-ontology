@@ -18,9 +18,9 @@ from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.paths import bound_index
-from bijux_ontology.rdf.loading import _charge_graph
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
+from bijux_ontology.rdf.sources.loading import _charge_graph
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.bindings import StaticBindings, TermSelection, transport_roles
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement

@@ -12,8 +12,12 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource, bind_namespaces
-from bijux_ontology.rdf.trig import serialize_trig
+from bijux_ontology.rdf.sources.snapshots import (
+    GraphSelection,
+    PreparedSource,
+    bind_namespaces,
+)
+from bijux_ontology.rdf.sources.trig import serialize_trig
 
 from .preparation import prepare_source
 from .writing import write_bytes

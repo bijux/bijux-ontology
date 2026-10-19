@@ -20,7 +20,7 @@ from bijux_ontology.owl.obligations import (
 )
 from bijux_ontology.owl.properties import PropertyContract, property_contract
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.builtins import builtin_kinds, kind_matches

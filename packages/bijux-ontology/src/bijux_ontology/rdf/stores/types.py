@@ -14,7 +14,7 @@ from bijux_ontology.diagnostics.reports import Report
 from .seals import StoreFile
 
 if TYPE_CHECKING:
-    from bijux_ontology.rdf.snapshots import PreparedSource
+    from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 
 @dataclass(frozen=True, init=False)

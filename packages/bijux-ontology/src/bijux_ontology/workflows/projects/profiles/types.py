@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.workflows.projects.bundles import PreparedBundle
 
 

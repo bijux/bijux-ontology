@@ -10,8 +10,8 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, validate_triple
 

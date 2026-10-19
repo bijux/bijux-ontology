@@ -8,10 +8,10 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.checking import ShaclResult
 
 from .execution import freeze_data, portable_roles, result_semantics, validate_profile

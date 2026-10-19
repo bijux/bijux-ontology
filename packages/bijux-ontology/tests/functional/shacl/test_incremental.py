@@ -11,7 +11,6 @@ from rdflib.namespace import RDF, RDFS, SH, XSD
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.planning import plan_rdf_patch
 from bijux_ontology.rdf.patches.types import (
     BlankNodePair,
@@ -19,8 +18,9 @@ from bijux_ontology.rdf.patches.types import (
     PatchBlank,
     PatchBlankBinding,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.incremental import prepare_incremental, revalidate

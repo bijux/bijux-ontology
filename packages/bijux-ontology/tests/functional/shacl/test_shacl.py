@@ -812,7 +812,7 @@ ex:Shape a sh:NodeShape; sh:targetNode ex:record;
         source_usages=(source,),
     )
     assert selected.conforms is False and selected.findings[0].locations == ()
-    from bijux_ontology.rdf.sources import RdfSource
+    from bijux_ontology.rdf.sources.types import RdfSource
 
     named = ShaclSource(
         prepare_usages({"@id": str(EX.graph), "@graph": [document]}),

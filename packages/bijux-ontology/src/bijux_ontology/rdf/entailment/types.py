@@ -5,7 +5,7 @@ from typing import Literal, TypeAlias
 
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.queries.protocol import QueryTerm
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 
 EntailmentRegime: TypeAlias = Literal["rdfs", "owl-rl"]
 GeneralizedTriple: TypeAlias = tuple[QueryTerm, QueryTerm, QueryTerm]

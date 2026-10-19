@@ -9,7 +9,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.patches import plan_rdf_patch
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 E = Namespace("urn:graph-scope:")
 

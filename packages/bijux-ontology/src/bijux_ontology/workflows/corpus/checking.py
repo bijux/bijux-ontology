@@ -27,7 +27,7 @@ from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.models.persistence.codecs import json_bytes
 from bijux_ontology.models.persistence.identity import _source
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.workflows.revisions.management import RevisionLease
 
 from .storage import Checkpoint, eligible

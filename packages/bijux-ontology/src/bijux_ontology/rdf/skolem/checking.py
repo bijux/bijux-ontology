@@ -18,8 +18,8 @@ from bijux_ontology.rdf.skolem.types import (
     SkolemMap,
     SkolemResult,
 )
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata as _SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource, _read_graph
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata as _SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource, _read_graph
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.rdf.transforms import (
     Transformation,

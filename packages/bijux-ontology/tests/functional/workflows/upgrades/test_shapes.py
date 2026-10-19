@@ -10,8 +10,8 @@ from rdflib.namespace import SH
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.profiles import ShapeProfile, extract_profile
 from bijux_ontology.workflows.upgrades.shapes import (
     ShapeCorrespondence,

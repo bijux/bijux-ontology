@@ -23,8 +23,8 @@ from bijux_ontology.rdf.migrations.candidates import (
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import PatchBlankBinding, PatchUnavailable
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
 
 from .planning import RelationRejected, Request, plan_relations, reserve

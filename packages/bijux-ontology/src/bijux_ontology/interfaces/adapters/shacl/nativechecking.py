@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
 from .types import ShapeContractImport

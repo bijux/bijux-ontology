@@ -11,7 +11,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.models.resource_roles import RoleUse
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.comparison import compare_vocabularies
 from bijux_ontology.vocabulary.facts import FactGraph, FactPredicate, FactSelection
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary

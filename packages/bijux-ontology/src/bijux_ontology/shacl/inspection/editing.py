@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.execution.processes.transport import checkpoint
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.authoring.compiling import _Compiler
 from bijux_ontology.shacl.authoring.types import ShaclCount, ShaclPropertyShape

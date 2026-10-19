@@ -14,7 +14,7 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.obo import resolve_alternative_ids
 from bijux_ontology.vocabulary.registry import IdentifierRegistry, NamespaceContribution

@@ -14,8 +14,8 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.values import object_value
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 
 from ...axioms.types import ProjectedAxiom
 from ...backend.owlapi.bundles import qualify_backend

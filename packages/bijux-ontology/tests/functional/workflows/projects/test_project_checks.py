@@ -412,7 +412,7 @@ def test_resource_replacement_invalidates_imported_range_and_preserves_readers(
 ) -> None:
     from concurrent.futures import ThreadPoolExecutor
 
-    from bijux_ontology.rdf.sources import RdfSource
+    from bijux_ontology.rdf.sources.types import RdfSource
 
     core = tmp_path / "core.ttl"
     imported = tmp_path / "range.ttl"
@@ -572,7 +572,7 @@ def test_replacement_owns_graphs_and_bounds_retained_storage_with_fresh_budgets(
     from rdflib.namespace import OWL, RDF
 
     from bijux_ontology.diagnostics.errors import LimitExceeded
-    from bijux_ontology.rdf.sources import RdfSource
+    from bijux_ontology.rdf.sources.types import RdfSource
 
     (tmp_path / "terms.ttl").write_text(f"<{EX}Record> a <{OWL.Class}> .")
     config = ProjectConfig(

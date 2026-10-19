@@ -13,7 +13,7 @@ from bijux_ontology.data.keys.extraction import _Key, _KeyExtraction
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.execution.limits import Budget, IssueCollector
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
 from .normalization import QB

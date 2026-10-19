@@ -18,8 +18,8 @@ from bijux_ontology.rdf.containers import (
 )
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.migrations.lists.types import ListTarget, ListValue
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import term_key
 

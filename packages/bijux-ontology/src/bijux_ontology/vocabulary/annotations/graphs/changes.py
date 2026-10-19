@@ -15,7 +15,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     PatchValue,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .reading import _bound, _same, inspect_annotation_graph
 from .types import AnnotationValue, AnnotationValueEdit

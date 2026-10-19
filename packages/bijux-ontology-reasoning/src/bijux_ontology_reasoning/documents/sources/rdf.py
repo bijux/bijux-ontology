@@ -23,8 +23,8 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_node, independent_blank_scopes
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.types import GraphKind, source_role

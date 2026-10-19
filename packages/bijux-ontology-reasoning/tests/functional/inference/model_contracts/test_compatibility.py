@@ -24,7 +24,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 _BASE = """Ontology(<urn:models>
  Declaration(Class(<urn:A>)) Declaration(Class(<urn:B>))

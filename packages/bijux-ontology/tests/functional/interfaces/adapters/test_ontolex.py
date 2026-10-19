@@ -15,9 +15,9 @@ from bijux_ontology.interfaces.adapters.ontolex import (
     write_lexicon,
 )
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 EX = Namespace("urn:ontolex-test:")

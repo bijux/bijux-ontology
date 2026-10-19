@@ -26,7 +26,7 @@ from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.stores.native import DeclarationReader
 from bijux_ontology.rdf.terms import bound_node, oxigraph_term
 from bijux_ontology.vocabulary.checking import check_vocabulary

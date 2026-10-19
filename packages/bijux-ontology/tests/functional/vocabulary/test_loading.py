@@ -11,7 +11,7 @@ from bijux_ontology.declarations import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

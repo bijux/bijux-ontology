@@ -23,7 +23,7 @@ from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra i
 )
 from bijux_ontology.rdf.literals import _lexical, datatype_relation
 from bijux_ontology.rdf.patterns import matches_pattern
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.skos.structure import reachability
 

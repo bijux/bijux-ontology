@@ -17,8 +17,8 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 
 _Record = tuple[str, tuple[tuple[str | None, ...], ...]]

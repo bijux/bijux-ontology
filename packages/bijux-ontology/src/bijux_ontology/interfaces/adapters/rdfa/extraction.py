@@ -24,8 +24,8 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.execution.processes.transport import checkpoint, exchange_worker
 from bijux_ontology.json.values import _measure, decode_json
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import literal_term, validate_triple
 
 from .types import RdfaExtraction, RdfaProducer, RdfaRuntime

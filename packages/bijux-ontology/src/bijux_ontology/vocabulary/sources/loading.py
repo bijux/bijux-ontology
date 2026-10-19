@@ -8,9 +8,9 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
-from bijux_ontology.rdf.loading import _charge_graph
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
+from bijux_ontology.rdf.sources.loading import _charge_graph
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.vocabulary.sources.imports import required_imports
 from bijux_ontology.vocabulary.sources.types import OwnedSource
 from bijux_ontology.vocabulary.sources.view import Vocabulary

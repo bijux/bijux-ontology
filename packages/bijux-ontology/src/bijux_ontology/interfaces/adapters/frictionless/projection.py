@@ -23,7 +23,7 @@ from bijux_ontology.models.emission.counts import check_occurrences
 from bijux_ontology.models.path_fields.checking import check_path_fields
 from bijux_ontology.models.path_fields.types import PathFieldUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 
 from .profile import UnsupportedPackage, array, object_value, text
 from .types import PackageCell, ResourceBinding

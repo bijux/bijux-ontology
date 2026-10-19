@@ -27,8 +27,8 @@ from rdflib import URIRef
 from rdflib.namespace import RDF
 
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 
 _AXIOMS = """
 Declaration(Class(<urn:Parent>)) Declaration(Class(<urn:Child>))

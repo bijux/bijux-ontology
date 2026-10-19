@@ -6,7 +6,7 @@ from rdflib import BNode, URIRef
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.shacl.authoring.types import (
     ShaclCount,
     ShaclNodeShape,

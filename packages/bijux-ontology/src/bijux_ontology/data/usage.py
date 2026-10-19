@@ -10,8 +10,8 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

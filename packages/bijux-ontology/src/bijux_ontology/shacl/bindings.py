@@ -12,7 +12,7 @@ from bijux_ontology.execution.budgets import operation
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
 SELECTION = Namespace("urn:bijux:shacl:selection:")

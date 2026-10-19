@@ -12,8 +12,8 @@ from bijux_ontology.models.persistence.types import (
     ModelPreparationArtifact,
     PreparationIdentity,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.execution.results import ShaclResult
 
 

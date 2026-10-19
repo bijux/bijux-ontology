@@ -11,7 +11,7 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.types import PatchQuad, PatchResource, SnapshotWitness
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
 

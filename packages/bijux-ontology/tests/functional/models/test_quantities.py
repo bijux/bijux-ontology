@@ -25,7 +25,7 @@ from bijux_ontology.models.quantities import (
     UnitBinding,
     prepare_quantities,
 )
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = Namespace("urn:quantity:")
 

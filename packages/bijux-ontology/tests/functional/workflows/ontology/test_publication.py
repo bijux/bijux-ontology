@@ -17,9 +17,9 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.export import write_export
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.collections import check_collection_sequence
 from bijux_ontology.skos.publication.roots import check_top_concepts

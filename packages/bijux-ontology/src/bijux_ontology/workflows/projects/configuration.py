@@ -22,7 +22,7 @@ from bijux_ontology.json.values import (
 )
 from bijux_ontology.jsonld.resources import DocumentLocation
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.workflows.projects.jobs import (
     APPLICATION_KINDS,
     check_kind,

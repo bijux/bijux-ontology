@@ -189,7 +189,7 @@ def test_external_consumer_uses_installed_public_types(
         from bijux_ontology.diagnostics.reports import Issue, Report
         from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
         from bijux_ontology.models.emission.types import ModelUsage
-        from bijux_ontology.rdf.snapshots import PreparedSource
+        from bijux_ontology.rdf.sources.snapshots import PreparedSource
         from bijux_ontology.vocabulary.browsing.results import TermInfo
         from bijux_ontology.vocabulary.browsing.inspection import (
             VocabularyView, inspect_vocabulary,

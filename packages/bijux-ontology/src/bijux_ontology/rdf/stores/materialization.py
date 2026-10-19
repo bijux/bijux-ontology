@@ -11,7 +11,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import read_term
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import validate_triple
 
 from .protocol import execute, failure, scope_data

@@ -13,8 +13,8 @@ from bijux_ontology.documents.export import export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = "https://example.org/"
 S, P, G = (URIRef(EX + value) for value in ("subject", "predicate", "graph"))

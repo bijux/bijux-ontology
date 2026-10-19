@@ -19,7 +19,7 @@ from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 
 EX = Namespace("https://example.org/coverage/")
 META = ("@context", "@id", "@type")

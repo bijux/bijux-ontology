@@ -13,7 +13,11 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import DatatypeRelation, Regime, datatype_relation
-from bijux_ontology.rdf.snapshots import PreparedSource, _is_owned_reader, copy_graph
+from bijux_ontology.rdf.sources.snapshots import (
+    PreparedSource,
+    _is_owned_reader,
+    copy_graph,
+)
 from bijux_ontology.rdf.structure import read_rdf_list
 
 from .classes import ClassContracts

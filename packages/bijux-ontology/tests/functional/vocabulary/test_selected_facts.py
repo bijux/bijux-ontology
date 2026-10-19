@@ -9,8 +9,8 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.comparison import compare_vocabularies

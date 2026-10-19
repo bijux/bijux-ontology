@@ -12,7 +12,7 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.constructs import unsupported_constructs
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.rdf.snapshots import copy_graph
+from bijux_ontology.rdf.sources.snapshots import copy_graph
 from bijux_ontology.vocabulary.browsing.results import (
     Annotation,
     Deprecation,

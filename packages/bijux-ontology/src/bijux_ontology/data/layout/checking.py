@@ -10,7 +10,7 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 
 from .types import ContentPlacement, DatasetLayout, GraphSelector, qualify_layout

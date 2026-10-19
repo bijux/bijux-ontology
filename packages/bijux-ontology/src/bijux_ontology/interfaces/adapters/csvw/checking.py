@@ -12,8 +12,8 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .conversion import UnsupportedCsvw, convert, metadata, resources
 from .types import CsvwCell, CsvwCheck, CsvwExtraction

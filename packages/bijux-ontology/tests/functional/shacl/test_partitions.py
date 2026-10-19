@@ -9,8 +9,8 @@ from rdflib import BNode, Dataset, Literal, Namespace, URIRef
 from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.partitions import (
     PartitionObligation,
     PartitionPlan,

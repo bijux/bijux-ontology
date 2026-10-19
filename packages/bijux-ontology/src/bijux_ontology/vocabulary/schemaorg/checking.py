@@ -21,8 +21,8 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.owl.classes import ClassContracts
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
 
 from .expectations import _edges, schemaorg_property

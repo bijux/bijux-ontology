@@ -10,7 +10,7 @@ from bijux_ontology.declarations import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.checking import check_vocabulary

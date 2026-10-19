@@ -17,9 +17,9 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.loading import _charge_graph
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
+from bijux_ontology.rdf.sources.loading import _charge_graph
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.coverage import ShaclTarget
 from bijux_ontology.shacl.execution.results import ShaclResult

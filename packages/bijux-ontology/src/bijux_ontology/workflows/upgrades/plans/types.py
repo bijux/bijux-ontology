@@ -8,7 +8,7 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, MigrationCheck
 from bijux_ontology.rdf.patches.types import SnapshotWitness
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 
 @dataclass(frozen=True)

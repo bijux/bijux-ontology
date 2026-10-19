@@ -38,7 +38,7 @@ from bijux_ontology.rdf.patches.types import (
 )
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import TermPosition, TermRole
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.vocabulary.checking import check_vocabulary

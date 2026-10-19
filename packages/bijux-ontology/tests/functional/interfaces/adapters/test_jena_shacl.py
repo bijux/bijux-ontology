@@ -19,7 +19,7 @@ from bijux_ontology.interfaces.adapters.jena import (
     prepare_jena_backend,
 )
 from bijux_ontology.interfaces.adapters.jena.shacl import validate_jena_shapes
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.coverage import ShaclCoverageContract

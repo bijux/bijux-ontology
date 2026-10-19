@@ -13,12 +13,12 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.entailment import EntailmentResult, prepare_entailment
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.patches import plan_rdf_patch
 from bijux_ontology.rdf.patches.types import DatasetPatch
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.rules import RuleMaterialization
 from bijux_ontology.workflows.ontology.materialization import (
     EntailmentPlan,

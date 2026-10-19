@@ -7,8 +7,8 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import IssueCollector, bound_text, retain_report
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 
 from ...axioms.codec.encoding import ConstructionEncoder
 from ...axioms.types import NamedEntity, ObjectProperty, ObjectQuantifier, SubClassOf

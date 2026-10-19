@@ -16,8 +16,8 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, boun
 from bijux_ontology.json.paths import SourcePath, location
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .checking import PreparedUsages, prepare_usages
 from .conversion import DirectionPolicy, convert_to_rdf

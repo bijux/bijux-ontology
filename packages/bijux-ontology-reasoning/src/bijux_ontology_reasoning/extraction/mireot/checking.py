@@ -12,7 +12,7 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 from ...axioms.inspection import inspect_axioms
 from ...axioms.types import (

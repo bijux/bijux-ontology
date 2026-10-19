@@ -13,10 +13,10 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.owl.obligations import OntologyObligation, _NativeProofs
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.roles.classification import classify_statement, declaration_role
 from bijux_ontology.rdf.roles.types import TermRole
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.browsing.inspection import (
     VocabularyView,

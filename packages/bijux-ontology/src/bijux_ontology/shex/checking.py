@@ -18,7 +18,7 @@ from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, 
 from bijux_ontology.execution.processes.transport import run_worker
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 
 from . import preparation
 from .types import ShexBinding, ShexObligation, ShexResult, ShexSchema

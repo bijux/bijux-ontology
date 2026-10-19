@@ -17,7 +17,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import copy_graph
+from bijux_ontology.rdf.sources.snapshots import copy_graph
 from bijux_ontology.shacl.authoring.parameters import (
     ShaclParameter,
 )

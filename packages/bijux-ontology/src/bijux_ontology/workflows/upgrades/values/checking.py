@@ -18,7 +18,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.models.emission.application import application_matches
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 
 from .types import (

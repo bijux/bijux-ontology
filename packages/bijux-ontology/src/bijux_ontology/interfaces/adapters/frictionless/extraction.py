@@ -25,8 +25,8 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.execution.processes.transport import checkpoint, exchange_worker
 from bijux_ontology.json.values import _measure, decode_json
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .profile import UnsupportedPackage, array, capture, object_value, text
 from .projection import bindings as capture_bindings

@@ -20,7 +20,7 @@ from bijux_ontology.rdf.patches.codecs import read_term, witness_data
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
 from bijux_ontology.rdf.patches.types import PatchBlank, PatchLiteral, PatchUnavailable
 from bijux_ontology.rdf.queries.protocol import QueryTerm
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import literal_term
 
 from .types import ContainmentCheck, TemplateBinding

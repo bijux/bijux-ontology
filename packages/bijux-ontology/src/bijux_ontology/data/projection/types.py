@@ -13,7 +13,7 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.paths import RdfPath, capture_path
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 Decoder = Literal["raw", "string", "integer", "decimal", "boolean", "reference"]
 FieldState = Literal["decoded", "raw", "missing", "ambiguous", "invalid", "unverified"]

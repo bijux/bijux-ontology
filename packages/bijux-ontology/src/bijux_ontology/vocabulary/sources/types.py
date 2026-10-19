@@ -7,7 +7,7 @@ from typing import Literal
 from rdflib import BNode, Graph, URIRef
 
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 
 GraphKind = Literal["graph", "default", "named"]
 

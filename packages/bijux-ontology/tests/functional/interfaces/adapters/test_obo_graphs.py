@@ -16,7 +16,7 @@ from bijux_ontology.interfaces.adapters.obo_graphs import (
     read_obo_graphs,
     write_obo_graphs,
 )
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.annotations.graphs.reading import (
     inspect_annotation_graph,
 )

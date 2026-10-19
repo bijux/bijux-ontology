@@ -17,7 +17,7 @@ from bijux_ontology.interfaces.adapters.dcat import (
     check_catalog,
     prepare_catalog_profile,
 )
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 
 E = Namespace("https://example.org/catalog/")
 D = Namespace("http://www.w3.org/ns/dcat#")

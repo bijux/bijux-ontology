@@ -11,8 +11,8 @@ from bijux_ontology.data.keys import KeyRecord, check_record_keys
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = Namespace("urn:keys:")
 

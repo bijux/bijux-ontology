@@ -22,7 +22,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.models.path_fields.checking import check_path_fields
 from bijux_ontology.models.path_fields.types import PathFieldUsage
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (

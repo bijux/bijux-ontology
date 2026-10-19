@@ -20,8 +20,8 @@ from bijux_ontology.interfaces.adapters.shacl import (
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term, term_key
 from bijux_ontology.shacl.checking import validate_shapes
 

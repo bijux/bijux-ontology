@@ -22,7 +22,7 @@ from bijux_ontology.models.emission.serialization import (
 )
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.checking import check_resource_roles
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

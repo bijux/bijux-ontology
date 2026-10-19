@@ -25,7 +25,7 @@ from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.queries import QueryScope
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 _PREFIXES = {"ex": "urn:pattern:", "owl": str(OWL)}
 _SCOPE = QueryScope("default")

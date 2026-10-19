@@ -20,12 +20,12 @@ from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.resources import OfflineDocument, OfflineDocumentLoader
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import read_term, read_witness
 from bijux_ontology.rdf.patches.types import PatchBlank
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.skos.checking import check_skos
 

@@ -9,7 +9,7 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 from bijux_ontology.data.cube import CubeCheck, check_cube
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 
 EX = Namespace("urn:cube:")
 QB = Namespace("http://purl.org/linked-data/cube#")

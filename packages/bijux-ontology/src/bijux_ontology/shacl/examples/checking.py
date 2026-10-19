@@ -12,9 +12,9 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.projection import _retained_result

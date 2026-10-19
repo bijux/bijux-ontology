@@ -16,7 +16,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchResource,
     PatchUnavailable,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.skos.xl import XL
 
 from .execution import capture, finish, integrity, unavailable

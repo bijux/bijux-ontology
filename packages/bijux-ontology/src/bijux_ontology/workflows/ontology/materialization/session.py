@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.types import DatasetPatch
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .execution import execute, own_plan, own_source
 from .types import (

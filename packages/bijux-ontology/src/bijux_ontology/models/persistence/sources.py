@@ -17,8 +17,8 @@ from bijux_ontology.json.values import (
     string_value,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_term, validate_triple
 from bijux_ontology.vocabulary.sources.types import OwnedSource
 

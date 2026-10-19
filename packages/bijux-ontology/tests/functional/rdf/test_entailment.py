@@ -17,8 +17,8 @@ from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.entailment import preparation, prepare_entailment
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
 
 EX = Namespace("https://example.org/")

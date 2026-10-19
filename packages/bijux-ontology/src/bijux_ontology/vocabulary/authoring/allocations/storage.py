@@ -35,8 +35,8 @@ from bijux_ontology.rdf.patches.codecs import (
 )
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
 from bijux_ontology.rdf.patches.types import PatchLiteral, PatchUnavailable
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, literal_term
 from bijux_ontology.vocabulary.accessions.recognition import prepare_rules, resolve
 from bijux_ontology.vocabulary.accessions.types import AccessionRule

@@ -14,12 +14,16 @@ from bijux_ontology.diagnostics.errors import (
     attach_input_failure,
 )
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
-
-from .compression import decode_gzip
-from .identifiers import absolute_iri, language_tag
-from .parsing import RDF_FORMATS, parse_dataset
-from .snapshots import PreparedSource, bind_namespaces, copy_dataset, copy_graph
-from .sources import Compression, Payload, RdfSource
+from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
+from bijux_ontology.rdf.sources.compression import decode_gzip
+from bijux_ontology.rdf.sources.parsing import RDF_FORMATS, parse_dataset
+from bijux_ontology.rdf.sources.snapshots import (
+    PreparedSource,
+    bind_namespaces,
+    copy_dataset,
+    copy_graph,
+)
+from bijux_ontology.rdf.sources.types import Compression, Payload, RdfSource
 
 _ALIASES = {
     "ttl": "turtle",

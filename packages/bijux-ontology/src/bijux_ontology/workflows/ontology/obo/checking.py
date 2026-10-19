@@ -16,7 +16,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.annotations.coverage import check_annotation_coverage
 from bijux_ontology.vocabulary.annotations.types import (

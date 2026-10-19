@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.queries.access import QueryScope
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.stores.protocol import failure
 from bijux_ontology.rdf.stores.types import MaterializedRdf
 from bijux_ontology.rdf.terms import bound_node, validate_triple

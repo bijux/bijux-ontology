@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.obo.subsets import read_obo_subsets
 from bijux_ontology.vocabulary.sources.view import Vocabulary

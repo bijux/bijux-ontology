@@ -16,7 +16,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.analysis.checking import analyze_shape_profile
 from bijux_ontology.shacl.coverage import ShaclCoverageContract

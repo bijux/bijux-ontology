@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.models.persistence.types import PreparationIdentity
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 
 @dataclass(frozen=True)

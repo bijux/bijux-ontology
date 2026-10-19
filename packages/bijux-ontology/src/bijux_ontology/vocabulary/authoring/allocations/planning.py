@@ -32,7 +32,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     SnapshotWitness,
 )
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.vocabulary.accessions.recognition import prepare_rules
 

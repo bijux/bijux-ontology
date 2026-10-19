@@ -17,7 +17,7 @@ from bijux_ontology.interfaces.adapters.xkos.classifications import (
     read_classification,
 )
 from bijux_ontology.interfaces.adapters.xkos.classifications.types import XKOS
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.skos.checking import check_skos
 
 N = Namespace("urn:classification:")

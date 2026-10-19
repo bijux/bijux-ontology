@@ -16,7 +16,7 @@ from bijux_ontology.jsonld.resources import (
 from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 
 from .export import RDFExport, export_rdf
 from .preparation import prepare_source

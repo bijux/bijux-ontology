@@ -41,7 +41,7 @@ from bijux_ontology.models.persistence.loading import (
 from bijux_ontology.models.persistence.types import PreparationIdentity
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import Regime
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.session import ShaclSession
 

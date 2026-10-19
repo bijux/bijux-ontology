@@ -15,7 +15,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchResource,
     SnapshotWitness,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 
 @dataclass(frozen=True)

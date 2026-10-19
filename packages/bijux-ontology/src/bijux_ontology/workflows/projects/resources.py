@@ -24,9 +24,9 @@ from bijux_ontology.jsonld.resources import (
     OfflineDocumentLoader,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.loading import prepare_input
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_input
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig

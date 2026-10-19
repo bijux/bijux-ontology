@@ -21,7 +21,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.paths import capture_path
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
 
 from .types import DiscoveryField, FieldObservation, ObservedField, RecordObservation

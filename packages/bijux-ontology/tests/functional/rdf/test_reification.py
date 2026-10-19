@@ -14,8 +14,8 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.reification.checking import check_reifications
 from bijux_ontology.rdf.reification.reading import inspect_reifications
 from bijux_ontology.rdf.reification.types import ReificationContract, ReificationRecord
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 S, P, R, OTHER, NOTE, G, H = (
     URIRef("urn:reification:" + part)

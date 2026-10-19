@@ -26,8 +26,8 @@ from bijux_ontology.rdf.answers.comparison import compare_answers
 from bijux_ontology.rdf.answers.reading import capture_answer
 from bijux_ontology.rdf.queries.access import QueryScope, _graphs, _result
 from bijux_ontology.rdf.queries.protocol import term_data
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, validate_triple
 
 from .types import (

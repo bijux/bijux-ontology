@@ -16,7 +16,7 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import term_key
 
 from .types import QueryAnswers, QueryRule, QueryRuleResult

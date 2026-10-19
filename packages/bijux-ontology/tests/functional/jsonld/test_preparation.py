@@ -16,7 +16,7 @@ from bijux_ontology.execution.limits import Limits
 from bijux_ontology.jsonld.conversion import convert_to_rdf
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import context_document_loader
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = "https://example.org/"

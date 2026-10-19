@@ -22,8 +22,8 @@ from bijux_ontology.declarations.types import SubjectIdentity
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, BudgetKind, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 EX = Namespace("urn:projection:")
 

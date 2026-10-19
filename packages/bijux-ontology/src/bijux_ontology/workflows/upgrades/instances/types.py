@@ -14,7 +14,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchValue,
 )
 from bijux_ontology.rdf.paths import RdfPath
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.value_comparison.types import LiteralValueComparison
 
 
