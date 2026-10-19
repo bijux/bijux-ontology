@@ -1,7 +1,7 @@
 """Finite reasoner-backed consumer upgrade impact with preserved raw evidence."""
 
-from .checking import assess_logical_upgrade
-from .types import (
+from ..editing.upgrades.checking import assess_logical_upgrade
+from ..editing.upgrades.types import (
     EntailmentContract,
     LogicalObservation,
     LogicalSide,

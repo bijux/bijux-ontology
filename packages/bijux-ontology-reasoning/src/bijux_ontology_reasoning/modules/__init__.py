@@ -1,7 +1,7 @@
 """Checked source-aware module moves and explicit inlining, without publication."""
 
-from .checking import prepare_module_refactor
-from .types import (
+from ..editing.modules.checking import prepare_module_refactor
+from ..editing.modules.types import (
     AxiomMove,
     ChangedModule,
     ConsumerModuleCheck,

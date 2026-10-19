@@ -1,6 +1,6 @@
 """Explicit individual realization through the optional prepared native session."""
 
-from .types import (
+from ..inference.individuals.types import (
     IndividualAnswer,
     IndividualFamily,
     IndividualQuery,

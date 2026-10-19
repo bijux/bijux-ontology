@@ -9,10 +9,10 @@ from rdflib import URIRef
 from bijux_ontology.reports import Report
 
 from ..axioms.types import ProjectedAxiom
-from ..diagnosis.types import ConsistencyCheck
 from ..documents.types import OwlDocument
-from ..entailment.types import EntailmentCheck
-from ..explanations.types import ExplanationCheck, SourceAxiom
+from ..inference.consistency.types import ConsistencyCheck
+from ..inference.entailment.types import EntailmentCheck
+from ..inference.explanations.types import ExplanationCheck, SourceAxiom
 
 
 @dataclass(frozen=True)

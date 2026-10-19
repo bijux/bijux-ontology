@@ -1,7 +1,7 @@
 """Explicit mapping-row interpretations checked against native joint theories."""
 
-from .checking import check_mapping_bridges
-from .types import (
+from ..theories.bridges.checking import check_mapping_bridges
+from ..theories.bridges.types import (
     BridgeAttribution,
     BridgeInterpretation,
     BridgeKind,

@@ -1,7 +1,11 @@
 """Explicit owned DL consistency and named-class satisfiability checks."""
 
-from .checking import check_consistency
-from .types import ClassSatisfiability, ConsistencyCheck, ReasonerIdentity
+from ..inference.consistency.checking import check_consistency
+from ..inference.consistency.types import (
+    ClassSatisfiability,
+    ConsistencyCheck,
+    ReasonerIdentity,
+)
 
 __all__ = [
     "ClassSatisfiability",

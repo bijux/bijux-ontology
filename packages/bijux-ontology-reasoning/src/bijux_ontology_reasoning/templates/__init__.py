@@ -1,8 +1,8 @@
 """Finite maintained ROBOT table authoring with checked typed native output."""
 
-from .backend import prepare_template_backend
-from .checking import compile_table_template
-from .types import (
+from ..authoring.templates.backend import prepare_template_backend
+from ..authoring.templates.checking import compile_table_template
+from ..authoring.templates.types import (
     TableCompilation,
     TableRowReceipt,
     TemplateBackend,

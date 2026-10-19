@@ -1,9 +1,9 @@
 """Explicit local maintained DOSDP syntactic queries and exact filler coverage."""
 
-from .bundles import prepare_dosdp_backend
-from .checking import check_patterns
-from .preparation import prepare_dosdp_pattern
-from .types import (
+from ..authoring.patterns.bundles import prepare_dosdp_backend
+from ..authoring.patterns.checking import check_patterns
+from ..authoring.patterns.preparation import prepare_dosdp_pattern
+from ..authoring.patterns.types import (
     DosdpPattern,
     DosdpQueryBackend,
     PatternCoverage,

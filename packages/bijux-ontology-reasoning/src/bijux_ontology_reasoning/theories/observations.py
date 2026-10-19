@@ -10,8 +10,8 @@ from bijux_ontology.reports import Issue, Report
 
 from ..axioms.types import ProjectedAxiom
 from ..backend.types import OwlProfileBackend
-from ..diagnosis.checking import check_consistency
-from ..entailment.checking import check_entailments
+from ..inference.consistency.checking import check_consistency
+from ..inference.entailment.checking import check_entailments
 from .sources import reserve
 from .types import TheoryComponent, TheoryObservation
 

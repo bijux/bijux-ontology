@@ -1,7 +1,7 @@
 """Checked OWL entity-role renaming with explicit module and annotation scope."""
 
-from .checking import prepare_role_rename
-from .types import (
+from ...editing.renaming.checking import prepare_role_rename
+from ...editing.renaming.types import (
     AnnotationRole,
     ModuleCheck,
     ModuleInterfaceChange,

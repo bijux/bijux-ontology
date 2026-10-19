@@ -1,8 +1,8 @@
 """Prepared optional native reasoning and finite inference artifacts."""
 
-from .checking import ReasoningSession
-from .preparation import prepare_reasoning_theory
-from .types import (
+from ..inference.sessions.checking import ReasoningSession
+from ..inference.sessions.preparation import prepare_reasoning_theory
+from ..inference.sessions.types import (
     InferenceProjection,
     InferenceSelection,
     InferredExistential,
