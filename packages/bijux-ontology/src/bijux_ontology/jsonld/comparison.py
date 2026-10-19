@@ -6,6 +6,9 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import replace
 
+from rdflib import BNode, Graph, Literal, Namespace
+from rdflib.term import Node
+
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -19,8 +22,12 @@ from .observations import ObservedOccurrence, SourcePath, location
 from .resources import DocumentLoader
 
 
-def _resource(value: str | None) -> str | None:
-    return "_:" if isinstance(value, str) and value.startswith("_:") else value
+def _resource(value: str | None, implicit: int | None = None) -> str | None:
+    return (
+        "_:"
+        if implicit is not None or isinstance(value, str) and value.startswith("_:")
+        else value
+    )
 
 
 def _signature(item: ObservedOccurrence) -> tuple[object, ...]:
@@ -29,16 +36,18 @@ def _signature(item: ObservedOccurrence) -> tuple[object, ...]:
         item.predicate,
         item.reverse,
         item.container,
-        _resource(item.subject),
+        _resource(item.subject, item.subject_identity),
         "_:" if item.anonymous_graph else _resource(item.graph),
         traits.kind,
         traits.datatype,
         traits.language.lower() if traits.language else None,
         traits.direction,
-        _resource(traits.identifier)
-        if traits.identifier_kind == "blank"
+        _resource(traits.identifier, item.identifier_identity)
+        if traits.identifier_kind == "blank" or item.identifier_identity is not None
         else traits.identifier,
-        tuple(sorted(traits.types)),
+        tuple(
+            sorted("_:" if value.startswith("_:") else value for value in traits.types)
+        ),
         item.empty,
     )
 
@@ -80,6 +89,99 @@ def _display(values: tuple[object, ...]) -> str:
     return json.dumps(values, ensure_ascii=False)
 
 
+def _structure(items: Sequence[ObservedOccurrence], budget: Budget) -> Graph:
+    """Encode selected traits with one identity space for every resource role.
+
+    Record nodes keep source associations and list membership separate from RDF
+    resource identity. Literal contents remain outside this mapping/coercion
+    comparison, as they are in the ordinary usage signatures.
+    """
+    graph = Graph()
+    vocabulary = Namespace("urn:bijux:jsonld-usage:")
+    nodes: dict[tuple[str, str | int], BNode] = {}
+    lists: dict[tuple[str, int | None], BNode] = {}
+    retained: set[tuple[object, ...]] = set()
+
+    def resource(value: str | None, implicit: int | None = None) -> Node:
+        """Preserve explicit and implicit node identities without merging them."""
+        if implicit is not None:
+            key: tuple[str, str | int] = ("implicit", implicit)
+        elif value is not None and value.startswith("_:"):
+            key = ("blank", value)
+        else:
+            return (
+                Literal(value)
+                if value is not None
+                else Literal("absent", datatype=vocabulary["absent"])
+            )
+        if key not in nodes:
+            budget.consume("states")
+            nodes[key] = BNode()
+        return nodes[key]
+
+    for item in items:
+        budget.consume("work")
+        traits = item.traits
+        signature = _signature(item)
+        key = (
+            item.location,
+            signature,
+            item.subject,
+            item.graph,
+            traits.identifier,
+            tuple(sorted(traits.types)),
+            item.subject_identity,
+            item.graph_identity,
+            item.identifier_identity,
+            item.list_id if not item.empty else None,
+            item.list_position,
+        )
+        if key in retained:
+            continue
+        retained.add(key)
+        budget.consume("states")
+        record = BNode()
+        for role, value in (
+            ("location", item.location),
+            (
+                "traits",
+                _display(
+                    (
+                        item.predicate,
+                        item.reverse,
+                        item.container,
+                        traits.kind,
+                        traits.datatype,
+                        traits.language.lower() if traits.language else None,
+                        traits.direction,
+                        item.empty,
+                    )
+                ),
+            ),
+            ("subject", resource(item.subject, item.subject_identity)),
+            ("graph", resource(item.graph, item.graph_identity)),
+            ("identifier", resource(traits.identifier, item.identifier_identity)),
+        ):
+            graph.add(
+                (
+                    record,
+                    vocabulary[role],
+                    value if isinstance(value, Node) else Literal(value),
+                )
+            )
+        for node_type in traits.types:
+            graph.add((record, vocabulary["type"], resource(node_type)))
+        if item.container == "list":
+            if item.empty:
+                head: Node = vocabulary["empty-list"]
+            else:
+                head = lists.setdefault((item.location, item.list_id), BNode())
+            graph.add((record, vocabulary["list"], head))
+            graph.add((record, vocabulary["position"], Literal(item.list_position)))
+            graph.add((record, vocabulary["length"], Literal(item.list_length)))
+    return graph
+
+
 def compare_context_usages(
     before_document: object,
     after_document: object,
@@ -97,6 +199,7 @@ def compare_context_usages(
     Documents include their original contexts. Unused definition spelling is
     outside this representative scope. This operation does not establish complete
     serialization equivalence or compatibility for unobserved application data.
+    All selected resource roles share one consistent blank-node correspondence.
     Prepared usages reuse their established expansion and owned resources;
     loader/base overrides for an already prepared side are rejected.
     """
@@ -106,6 +209,7 @@ def compare_context_usages(
     issues = IssueCollector(operation)
     checked = 0
     views: list[PreparedUsages | None] = []
+    selected: tuple[list[ObservedOccurrence], list[ObservedOccurrence]] = ([], [])
     try:
         for name, document, base, loader in (
             ("before", before_document, before_base, before_loader),
@@ -186,6 +290,8 @@ def compare_context_usages(
                         )
                     )
                     continue
+                selected[0].extend(previous.occurrences)
+                selected[1].extend(current.occurrences)
                 previous_groups, current_groups = (
                     _group(previous.occurrences),
                     _group(current.occurrences),
@@ -206,6 +312,36 @@ def compare_context_usages(
                                 actual=_display(new),
                             )
                         )
+            if selected[0] and not any(
+                issue.code == "context.usage_meaning_changed" for issue in issues
+            ):
+                try:
+                    topology = compare_rdf(
+                        _structure(selected[0], operation),
+                        _structure(selected[1], operation),
+                        budget=operation,
+                    )
+                except LimitExceeded:
+                    raise
+                except InputError as error:
+                    issues.append(
+                        Issue(
+                            "context.change_unverified",
+                            str(error),
+                            kind="unverified",
+                        )
+                    )
+                else:
+                    if topology.outcome == "disagreement":
+                        issues.append(
+                            Issue(
+                                "context.usage_meaning_changed",
+                                "Selected usages changed shared node or graph identity",
+                                selected[0][0].location,
+                            )
+                        )
+                    elif not topology.verified:
+                        issues.extend(topology.issues)
     except LimitExceeded as error:
         issues.exhausted(str(error))
     return Report(

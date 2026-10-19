@@ -21,7 +21,7 @@ UseRole = Literal["term", "class", "predicate", "datatype"]
 
 @dataclass(frozen=True)
 class Use:
-    """One actual declaration or observed reference with its application owner."""
+    """One actual reference; graph identity tokens are local to its preparation."""
 
     iri: str
     role: UseRole
@@ -33,6 +33,8 @@ class Use:
     reverse: bool = False
     container: str | None = None
     graph: str | None = None
+    anonymous_graph: bool = False
+    graph_identity: int | None = None
 
 
 @dataclass(frozen=True)
@@ -63,6 +65,8 @@ def _observed(
         reverse=item.reverse,
         container=item.container,
         graph=item.graph,
+        anonymous_graph=item.anonymous_graph,
+        graph_identity=item.graph_identity,
     )
 
 

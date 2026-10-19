@@ -43,7 +43,9 @@ class ObservedOccurrence:
     group members within one expansion only; they are not RDF identifiers or
     stable correspondence keys across independent expansions. anonymous_graph
     distinguishes an unnamed graph scope from the default graph without
-    fabricating a blank-node identifier.
+    fabricating a blank-node identifier. Identity tokens associate implicit nodes
+    across selected occurrences from one expansion, never across documents or
+    independent expansions. Differential matching excludes these local tokens.
     """
 
     predicate: str
@@ -59,6 +61,9 @@ class ObservedOccurrence:
     list_id: int | None = None
     list_length: int | None = None
     anonymous_graph: bool = False
+    subject_identity: int | None = None
+    graph_identity: int | None = None
+    identifier_identity: int | None = None
 
     @property
     def value(self) -> object:
@@ -118,14 +123,24 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
     """Collect expanded contributions while assigning reversal to each edge."""
     result: list[ObservedOccurrence] = []
     list_count = 0
+    identities: dict[int, int] = {}
+
+    def identity(node: object) -> int:
+        """Name an implicit node only within this owned expansion."""
+        key = id(node)
+        return identities.setdefault(key, len(identities))
 
     def walk(
-        value: object, graph: str | None, depth: int, anonymous_graph: bool = False
+        value: object,
+        graph: str | None,
+        depth: int,
+        anonymous_graph: bool = False,
+        graph_identity: int | None = None,
     ) -> None:
         """Retain node and graph scope without inheriting an ancestor's reversal."""
         if isinstance(value, list):
             for node in cast(list[object], value):
-                walk(node, graph, depth, anonymous_graph)
+                walk(node, graph, depth, anonymous_graph, graph_identity)
             return
         if not isinstance(value, dict):
             return
@@ -134,6 +149,7 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
             return
         subject = node.get("@id")
         subject = subject if isinstance(subject, str) else None
+        subject_identity = identity(node) if subject is None else None
         if subject is not None:
             result.append(
                 ObservedOccurrence(
@@ -143,6 +159,7 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                     graph,
                     depth=depth,
                     anonymous_graph=anonymous_graph,
+                    graph_identity=graph_identity,
                 )
             )
         for node_type in _nodes(node.get("@type", [])):
@@ -154,22 +171,44 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                     graph,
                     depth=depth,
                     anonymous_graph=anonymous_graph,
+                    subject_identity=subject_identity,
+                    graph_identity=graph_identity,
                 )
             )
         if "@graph" in node:
             # Public expansion removes the top-level default-graph wrapper.
             # Each surviving @graph establishes its own named scope, even when
             # its blank graph name was not explicitly supplied in the document.
-            walk(node["@graph"], subject, depth, subject is None)
+            walk(node["@graph"], subject, depth, subject is None, subject_identity)
         if "@included" in node:
-            walk(node["@included"], graph, depth, anonymous_graph)
+            walk(node["@included"], graph, depth, anonymous_graph, graph_identity)
         for predicate, values in node.items():
             if not predicate.startswith("@"):
-                edge(predicate, values, subject, graph, depth, False, anonymous_graph)
+                edge(
+                    predicate,
+                    values,
+                    subject,
+                    graph,
+                    depth,
+                    False,
+                    anonymous_graph,
+                    subject_identity,
+                    graph_identity,
+                )
         reverse = node.get("@reverse")
         if isinstance(reverse, dict):
             for predicate, values in cast(dict[str, object], reverse).items():
-                edge(predicate, values, subject, graph, depth, True, anonymous_graph)
+                edge(
+                    predicate,
+                    values,
+                    subject,
+                    graph,
+                    depth,
+                    True,
+                    anonymous_graph,
+                    subject_identity,
+                    graph_identity,
+                )
 
     def edge(
         predicate: str,
@@ -179,6 +218,8 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
         depth: int,
         reverse: bool,
         anonymous_graph: bool,
+        subject_identity: int | None,
+        graph_identity: int | None,
     ) -> None:
         """Emit every member while preserving list sequence separately."""
         nonlocal list_count
@@ -204,6 +245,8 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                         list_id=list_id,
                         list_length=0,
                         anonymous_graph=anonymous_graph,
+                        subject_identity=subject_identity,
+                        graph_identity=graph_identity,
                     )
                 )
             for index, member in enumerate(members):
@@ -220,9 +263,18 @@ def occurrences(expanded: object) -> tuple[ObservedOccurrence, ...]:
                         list_id=list_id,
                         list_length=len(members) if listed else None,
                         anonymous_graph=anonymous_graph,
+                        subject_identity=subject_identity,
+                        graph_identity=graph_identity,
+                        identifier_identity=(
+                            identity(member)
+                            if isinstance(member, dict)
+                            and "@id" not in member
+                            and "@value" not in member
+                            else None
+                        ),
                     )
                 )
-                walk(member, graph, depth + 1, anonymous_graph)
+                walk(member, graph, depth + 1, anonymous_graph, graph_identity)
 
     walk(expanded, None, 0)
     return tuple(result)

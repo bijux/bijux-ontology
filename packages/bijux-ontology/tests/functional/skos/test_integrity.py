@@ -290,3 +290,104 @@ def test_collection_policy_retains_direct_literal_members_and_exact_selection() 
     ]
     assert check_skos(graph, rules=("collections",), concepts=(str(EX.Valid),)).verified
     assert frozenset(graph) == before
+
+
+def test_selected_collection_retains_list_checks_without_unrelated_findings() -> None:
+    graph = Graph().add((EX.Good, SKOS.member, EX.A))
+    missing = BNode()
+    graph.add((EX.Bad, SKOS.memberList, missing))
+    assert check_skos(graph, concepts=(str(EX.Good),), rules=("collections",)).verified
+    for concepts in ((), (str(EX.Bad),)):
+        report = check_skos(graph, concepts=concepts, rules=("collections",))
+        assert [(issue.code, issue.location) for issue in report.issues] == [
+            ("skos.policy.member_list_malformed", str(EX.Bad))
+        ]
+    graph.add((EX.Selected, SKOS.memberList, missing))
+    shared = check_skos(
+        graph,
+        concepts=(str(EX.Selected),),
+        rules=("collections", "deprecated-active"),
+    )
+    assert [(issue.code, issue.location) for issue in shared.issues] == [
+        ("skos.policy.member_list_malformed", str(EX.Selected))
+    ]
+    graph.add((EX.Selected, SKOS.memberList, RDF.nil))
+    assert any(
+        issue.code == "skos.policy.member_list_ambiguous"
+        for issue in check_skos(
+            graph, concepts=(str(EX.Selected),), rules=("collections",)
+        ).issues
+    )
+    graph.set((EX.Selected, SKOS.memberList, Literal("invalid list head")))
+    assert [
+        issue.code
+        for issue in check_skos(
+            graph, concepts=(str(EX.Selected),), rules=("collections",)
+        ).issues
+    ] == ["skos.policy.member_list_malformed"]
+
+
+def test_notation_collection_members_intersect_exact_and_scheme_selections() -> None:
+    graph = Graph()
+    head = BNode()
+    Collection(graph, head, [EX.A, EX.B])
+    graph.add((EX.Group, SKOS.memberList, head))
+    graph.add((EX.A, RDF.type, SKOS.Concept))
+    graph.add((EX.B, RDF.type, SKOS.Concept))
+    graph.add((EX.A, SKOS.inScheme, EX.One))
+    graph.add((EX.B, SKOS.inScheme, EX.Two))
+    graph.add((EX.A, SKOS.notation, Literal("01")))
+    for concepts, schemes in (
+        ((str(EX.A),), ()),
+        ((), (str(EX.One),)),
+        ((str(EX.A), str(EX.B)), (str(EX.One),)),
+    ):
+        assert check_skos(
+            graph,
+            concepts=concepts,
+            schemes=schemes,
+            rules=("notation-required", "notation-unique"),
+            notation_collections=(str(EX.Group),),
+        ).verified
+    for concepts in ((), (str(EX.B),)):
+        report = check_skos(
+            graph,
+            concepts=concepts,
+            rules=("notation-required",),
+            notation_collections=(str(EX.Group),),
+        )
+        assert [(issue.code, issue.location) for issue in report.issues] == [
+            ("skos.policy.notation_missing", str(EX.B))
+        ]
+    graph.add((EX.B, SKOS.notation, Literal("01")))
+    assert check_skos(
+        graph,
+        concepts=(str(EX.A),),
+        rules=("notation-required", "notation-unique"),
+        notation_collections=(str(EX.Group),),
+    ).verified
+    assert [
+        issue.code
+        for issue in check_skos(
+            graph,
+            rules=("notation-unique",),
+            notation_collections=(str(EX.Group),),
+        ).issues
+    ] == ["skos.policy.notation_collision"]
+
+
+def test_selected_deprecated_member_uses_support_without_selecting_other_members() -> (
+    None
+):
+    graph = Graph()
+    head = BNode()
+    Collection(graph, head, [EX.A, EX.B])
+    graph.add((EX.Group, SKOS.memberList, head))
+    graph.add((EX.Bad, SKOS.memberList, BNode()))
+    for node in (EX.A, EX.B):
+        graph.add((node, RDF.type, SKOS.Concept))
+        graph.add((node, OWL.deprecated, Literal(True)))
+    report = check_skos(graph, concepts=(str(EX.A),), rules=("deprecated-active",))
+    assert [(issue.code, issue.location) for issue in report.issues] == [
+        ("skos.policy.deprecated_active", str(EX.A))
+    ]

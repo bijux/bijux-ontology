@@ -67,6 +67,8 @@ def check_skos(
     language coverage, schemes, definitions, notations and unresolved targets are
     opt-in policies; they are never relabelled universal SKOS contradictions.
     ``concepts`` selects exact resources; ``schemes`` narrows known membership.
+    Notation collections intersect that selection. Supporting ordered lists do
+    not select their other members for publication checks.
     """
     if isinstance(rules, (str, bytes)) or not rules or set(rules) - _RULES:
         raise InputError("Select supported nonempty SKOS rule names")

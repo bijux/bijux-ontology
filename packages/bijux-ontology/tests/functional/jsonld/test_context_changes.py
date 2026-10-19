@@ -1,6 +1,8 @@
 """Context upgrade comparisons use representative processor meanings, not spelling."""
 
+import json
 from copy import deepcopy
+from typing import cast
 
 import pytest
 
@@ -228,3 +230,122 @@ def test_graph_wrappers_and_blank_graph_labels_keep_equivalent_scope() -> None:
     nested = {"@context": {"@vocab": EX, "scope": "@nest"}, "scope": {"p": "Text"}}
     assert compare_context_usages(wrapper, nested, [("scope", "p")]).verified
     assert compare_serializations(wrapper, nested).verified
+
+
+@pytest.mark.parametrize(
+    ("document", "selectors"),
+    [
+        (
+            {
+                "@context": {
+                    "p": {"@id": EX + "p", "@type": "@vocab"},
+                    "Target": "_:second",
+                },
+                "@id": "_:first",
+                "p": "Target",
+            },
+            [("p",)],
+        ),
+        (
+            {
+                "@id": EX + "root",
+                EX + "p": {"@id": "_:first"},
+                EX + "q": {"@id": "_:second"},
+            },
+            [(EX + "p",), (EX + "q",)],
+        ),
+        (
+            {
+                "@graph": [
+                    {"@id": "_:first", EX + "p": "one"},
+                    {"@id": "_:second", EX + "q": "two"},
+                ]
+            },
+            [("@graph", 0, EX + "p"), ("@graph", 1, EX + "q")],
+        ),
+        (
+            {
+                EX + "first": {
+                    "@id": "_:first",
+                    "@graph": {"@id": EX + "s", EX + "p": "one"},
+                },
+                EX + "second": {
+                    "@id": "_:second",
+                    "@graph": {"@id": EX + "t", EX + "p": "two"},
+                },
+            },
+            [(EX + "first", "@graph", EX + "p"), (EX + "second", "@graph", EX + "p")],
+        ),
+        (
+            {
+                "@id": EX + "root",
+                EX + "p": {"@id": "_:first", "@type": "_:second"},
+            },
+            [(EX + "p",)],
+        ),
+        (
+            {
+                "@id": "_:first",
+                EX + "p": {"@list": [{"@id": "_:first"}, {"@id": "_:second"}]},
+            },
+            [(EX + "p",)],
+        ),
+    ],
+    ids=("self-loop", "referents", "subjects", "graphs", "types", "lists"),
+)
+def test_selected_resource_identity_uses_one_global_blank_correspondence(
+    document: object, selectors: list[tuple[str | int, ...]]
+) -> None:
+    encoded = json.dumps(document)
+    renamed = json.loads(encoded.replace("_:", "_:renamed-"))
+    assert compare_context_usages(document, renamed, selectors).verified
+
+    merged = json.loads(encoded.replace("_:second", "_:first"))
+    for before, after in ((document, merged), (merged, document)):
+        report = compare_context_usages(before, after, selectors)
+        assert report.complete and report.outcome == "disagreement"
+        assert {issue.code for issue in report.issues} == {
+            "context.usage_meaning_changed"
+        }
+    iri_document = json.loads(encoded.replace("_:", EX))
+    iri_merged = json.loads(encoded.replace("_:second", "_:first").replace("_:", EX))
+    assert (
+        compare_context_usages(iri_document, iri_merged, selectors).outcome
+        == "disagreement"
+    )
+
+
+def test_selected_topology_does_not_compare_unselected_assertions() -> None:
+    before = {"@id": "_:root", EX + "p": {"@id": "_:other"}, EX + "q": "text"}
+    after = {"@id": "_:renamed", EX + "p": {"@id": "_:target"}, EX + "q": 7}
+    assert compare_context_usages(before, after, [(EX + "p",)]).verified
+    assert compare_serializations(before, after).outcome == "disagreement"
+
+
+def test_implicit_subjects_and_graphs_keep_distinct_selected_identities() -> None:
+    before = {
+        "@context": {"@vocab": EX, "box": EX + "box"},
+        "p": "one",
+        "box": {"q": "two"},
+    }
+    after = deepcopy(before)
+    cast(dict[str, str], after["@context"])["box"] = "@nest"
+    selectors = [("p",), ("box", "q")]
+    assert compare_context_usages(before, before, selectors).verified
+    labeled = deepcopy(before)
+    labeled["@id"] = "_:root"
+    cast(dict[str, str], labeled["box"])["@id"] = "_:child"
+    assert compare_context_usages(before, labeled, [*selectors, ("box",)]).verified
+    assert compare_context_usages(before, after, selectors).outcome == "disagreement"
+
+    separate = {
+        "@context": {"@vocab": EX, "nodes": "@graph"},
+        "first": {"nodes": {"@id": EX + "s", "p": "one"}},
+        "second": {"nodes": {"@id": EX + "t", "p": "two"}},
+    }
+    shared = deepcopy(separate)
+    cast(dict[str, object], shared["first"])["@id"] = "_:shared"
+    cast(dict[str, object], shared["second"])["@id"] = "_:shared"
+    selectors = [("first", "nodes", "p"), ("second", "nodes", "p")]
+    assert compare_context_usages(separate, separate, selectors).verified
+    assert compare_context_usages(separate, shared, selectors).outcome == "disagreement"
