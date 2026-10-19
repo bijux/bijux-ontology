@@ -1,10 +1,11 @@
 """Actual callable serializer samples retain explicit options and failed contracts."""
 
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Annotated
 
 from pydantic import BaseModel, Field
-from rdflib import Graph, Namespace
+from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology import (
@@ -26,6 +27,7 @@ from bijux_ontology.models.emission.serialization import (
     check_instance,
     check_serialized,
 )
+from bijux_ontology.models.preparation import PreparedModels
 
 EX = Namespace("https://example.org/")
 
@@ -173,6 +175,89 @@ def test_serializer_failure_and_conflicting_context_preserve_incomplete_samples(
     )
     assert conflict.report.outcome == "input_error"
     assert conflict.output == {"@context": {"name": str(EX.name)}}
+
+
+def test_external_context_preserves_actual_json_types_and_order() -> None:
+    """An external context cannot repair a serializer's different invalid context."""
+    model = ModelDeclaration("record", (str(EX.Record),))
+    models, usages = (model,), (ModelUsage("record"),)
+    expected = {"@propagate": True, "name": str(EX.name)}
+    prepared = PreparedModels(models, vocabulary(), context=expected)
+    for propagate in (1, 1.0):
+        actual = {
+            "@context": {"name": str(EX.name), "@propagate": propagate},
+            "@type": str(EX.Record),
+            "name": "Name",
+        }
+        original = check_serialized(actual, models, usages, vocabulary=vocabulary())
+        assert original.report.outcome == "input_error"
+        checked = check_serialized(
+            actual, models, usages, vocabulary=vocabulary(), context=expected
+        )
+        assert checked.report.outcome == "input_error"
+        assert checked.output == actual and checked.document_json is None
+        assert prepared.check(actual, usages).outcome == "input_error"
+
+    reordered = {
+        "@context": {"name": str(EX.name), "@propagate": True},
+        "@type": str(EX.Record),
+        "name": "Name",
+    }
+    assert check_serialized(
+        reordered, models, usages, vocabulary=vocabulary(), context=expected
+    ).report.verified
+    assert prepared.check(reordered, usages).verified
+
+    subclass_context = OrderedDict((("name", URIRef(EX.name)), ("@propagate", True)))
+    compatible = {**reordered, "@context": subclass_context}
+    assert check_serialized(
+        compatible, models, usages, vocabulary=vocabulary(), context=expected
+    ).report.verified
+    assert prepared.check(
+        {**reordered, "@context": dict(subclass_context)}, usages
+    ).verified
+    assert (
+        PreparedModels(models, vocabulary(), context=dict(subclass_context))
+        .check(reordered, usages)
+        .verified
+    )
+
+    class ContextArray(list[object]):
+        """An ordinary application list subclass retains JSON array meaning."""
+
+    contexts = [{"name": str(EX.name)}, {"@propagate": True}]
+    ordered = {"@context": contexts, "@type": str(EX.Record), "name": "Name"}
+    assert check_serialized(
+        ordered, models, usages, vocabulary=vocabulary(), context=contexts
+    ).report.verified
+    assert check_serialized(
+        {**ordered, "@context": ContextArray(contexts)},
+        models,
+        usages,
+        vocabulary=vocabulary(),
+        context=contexts,
+    ).report.verified
+    assert (
+        PreparedModels(models, vocabulary(), context=contexts)
+        .check(ordered, usages)
+        .verified
+    )
+    assert (
+        check_serialized(
+            ordered,
+            models,
+            usages,
+            vocabulary=vocabulary(),
+            context=list(reversed(contexts)),
+        ).report.outcome
+        == "input_error"
+    )
+    assert (
+        PreparedModels(models, vocabulary(), context=list(reversed(contexts)))
+        .check(ordered, usages)
+        .outcome
+        == "input_error"
+    )
 
 
 def test_serializer_checks_share_a_cumulative_operation_budget() -> None:

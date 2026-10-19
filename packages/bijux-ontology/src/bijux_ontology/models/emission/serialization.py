@@ -20,6 +20,7 @@ from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.context import same_context
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.terms import bound_text
@@ -271,7 +272,9 @@ def _contextualized_output(
         max_depth=operation.limits.max_depth,
     )
     if isinstance(output, dict):
-        if "@context" in output and output["@context"] != owned_context:
+        if "@context" in output and not same_context(
+            output["@context"], owned_context, operation
+        ):
             raise InputError("Supplied context conflicts with actual serializer output")
         return {**output, "@context": owned_context}
     if isinstance(output, list):
