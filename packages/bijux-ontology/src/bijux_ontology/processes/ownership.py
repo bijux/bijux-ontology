@@ -40,6 +40,7 @@ def stop_owned_process(
     the caller retains responsibility for propagating that failed outcome.
     """
     failures: list[str] = []
+    group_failure: str | None = None
     for force in (False, True):
         try:
             if os.name == "posix":
@@ -50,7 +51,16 @@ def stop_owned_process(
                 else:
                     process.kill()
         except (ResourceError, OSError) as error:
-            failures.append(str(error))
+            if os.name == "posix":
+                group_failure = str(error)
+            else:
+                failures.append(str(error))
+        else:
+            if force:
+                # Final group escalation still runs after leader exit. Its
+                # success supersedes an earlier transient signalling failure;
+                # the direct-child wait below must also establish actual reap.
+                group_failure = None
         try:
             process.wait(timeout=0.2)
         except subprocess.TimeoutExpired:
@@ -62,6 +72,8 @@ def stop_owned_process(
                     process.wait(timeout=0.2)
                 except (OSError, subprocess.TimeoutExpired) as error:
                     failures.append(f"Cannot reap owned worker: {error}")
+    if group_failure is not None:
+        failures.append(group_failure)
     if failures:
         cleanup_error = ResourceError(
             "Worker cleanup failed: " + "; ".join(dict.fromkeys(failures))
