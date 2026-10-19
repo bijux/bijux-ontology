@@ -4,17 +4,18 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal as Kind
 
-from rdflib import BNode, Dataset, Graph, URIRef
+from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.anonymous.comparison import compare_anonymous
+from bijux_ontology.vocabulary.anonymous.types import AnonymousDifferences
 from bijux_ontology.vocabulary.facts.comparison import compare_selected_facts
 from bijux_ontology.vocabulary.facts.types import FactSelection, SelectedFactDifferences
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
@@ -112,6 +113,7 @@ class VocabularyChanges:
     changes: tuple[Change, ...]
     report: Report
     selected_facts: SelectedFactDifferences | None = field(default=None, kw_only=True)
+    anonymous: AnonymousDifferences | None = field(default=None, kw_only=True)
 
 
 def selected_view(
@@ -160,20 +162,16 @@ def _facts(
     annotations: Sequence[str],
     budget: Budget,
     issues: IssueCollector,
-) -> tuple[Facts, Dataset] | None:
+) -> Facts | None:
     selected = view.all_statements(budget=budget)
     list.extend(issues, selected.report.issues)
     if not selected.report.complete:
         return None
     facts: Facts = {}
-    anonymous = Dataset()
     for edge in selected.items:
         budget.consume("work")
         subject, predicate, value = edge.subject, edge.predicate, edge.object
         if isinstance(subject, BNode) or isinstance(value, BNode):
-            anonymous.graph(URIRef("urn:bijux:scope:" + source_role(edge.scope))).add(
-                (subject, predicate, value)
-            )
             continue
         if not isinstance(subject, URIRef):
             continue
@@ -203,7 +201,7 @@ def _facts(
         values.setdefault(term_key(target), _FactValue(target, set())).scopes.add(
             edge.scope
         )
-    return facts, anonymous
+    return facts
 
 
 def _fact_scope(values: dict[tuple[str | None, ...], _FactValue]) -> tuple[str, ...]:
@@ -276,6 +274,7 @@ def compare_vocabularies(
     complete = True
     checked = 0
     selected_facts = None
+    anonymous = None
     try:
         if (
             fact_selection is not None or isinstance(before, PreparedSource)
@@ -384,8 +383,7 @@ def compare_vocabularies(
         new_selected = _facts(right, annotation_predicates, operation, issues)
         if old_selected is None or new_selected is None:
             raise LimitExceeded("Selected fact inventory could not be completed")
-        old_facts, old_anonymous = old_selected
-        new_facts, new_anonymous = new_selected
+        old_facts, new_facts = old_selected, new_selected
         for key in sorted(old_facts.keys() | new_facts.keys()):
             operation.consume("work")
             checked += 1
@@ -409,21 +407,13 @@ def compare_vocabularies(
                         _fact_scope(new_values),
                     )
                 )
-        if old_anonymous or new_anonymous:
-            comparison = compare_rdf(old_anonymous, new_anonymous, budget=operation)
-            checked += comparison.checked
-            if comparison.complete and any(
-                issue.code == "rdf.structure_changed" for issue in comparison.issues
-            ):
-                retain(
-                    Change(
-                        "anonymous",
-                        "",
-                    )
-                )
-            elif not comparison.complete:
-                list.extend(issues, comparison.issues)
-                complete = False
+        anonymous = compare_anonymous(left, right, budget=operation)
+        checked += anonymous.report.checked
+        if anonymous.changes:
+            retain(Change("anonymous", ""))
+        if not anonymous.report.complete:
+            issues.extend(anonymous.report.issues)
+            complete = False
         # One empty-to-empty inventory/fact comparison is still actual work.
         if not checked:
             checked = 1
@@ -441,7 +431,11 @@ def compare_vocabularies(
             complete=complete,
             regime="asserted-scoped-facts",
             families=("vocabulary.changes",),
-            children=(selected_facts.report,) if selected_facts is not None else (),
+            children=(
+                *((selected_facts.report,) if selected_facts is not None else ()),
+                *((anonymous.report,) if anonymous is not None else ()),
+            ),
         ),
         selected_facts=selected_facts,
+        anonymous=anonymous,
     )

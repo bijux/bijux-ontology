@@ -23,7 +23,9 @@ def checkpoint(deadline: float, cancel: threading.Event | None) -> None:
 
 
 WorkerModule = Literal[
-    "bijux_ontology.rdf.queries.worker", "bijux_ontology.rdf.canonical.worker"
+    "bijux_ontology.rdf.queries.worker",
+    "bijux_ontology.rdf.canonical.worker",
+    "bijux_ontology.rdf.patches.correspondence",
 ]
 
 
@@ -35,7 +37,7 @@ def execute_worker(
     timeout: float,
     cancel: threading.Event | None = None,
 ) -> bytes:
-    """Run one of the two owned RDF workers and reap its process group.
+    """Run an owned RDF worker and reap its process group.
 
     Payloads and replies are opaque bytes. Domain modules own their protocols;
     this transport owns bounded pipes, cancellation and the worker lifetime.
@@ -43,6 +45,7 @@ def execute_worker(
     if module not in (
         "bijux_ontology.rdf.queries.worker",
         "bijux_ontology.rdf.canonical.worker",
+        "bijux_ontology.rdf.patches.correspondence",
     ):
         raise InputError("Unsupported RDF worker module")
     if not isinstance(payload, bytes) or type(cap) is not int or cap <= 0:

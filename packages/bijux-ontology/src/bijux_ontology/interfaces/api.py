@@ -53,6 +53,7 @@ from bijux_ontology.documents.forms import (
     FormRequirement,
     check_document_form,
 )
+from bijux_ontology.documents.migrations import export_migration
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.interfaces.execution.executor import ExecutionResult, WorkerExecutor
@@ -124,6 +125,29 @@ from bijux_ontology.rdf.datatype_evaluators import (
     DatatypeEvaluator,
     DatatypeRegistry,
 )
+from bijux_ontology.rdf.migrations import MigrationCandidate, MigrationCheck
+from bijux_ontology.rdf.migrations.graphs import GraphRoute, migrate_graphs
+from bijux_ontology.rdf.migrations.values import (
+    LiteralConversion,
+    ValueMap,
+    ValueMigrationCandidate,
+    ValueSelection,
+    migrate_values,
+)
+from bijux_ontology.rdf.patches import (
+    BlankNodePair,
+    DatasetPatch,
+    PatchBlank,
+    PatchBlankBinding,
+    PatchLiteral,
+    PatchPlan,
+    PatchQuad,
+    SnapshotWitness,
+    apply_rdf_patch,
+    patch_from_data,
+    patch_to_data,
+    plan_rdf_patch,
+)
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
 from bijux_ontology.rdf.roles import TermRoleOccurrence, classify_statement
 from bijux_ontology.rdf.snapshots import PreparedSource
@@ -172,6 +196,11 @@ from bijux_ontology.vocabulary.annotations import (
     LanguageCoverage,
     LanguageRequirement,
     check_annotation_coverage,
+)
+from bijux_ontology.vocabulary.anonymous import (
+    AnonymousChange,
+    AnonymousDifferences,
+    NamedAttachment,
 )
 from bijux_ontology.vocabulary.browsing import (
     VocabularyCursor,
@@ -240,6 +269,17 @@ from bijux_ontology.workflows.projects.contracts import (
     ContractResult,
     check_contract,
 )
+from bijux_ontology.workflows.upgrades.anonymous import AnonymousAffectedUse
+from bijux_ontology.workflows.upgrades.applications import (
+    ApplicationDeclarationChange,
+    ApplicationField,
+    ApplicationOutput,
+    ApplicationSampleComparison,
+    ApplicationUpgrade,
+    ApplicationValueChange,
+    ApplicationVersion,
+    compare_applications,
+)
 from bijux_ontology.workflows.upgrades.assessment import (
     UpgradeAssessment,
     assess_upgrade,
@@ -255,6 +295,36 @@ from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
+    "GraphRoute",
+    "migrate_graphs",
+    "LiteralConversion",
+    "MigrationCandidate",
+    "MigrationCheck",
+    "ValueMap",
+    "ValueMigrationCandidate",
+    "ValueSelection",
+    "export_migration",
+    "migrate_values",
+    "BlankNodePair",
+    "DatasetPatch",
+    "PatchBlank",
+    "PatchBlankBinding",
+    "PatchLiteral",
+    "PatchPlan",
+    "PatchQuad",
+    "SnapshotWitness",
+    "apply_rdf_patch",
+    "patch_from_data",
+    "patch_to_data",
+    "plan_rdf_patch",
+    "ApplicationDeclarationChange",
+    "ApplicationField",
+    "ApplicationOutput",
+    "ApplicationSampleComparison",
+    "ApplicationUpgrade",
+    "ApplicationValueChange",
+    "ApplicationVersion",
+    "compare_applications",
     "IntermediateRequirement",
     "PathFieldDeclaration",
     "PathFieldUsage",
@@ -338,6 +408,7 @@ __all__ = [
     "OboAttachment",
     "OboRecord",
     "OboRecords",
+    "NamedAttachment",
     "NamespaceContribution",
     "ModelUsage",
     "ObligationResult",
@@ -392,6 +463,9 @@ __all__ = [
     "ValueEnumeration",
     "ValueTraits",
     "Vocabulary",
+    "AnonymousAffectedUse",
+    "AnonymousChange",
+    "AnonymousDifferences",
     "AnonymousFactComparison",
     "FactAffectedUse",
     "FactGraph",

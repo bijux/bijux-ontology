@@ -150,6 +150,12 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "graph_inventory_conflict graph_route_scope graph_route_collision "
+        "migration_contracts_unverified migration_acceptance_unverified "
+        "value_migration_rejected value_migration_collision "
+        "value_migration_unverified "
+        "patch_unverified patch_precondition_failed patch_removal_missing "
+        "patch_postcondition_failed "
         "literal_conversion_unverified "
         "canonicalization_literal_scope_unverified "
         "canonicalization_graph_scope_unverified canonicalization_empty_graph_loss "
@@ -211,6 +217,8 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "application_unverified application_declaration_changed "
+        "application_value_changed "
         "fact_impact_unverified "
         "child_model_unavailable usage_unavailable deprecation_unverified "
         "corpus_baseline_missing corpus_candidate_missing "

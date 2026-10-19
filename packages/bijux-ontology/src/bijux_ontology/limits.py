@@ -50,6 +50,13 @@ class Budget:
             raise LimitExceeded(f"Exceeded {name}")
         self._counts[kind] = count
 
+    def remaining(self, kind: BudgetKind) -> int:
+        """Expose the cumulative allowance available to a bounded owned worker."""
+        name = "max_total_bytes" if kind == "bytes" else f"max_{kind}"
+        if not hasattr(self.limits, name):
+            raise InputError(f"Unknown budget: {kind}")
+        return int(getattr(self.limits, name)) - self._counts.get(kind, 0)
+
     def _retain_issue(self, issue: Issue, *, repeated: bool) -> None:
         """Transfer paid diagnostics; repeated local retention still costs a slot."""
         identity = id(issue)

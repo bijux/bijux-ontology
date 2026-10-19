@@ -407,9 +407,16 @@ The resulting `selected_facts` retains graph ownership, original RDF terms and
 per-position roles alongside categorized changes. Custom endpoint roles require
 explicit `subject_role`/`object_role` choices. Upgrade `role_uses` accepts explicit
 `RoleUse` contracts; `fact_uses` distinguishes direct from uncertain role joins.
-Anonymous comparisons preserve joint sharing through maintained RDF comparison;
-changed anonymous ownership remains unverified. Incomplete inventories establish
-no missing facts, and graph selectors never pair foreign blank labels.
+Anonymous comparisons preserve joint sharing through maintained RDF comparison.
+`VocabularyChanges.anonymous` retains complete original neighborhoods and their
+named subject attachments, including shared owners and actual graph provenance.
+`UpgradeAssessment.anonymous_uses` identifies affected supplied fields and named
+hierarchy dependencies. Relevant or unowned changes retain scoped uncertainty;
+complete unused attachments leave unrelated finite asserted checks complete.
+`change_qualification` explains this required consumer scope while the original
+selected-fact report remains available. Attachment attribution establishes no
+internal blank-node bijection or arbitrary OWL consequences. Incomplete
+inventories establish no missing facts; foreign blank labels establish no pairing.
 
 Use `ValueDeclaration("iri", role=ResourceRole("class", punning="allow"))`
 to select class identifiers explicitly. Concept and instance roles remain
@@ -583,3 +590,56 @@ unverified. `EmissionCondition(field, equals=literal_or_iri)` compares one exact
 RDF discriminator. Missing, multiple or unresolved terms remain unknown.
 Source presence/null requirements remain separate. Declaration compatibility and
 actual source/entity/native RDF checking preserve their respective scopes.
+
+
+`compare_applications(old_vocabulary, new_vocabulary, before=old, after=new)`
+checks separate `ApplicationVersion` declarations and actual outputs. Stable map
+keys and sample IDs establish consumer correspondence. `ApplicationField` binds
+an actual model field to explicit sample source paths; `ApplicationOutput`
+requires explicit `ModelUsage` bindings, while `SerializerCase` invokes the real
+callback once with its exact options. Inspect `candidate_report`, failure
+`contracts`, declaration changes, field representation, mapping and RDF dataset
+comparisons separately. Changed predicates remain visible even when both versions
+pass. Missing identities, ambiguous source ownership and unavailable baseline
+checks remain unverified; no matching is inferred from IRIs or diagnostic prose.
+Anonymous attachment impacts retain independent before/after use roles.
+
+
+`plan_rdf_patch(base, target)` proposes a portable exact `DatasetPatch` with
+explicit base and target witnesses, quad edits and named-graph inventory changes.
+Use `patch_to_data`/`patch_from_data` for JSON transport and `apply_rdf_patch`
+for transactional application. Changed anonymous content needs explicit owned
+`BlankNodePair` bindings and created/removed-node inventories. Affected base
+references must resolve uniquely or have jointly checked `PatchBlankBinding`
+witnesses. Canonical labels establish no historical correspondence. Wrong bases,
+absent removals, ambiguous bindings and failed identity-preserving postconditions
+return no candidate. Exact numeric lexical forms, shared blanks and selected
+empty graphs survive; union projections and unqualified fidelity remain unknown.
+The same cumulative budget covers host and owned worker bookkeeping; maintained
+isomorphism internals are bounded by the operation's wall-clock deadline.
+
+`migrate_values(source, ValueSelection((predicate,)), action, ...)` proposes
+an exact object-position migration within the supplied snapshot's scope.
+`LiteralConversion(source_datatype, target_datatype)` preserves lexical characters
+for supported string-to-integer and decimal/integer-family interpretations.
+`ValueMap(((old_term, new_term),))` declares explicit exact rewrites, including
+repairs; language changes and value collapse require their separate permissions.
+Unsupported conversions and rejected selected samples expose no partial source.
+The `ValueMigrationCandidate` retains an exact patch and separate inventory counts.
+
+Supply named `MigrationCheck` callbacks through `before_checks` and `after_checks`
+to retain actual application contracts on independent authorized snapshots.
+Baseline failures remain visible when a repair passes its after contracts;
+missing, empty or incomplete after checks cannot qualify acceptance. Callbacks
+are ordinary caller-owned Python code. Inspect the candidate, then explicitly
+call `export_migration(candidate, accept=True, format="trig")` to request an
+export through the existing faithful serialization boundary.
+
+`migrate_graphs(source, (GraphRoute(old_graph, new_graph),), ...)` routes original
+quad memberships simultaneously. Routes may select subjects and predicates;
+`None` denotes the default graph and blank selectors require owned terms.
+Competing partition contributions require `merge=True`. Graph creation and
+removal use explicit `added_graphs` and `removed_graphs`; a removed graph must
+be empty after the proposed moves. Exact terms, shared blanks and unrelated
+partitions remain intact. The same before/after contract and explicit export
+gate applies, including actual graph-local constraint failures.

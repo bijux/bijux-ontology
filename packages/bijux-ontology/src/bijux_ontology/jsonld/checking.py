@@ -130,8 +130,14 @@ class PreparedUsages:
     def _expand(self, document: object) -> list[dict[str, object]]:
         return expand_document(document, base=self._base, document_loader=self._loader)
 
-    def observe(self, path: SourcePath) -> ObservedUsage:
-        """Return the complete supported selected usage, or its limitation."""
+    def observe(
+        self, path: SourcePath, *, budget: Budget | None = None
+    ) -> ObservedUsage:
+        """Return complete selected evidence within its preparation operation.
+
+        A different budget may reuse an already cached selection. Uncached
+        expansion stays with the originating budget and resource owner.
+        """
         if (
             not isinstance(path, tuple)
             or not path
@@ -144,7 +150,16 @@ class PreparedUsages:
             )
         ):
             raise ContextInputError("Expected a nonempty key/index usage selector")
-        _path_metadata(path, self._budget)
+        operation = budget if budget is not None else self._budget
+        _path_metadata(path, operation)
+        if operation is not self._budget:
+            cached = self._index._cache.get(path)
+            if cached is None:
+                raise ContextInputError(
+                    "Uncached prepared selection requires "
+                    "its originating operation budget"
+                )
+            return cached
         try:
             return self._index.select(path)
         except (KeyError, IndexError) as error:

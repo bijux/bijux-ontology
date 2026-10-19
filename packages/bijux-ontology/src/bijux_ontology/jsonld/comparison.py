@@ -5,6 +5,7 @@ import math
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import replace
+from typing import cast
 
 from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.term import Node
@@ -12,13 +13,14 @@ from rdflib.term import Node
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.roles.classification import bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report, combine_reports
 from .checking import PreparedUsages, prepare_usages
 from .conversion import DirectionPolicy, convert_to_rdf
-from .observations import ObservedOccurrence, SourcePath, location
+from .observations import ObservedOccurrence, ObservedUsage, SourcePath, location
 from .resources import DocumentLoader
 
 
@@ -182,6 +184,189 @@ def _structure(items: Sequence[ObservedOccurrence], budget: Budget) -> Graph:
     return graph
 
 
+def _associated_occurrences(
+    token: str, usage: ObservedUsage, budget: Budget
+) -> tuple[ObservedOccurrence, ...]:
+    """Associate only a proven selected pointer and its concrete descendants.
+
+    Labels establish caller-supplied correspondence; the original observations
+    remain unchanged. Relative descendants preserve collection associations.
+    """
+    if not isinstance(usage.path, tuple) or not usage.path:
+        raise InputError("Observed usage requires a nonempty source path")
+    for part in usage.path:
+        if type(part) not in (str, int) or isinstance(part, int) and part < 0:
+            raise InputError("Observed paths require keys or nonnegative indexes")
+        if isinstance(part, int) and part.bit_length() > min(
+            10000, budget.limits.max_bytes
+        ):
+            raise LimitExceeded("Observed path index exceeds metadata bound")
+        bound_text(str(part), budget)
+    prefix = location(usage.path)
+    bound_text(prefix, budget)
+    result: list[ObservedOccurrence] = []
+    for item in usage.occurrences:
+        budget.consume("work")
+        budget.consume("states")
+        for text in (
+            item.location,
+            item.value_json,
+            item.predicate,
+            item.subject,
+            item.graph,
+            item.list_index,
+        ):
+            if text is not None:
+                bound_text(text, budget)
+        if item.location != prefix and not item.location.startswith(prefix + "/"):
+            raise InputError("Observed occurrence is outside its selected pointer")
+        suffix = item.location[len(prefix) :]
+        # Reserve the combined UTF-8 representation before creating it.
+        size = len(token.encode("utf-8")) + len(suffix.encode("utf-8"))
+        if size > budget.limits.max_bytes:
+            raise LimitExceeded("Associated usage location exceeds max_bytes")
+        budget.consume("bytes", size)
+        result.append(replace(item, location=token + suffix))
+    return tuple(result)
+
+
+def compare_observed_usages(
+    pairs: Sequence[tuple[str, ObservedUsage, ObservedUsage]], *, budget: Budget
+) -> Report:
+    """Compare explicitly associated prepared evidence without expanding again.
+
+    Each label identifies one caller-established pair, whose source paths may
+    differ. Mapping and joint anonymous topology are checked; literal contents
+    require a separate RDF or literal comparison. Original observations retain
+    their real source locations and side-local identity tokens.
+    """
+    if not isinstance(pairs, Sequence) or isinstance(cast(object, pairs), (str, bytes)):
+        raise InputError("Observed comparison requires a finite sequence")
+    count = len(pairs)
+    issues = IssueCollector(budget)
+    checked = 0
+    selected: tuple[list[ObservedOccurrence], list[ObservedOccurrence]] = ([], [])
+    try:
+        if count > budget.limits.max_states:
+            raise LimitExceeded("Observed comparison exceeds max_states")
+        for index in range(count):
+            try:
+                pair = pairs[index]
+            except IndexError as error:
+                raise InputError(
+                    "Observed correspondence changed during capture"
+                ) from error
+            if not isinstance(pair, tuple) or len(pair) != 3:
+                raise InputError("Observed correspondence requires labelled pairs")
+            label, previous, current = pair
+            budget.consume("work")
+            budget.consume("states")
+            if not isinstance(label, str) or not label:
+                raise InputError("Observed correspondence requires nonempty labels")
+            bound_text(label, budget)
+            if not isinstance(previous, ObservedUsage) or not isinstance(
+                current, ObservedUsage
+            ):
+                raise InputError("Observed comparison requires prepared usage evidence")
+            checked += 1
+            if (
+                previous.limitation
+                or current.limitation
+                or previous.empty
+                or current.empty
+                or not previous.occurrences
+                and not previous.dropped
+                or not current.occurrences
+                and not current.dropped
+            ):
+                message = (
+                    previous.limitation
+                    or current.limitation
+                    or "No representative expanded value"
+                )
+                bound_text(message, budget)
+                issues.append(
+                    Issue(
+                        "context.change_unverified", message, label, kind="unverified"
+                    )
+                )
+                continue
+            if previous.dropped or current.dropped:
+                issues.append(
+                    Issue(
+                        "context.usage_dropped",
+                        "A selected usage does not survive one or both expansions",
+                        label,
+                        expected=str(not previous.dropped),
+                        actual=str(not current.dropped),
+                    )
+                )
+                continue
+            token = f"/{index}"
+            old_items = _associated_occurrences(token, previous, budget)
+            new_items = _associated_occurrences(token, current, budget)
+            selected[0].extend(old_items)
+            selected[1].extend(new_items)
+            previous_groups, current_groups = _group(old_items), _group(new_items)
+            for where in sorted(previous_groups.keys() | current_groups.keys()):
+                budget.consume("work")
+                old, new = previous_groups.get(where, ()), current_groups.get(where, ())
+                if old != new:
+                    expected, actual = _display(old), _display(new)
+                    bound_text(expected, budget)
+                    bound_text(actual, budget)
+                    suffix = where[len(token) :]
+                    size = len(label.encode("utf-8")) + len(suffix.encode("utf-8"))
+                    if size > budget.limits.max_bytes:
+                        raise LimitExceeded("Usage display location exceeds max_bytes")
+                    budget.consume("bytes", size)
+                    issues.append(
+                        Issue(
+                            "context.usage_meaning_changed",
+                            "Observed mapping or effective value traits changed",
+                            label + suffix,
+                            expected=expected,
+                            actual=actual,
+                        )
+                    )
+        if selected[0] and not any(
+            issue.code == "context.usage_meaning_changed" for issue in issues
+        ):
+            topology = compare_rdf(
+                _structure(selected[0], budget),
+                _structure(selected[1], budget),
+                budget=budget,
+            )
+            if topology.outcome == "disagreement":
+                issues.append(
+                    Issue(
+                        "context.usage_meaning_changed",
+                        "Selected usages changed shared node or graph identity",
+                        "",
+                    )
+                )
+            elif not topology.verified:
+                issues.extend(topology.issues)
+    except LimitExceeded as error:
+        issues.exhausted(str(error))
+    except InputError as error:
+        try:
+            issues.append(
+                Issue("context.change_unverified", str(error), kind="unverified")
+            )
+        except LimitExceeded as exhausted:
+            issues.exhausted(str(exhausted))
+    return Report(
+        "context_changes",
+        checked,
+        tuple(issues),
+        requested=count,
+        complete=not any(issue.kind == "exhausted" for issue in issues),
+        regime="jsonld",
+        families=("representative_usages",),
+    )
+
+
 def compare_context_usages(
     before_document: object,
     after_document: object,
@@ -209,7 +394,6 @@ def compare_context_usages(
     issues = IssueCollector(operation)
     checked = 0
     views: list[PreparedUsages | None] = []
-    selected: tuple[list[ObservedOccurrence], list[ObservedOccurrence]] = ([], [])
     try:
         for name, document, base, loader in (
             ("before", before_document, before_base, before_loader),
@@ -245,10 +429,15 @@ def compare_context_usages(
         if all(view is not None for view in views):
             before, after = views
             assert before is not None and after is not None
+            pairs: list[tuple[str, ObservedUsage, ObservedUsage]] = []
             for path in selectors:
                 operation.consume("work")
                 try:
-                    previous, current = before.observe(path), after.observe(path)
+                    selected_budget = (
+                        operation if budget is not None or limits is not None else None
+                    )
+                    previous = before.observe(path, budget=selected_budget)
+                    current = after.observe(path, budget=selected_budget)
                 except LimitExceeded:
                     raise
                 except InputError as error:
@@ -261,87 +450,11 @@ def compare_context_usages(
                         )
                     )
                     continue
-                checked += 1
-                if (
-                    previous.limitation
-                    or current.limitation
-                    or previous.empty
-                    or current.empty
-                ):
-                    issues.append(
-                        Issue(
-                            "context.change_unverified",
-                            previous.limitation
-                            or current.limitation
-                            or "No representative expanded value",
-                            location(path),
-                            kind="unverified",
-                        )
-                    )
-                    continue
-                if previous.dropped or current.dropped:
-                    issues.append(
-                        Issue(
-                            "context.usage_dropped",
-                            "A selected usage does not survive one or both expansions",
-                            location(path),
-                            expected=str(not previous.dropped),
-                            actual=str(not current.dropped),
-                        )
-                    )
-                    continue
-                selected[0].extend(previous.occurrences)
-                selected[1].extend(current.occurrences)
-                previous_groups, current_groups = (
-                    _group(previous.occurrences),
-                    _group(current.occurrences),
-                )
-                for where in sorted(previous_groups.keys() | current_groups.keys()):
-                    operation.consume("work")
-                    old, new = (
-                        previous_groups.get(where, ()),
-                        current_groups.get(where, ()),
-                    )
-                    if old != new:
-                        issues.append(
-                            Issue(
-                                "context.usage_meaning_changed",
-                                "Observed mapping or effective value traits changed",
-                                where,
-                                expected=_display(old),
-                                actual=_display(new),
-                            )
-                        )
-            if selected[0] and not any(
-                issue.code == "context.usage_meaning_changed" for issue in issues
-            ):
-                try:
-                    topology = compare_rdf(
-                        _structure(selected[0], operation),
-                        _structure(selected[1], operation),
-                        budget=operation,
-                    )
-                except LimitExceeded:
-                    raise
-                except InputError as error:
-                    issues.append(
-                        Issue(
-                            "context.change_unverified",
-                            str(error),
-                            kind="unverified",
-                        )
-                    )
-                else:
-                    if topology.outcome == "disagreement":
-                        issues.append(
-                            Issue(
-                                "context.usage_meaning_changed",
-                                "Selected usages changed shared node or graph identity",
-                                selected[0][0].location,
-                            )
-                        )
-                    elif not topology.verified:
-                        issues.extend(topology.issues)
+                operation.consume("states")
+                pairs.append((location(path), previous, current))
+            compared = compare_observed_usages(pairs, budget=operation)
+            checked = compared.checked
+            issues.extend(compared.issues)
     except LimitExceeded as error:
         issues.exhausted(str(error))
     return Report(
