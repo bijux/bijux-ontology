@@ -13,7 +13,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.models.emission.matching import identity_matches
-from bijux_ontology.models.emission.rdf import _traits
+from bijux_ontology.models.rdf.observations import observe_rdf_term
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.paths.traversal import (
     PathIdentityUnavailable,
@@ -22,6 +22,7 @@ from bijux_ontology.rdf.paths.traversal import (
 )
 from bijux_ontology.rdf.paths.types import capture_path
 from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.selection import select_read
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, term_key
@@ -255,8 +256,10 @@ def project_records(
                 raise InputError(
                     "Blank graph selection requires exact snapshot ownership"
                 )
-            contexts = prepared._contexts(graph_name, budget=operation)
-            _, name, graph = next(contexts)
+            contexts = select_read(prepared, operation, graph_name=graph_name).contexts(
+                operation
+            )
+            name, graph = next(contexts)
             if next(contexts, None) is not None:
                 raise InputError("Projection requires one physical graph")
             operation.consume("triples", len(graph))
@@ -297,7 +300,7 @@ def project_records(
             for binding in captured:
                 where = binding.name
                 _reserve(operation, len(graph))
-                traits = _traits(graph, binding.subject, operation)
+                traits = observe_rdf_term(graph, binding.subject, operation)
                 if binding.identity.expected_iri is not None:
                     bound_text(binding.identity.expected_iri, operation)
                 if not identity_matches(binding.identity, traits):

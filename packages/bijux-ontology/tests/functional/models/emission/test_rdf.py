@@ -424,3 +424,93 @@ def test_owned_blank_subjects_keep_identity_across_explicit_union_selection() ->
     assert "emission.required_entity_fact_missing" in {
         issue.code for issue in selected.issues
     }
+
+
+@pytest.mark.parametrize("blank_graph", [False, True])
+def test_native_observations_agree_across_selected_model_paths_and_projection(
+    blank_graph: bool,
+) -> None:
+    """Owned blanks and exact literals cannot borrow types from a hidden graph."""
+    from bijux_ontology.data.projection import ReadBinding, ReadField, project_records
+    from bijux_ontology.declarations.path_fields import (
+        IntermediateRequirement,
+        PathFieldDeclaration,
+    )
+    from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
+
+    physical = BNode("physical") if blank_graph else EX.physical
+    integer = Literal("01", datatype=XSD.integer, normalize=False)
+    record = BNode("record")
+    model = _model(Value("literal", datatype=str(XSD.integer)))
+    path = PathFieldDeclaration(
+        "values",
+        EX.record / EX.values,
+        model.fields[0].values,
+        output=Output(
+            allow_null=True, allow_empty=True, minimum_values=1, maximum_values=1
+        ),
+        intermediates=(IntermediateRequirement(1, 1, 1, model.types),),
+    )
+    for local_type in (True, False):
+        dataset = Dataset()
+        selected = dataset.graph(physical)
+        selected.add((EX.anchor, EX.record, record)).add((record, EX.values, integer))
+        if local_type:
+            selected.add((record, RDF.type, EX.Record))
+        dataset.graph(EX.hidden).add((record, RDF.type, EX.Record))
+        dataset.graph(EX.hidden).add((record, EX.values, Literal(999)))
+        source = prepare_source(dataset)
+        graph_name = (
+            next(
+                graph.identifier
+                for graph in source.dataset().graphs()
+                if isinstance(graph.identifier, BNode)
+            )
+            if blank_graph
+            else physical
+        )
+        owned_graph = source.graph(graph_name)
+        owned_record = next(owned_graph.objects(EX.anchor, EX.record))
+        assert isinstance(owned_record, BNode)
+        owned_integer = next(owned_graph.objects(owned_record, EX.values))
+        usage = (RdfModelUsage("record", owned_record),)
+        emitted = check_rdf_emission(source, (model,), usage, graph_name=graph_name)
+        traversed = check_path_fields(
+            source, (PathFieldUsage(path, EX.anchor),), graph_name=graph_name
+        )
+        projected = project_records(
+            source,
+            (
+                ReadBinding(
+                    "record",
+                    owned_record,
+                    (ReadField("values", EX.values),),
+                    types=model.types,
+                ),
+            ),
+            graph_name=graph_name,
+        )
+        assert emitted.verified is local_type and traversed.verified is local_type
+        assert projected.report.verified is local_type
+        if local_type:
+            observed = projected.records[0]
+            assert observed.reference.subject is owned_record
+            assert (
+                observed.reference.graph is graph_name
+                and observed.reference.source is source
+            )
+            assert observed.fields[0].terms[0] is owned_integer
+            assert str(observed.fields[0].terms[0]) == "01"
+            presence = replace(
+                model,
+                fields=(
+                    replace(model.fields[0], output=Output(require_property=True)),
+                ),
+            )
+            unknown = check_rdf_emission(
+                source, (presence,), usage, graph_name=graph_name
+            )
+            assert not unknown.verified and any(
+                issue.code == "emission.source_presence_unverified"
+                for issue in unknown.issues
+            )
