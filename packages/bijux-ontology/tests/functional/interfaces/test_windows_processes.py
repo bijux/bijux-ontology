@@ -84,6 +84,14 @@ def test_real_windows_nested_workers_and_recovery(tmp_path: Path, stop: str) -> 
         f"Path({str(helperfile)!r}).write_text(json.dumps({{'supervisor':p.pid}}));"
         "time.sleep(60)"
     )
+    # Initialize stdlib capture before measuring product-owned handle growth.
+    subprocess.run(
+        [sys.executable, "-I", "-B", "-c", "pass"],
+        capture_output=True,
+        timeout=10,
+        check=True,
+    )
+    gc.collect()
     baseline = _handles(kernel)
     sentinel = subprocess.Popen([sys.executable, "-c", grandchild])
     caller = subprocess.Popen(
