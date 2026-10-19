@@ -209,6 +209,8 @@ _CODES = {
         "fhir_backend_unavailable fhir_input_error fhir_unsupported "
         "fhir_membership_unverified fhir_export_error fhir_export_unverified "
         "fhir_valueset_unverified fhir_valueset_input_error fhir_valueset_code_invalid "
+        "fhir_conceptmap_finding fhir_conceptmap_unverified "
+        "fhir_conceptmap_input_error "
         "shape_binding_unverified shape_constraint_untranslated "
         "shape_list_unverified shape_output_backend_unavailable "
         "shape_representation_unverified shape_source_scope_unverified "
