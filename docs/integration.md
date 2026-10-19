@@ -1377,6 +1377,14 @@ Use `construct_projected(result, factory)` for trusted application construction
 only after every declared check succeeds. The factory owns its runtime and output;
 this read contract makes no serializer inversion or ORM promise.
 
+`workflows.ontology.modules.check_module_wiring` checks named public exports and
+selected class/property/datatype obligations against explicitly bound provider
+views. Each requirement needs exactly one binding; lookup resources and other
+candidates cannot supply a missing guarantee. Native witnesses retain their scope,
+and missing supported relationships remain unknown. Agreement covers this finite
+interface; provider dependencies require separate checks and whole-ontology
+equivalence or consistency needs its own evidence. Asserted signatures need no Java.
+
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing
 owned worker enumerates each selected root once, then validates ordinary Core
