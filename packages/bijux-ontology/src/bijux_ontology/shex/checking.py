@@ -179,7 +179,7 @@ def validate_shex(
                 ],
                 timeout=max(0.001, operation.deadline - time.monotonic()),
                 cap=cap,
-                cancellation=cancel,
+                cancellation=operation.cancel,
                 deadline=lambda: operation.deadline,
             )
             paid = dict.fromkeys(_KINDS, 0)
@@ -299,13 +299,13 @@ def validate_shex(
             except (InputError, OSError):
                 malformed = True
             finished = complete
-            adopted = grant if stopped or code or malformed else paid
-            for kind, amount in adopted.items():
-                operation.shared.consume(kind, amount)
             # These findings and their metadata fit the host reservation made
             # before dispatch. Retain them without re-running a stopped deadline.
             for issue in projected:
                 list.append(issues, issue)
+            adopted = grant if stopped or code or malformed else paid
+            for kind, amount in adopted.items():
+                operation.consume_completed(kind, amount)
             if not complete:
                 if stopped or problem == "shex.execution_incomplete":
                     issues.exhausted("Owned ShEx execution did not complete")
@@ -340,7 +340,9 @@ def validate_shex(
         for index, binding in enumerate(captured)
     )
     if finished and (
-        time.monotonic() >= operation.deadline or cancel is not None and cancel.is_set()
+        time.monotonic() >= operation.deadline
+        or operation.cancel is not None
+        and operation.cancel.is_set()
     ):
         issues.exhausted("ShEx execution stopped during final result handoff")
         finished = False

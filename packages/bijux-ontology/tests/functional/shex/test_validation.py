@@ -285,7 +285,10 @@ def test_native_alternative_inverse_closed_and_extra(tmp_path: Path) -> None:
     )
 
 
-def test_shared_limits_and_cancelled_paid_prefix_recover(tmp_path: Path) -> None:
+@pytest.mark.parametrize("inherited_cancel", (False, True))
+def test_shared_limits_and_cancelled_paid_prefix_recover(
+    tmp_path: Path, inherited_cancel: bool
+) -> None:
     supplied = schema(
         shape(constraint(E.p, {"type": "NodeConstraint", "nodeKind": "iri"}))
     )
@@ -342,8 +345,13 @@ def test_shared_limits_and_cancelled_paid_prefix_recover(tmp_path: Path) -> None
             supplied,
             bindings=bindings,
             limits=limits,
-            budget=Operation(limits, Operation(limits, None, 30, None), 30, None),
-            cancel=cancellation,
+            budget=Operation(
+                limits,
+                Operation(limits, None, 30, cancellation if inherited_cancel else None),
+                30,
+                None,
+            ),
+            cancel=None if inherited_cancel else cancellation,
             artifacts=tmp_path,
         )
     finally:
@@ -351,6 +359,7 @@ def test_shared_limits_and_cancelled_paid_prefix_recover(tmp_path: Path) -> None
         watcher.join()
     assert observed.is_set() and result.report.outcome == "exhausted"
     assert result.obligations[0].status == "not_matched"
+    assert any(issue.code == "shex.not_matched" for issue in result.report.issues)
     assert (
         cast(dict[str, object], result.obligations[0].native)["status"]
         == "nonconformant"

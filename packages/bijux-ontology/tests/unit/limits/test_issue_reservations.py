@@ -191,3 +191,26 @@ def test_nested_storage_reservations_preserve_total_and_wire_evidence_bounds() -
         nested.reserve_storage(-1)
     nested.reserve_storage(20)
     assert worker.consumed()["bytes"] == 128
+
+
+def test_terminal_receipts_preserve_actual_allowances_after_inherited_cancel() -> None:
+    import threading
+
+    from bijux_ontology.execution.budgets import ControlBudget
+    from bijux_ontology.execution.limits import BUDGET_KINDS
+
+    owner = Budget(Limits())
+    grants = {kind: owner.remaining(kind) for kind in BUDGET_KINDS}
+    grants["work"] = 2
+    controlled = ControlBudget(owner.limits, grants)
+    stopped = threading.Event()
+    nested = Operation(None, Operation(None, controlled, 30, stopped), 30, None)
+    stopped.set()
+    with pytest.raises(LimitExceeded):
+        nested.consume("work")
+    nested.consume_completed("work", 2)
+    assert controlled.remaining("work") == nested.remaining("work") == 0
+    with pytest.raises(LimitExceeded):
+        nested.consume_completed("work", 1)
+    with pytest.raises(InputError):
+        nested.consume_completed("work", -1)

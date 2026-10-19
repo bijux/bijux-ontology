@@ -66,6 +66,18 @@ class Operation(Budget):
         checkpoint(self.deadline, self.cancel)
         self.shared.consume(kind, amount)
 
+    def consume_completed(self, kind: BudgetKind, amount: int) -> None:
+        """Settle validated, reserved worker receipts after the operation stops.
+
+        This transfers completed costs, never permission to perform more work.
+        Skip expired Operation views while preserving the underlying allowance
+        owner's own validation and cumulative counter rules.
+        """
+        owner = self.shared
+        while isinstance(owner, Operation):
+            owner = owner.shared
+        owner.consume(kind, amount)
+
     def reserve_storage(self, amount: int) -> None:
         """Preserve shared allocation ownership through nested operation views."""
         checkpoint(self.deadline, self.cancel)
