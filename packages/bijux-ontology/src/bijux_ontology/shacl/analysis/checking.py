@@ -19,6 +19,7 @@ from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list, strong_components
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.parameters.reading import ParameterReader, count_value
+from bijux_ontology.shacl.profiles.references import ReferenceReader
 from bijux_ontology.shacl.profiles.types import ShapeDependency, ShapeProfile, Triple
 
 from .types import (
@@ -27,18 +28,6 @@ from .types import (
     ShapeAnalysis,
     ShapeComponent,
     SignedDependency,
-)
-
-_REFERENCES = frozenset(
-    (
-        SH.property,
-        SH.node,
-        SH["not"],
-        SH["and"],
-        SH["or"],
-        SH.xone,
-        SH.qualifiedValueShape,
-    )
 )
 
 
@@ -74,15 +63,6 @@ class _Analysis:
         self.components: list[ShapeComponent] = []
         self.roots: list[RootConflict] = []
         self.completed = 0
-        self.owned_blanks: set[int] = set()
-
-    def bound_metadata(self, node: Node) -> None:
-        """Require actual snapshot ownership before anonymous equality lookups."""
-        bound_node(node, self.budget)
-        if isinstance(node, BNode) and id(node) not in self.owned_blanks:
-            raise InputError(
-                "Shape metadata blank terms require exact snapshot ownership"
-            )
 
     def count(
         self, shape: Node, predicate: URIRef
@@ -233,103 +213,6 @@ class _Analysis:
             dependency,
             polarity,
             source.active and target.active and source.valid and target.valid,
-        )
-
-
-def _reference_inventory(
-    analysis: _Analysis,
-    nodes: dict[Node, None],
-    dependencies: tuple[ShapeDependency, ...],
-) -> None:
-    """Verify the supplied complete dependency plan against actual owned assertions.
-
-    The maintained list iterator establishes logical membership. Supplied witness
-    prefixes only describe positions in that already qualified list; they never
-    substitute a caller-authored parameter or endpoint for an RDF assertion.
-    """
-    budget = analysis.budget
-    logical = (SH["and"], SH["or"], SH.xone)
-    expected: dict[tuple[Node, URIRef, Node, int | None], Node] = {}
-    for shape in nodes:
-        budget.consume("work")
-        for parameter in _REFERENCES:
-            budget.consume("work")
-            for anchor in analysis.parameters.values(
-                shape, parameter, single=parameter in logical
-            ):
-                members = (
-                    iter_rdf_list(
-                        analysis.parameters.graph,
-                        anchor,
-                        max_items=budget.limits.max_states,
-                        budget=budget,
-                    )
-                    if parameter in logical
-                    else iter((anchor,))
-                )
-                for position, target in enumerate(members):
-                    budget.consume("work")
-                    bound_node(target, budget)
-                    if not isinstance(target, URIRef | BNode) or target not in nodes:
-                        raise InputError(
-                            "Profile reference endpoint is absent "
-                            "from its dependency inventory"
-                        )
-                    budget.consume("states")
-                    expected[
-                        (
-                            shape,
-                            parameter,
-                            target,
-                            position if parameter in logical else None,
-                        )
-                    ] = anchor
-    seen = set()
-    for dependency in dependencies:
-        budget.consume("work")
-        shape, parameter, target = (
-            dependency.shape,
-            dependency.parameter,
-            dependency.dependency,
-        )
-        via = dependency.via
-        witness_position = (len(via) - 3) // 2 if parameter in logical else None
-        key = shape, parameter, target, witness_position
-        if key not in expected or key in seen:
-            raise InputError(
-                "Profile dependency metadata differs "
-                "from the actual reference inventory"
-            )
-        anchor = expected[key]
-        if via[0] != (shape, parameter, anchor):
-            raise InputError(
-                "Profile dependency anchor does not match its source and parameter"
-            )
-        if parameter in logical:
-            if len(via) < 3 or len(via) % 2 != 1:
-                raise InputError(
-                    "Logical dependencies require their exact list-position witness"
-                )
-            cell = anchor
-            for index in range(1, len(via), 2):
-                budget.consume("work")
-                first, rest = via[index], via[index + 1]
-                if first[:2] != (cell, RDF.first) or rest[:2] != (cell, RDF.rest):
-                    raise InputError(
-                        "Logical dependency witness is not a connected list prefix"
-                    )
-                cell = rest[2]
-            if via[-2][2] != target:
-                raise InputError(
-                    "Logical dependency witness names a different endpoint"
-                )
-        elif len(via) != 1:
-            raise InputError("Direct dependencies require their exact source assertion")
-        budget.consume("states")
-        seen.add(key)
-    if len(seen) != len(expected):
-        raise InputError(
-            "Profile dependency inventory omits actual outgoing references"
         )
 
 
@@ -538,65 +421,19 @@ def analyze_shape_profile(
             analysis.parameters.graph = profile.source._read(budget=operation)
             # Qualify the existing selected RDF scalars before maintained list
             # traversal or dictionary lookups can copy their lexical metadata.
+            owned_blanks: set[int] = set()
             for triple in analysis.parameters.graph:
                 operation.consume("work")
                 operation.consume("triples")
                 for term in triple:
                     bound_node(term, operation)
-                    if (
-                        isinstance(term, BNode)
-                        and id(term) not in analysis.owned_blanks
-                    ):
+                    if isinstance(term, BNode) and id(term) not in owned_blanks:
                         operation.consume("states")
-                        analysis.owned_blanks.add(id(term))
-            nodes: dict[Node, None] = {}
-            for node in profile.roots:
-                if not isinstance(node, URIRef | BNode):
-                    raise InputError("Selected shape roots require resource terms")
-                analysis.bound_metadata(node)
-                operation.consume("states")
-                nodes[node] = None
+                        owned_blanks.add(id(term))
+            nodes = ReferenceReader(analysis.parameters, owned_blanks).qualify(
+                profile.roots, profile.dependencies
+            )
             roots = profile.roots
-            for dependency in profile.dependencies:
-                operation.consume("work")
-                if not isinstance(dependency, ShapeDependency):
-                    raise InputError(
-                        "Analysis requires exact supported shape-reference metadata"
-                    )
-                if (
-                    not isinstance(dependency.shape, URIRef | BNode)
-                    or not isinstance(dependency.dependency, URIRef | BNode)
-                    or not isinstance(dependency.parameter, URIRef)
-                    or type(dependency.via) is not tuple
-                    or not dependency.via
-                ):
-                    raise InputError(
-                        "Shape references require exact resource witnesses"
-                    )
-                for node in (
-                    dependency.shape,
-                    dependency.parameter,
-                    dependency.dependency,
-                ):
-                    analysis.bound_metadata(node)
-                if dependency.parameter not in _REFERENCES:
-                    raise InputError(
-                        "Analysis requires exact supported shape-reference metadata"
-                    )
-                operation.consume("states", 2 + len(dependency.via))
-                for triple in dependency.via:
-                    operation.consume("work")
-                    if type(triple) is not tuple or len(triple) != 3:
-                        raise InputError("Shape witnesses require original RDF triples")
-                    for term in triple:
-                        analysis.bound_metadata(term)
-                    if triple not in analysis.parameters.graph:
-                        raise InputError(
-                            "Shape reference witness is outside the profile"
-                        )
-                nodes[dependency.shape] = None
-                nodes[dependency.dependency] = None
-            _reference_inventory(analysis, nodes, profile.dependencies)
             for selected_node in nodes:
                 operation.consume("work")
                 analysis.scan(selected_node)

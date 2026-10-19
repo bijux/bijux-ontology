@@ -19,13 +19,13 @@ from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.shacl.execution.planning import _select_roots
+from bijux_ontology.shacl.parameters.reading import ParameterReader
 from bijux_ontology.shacl.paths import decode_path
 
+from .references import LOGICAL_REFERENCES, REFERENCE_PARAMETERS, ReferenceReader
 from .resources import _capture, _owned
 from .types import ProfileCase, ShapeDependency, ShapeProfile, ShapeTerm, Triple
 
-_SHAPE_REFS = frozenset((SH.node, SH.property, SH["not"], SH.qualifiedValueShape))
-_LOGICAL = frozenset((SH["and"], SH["or"], SH.xone))
 _LISTS = frozenset((SH["in"], SH.languageIn, SH.ignoredProperties))
 _PATHS = frozenset(
     (SH.inversePath, SH.zeroOrMorePath, SH.oneOrMorePath, SH.zeroOrOnePath)
@@ -172,6 +172,7 @@ def extract_profile(
         operation.consume("states", 3 * len(all_triples))
         operation.consume("triples", len(all_triples))
         graph = _select_roots(graph, selected, "targets")
+        references = ReferenceReader(ParameterReader(graph, operation), owned_blanks)
         custom_parameters: set[Node] = set()
         for component in graph.subjects(RDF.type, SH.ConstraintComponent):
             operation.consume("work")
@@ -234,44 +235,14 @@ def extract_profile(
                             kind="unverified",
                         )
                     )
-                if role == "shape" and predicate in _SHAPE_REFS:
-                    if not isinstance(value, URIRef | BNode):
-                        raise InputError("Shape dependency requires an RDF resource")
-                    operation.consume("states")
-                    operation.consume("bytes", 128)
-                    dependencies.append(
-                        ShapeDependency(node, cast(URIRef, predicate), value, (triple,))
-                    )
-                    pending.append((value, "shape"))
-                elif role == "shape" and predicate in _LOGICAL:
-                    members = tuple(
-                        iter_rdf_list(
-                            graph,
-                            value,
-                            max_items=operation.limits.max_states,
-                            budget=operation,
-                        )
-                    )
-                    witness = [triple]
-                    cell = value
-                    for member in members:
-                        first = cell, RDF.first, member
-                        rest = next(graph.objects(cell, RDF.rest))
-                        witness.extend((first, (cell, RDF.rest, rest)))
-                        operation.consume("states", len(witness))
-                        operation.consume("bytes", 64 + 24 * len(witness))
-                        if not isinstance(member, URIRef | BNode):
-                            raise InputError(
-                                "Logical shape lists need resource members"
-                            )
-                        dependencies.append(
-                            ShapeDependency(
-                                node, cast(URIRef, predicate), member, tuple(witness)
-                            )
-                        )
-                        pending.append((member, "shape"))
-                        cell = rest
-                    pending.append((value, "list"))
+                if role == "shape" and predicate in REFERENCE_PARAMETERS:
+                    for dependency in references.from_assertion(
+                        node, cast(URIRef, predicate), value
+                    ):
+                        dependencies.append(dependency)
+                        pending.append((dependency.dependency, "shape"))
+                    if predicate in LOGICAL_REFERENCES:
+                        pending.append((value, "list"))
                 elif predicate == SH.path or role == "path" and predicate in _PATHS:
                     if isinstance(value, BNode):
                         pending.append((value, "path"))
