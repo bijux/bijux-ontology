@@ -28,6 +28,18 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "xkos": frozenset(
+        "assignment_unverified assignments_open category_invalid "
+        "category_level_conflict category_level_unverified "
+        "classification_unverified code_collision code_disallowed code_invalid "
+        "code_missing code_pattern code_pattern_unverified code_unverified "
+        "depth_conflict depth_invalid depth_mismatch depth_missing "
+        "depth_unverified hierarchy_invalid hierarchy_level_mismatch "
+        "hierarchy_scope_unverified level_repeated levels_list_invalid "
+        "partition_unverified pattern_unverified population_overlap "
+        "population_unassigned population_unverified tree_cycle "
+        "tree_multiple_parents".split()
+    ),
     "frictionless": frozenset(
         "extraction_unverified input_invalid native_coverage_unverified "
         "native_foreign_key native_primary_key native_type_error "
@@ -456,6 +468,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "xkos": (
+        "selected classification levels and finite population contracts",
+        "A selected classification rule fails or lacks complete scoped evidence.",
+        "Inspect owned level selectors, actual depth and code terms, distinct "
+        "hierarchy meanings and explicitly closed finite assignments.",
+        "check_classification(read_classification(source, scheme), policy)",
+    ),
     "frictionless": (
         "supplied native Data Package resources and explicit column bindings",
         "Native package coverage or a selected semantic column contract failed.",

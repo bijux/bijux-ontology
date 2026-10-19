@@ -1749,6 +1749,14 @@ missing references, unsupported extensions and caller-selected arity violations
 remain visible. `project_labels` explicitly reports omitted form/sense structure
 and keeps the full lexicon available; labels never become unconditional synonyms.
 
+`interfaces.adapters.xkos.classifications.read_classification` projects ordered
+levels, exact codes and distinct generic/partitive relationships from one selected
+physical graph. `check_classification` applies explicit level, code and tree
+policies. `PartitionContract` requires a supplied finite population and complete
+assignments for coverage; authored exhaustive/disjoint claims alone prove no
+real-world partition. Blank level selectors must retain their owned witnesses.
+The finite profile follows [XKOS 1.2](https://docs.ddialliance.org/XKOS/1.2/).
+
 Install `[frictionless]` for the pinned Frictionless 5.21.0 Data Package v1 CSV
 profile. Use a separate environment from `[oak]`: their native dependencies
 require incompatible chardet versions. The workspace lock declares that conflict
