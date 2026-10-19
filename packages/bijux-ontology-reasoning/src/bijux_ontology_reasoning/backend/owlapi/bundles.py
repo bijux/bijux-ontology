@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
 
 from bijux_ontology._json import decode_json, object_value
@@ -50,6 +51,8 @@ def prepare_profile_backend(
     if not java.is_absolute():
         raise InputError("Java executable must be an explicit absolute Path")
     directory = bundle.resolve()
+    if os.pathsep in str(directory):
+        raise ResourceError("OWL bundle path contains a Java classpath separator")
     if bundle.is_symlink() or not directory.is_dir():
         raise ResourceError("OWL bundle must be an ordinary supplied directory")
     path = directory / "manifest.json"
@@ -101,7 +104,12 @@ def prepare_profile_backend(
             raise ResourceError("OWL classpath identities must be text")
         bound_text(name, operation)
         bound_text(digest, operation)
-        if not name.endswith(".jar") or Path(name).name != name or name in expected:
+        if (
+            not name.endswith(".jar")
+            or Path(name).name != name
+            or os.pathsep in name
+            or name in expected
+        ):
             raise ResourceError("OWL classpath requires unique flat jar names")
         if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
             raise ResourceError("Invalid OWL classpath content hash")
@@ -133,8 +141,6 @@ def prepare_profile_backend(
 
 def qualify_backend(backend: OwlProfileBackend, budget: Budget) -> None:
     """Reject changed bundles and ambient JVM injection before native execution."""
-    import os
-
     if not isinstance(backend, OwlProfileBackend):
         raise ResourceError("An explicitly prepared OWL profile backend is required")
     if os.name != "posix":
@@ -155,6 +161,10 @@ def qualify_backend(backend: OwlProfileBackend, budget: Budget) -> None:
     bound_text(str(backend.java), budget)
     bound_text(str(backend.artifacts), budget)
     bound_text(backend.manifest_sha256, budget)
+    directory = str(backend.directory)
+    bound_text(directory, budget)
+    if os.pathsep in directory or any(os.pathsep in name for name in backend.jars):
+        raise ResourceError("OWL bundle paths contain a Java classpath separator")
     verify_files(backend.directory, backend.files, budget)
     if not backend.java.is_file():
         raise ResourceError("The explicit Java executable is unavailable")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -227,6 +228,33 @@ def test_owned_deadline_cancellation_and_paid_finding_prefix(
     assert prefix.in_profile is False and prefix.report.outcome == "exhausted"
     assert any(item.code == "owl.profile_violation" for item in prefix.report.issues)
     assert check_profile(backend, _source(_SIMPLE), profile="owl2-dl").report.verified
+
+
+def test_pinned_bundle_paths_cannot_split_the_java_classpath(
+    backend: OwlProfileBackend, tmp_path: Path
+) -> None:
+    """Every pinned jar remains one classpath entry at preparation and use."""
+    assert backend_capability(backend).report.verified
+    separated = tmp_path / ("bundle" + os.pathsep + "entry")
+    shutil.copytree(backend.directory, separated)
+    with pytest.raises(ResourceError, match="classpath separator"):
+        prepare_profile_backend(
+            backend.java, separated, manifest_sha256=backend.manifest_sha256
+        )
+    clone = tmp_path / "bundle"
+    shutil.copytree(backend.directory, clone)
+    manifest_path = clone / "manifest.json"
+    manifest = json.loads(manifest_path.read_bytes())
+    entry = manifest["jars"][0]
+    name = entry["name"]
+    entry["name"] = "pinned" + os.pathsep + "entry.jar"
+    (clone / name).rename(clone / entry["name"])
+    raw = json.dumps(manifest).encode()
+    manifest_path.write_bytes(raw)
+    with pytest.raises(ResourceError, match="flat jar names"):
+        prepare_profile_backend(
+            backend.java, clone, manifest_sha256=hashlib.sha256(raw).hexdigest()
+        )
 
 
 def test_native_output_and_ambient_option_boundaries(
