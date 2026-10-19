@@ -4,6 +4,7 @@ import pytest
 from rdflib import Literal, URIRef
 from rdflib.namespace import RDF, XSD
 
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
 
 
@@ -60,3 +61,36 @@ def test_language_and_unsupported_datatypes_retain_honest_scope() -> None:
     assert not check_literal(Literal("no language", datatype=RDF.langString)).verified
     report = check_literal(Literal("value", datatype="https://example.org/Custom"))
     assert report.issues[0].kind == "unverified"
+
+
+def test_sample_bounds_precede_validation_and_share_the_callers_allowance() -> None:
+    """Exact literal fields and diagnostics cannot bypass ordinary operation limits."""
+    for term, location in (
+        (Literal("x" * 2000, normalize=False), ""),
+        (Literal("é" * 20, normalize=False), ""),
+        (Literal("x", datatype="urn:datatype:" + "x" * 2000), ""),
+        (Literal("x", normalize=False), "x" * 2000),
+    ):
+        result = check_literal(
+            term,
+            location=location,
+            budget=Budget(Limits(max_bytes=32, max_total_bytes=128)),
+        )
+        assert result.outcome == "exhausted" and not result.complete
+        assert all(issue.actual is None for issue in result.issues)
+
+    term = Literal("+0001", datatype=XSD.integer, normalize=False)
+    before = str(term), term.datatype, term.language
+    shared = Budget(Limits(max_work=80))
+    assert check_literal(term, budget=shared).verified
+    assert check_literal(term, budget=shared).outcome == "exhausted"
+    assert check_literal(term, budget=Budget()).verified
+    assert (str(term), term.datatype, term.language) == before
+    invalid = check_literal(
+        Literal("128", datatype=XSD.byte, normalize=False), budget=Budget()
+    )
+    unsupported = check_literal(
+        Literal("x", datatype="urn:datatype:unavailable"), budget=Budget()
+    )
+    assert invalid.outcome == "disagreement"
+    assert unsupported.outcome == "unverified"
