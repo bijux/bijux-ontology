@@ -11,12 +11,12 @@ from bijux_ontology_reasoning.axioms import NamedEntity, SubClassOf
 from bijux_ontology_reasoning.axioms.changes import write_axiom_change
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
+from bijux_ontology_reasoning.editing.repairs import AllowedReplacement, propose_repairs
 from bijux_ontology_reasoning.inference.explanations import (
     ExplanationQuestion,
     SourceAxiom,
     explain_reasoning,
 )
-from bijux_ontology_reasoning.repairs import AllowedReplacement, propose_repairs
 
 from bijux_ontology.limits import Budget, Limits
 

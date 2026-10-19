@@ -14,7 +14,7 @@ from bijux_ontology_reasoning.axioms.types import (
 )
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.upgrades import (
+from bijux_ontology_reasoning.editing.upgrades import (
     EntailmentContract,
     LogicalSnapshot,
     LogicalUpgrade,

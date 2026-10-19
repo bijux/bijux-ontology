@@ -8,7 +8,10 @@ from bijux_ontology_reasoning.axioms import ClassRelation, NamedEntity, SubClass
 from bijux_ontology_reasoning.axioms.changes import write_axiom_change
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.reductions import analyze_redundancy, prepare_reduction
+from bijux_ontology_reasoning.editing.reductions import (
+    analyze_redundancy,
+    prepare_reduction,
+)
 
 from bijux_ontology.limits import Budget, Limits
 

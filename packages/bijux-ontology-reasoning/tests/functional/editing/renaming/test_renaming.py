@@ -13,7 +13,7 @@ from bijux_ontology_reasoning.documents import (
     convert_ontology,
     prepare_owl_document,
 )
-from bijux_ontology_reasoning.entities.renaming import (
+from bijux_ontology_reasoning.editing.renaming import (
     AnnotationRole,
     ModuleCheck,
     ModuleInterfaceChange,

@@ -136,7 +136,7 @@ cover the selected named-signature query, not every possible expression; result
 caps, unsupported data-property ranges/inverses and unqualified inputs remain
 incomplete. The original source and selected physical graph stay unchanged.
 
-`entities.renaming.prepare_role_rename` checks one explicit structural-role rename
+`editing.renaming.prepare_role_rename` checks one explicit structural-role rename
 across a supplied, connected native module closure. Supply exact `AxiomBase`
 preconditions, owned document identities and selected `RoleRename` roles; `all`
 is an explicit separate choice. Required annotation IRI positions use
@@ -214,7 +214,7 @@ before/after consumer entailment proofs; only the selected obligations are
 certified. Unsupported original axioms prevent a complete certificate. This
 operation stays separate from RDF neighborhoods and MIREOT selection.
 
-`reductions.analyze_redundancy` tests explicit unannotated root subclass,
+`editing.reductions.analyze_redundancy` tests explicit unannotated root subclass,
 class-assertion and equivalent-class axioms against independent remaining
 theories. Proposals need joint verification with `prepare_reduction`: individual
 redundancy does not authorize the union. Choose retained annotations and read-only
@@ -231,7 +231,7 @@ preserve the same annotated axioms and headers. This syntactic import profile
 claims no locality or universal consequence preservation; it reuses the explicit
 pinned `backend.robot.prepare_robot_backend` runtime and its separate sealing allowance.
 
-`repairs.propose_repairs` checks finite alternatives from one established native
+`editing.repairs.propose_repairs` checks finite alternatives from one established native
 inconsistency justification. Supply nonempty consumer entailments, exact protected
 source axioms and any caller-authored `AllowedReplacement` meanings. Imports stay
 read-only. Each proposal independently needs native consistency and all selected
@@ -240,7 +240,7 @@ consumer proofs; rejected candidates and original inconsistency remain visible.
 `enumeration_complete` stays false and minimality is unclaimed. Choose an accepted
 sealed candidate explicitly before using the ordinary axiom publication API.
 
-`upgrades.assess_logical_upgrade` compares explicit stable consumer IDs across
+`editing.upgrades.assess_logical_upgrade` compares explicit stable consumer IDs across
 owned before/after logical snapshots: entailments, satisfiability, model contracts
 and selected role-separation groups. Inspect `.transitions` and finite
 `.compatible` separately from the raw `.report`, which retains prior findings.
@@ -274,7 +274,7 @@ a separate ordinary RDF artifact, retaining quantifiers and unknown pairs.
 Its raw required-axiom answers remain inspectable separately from pair coverage;
 no class-instance assertions or complete inventory of all fillers is implied.
 
-`modules.prepare_module_refactor` moves exact annotated axioms or explicitly
+`editing.modules.prepare_module_refactor` moves exact annotated axioms or explicitly
 inlines owned local modules as one candidate set. Supply exact `axiom_base`
 preconditions for every original, unchanged required consumer contracts, explicit
 import/provider changes and a selected `TheoryCombination` deployment. Actual

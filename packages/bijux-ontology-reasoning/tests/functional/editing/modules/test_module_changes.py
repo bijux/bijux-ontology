@@ -16,8 +16,7 @@ from bijux_ontology_reasoning.axioms.types import (
 )
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.integration import TheoryCombination, TheoryComponent
-from bijux_ontology_reasoning.modules import (
+from bijux_ontology_reasoning.editing.modules import (
     AxiomMove,
     ModuleConsumer,
     ModuleImportChange,
@@ -27,6 +26,7 @@ from bijux_ontology_reasoning.modules import (
     NamespaceTransfer,
     prepare_module_refactor,
 )
+from bijux_ontology_reasoning.integration import TheoryCombination, TheoryComponent
 
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.limits import Budget
