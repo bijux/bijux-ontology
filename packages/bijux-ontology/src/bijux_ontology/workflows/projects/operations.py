@@ -15,8 +15,8 @@ from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.models.contracts.checking import check_models
+from bijux_ontology.owl.encoding.roles import Regime
 from bijux_ontology.rdf.literals.checking import Regime as ModelRegime
-from bijux_ontology.vocabulary.builtins import Regime
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.workflows.projects.inputs import ShaclJobInput
 from bijux_ontology.workflows.projects.jobs.decoding import (

@@ -1,48 +1,12 @@
 """Finite public signatures and explicit one-level provider bindings."""
 
 from dataclasses import dataclass
-from typing import Literal
 
-from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.owl.obligations import ObligationResult, OntologyObligation
+from bijux_ontology.owl.modules import contracts
+from bijux_ontology.owl.obligations import ObligationResult
 from bijux_ontology.owl.relations.properties import PropertyContract
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
-
-
-@dataclass(frozen=True)
-class ModulePropertyRequirement:
-    """Require an effective named endpoint guarantee, not property nonemptiness.
-
-    Domain/range constraints are conjunctive: one sufficient included endpoint
-    establishes this selected guarantee. Disjoint datatype comparisons alone
-    cannot disprove an OWL range entailment, because the property may be empty.
-    """
-
-    property: str
-    position: Literal["domain", "range"]
-    relation: Literal["subsumption", "datatype_inclusion"]
-    required: str
-    location: str = ""
-
-
-@dataclass(frozen=True)
-class ModuleRequirement:
-    """One external public interface with independently selected proof questions."""
-
-    name: str
-    exports: tuple[TermDeclaration, ...]
-    obligations: tuple[OntologyObligation, ...] = ()
-    properties: tuple[ModulePropertyRequirement, ...] = ()
-
-
-@dataclass(frozen=True)
-class ModuleContract:
-    """Named exports and explicit external requirements, without inferred owners."""
-
-    name: str
-    exports: tuple[TermDeclaration, ...]
-    requires: tuple[ModuleRequirement, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -53,7 +17,7 @@ class ModuleProvider:
     requirements are not recursively resolved by another consumer's check.
     """
 
-    contract: ModuleContract
+    contract: contracts.ModuleContract
     view: VocabularyView
 
 
@@ -74,11 +38,13 @@ class ModuleRequirementResult:
     datatype inclusion is not automatically a contradicted property entailment.
     """
 
-    requirement: ModuleRequirement
+    requirement: contracts.ModuleRequirement
     bindings: tuple[ModuleBinding, ...]
     providers: tuple[ModuleProvider, ...]
     obligations: tuple[ObligationResult, ...]
-    property_contracts: tuple[tuple[ModulePropertyRequirement, PropertyContract], ...]
+    property_contracts: tuple[
+        tuple[contracts.ModulePropertyRequirement, PropertyContract], ...
+    ]
     report: Report
 
 
@@ -86,6 +52,6 @@ class ModuleRequirementResult:
 class ModuleWiring:
     """One-level interface evidence; never whole-provider equivalence or consistency."""
 
-    consumer: ModuleContract
+    consumer: contracts.ModuleContract
     requirements: tuple[ModuleRequirementResult, ...]
     report: Report

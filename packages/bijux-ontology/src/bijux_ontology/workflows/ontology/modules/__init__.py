@@ -1,22 +1,17 @@
 """Explicit finite module interfaces over existing asserted semantic proofs."""
 
-from .checking import check_module_wiring
-from .types import (
+from bijux_ontology.workflows.ontology.modules.types import (
     ModuleBinding,
-    ModuleContract,
-    ModulePropertyRequirement,
     ModuleProvider,
-    ModuleRequirement,
     ModuleRequirementResult,
     ModuleWiring,
 )
 
+from .checking import check_module_wiring
+
 __all__ = [
     "ModuleBinding",
-    "ModuleContract",
-    "ModulePropertyRequirement",
     "ModuleProvider",
-    "ModuleRequirement",
     "ModuleRequirementResult",
     "ModuleWiring",
     "check_module_wiring",

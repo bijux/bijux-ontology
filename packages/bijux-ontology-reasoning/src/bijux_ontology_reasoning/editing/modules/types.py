@@ -4,11 +4,8 @@ from dataclasses import dataclass
 from typing import Literal
 
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.workflows.ontology.modules.types import (
-    ModuleBinding,
-    ModuleContract,
-    ModuleWiring,
-)
+from bijux_ontology.owl.modules.contracts import ModuleContract
+from bijux_ontology.workflows.ontology.modules.types import ModuleBinding, ModuleWiring
 
 from ...axioms.changes.types import AxiomBase
 from ...axioms.types import ProjectedAxiom

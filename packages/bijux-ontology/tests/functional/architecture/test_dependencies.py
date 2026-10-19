@@ -216,7 +216,12 @@ def test_library_dependencies_follow_feature_ownership(
             if owner == "rdf":
                 assert target_owner in FOUNDATION | {"rdf"}, f"{module} -> {target}"
             if owner in {"jsonld", "owl", "declarations", "shex"}:
-                assert target_owner in FOUNDATION | {"rdf", owner}, (
+                lower = (
+                    {"declarations"}
+                    if _within(module, ("bijux_ontology.owl.modules",))
+                    else set()
+                )
+                assert target_owner in FOUNDATION | {"rdf", owner} | lower, (
                     f"{module} -> {target}"
                 )
             if not owner.startswith("interfaces."):

@@ -18,7 +18,13 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.values import object_value
-from bijux_ontology.workflows.ontology.modules.types import ModuleContract
+from bijux_ontology.owl.modules.contracts import ModuleContract
+from bijux_ontology.owl.modules.qualification import capture_contract
+from bijux_ontology_reasoning.theories.interfaces import (
+    ModuleInterfaceChange,
+    ModuleSet,
+    capture_interfaces,
+)
 
 from ...axioms.changes.preconditions import qualify_base, source_base
 from ...axioms.changes.qualification import retain_error, retain_losses
@@ -36,12 +42,6 @@ from ...documents.sources.native import (
     stage_native_documents,
 )
 from ...documents.types import OwlDocument
-from ...theories.interfaces import (
-    ModuleInterfaceChange,
-    ModuleSet,
-    capture_contract,
-    capture_interfaces,
-)
 from .annotations import annotation_policy
 from .types import (
     AnnotationRole,

@@ -10,10 +10,14 @@ from rdflib.namespace import OWL, RDF, RDFS
 from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector
+from bijux_ontology.owl.encoding.roles import (
+    Regime,
+    builtin_kinds,
+    kind_matches,
+    validate_regime,
+)
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Edge, Selection
-
-from .builtins import Regime, builtin_kinds, kind_matches, validate_regime
 
 
 @dataclass(frozen=True)

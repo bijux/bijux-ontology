@@ -1463,6 +1463,10 @@ output, and receipts retain input ownership. `record_plan_from_shape` supports
 finite property/node path plans; recursive and other unsupported obligations
 withhold a complete plan. Extraction does not establish SHACL conformance.
 
+Authored `ModuleContract`, `ModuleRequirement` and `ModulePropertyRequirement`
+come from `bijux_ontology.owl.modules.contracts`; their bounded qualification is
+shared by asserted wiring and the optional logical checker.
+
 `workflows.ontology.modules.check_module_wiring` checks named public exports and
 selected class/property/datatype obligations against explicitly bound provider
 views. Each requirement needs exactly one binding; lookup resources and other
