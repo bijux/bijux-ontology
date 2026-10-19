@@ -199,5 +199,7 @@ public final class AxiomConstruction {
             default: throw new IOException("Unsupported constructor kind");
         }
     }
+    /** Reuse the exact role-checked constructor for datatype obligations. */
+    public OWLDataRange dataRange(JsonNode value) throws IOException { return one(value, 1, OWLDataRange.class); }
     public OWLAxiom axiom(JsonNode value) throws IOException { return one(value, 1, OWLAxiom.class); }
 }

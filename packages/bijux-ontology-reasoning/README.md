@@ -122,3 +122,44 @@ Class satisfiability is independent of successful enumeration. Complete results
 cover the selected named-signature query, not every possible expression; result
 caps, unsupported data-property ranges/inverses and unqualified inputs remain
 incomplete. The original source and selected physical graph stay unchanged.
+
+`entities.renaming.prepare_role_rename` checks one explicit structural-role rename
+across a supplied, connected native module closure. Supply exact `AxiomBase`
+preconditions, owned document identities and selected `RoleRename` roles; `all`
+is an explicit separate choice. Required annotation IRI positions use
+`AnnotationRole` preserve/rename policies. Existing or built-in targets and
+required edits in unowned modules refuse the whole transaction. Explicit
+`ModuleInterfaceChange` records replace only selected caller-owned interfaces.
+Nonempty `ModuleCheck` postconditions receive the complete candidate module set
+and shared budget. Returned checked bytes form a reviewable transaction;
+publication across multiple destinations remains the caller's responsibility.
+
+`datatypes.check_datatype_obligations` uses actual datatype difference/intersection
+satisfiability to check universal inclusion or disjointness. It qualifies original
+consistency and an explicitly fresh temporary property; finite samples prove no
+universal range relationship. `check_datatype_fields` checks every original value
+branch against conjoined global ranges of actual inferred super/equivalent data
+properties. Missing ranges, unsupported facets, resource/reverse branches and
+application value constraints remain required unknown. Explicit branch selection
+through `check_datatype_branches` retains original field identity and indices;
+combined consumers own coverage of the remaining branches. Class-context and
+model co-emission obligations belong to model compatibility.
+
+`models.compatibility.check_model_compatibility(backend, source, declarations)`
+checks a finite automatic subset of existing model contracts. Required endpoint
+subsumption, possible type satisfiability and declared co-emission contradictions
+remain separate answers at original model/field locations. Anonymous intersection
+and existential consequences use actual reasoning; literal branches delegate to
+the datatype checker. One captured RDF import closure supports both operations.
+Unsupported contexts and uncovered scenarios remain unknown. Logical existence
+or cardinality never certifies emitted required fields; use ordinary model/output
+checking for those obligations.
+
+`instances.check_emitted_consistency(backend, ontology, emitted, bindings)`
+checks all statements in the two explicitly selected prepared RDF graphs with
+one captured ontology import closure. Inspect `.diagnosis` for global logical
+consistency and `.records` for original node participation. Bindings never filter
+the graph or identify a uniquely guilty record. Original scopes stay separate
+from the derived joint input. Missing explicit existential values and different
+IRIs retain ordinary OWL semantics; submission conformance remains a separate
+model/output check.

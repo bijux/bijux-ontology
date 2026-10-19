@@ -13,7 +13,8 @@ from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, SKOS
 
 from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.mappings import (
     MappingPolicy,
@@ -429,6 +430,17 @@ def test_owned_inputs_limits_known_prefix_and_deadline_recovery() -> None:
             break
     assert found
     assert export_sssom(owned, limits=Limits(max_bytes=100)).content is None
+    pilot = Budget()
+    assert export_sssom(owned, budget=pilot).report.verified
+    shared = Budget(Limits(max_work=2 * pilot._counts["work"] - 1))
+    assert export_sssom(owned, budget=shared).report.verified
+    exhausted = export_sssom(owned, budget=shared)
+    assert exhausted.report.outcome == "exhausted" and exhausted.content is None
+    assert shared.remaining("work") >= 0
+    inherited_cancel = threading.Event()
+    parent = Operation(None, None, 30, inherited_cancel)
+    inherited_cancel.set()
+    assert export_sssom(owned, budget=parent).content is None
     huge = read_sssom(
         (HEADER + _row()).encode(),
         mapping_set_id="urn:" + "x" * 100000,

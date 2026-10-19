@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import time
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from types import MappingProxyType
+from typing import Any, cast
 
-from rdflib import ConjunctiveGraph, Dataset, Graph
+from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, URIRef
 
 from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
@@ -24,7 +26,8 @@ from bijux_ontology.rdf.terms import (
 )
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.vocabulary.sources import GraphKind, source_role
+from bijux_ontology.vocabulary.view import Vocabulary
 
 from .types import ProfileDocument
 
@@ -86,15 +89,13 @@ def _original_graph(raw: RdfSource | Payload, budget: Budget) -> Graph | None:
     return content if isinstance(content, Graph) else None
 
 
-def stage_documents(
+def _capture_rdf_inputs(
     source: PreparedSource,
     supplied: Mapping[str, RdfSource | Payload] | None,
-    directory: Path,
     budget: Operation,
-    issues: IssueCollector,
-    reports: list[Report],
-) -> tuple[tuple[ProfileDocument, ...], dict[str, Any], tuple[Report, ...]]:
-    """Resolve required imports and serialize only actual selected graphs."""
+    additional: Sequence[PreparedSource] = (),
+) -> tuple[Vocabulary, dict[str, RdfSource | Payload] | None]:
+    """Reuse the exact core import selection and original blank ownership guard."""
     if not isinstance(source, PreparedSource):
         raise InputError("OWL profile checking requires an owned PreparedSource")
     if source.union:
@@ -136,10 +137,73 @@ def stage_documents(
             if graph is not None:
                 budget.consume("states")
                 original_graphs.append(graph)
+    for companion in additional:
+        if not isinstance(companion, PreparedSource) or companion.union:
+            raise ResourceError("Additional RDF sources require owned physical graphs")
+        budget.consume("states")
+        original_graphs.append(companion._read(budget=budget))
     if not independent_blank_scopes(original_graphs, budget):
         raise ResourceError(
             "Separately loaded OWL documents share original anonymous term ownership"
         )
+    return vocabulary, captured
+
+
+def _source_aliases(
+    aliases: dict[str, int],
+    prepared: PreparedSource,
+    index: int,
+    budget: Budget,
+) -> None:
+    """Retain the existing exact document/base alias ownership rules."""
+    for identity in (prepared.document_iri, prepared.effective_url):
+        if identity is not None:
+            bound_text(identity, budget)
+            if identity in aliases and aliases[identity] != index:
+                raise ResourceError("OWL document aliases have conflicting ownership")
+            aliases[identity] = index
+
+
+def _supplied_aliases(
+    captured: dict[str, RdfSource | Payload] | None,
+    aliases: dict[str, int],
+    budget: Budget,
+) -> None:
+    """Retain existing selected-resource alias joins without choosing a new source."""
+    if captured is not None:
+        for requested, raw in captured.items():
+            budget.consume("work")
+            if requested in aliases:
+                continue
+            identities = (
+                (raw.document_iri, raw.effective_url)
+                if isinstance(raw, RdfSource)
+                else (requested,)
+            )
+            matched = {
+                aliases[value]
+                for value in identities
+                if value is not None and value in aliases
+            }
+            if len(matched) == 1:
+                budget.consume("states")
+                aliases[requested] = next(iter(matched))
+            elif len(matched) > 1:
+                raise ResourceError(
+                    "Supplied OWL import aliases join distinct owned documents"
+                )
+
+
+def stage_documents(
+    source: PreparedSource,
+    supplied: Mapping[str, RdfSource | Payload] | None,
+    directory: Path,
+    budget: Operation,
+    issues: IssueCollector,
+    reports: list[Report],
+) -> tuple[tuple[ProfileDocument, ...], dict[str, Any], tuple[Report, ...]]:
+    """Resolve required imports and serialize only actual selected graphs."""
+    vocabulary, captured = _capture_rdf_inputs(source, supplied, budget)
     documents: list[ProfileDocument] = []
     entries: list[dict[str, Any]] = []
     aliases: dict[str, int] = {}
@@ -168,14 +232,7 @@ def stage_documents(
         index = len(documents)
         identifier = "document/" + str(index)
         prepared = handle.prepared
-        for identity in (prepared.document_iri, prepared.effective_url):
-            if identity is not None:
-                bound_text(identity, budget)
-                if identity in aliases and aliases[identity] != index:
-                    raise ResourceError(
-                        "OWL document aliases have conflicting ownership"
-                    )
-                aliases[identity] = index
+        _source_aliases(aliases, prepared, index, budget)
         budget.consume("states")
         exported = export_rdf(
             prepared,
@@ -210,32 +267,161 @@ def stage_documents(
         entries.append(
             {"id": identifier, "path": str(path), "document_iri": prepared.document_iri}
         )
-    if captured is not None:
-        for requested, raw in captured.items():
-            budget.consume("work")
-            if requested in aliases:
-                continue
-            identities = (
-                (raw.document_iri, raw.effective_url)
-                if isinstance(raw, RdfSource)
-                else (requested,)
-            )
-            matched = {
-                aliases[value]
-                for value in identities
-                if value is not None and value in aliases
-            }
-            if len(matched) == 1:
-                budget.consume("states")
-                aliases[requested] = next(iter(matched))
-            elif len(matched) > 1:
-                raise ResourceError(
-                    "Supplied OWL import aliases join distinct owned documents"
-                )
+    _supplied_aliases(captured, aliases, budget)
     if not documents:
         raise ResourceError("No selected OWL document was staged")
     return (
         tuple(documents),
         {"documents": entries, "aliases": aliases, "root": 0},
         tuple(reports),
+    )
+
+
+@dataclass(frozen=True)
+class CapturedRdfClosure:
+    """One selected closure with immutable import payloads and original provenance.
+
+    Original prepared sources remain separate from serialization snapshots. The
+    mapping contains only aliases of actually selected import resources.
+    """
+
+    source: PreparedSource
+    originals: tuple[PreparedSource, ...]
+    imports: Mapping[str, RdfSource]
+    reports: tuple[Report, ...]
+
+
+def capture_rdf_closure(
+    source: PreparedSource,
+    supplied: Mapping[str, RdfSource | Payload] | None,
+    budget: Operation,
+    *,
+    additional: Sequence[PreparedSource] = (),
+    reports: list[Report] | None = None,
+) -> CapturedRdfClosure:
+    """Snapshot a maintained selected closure once before repeated native work.
+
+    Caller streams are read only by core's first preparation. Snapshot payloads
+    are immutable and retain physical graph selection, logical identity and base.
+    Additional inputs participate only in original blank-ownership qualification;
+    they never add imports to the selected ontology closure.
+    """
+    if reports is not None and type(reports) is not list:
+        raise InputError("Closure report output requires an ordinary report list")
+    if isinstance(cast(object, additional), str | bytes) or not isinstance(
+        additional, Sequence
+    ):
+        raise InputError("Additional RDF roles require a finite source sequence")
+    budget.consume("states", len(additional))
+    budget.consume("bytes", 64 + 16 * len(additional))
+    companions_list = []
+    for index in range(len(additional)):
+        budget.consume("work")
+        companion = additional[index]
+        if not isinstance(companion, PreparedSource):
+            raise InputError("Additional RDF roles require owned prepared sources")
+        companions_list.append(companion)
+    companions = tuple(companions_list)
+    vocabulary, captured = _capture_rdf_inputs(source, supplied, budget, companions)
+    size = len(vocabulary._source_handles)
+    budget.consume("states", size * 3)
+    budget.consume("bytes", 128 + 128 * size)
+    handles = tuple(
+        handle
+        for scope, handle in vocabulary._source_handles
+        if source_role(scope) != "lookup"
+    )
+    aliases: dict[str, int] = {}
+    snapshots: dict[int, RdfSource] = {}
+    originals: list[PreparedSource] = []
+    export_reports: list[Report] = []
+    export_issues = IssueCollector(budget)
+    for index, handle in enumerate(handles):
+        prepared = handle.prepared
+        if (
+            prepared.union
+            or handle.union
+            or prepared.literal_fidelity not in ("source_terms", "supplied_terms")
+        ):
+            raise ResourceError(
+                "Captured OWL sources require qualified physical RDF scope"
+            )
+        context: tuple[GraphKind, URIRef | BNode | None, Graph] | None = None
+        for selected in handle.contexts(budget):
+            if context is not None:
+                raise ResourceError("Captured OWL sources require one physical graph")
+            context = selected
+        if context is None:
+            raise ResourceError("Captured OWL graph selection is unavailable")
+        kind, name, selected_graph = context
+        if isinstance(name, BNode):
+            raise ResourceError(
+                "Raw import snapshots cannot rebind a blank graph selector"
+            )
+        _source_aliases(aliases, prepared, index, budget)
+        originals.append(prepared)
+        if index == 0:
+            continue
+        # A graph-selected export is intentionally flattened by export_rdf.
+        # Own exactly the selected physical context before dataset serialization.
+        budget.consume("states", 4 + len(selected_graph) * 4)
+        budget.consume("bytes", 512 + len(selected_graph) * 384)
+        budget.consume("triples", len(selected_graph))
+        dataset = Dataset()
+        target = dataset.default_graph if name is None else dataset.graph(name)
+        for triple in selected_graph:
+            budget.consume("work")
+            for node in triple:
+                bound_node(node, budget)
+            target.add(triple)
+        snapshot = PreparedSource._from_owned(
+            dataset,
+            is_dataset=kind != "graph",
+            document_iri=prepared.document_iri,
+            effective_url=prepared.effective_url,
+            literal_fidelity=prepared.literal_fidelity,
+            max_triples=budget.limits.max_triples,
+        )
+        budget.consume("states", 2 if reports is not None else 1)
+        budget.consume("bytes", 32 if reports is not None else 16)
+        exported = export_rdf(
+            snapshot,
+            format="turtle" if kind == "graph" else "trig",
+            budget=budget,
+            timeout_seconds=max(0.000001, budget.deadline - time.monotonic()),
+        )
+        export_reports.append(exported.report)
+        if reports is not None:
+            reports.append(exported.report)
+        try:
+            retain_report(exported.report, budget, export_issues)
+        except LimitExceeded:
+            export_issues.retain_completed(exported.report)
+            raise
+        if exported.content is None or not exported.report.verified:
+            if exported.report.outcome == "exhausted":
+                raise LimitExceeded(
+                    "Required import snapshot export exhausted its allowance"
+                )
+            raise ResourceError("Required import snapshot export is unqualified")
+        snapshots[index] = RdfSource(
+            exported.content,
+            format="turtle" if kind == "graph" else "trig",
+            document_iri=prepared.document_iri,
+            effective_url=prepared.effective_url,
+            graph_name=None
+            if kind == "graph"
+            else "@default"
+            if name is None
+            else str(name),
+            role="import",
+        )
+    _supplied_aliases(captured, aliases, budget)
+    budget.consume("states", len(aliases))
+    budget.consume("bytes", 128 + 64 * len(aliases))
+    imports = {
+        alias: snapshots[index] for alias, index in aliases.items() if index != 0
+    }
+    return CapturedRdfClosure(
+        source, tuple(originals), MappingProxyType(imports), tuple(export_reports)
     )

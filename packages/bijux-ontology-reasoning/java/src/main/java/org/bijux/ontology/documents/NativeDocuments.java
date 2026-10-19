@@ -509,6 +509,60 @@ public final class NativeDocuments {
         return result;
     }
 
+    /** Serialize selected owned modules together and reread the exact original alias closure. */
+    public static Map<String,Object> checkedWriteModules(Loaded input, Path job, Set<Integer> owned,
+            JsonNode selectedProfiles, int cap, int maximum, int resources) throws Exception {
+        if (input.documents == null) throw new IOException("Native original documents required");
+        OWLOntologyManager manager = input.ontology.getOWLOntologyManager();
+        Map<Integer,OWLOntology> originals = new TreeMap<>();
+        for (OWLOntology member : manager.getOntologies()) {
+            Integer index = input.owners.get(manager.getOntologyDocumentIRI(member).toString());
+            if (index == null || originals.put(index, member) != null)
+                throw new IOException("Ambiguous original module owner");
+        }
+        if (!originals.keySet().containsAll(owned)) throw new IOException("Unloaded selected module");
+        List<Document> updated = new ArrayList<>(input.documents);
+        long written = 0;
+        Map<Integer,Long> sizes = new TreeMap<>();
+        for (Map.Entry<Integer,OWLOntology> entry : originals.entrySet()) {
+            int index = entry.getKey();
+            if (!owned.contains(index)) continue;
+            Path output = job.resolve("candidate-" + index + ".owl");
+            try (OutputStream stream = new CappedOutput(Files.newOutputStream(output, StandardOpenOption.CREATE_NEW), cap - written)) {
+                manager.saveOntology(entry.getValue(), format("functional"), stream);
+            }
+            long size = Files.size(output); written += size; sizes.put(index, size);
+            updated.set(index, new Document(output, input.documents.get(index).effective, "functional"));
+        }
+        OWLOntology restoredRoot = load(updated, input.aliases, 0, resources);
+        Map<Integer,OWLOntology> restored = new TreeMap<>();
+        for (OWLOntology member : restoredRoot.getOWLOntologyManager().getOntologies()) {
+            String effective = restoredRoot.getOWLOntologyManager().getOntologyDocumentIRI(member).toString();
+            Integer index = input.owners.get(effective);
+            if (index == null || restored.put(index, member) != null)
+                throw new IOException("Ambiguous reread module owner");
+            if (member.anonymousIndividuals().findAny().isPresent())
+                throw new IOException("Anonymous individual structural correspondence unavailable");
+        }
+        if (!originals.keySet().equals(restored.keySet())) throw new IOException("Reread module scope changed");
+        List<Map<String,Object>> changes = new ArrayList<>();
+        List<Map<String,Object>> modules = new ArrayList<>();
+        for (Map.Entry<Integer,OWLOntology> entry : originals.entrySet()) {
+            int index = entry.getKey();
+            compare(entry.getValue(), restored.get(index), changes, cap, maximum);
+            if (owned.contains(index)) {
+                Map<String,Object> module = new LinkedHashMap<>();
+                module.put("document", index); module.put("bytes", sizes.get(index));
+                module.put("after_profiles", profiles(restored.get(index), selectedProfiles, cap, maximum));
+                modules.add(module);
+            }
+        }
+        Map<String,Object> result = new LinkedHashMap<>();
+        result.put("changes", changes); result.put("modules", modules);
+        result.put("qualified", changes.isEmpty());
+        return result;
+    }
+
     public static Map<String,Object> evaluate(JsonNode request, Path job, Map<String,Object> result) throws Exception {
         List<Map<String,Object>> changes = new ArrayList<>();
         String syntax = WorkerProtocol.text(request.path("format"), 32);

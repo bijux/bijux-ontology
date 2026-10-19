@@ -28,6 +28,15 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "biolink": frozenset(
+        "unverified input_error preparation_unverified unknown_element "
+        "abstract_element mixin_element association_role category_role "
+        "predicate_role range_unverified mixin_range_unverified endpoint_range "
+        "slot_unverified predicate_context predicate_unverified "
+        "predicate_endpoints qualifier_unverified qualifier_policy "
+        "qualifier_context qualified_predicate qualifier_value "
+        "qualifier_cardinality required_qualifier rule_unverified".split()
+    ),
     "ols": frozenset(
         "acquisition_unverified input_error unverified data_changed "
         "data_unversioned page_incomplete hierarchy_unverified "
@@ -303,6 +312,19 @@ _CODES = {
         "markup_invalid markup_unverified markup_value_changed".split()
     ),
     "models": frozenset(
+        "logical_coemission_conflict "
+        "logical_conditional_conflict_unverified "
+        "logical_consistency_unverified "
+        "logical_declaration_unverified "
+        "logical_emission_conflict "
+        "logical_input_error "
+        "logical_not_executed "
+        "logical_question_unverified "
+        "logical_scenario_unverified "
+        "logical_types_unsatisfiable "
+        "logical_unverified "
+        "logical_value_unverified "
+        "required_subsumption_not_entailed "
         "artifact_input_error artifact_incompatible "
         "direction_unverified contextual_direction_unverified "
         "emission_group_conflict emission_group_unverified "
@@ -329,6 +351,16 @@ _CODES = {
         "relationships_input_loss relationships_profile_unsupported "
         "relationship_consistency_unverified relationship_query_unverified "
         "relationships_unverified relationships_input_error "
+        "datatype_unverified datatype_conflict datatype_not_included "
+        "datatype_not_disjoint datatypes_unverified datatypes_input_error "
+        "datatypes_input_loss datatypes_profile_unsupported "
+        "models_input_loss models_profile_unsupported "
+        "emitted_record_unverified emitted_unverified emitted_input_error "
+        "rename_postconditions_missing rename_postcondition_unverified "
+        "rename_base_mismatch rename_unverified rename_profile_violation "
+        "rename_target_collision rename_builtin_source rename_module_scope "
+        "rename_source_role_absent rename_unowned_module rename_axiom_collision "
+        "rename_annotation_collision rename_unsupported_axiom rename_annotation_policy "
         "axiom_change_unrepresented axiom_change_loss axiom_change_unverified "
         "axiom_change_input_error axiom_header_mismatch "
         "axiom_postconditions_missing axiom_postcondition_unverified "
@@ -512,6 +544,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "biolink": (
+        "explicit local Biolink category, predicate and qualifier contracts",
+        "A selected association fails or its native interpretation is unverified.",
+        "Inspect the retained statement, exact local model release, effective "
+        "context and qualifier location; supply every import and select explicit "
+        "abstract/mixin policies and sufficient measured execution limits.",
+        "check_biolink(prepared_model, associations, policy=policy, limits=limits)",
+    ),
     "ols": (
         "one versioned ontology-scoped OLS entity query",
         "Captured service evidence is incomplete or outside the selected query.",
