@@ -28,6 +28,7 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "workload": frozenset("unsupported engine_failed empty unqualified".split()),
     "query": frozenset(
         "dependencies_unverified usage_input vocabulary_deprecated "
         "deprecation_unverified".split()
@@ -434,6 +435,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "workload": (
+        "supplied finite queries and two explicit maintained engine configurations",
+        "The workload lacks a complete supported agreeing native answer pair.",
+        "Inspect each engine identity, graph defaults, binding policy and actual "
+        "answer comparison; keep failed or unsupported queries unqualified.",
+        "qualify_workload(source, queries, scope=scope)",
+    ),
     "query": (
         "parsed SPARQL program vocabulary dependencies",
         "A program dependency fails its inventory or remains unresolved.",

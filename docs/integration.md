@@ -1698,3 +1698,13 @@ The returned substitution refers to actual template and data-owned terms. Ground
 literals retain exact RDF lexical identity; extra data is allowed, without RDFS,
 datatype or OWL inference. Exhaustion leaves entailment unknown. An empty template
 is mathematically entailed and makes no nonempty coverage claim.
+
+`rdf.workloads.qualify_workload(source, queries, scope=QueryScope(...))` runs
+a supplied finite ASK/SELECT corpus through maintained RDFLib and Pyoxigraph
+workers. Each result records actual engine/Python versions, asserted entailment,
+default-graph configuration and native binding policy. Exact answer bags/sets
+reuse `rdf.answers`; duplicate changes and actual default/binding differences
+remain visible. Bag qualification makes no ORDER BY sequence claim. Unsupported
+extensions, nondeterminism, native term loss, failed execution and exhausted
+work cannot establish portability. Qualification applies to the supplied corpus
+and configurations, with explicit row and cumulative execution bounds.
