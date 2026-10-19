@@ -18,11 +18,17 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.paths import RdfPath
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text, literal_datatype, term_key
+from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.authoring.types import (
     ShaclConstraint,

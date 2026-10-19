@@ -10,11 +10,10 @@ from rdflib.term import Node
 from bijux_ontology._json import owned_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import operation
-from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, Limits
+from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report, Severity
 from bijux_ontology.shacl.findings import ShaclFinding, project_findings
 

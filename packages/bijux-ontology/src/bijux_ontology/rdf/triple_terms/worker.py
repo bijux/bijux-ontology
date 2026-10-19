@@ -13,9 +13,8 @@ from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.loading import _read
-from bijux_ontology.rdf.terms import bound_text
 
 from .protocol import decode_quads, encode_quads, encode_term
 from .types import TRIPLE_TERM_CONTRACT

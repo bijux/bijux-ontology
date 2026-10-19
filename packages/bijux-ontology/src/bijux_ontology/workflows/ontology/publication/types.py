@@ -10,10 +10,9 @@ from rdflib.namespace import RDF, SKOS
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.skos.structure import _RELATIONS
 from bijux_ontology.skos.xl import ROLES, XL
 

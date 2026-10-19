@@ -9,7 +9,7 @@ from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.types import BlankNodePair
 from bijux_ontology.rdf.skolem.types import (
@@ -19,7 +19,7 @@ from bijux_ontology.rdf.skolem.types import (
 )
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata as _SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource, _read_graph
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.rdf.transforms import (
     Transformation,
     _authorized_contexts,

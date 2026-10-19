@@ -3,8 +3,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from bijux_ontology.errors import LimitExceeded
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, bound_text
 
 from .types import Checksum
 

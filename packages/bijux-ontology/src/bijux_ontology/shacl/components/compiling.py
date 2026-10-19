@@ -10,11 +10,11 @@ from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text, literal_datatype, term_key
+from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.authoring.parameters import parameter_name
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement

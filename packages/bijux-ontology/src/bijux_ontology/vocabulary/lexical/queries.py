@@ -6,8 +6,7 @@ from threading import Event
 from typing import Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.pages import _comparison_text, _PageBudget
 from bijux_ontology.vocabulary.browsing.results import SearchMatch

@@ -7,8 +7,7 @@ from rdflib import BNode
 
 from bijux_ontology.declarations.keys import KeyContract
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.reports import Issue, Report
 
 from .evidence import compare_keys, key_evidence

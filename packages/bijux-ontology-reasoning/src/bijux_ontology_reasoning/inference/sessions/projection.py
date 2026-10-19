@@ -5,10 +5,9 @@ from typing import TYPE_CHECKING, cast
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import IssueCollector, retain_report
+from bijux_ontology.limits import IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 
 from ...axioms.codec.encoding import ConstructionEncoder

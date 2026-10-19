@@ -6,11 +6,11 @@ from rdflib.namespace import RDF, SKOS
 from bijux_ontology.errors import InputError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import IssueCollector
+from bijux_ontology.limits import IssueCollector, bound_text
 from bijux_ontology.rdf.patches.types import PatchQuad, SnapshotWitness
 from bijux_ontology.rdf.roles.classification import declaration_role
 from bijux_ontology.rdf.roles.types import TermPosition, TermRole
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue
 from bijux_ontology.vocabulary.registry.types import (
     IdentifierRegistry,

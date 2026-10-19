@@ -8,11 +8,11 @@ from rdflib.namespace import RDF, SKOS
 from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
-from bijux_ontology.rdf.terms import bound_node, bound_text, validate_triple
+from bijux_ontology.rdf.terms import bound_node, validate_triple
 from bijux_ontology.reports import Issue
 
 QB = Namespace("http://purl.org/linked-data/cube#")

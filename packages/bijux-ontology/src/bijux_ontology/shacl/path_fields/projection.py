@@ -10,10 +10,10 @@ from rdflib.namespace import RDF
 from bijux_ontology.declarations.path_fields import PathFieldDeclaration
 from bijux_ontology.declarations.types import FieldDeclaration, ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.path_traversal import finite_path_steps
 from bijux_ontology.rdf.paths import RdfPath, capture_path
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (

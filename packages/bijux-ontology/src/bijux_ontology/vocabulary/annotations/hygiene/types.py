@@ -8,9 +8,9 @@ from rdflib import URIRef
 from bijux_ontology.absence import Absent
 from bijux_ontology.errors import InputError
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import language_tag
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.annotations.graphs.types import (
     AnnotationGraph,

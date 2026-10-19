@@ -9,9 +9,9 @@ from rdflib.term import Node
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Report
 
 ValueTransition = Literal[

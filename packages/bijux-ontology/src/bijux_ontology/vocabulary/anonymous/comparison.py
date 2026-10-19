@@ -8,9 +8,9 @@ from typing import cast
 from rdflib import BNode, Graph, URIRef
 
 from bijux_ontology.errors import LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.facts.projection import FactProjection

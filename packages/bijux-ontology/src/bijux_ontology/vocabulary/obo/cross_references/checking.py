@@ -9,9 +9,15 @@ from rdflib.namespace import XSD
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.accessions.checking import check_accessions
 from bijux_ontology.vocabulary.accessions.types import AccessionRule, AccessionValue

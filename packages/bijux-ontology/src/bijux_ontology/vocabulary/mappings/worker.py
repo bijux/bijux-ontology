@@ -14,9 +14,8 @@ from bijux_ontology._json import decode_json, object_value, own_json
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
 
 
 class _Unsupported(InputError):

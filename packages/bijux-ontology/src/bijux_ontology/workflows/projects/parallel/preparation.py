@@ -5,8 +5,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, BudgetKind
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, BudgetKind, bound_text
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.jobs import check_kind
 from bijux_ontology.workflows.projects.resources import _CapturedFiles, _read_snapshot

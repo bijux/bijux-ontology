@@ -14,11 +14,11 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.models.emission.application import retain_enumeration_report
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.terms import bound_node, bound_text, literal_term
+from bijux_ontology.rdf.terms import bound_node, literal_term
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (

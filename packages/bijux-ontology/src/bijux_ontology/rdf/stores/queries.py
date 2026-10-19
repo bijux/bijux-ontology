@@ -14,12 +14,17 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, _result
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import term_data
 from bijux_ontology.rdf.queries.syntax import prepare_local_query
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
 from .native import native_term, qualify_literal, rdf_term

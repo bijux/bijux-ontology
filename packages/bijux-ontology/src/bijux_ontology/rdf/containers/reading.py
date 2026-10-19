@@ -9,12 +9,12 @@ from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import PatchUnavailable
 from bijux_ontology.rdf.roles.types import Statement
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
+from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.rdf.transforms import _authorized_contexts, _budget
 from bijux_ontology.reports import Issue, Report
 

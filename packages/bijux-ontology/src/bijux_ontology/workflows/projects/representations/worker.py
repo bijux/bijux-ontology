@@ -19,12 +19,12 @@ from bijux_ontology.limits import (
     BudgetKind,
     IssueCollector,
     Limits,
+    bound_text,
     retain_report,
 )
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.projects.acquisition.closure import Closure

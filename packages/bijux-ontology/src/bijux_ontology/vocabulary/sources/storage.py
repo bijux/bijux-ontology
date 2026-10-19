@@ -7,12 +7,18 @@ from rdflib import Graph, URIRef
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.stores.queries import query_snapshot
 from bijux_ontology.rdf.stores.types import StoredRdf
-from bijux_ontology.rdf.terms import bound_text, validate_triple
+from bijux_ontology.rdf.terms import validate_triple
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Selection, TermInfo

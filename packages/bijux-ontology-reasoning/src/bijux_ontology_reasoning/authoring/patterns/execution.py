@@ -9,9 +9,9 @@ from tempfile import TemporaryDirectory
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.limits import bound_text
 from bijux_ontology.processes.transport import exchange_worker
 from bijux_ontology.rdf.stores.seals import verify_files
-from bijux_ontology.rdf.terms import bound_text
 
 from .bundles import MAIN_CLASS
 from .types import DosdpPattern, DosdpQueryBackend

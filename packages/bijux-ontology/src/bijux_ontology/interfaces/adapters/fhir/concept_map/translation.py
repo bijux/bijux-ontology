@@ -7,9 +7,14 @@ from typing import Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 
 from ..code_system.checking import check_code_membership

@@ -4,10 +4,15 @@ import csv
 from collections.abc import Mapping
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, IssueKind, Report
 
 from .conversion import UnsupportedCsvw, convert, metadata, resources

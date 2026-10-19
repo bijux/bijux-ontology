@@ -8,8 +8,8 @@ from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_node, bound_text, literal_term
+from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.rdf.terms import bound_node, literal_term
 
 
 @dataclass(frozen=True)

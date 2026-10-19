@@ -6,8 +6,7 @@ from collections.abc import Iterator
 from bijux_ontology._json import object_value
 from bijux_ontology.documents.archive import resource_path
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.workflows.projects.bundles import PreparedBundle
 
 from .types import ValidationProfile

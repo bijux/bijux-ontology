@@ -13,14 +13,13 @@ from bijux_ontology.errors import (
     ResourceError,
     attach_input_failure,
 )
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.limits import Budget, Limits, bound_text
 
 from .compression import decode_gzip
 from .identifiers import absolute_iri, language_tag
 from .parsing import RDF_FORMATS, parse_dataset
 from .snapshots import PreparedSource, bind_namespaces, copy_dataset, copy_graph
 from .sources import Compression, Payload, RdfSource
-from .terms import bound_text
 
 _ALIASES = {
     "ttl": "turtle",

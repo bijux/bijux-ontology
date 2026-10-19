@@ -7,8 +7,7 @@ from bijux_ontology._jsonpaths import SourcePath, at_path, bound_path
 from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.resources import ContextInputError, ContextResources
 from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, bound_text
 
 from .processing import _Bridge, _preflight, _Unsupported
 from .types import TermDefinition

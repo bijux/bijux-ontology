@@ -8,12 +8,12 @@ from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import QueryTerm
-from bijux_ontology.rdf.terms import bound_text, literal_term
+from bijux_ontology.rdf.terms import literal_term
 
 from .protocol import scope_data
 from .seals import verify_files

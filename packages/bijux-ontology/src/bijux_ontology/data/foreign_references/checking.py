@@ -10,10 +10,16 @@ from bijux_ontology.data.keys.extraction import _Key, _KeyExtraction, _scope
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
+from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

@@ -6,9 +6,15 @@ from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.browsing.results import Edge
 

@@ -17,13 +17,12 @@ from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.resources import DocumentLoader
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.context import same_context
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

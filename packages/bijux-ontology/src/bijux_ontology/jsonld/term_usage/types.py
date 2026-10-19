@@ -6,8 +6,7 @@ from typing import Literal, Protocol, runtime_checkable
 from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.selectors.types import EntitySelector, SourceSelector
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.reports import Report
 
 UsageRole = Literal[

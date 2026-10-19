@@ -8,8 +8,7 @@ from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, Limits, bound_text
 
 _START = b"<bijux-fragment>"
 _END = b"</bijux-fragment>"

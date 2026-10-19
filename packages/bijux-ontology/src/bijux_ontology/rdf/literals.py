@@ -6,6 +6,8 @@ from calendar import monthrange
 from rdflib import Literal
 from rdflib.namespace import RDF, XSD
 
+from bijux_ontology.limits import bound_text
+
 from ..errors import InputError, LimitExceeded, ResourceError
 from ..limits import Budget, IssueCollector
 from ..reports import Issue, Report
@@ -13,7 +15,7 @@ from .datatype_evaluators.registry import DatatypeRegistry
 from .datatype_evaluators.types import DatatypeRelation as DatatypeRelation
 from .datatype_evaluators.types import Regime as Regime
 from .identifiers import absolute_iri
-from .terms import bound_node, bound_text
+from .terms import bound_node
 from .xsd_lexicals import XSD_LEXICAL_TYPES, xsd_lexical
 
 _PARENT = {

@@ -6,7 +6,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import bound_text
 
 from ..documents.sources.capture import (
     capture_document,

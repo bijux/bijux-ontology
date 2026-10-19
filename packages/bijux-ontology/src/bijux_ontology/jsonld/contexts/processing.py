@@ -17,9 +17,14 @@ from bijux_ontology.jsonld.resources import (
     context_resources,
 )
 from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Location, Report
 
 from .types import (

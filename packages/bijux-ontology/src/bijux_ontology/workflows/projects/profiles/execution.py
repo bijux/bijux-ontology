@@ -6,8 +6,7 @@ from pathlib import Path
 
 from bijux_ontology._json import object_value
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.reports import AcceptancePolicy, Issue, Report
 from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig

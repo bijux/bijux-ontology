@@ -5,9 +5,9 @@ from collections.abc import Sequence
 from rdflib import BNode, Dataset, Graph, URIRef
 
 from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 
 from .types import Triple
 

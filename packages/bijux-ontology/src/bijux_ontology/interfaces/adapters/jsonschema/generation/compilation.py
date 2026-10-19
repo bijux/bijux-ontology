@@ -22,10 +22,16 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.terms import bound_node, bound_text, literal_term
+from bijux_ontology.rdf.terms import bound_node, literal_term
 from bijux_ontology.reports import Issue, Report
 
 from .types import CompiledOutputSchema, JsonRepresentation, SchemaTranslation

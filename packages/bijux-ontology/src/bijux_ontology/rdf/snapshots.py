@@ -9,8 +9,8 @@ from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, URIRef
 from rdflib.store import Store
 from rdflib.term import Node
 
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.rdf.terms import bound_node
 
 from ..errors import InputError, LimitExceeded
 from .identifiers import absolute_iri

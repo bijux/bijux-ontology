@@ -15,9 +15,14 @@ from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    BudgetKind,
+    IssueCollector,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.processes.transport import checkpoint
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report, combine_reports, report_from_data
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.jobs import dependencies

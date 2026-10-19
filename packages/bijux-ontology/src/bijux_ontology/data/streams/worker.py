@@ -22,12 +22,12 @@ from bijux_ontology.errors import (
 )
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import IssueCollector, Limits
+from bijux_ontology.limits import IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.stores.native import DeclarationReader
-from bijux_ontology.rdf.terms import bound_node, bound_text, oxigraph_term
+from bijux_ontology.rdf.terms import bound_node, oxigraph_term
 from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary

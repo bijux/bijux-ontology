@@ -10,8 +10,7 @@ from bijux_ontology.errors import LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import BUDGET_KINDS
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import BUDGET_KINDS, bound_text
 
 
 def run_markup(

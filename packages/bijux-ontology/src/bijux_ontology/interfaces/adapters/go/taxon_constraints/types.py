@@ -6,9 +6,9 @@ from typing import Literal
 from rdflib import URIRef
 
 from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.results import Edge
 from bijux_ontology.vocabulary.relation_paths.types import RelationPathResult

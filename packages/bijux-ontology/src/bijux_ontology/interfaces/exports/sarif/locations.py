@@ -4,9 +4,8 @@ from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Location
 
 

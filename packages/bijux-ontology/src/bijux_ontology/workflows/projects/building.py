@@ -8,8 +8,7 @@ from typing import Self, TypeVar
 
 from bijux_ontology._json import own_json
 from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.upgrades.corpus import CorpusBranch
 

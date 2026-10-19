@@ -14,9 +14,8 @@ from bijux_ontology.jsonld.contexts.usages import (
 )
 from bijux_ontology.jsonld.resources import ContextInputError
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
-from bijux_ontology.limits import Budget, IssueCollector, retain_report
+from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
 from .types import (

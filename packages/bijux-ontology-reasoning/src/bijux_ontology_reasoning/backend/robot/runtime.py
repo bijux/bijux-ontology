@@ -7,10 +7,9 @@ from pathlib import Path
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.processes.transport import run_worker
 from bijux_ontology.rdf.stores.seals import StoreFile
-from bijux_ontology.rdf.terms import bound_text
 
 from .types import RobotBackend, RobotRun
 

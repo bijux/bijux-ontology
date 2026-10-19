@@ -9,8 +9,14 @@ from rdflib.namespace import RDF
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Report
 
 from .protocol import run_markup

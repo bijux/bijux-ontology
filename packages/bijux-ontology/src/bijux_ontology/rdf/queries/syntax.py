@@ -10,9 +10,8 @@ from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.parserutils import CompValue
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.queries.literals import check_literal_scope
-from bijux_ontology.rdf.terms import bound_text
 
 
 def check_query_syntax(

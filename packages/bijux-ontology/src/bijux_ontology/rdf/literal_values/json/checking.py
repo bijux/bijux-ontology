@@ -11,8 +11,14 @@ from bijux_ontology._jsonpaths import at_path, bound_index, bound_path
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import operation
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Location, Report
 
 from .decoding import _Unavailable, decimal_bound, decode_exact, equal_values, integral

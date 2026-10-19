@@ -8,8 +8,7 @@ from rdflib import BNode, Graph, Literal
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.workflows.projects.acquisition.http import HttpAcquisition
 from bijux_ontology.workflows.projects.acquisition.types import AcquisitionPolicy

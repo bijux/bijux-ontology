@@ -19,6 +19,7 @@ from bijux_ontology.limits import (
     Budget,
     IssueCollector,
     Limits,
+    bound_text,
     retain_report,
 )
 from bijux_ontology.rdf.migrations.candidates import (
@@ -37,7 +38,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchValue,
 )
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text, literal_datatype
+from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.reports import Issue, Report
 

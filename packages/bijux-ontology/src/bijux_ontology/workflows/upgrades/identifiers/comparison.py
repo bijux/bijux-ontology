@@ -4,8 +4,14 @@ from collections.abc import Sequence
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.accessions.checking import _where, check_accessions
 from bijux_ontology.vocabulary.accessions.types import (

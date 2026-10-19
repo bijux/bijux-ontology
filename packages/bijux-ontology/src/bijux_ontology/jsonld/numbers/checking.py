@@ -16,9 +16,15 @@ from bijux_ontology._jsonpaths import SourcePath, bounded_location
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.terms import bound_node, bound_text, literal_term
+from bijux_ontology.rdf.terms import bound_node, literal_term
 from bijux_ontology.reports import Issue, Report
 
 from .types import NumberPolicy, NumericJSON, NumericObservation, NumericProjection

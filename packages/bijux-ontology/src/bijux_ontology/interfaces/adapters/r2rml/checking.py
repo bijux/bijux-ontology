@@ -26,7 +26,13 @@ from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -36,7 +42,7 @@ from bijux_ontology.rdf.path_traversal import finite_path_steps
 from bijux_ontology.rdf.paths import capture_path
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
+from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.reports import Issue, Report
 
 from .preparation import _call, _identifier, _Map, inspect_mapping

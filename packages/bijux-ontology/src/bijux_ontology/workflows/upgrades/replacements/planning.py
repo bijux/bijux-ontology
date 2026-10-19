@@ -12,7 +12,13 @@ from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCandidate,
@@ -32,7 +38,7 @@ from bijux_ontology.rdf.patches.types import (
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import TermPosition, TermRole
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_text, literal_term
+from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary

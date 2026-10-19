@@ -4,8 +4,13 @@ from enum import Enum
 from typing import Any
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.reports import Issue, Location, Report
 
 from .consumer import (
