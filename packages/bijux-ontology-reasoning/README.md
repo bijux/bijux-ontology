@@ -70,7 +70,7 @@ roles. `.unsupported` records actual selected axioms outside the finite model;
 structure or incomplete execution prevents a verified complete projection.
 Inspection makes no consistency, satisfiability or entailment claim.
 
-`templates.compile_table_template` executes the documented ROBOT 1.9.11 CSV/TSV
+`authoring.templates.compile_table_template` executes the documented ROBOT 1.9.11 CSV/TSV
 class templates: ID, LABEL, TYPE, named parents, named-property existentials and
 plain literal annotations. Supply exact `TemplateColumn`, `TemplateIdentifier`
 and role-specific `TemplateTerm` bindings, local declaration/label ontology,
@@ -100,7 +100,7 @@ an explicit `ClassComplement`; failure to entail a positive assertion never
 proves its negation. Actual consistency and complete input qualification precede
 all proofs. Unsupported queries retain their positions as unknown answers.
 
-`patterns.prepare_dosdp_pattern(content, prefixes=...)` captures the JSON subset
+`authoring.patterns.prepare_dosdp_pattern(content, prefixes=...)` captures the JSON subset
 of DOSDP's YAML input. `check_patterns(backend, source, patterns, expected,
 scope=...)` retains actual generated queries, complete named filler assignments
 and the single maintained RDFLib engine answer. Distinct assignments remain

@@ -9,7 +9,7 @@ from pathlib import Path
 from threading import Event
 
 import pytest
-from bijux_ontology_reasoning.patterns import (
+from bijux_ontology_reasoning.authoring.patterns import (
     DosdpPattern,
     DosdpQueryBackend,
     PatternFiller,

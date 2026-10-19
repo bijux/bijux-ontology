@@ -7,6 +7,15 @@ from pathlib import Path
 from threading import Event
 
 import pytest
+from bijux_ontology_reasoning.authoring.templates import (
+    TableCompilation,
+    TemplateBackend,
+    TemplateColumn,
+    TemplateIdentifier,
+    TemplateTerm,
+    compile_table_template,
+    prepare_template_backend,
+)
 from bijux_ontology_reasoning.axioms.types import (
     AnnotationAssertion,
     IriValue,
@@ -18,15 +27,6 @@ from bijux_ontology_reasoning.axioms.types import (
 )
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.templates import (
-    TableCompilation,
-    TemplateBackend,
-    TemplateColumn,
-    TemplateIdentifier,
-    TemplateTerm,
-    compile_table_template,
-    prepare_template_backend,
-)
 
 from bijux_ontology.limits import Budget, Limits
 
