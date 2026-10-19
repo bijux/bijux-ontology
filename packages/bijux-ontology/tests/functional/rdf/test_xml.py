@@ -257,8 +257,7 @@ def test_xml_and_later_rdf_failures_preserve_original_source() -> None:
         ROOT + '<rdf:Description rdf:about="record"><p:label>é😀</p:label>'
         '<p:bad rdf:resource="urn:o" rdf:nodeID="n"/></rdf:Description></rdf:RDF>'
     )
-    from bijux_ontology.interfaces.execution.protocol import report_from_data
-    from bijux_ontology.reports import Issue, Location, Report
+    from bijux_ontology.reports import Issue, Location, Report, report_from_data
 
     columns = []
     for encoding in ("utf-8", "utf-16-le", "utf-16-be"):

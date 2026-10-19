@@ -31,7 +31,7 @@ def test_unverified_child_remains_unverified_when_policy_allows_it() -> None:
 def test_public_report_construction_preserves_descendant_truth_without_recounting() -> (
     None
 ):
-    from bijux_ontology.interfaces.cli.protocol import report_from_data
+    from bijux_ontology.reports import report_from_data
 
     failure = Issue("emission.missing", "Missing value", "/label")
     leaf = Report("emission", 1, (failure,))

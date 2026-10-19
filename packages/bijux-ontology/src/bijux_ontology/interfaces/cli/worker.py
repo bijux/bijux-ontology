@@ -8,8 +8,8 @@ from bijux_ontology._json import object_value, read_json, text_value
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.interfaces.cli.arguments import arguments
 from bijux_ontology.interfaces.cli.checking import run_command
-from bijux_ontology.interfaces.cli.checkpoints import retain_completed
 from bijux_ontology.interfaces.cli.inputs import command_limits
+from bijux_ontology.interfaces.execution.checkpoints import retain_completed
 from bijux_ontology.reports import CheckError, Issue, Location, Report
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 

@@ -15,10 +15,9 @@ from bijux_ontology.interfaces.execution.checkpoints import (
     read_completed,
     read_deadline,
 )
-from bijux_ontology.interfaces.execution.protocol import report_from_data
-from bijux_ontology.interfaces.execution.transport import run_worker
 from bijux_ontology.limits import Limits
-from bijux_ontology.reports import Issue, Report, combine_reports
+from bijux_ontology.processes.transport import run_worker
+from bijux_ontology.reports import Issue, Report, combine_reports, report_from_data
 
 
 @dataclass(frozen=True)

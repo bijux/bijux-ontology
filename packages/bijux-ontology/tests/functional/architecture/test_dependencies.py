@@ -234,7 +234,7 @@ def test_library_dependencies_follow_feature_ownership(
         forbidden = []
         if module in {
             "bijux_ontology.interfaces.cli.inputs",
-            "bijux_ontology.interfaces.cli.protocol",
+            "bijux_ontology.reports",
             "bijux_ontology.interfaces.cli.vocabularies",
             "bijux_ontology.interfaces.cli.transforms",
         }:

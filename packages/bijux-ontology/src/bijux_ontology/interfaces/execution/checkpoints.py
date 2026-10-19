@@ -8,9 +8,8 @@ from pathlib import Path
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import ResourceError
-from bijux_ontology.interfaces.execution.protocol import report_from_data
 from bijux_ontology.limits import Limits
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.reports import Issue, Report, report_from_data
 
 
 def retain_completed(report: Report, directory: Path, *, max_bytes: int) -> None:

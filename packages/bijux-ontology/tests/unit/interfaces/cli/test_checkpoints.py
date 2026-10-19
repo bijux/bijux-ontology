@@ -3,7 +3,10 @@
 import json
 from pathlib import Path
 
-from bijux_ontology.interfaces.cli.checkpoints import read_completed, retain_completed
+from bijux_ontology.interfaces.execution.checkpoints import (
+    read_completed,
+    retain_completed,
+)
 from bijux_ontology.limits import Limits
 from bijux_ontology.reports import Issue, Report
 

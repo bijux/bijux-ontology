@@ -620,7 +620,7 @@ def test_same_focus_message_results_survive_project_and_console_transport(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     from bijux_ontology.interfaces.cli import main
-    from bijux_ontology.interfaces.cli.protocol import report_from_data
+    from bijux_ontology.reports import report_from_data
     from bijux_ontology.workflows.projects.checking import check_project
     from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
