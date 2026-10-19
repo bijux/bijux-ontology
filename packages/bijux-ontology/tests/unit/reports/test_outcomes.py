@@ -1,6 +1,7 @@
 """Policy success must not erase unknown or incomplete child checks."""
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -233,3 +234,91 @@ def test_decoded_coverage_cannot_infer_missing_requested_work(
         selected["requested"] = None
     with pytest.raises(InputError, match="requested comparison count"):
         report_from_data(data)
+
+
+def test_bounded_report_codec_preserves_parser_evidence_without_checkpoint_policy(
+    tmp_path: Path,
+) -> None:
+    """Diagnostic bytes preserve failures; corpus alone excludes that profile."""
+    from bijux_ontology.diagnostics.encoding import decode_report, encode_report
+    from bijux_ontology.diagnostics.errors import (
+        InputFailure,
+        ResourceError,
+        SourceSpan,
+    )
+    from bijux_ontology.execution.limits import Budget
+    from bijux_ontology.workflows.corpus.storage import Checkpoint
+
+    location = Location(
+        source="document.json",
+        path=("records", 0),
+        failure=InputFailure(
+            "https://example.org/data",
+            "document.json",
+            "data",
+            ("https://example.org/import",),
+            SourceSpan(2, 3, column_unit="unicode_code_points"),
+        ),
+    )
+    failed = Report(
+        "parser",
+        1,
+        (Issue("parser.failed", "Invalid JSON", details=location, kind="input_error"),),
+    )
+    restored = decode_report(encode_report(failed, Budget()), Budget())
+    assert restored.to_dict() == failed.to_dict()
+    assert restored.outcome == "input_error" and not restored.complete
+    completed = Report(
+        "outer",
+        1,
+        children=(
+            Report(
+                "parser",
+                1,
+                (Issue("parser.evidence", "Observed failure", details=location),),
+            ),
+        ),
+    )
+    restored = decode_report(encode_report(completed, Budget()), Budget())
+    assert restored.complete and restored.outcome == "disagreement"
+    assert restored.to_dict() == completed.to_dict()
+    path = tmp_path / "parser.sqlite"
+    with pytest.raises(ResourceError, match="Parser-failure"):
+        Checkpoint(path, 1_000_000, 1).write("record", "identity", restored, Budget())
+    assert not path.exists()
+
+
+@pytest.mark.parametrize("metadata", ["families", "exclusions", "path"])
+def test_report_encoding_stops_before_materializing_unpaid_metadata(
+    metadata: str,
+) -> None:
+    """A tight work grant cannot allocate a copy of a caller's large text tuple."""
+    import tracemalloc
+
+    from bijux_ontology.diagnostics.encoding import encode_report
+    from bijux_ontology.diagnostics.errors import LimitExceeded
+    from bijux_ontology.execution.limits import Budget, Limits
+
+    parts = ("field",) * 20_000
+    report = Report(
+        "report",
+        1,
+        families=parts if metadata == "families" else (),
+        exclusions=parts if metadata == "exclusions" else (),
+        issues=(
+            Issue(
+                "test.path", "Observed", location="known", details=Location(path=parts)
+            ),
+        )
+        if metadata == "path"
+        else (),
+    )
+    budget = Budget(Limits(max_work=2))
+    tracemalloc.start()
+    try:
+        with pytest.raises(LimitExceeded):
+            encode_report(report, budget)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 32_768

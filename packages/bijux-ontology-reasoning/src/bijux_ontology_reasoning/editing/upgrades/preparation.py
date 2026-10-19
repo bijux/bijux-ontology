@@ -6,8 +6,9 @@ from hashlib import sha256
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget
+from bijux_ontology.json.encoding import json_bytes
 from bijux_ontology.json.values import capture_json
-from bijux_ontology.models.persistence.codecs import declaration_data, json_bytes
+from bijux_ontology.models.persistence.codecs import declaration_data
 
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.codec.encoding import ConstructionEncoder

@@ -13,6 +13,7 @@ FOUNDATION = {
     "execution",
     "absence",
     "diagnostics",
+    "diagnostics.encoding",
     "json",
     "resources",
 }
@@ -44,6 +45,8 @@ PACKAGES = {
 
 def _owner(module: str) -> str:
     parts = module.removeprefix("bijux_ontology.").split(".")
+    if parts[:2] == ["diagnostics", "encoding"]:
+        return "diagnostics.encoding"
     if parts[0] in {"interfaces", "workflows"} and len(parts) > 1:
         return ".".join(parts[:2])
     return "interfaces.cli" if parts[0] == "__main__" else parts[0]
