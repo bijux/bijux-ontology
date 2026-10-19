@@ -98,6 +98,9 @@ QName, document-dependent types and non-ASCII names remain unverified. Core
 `xsd:anyURI` checks XML character validity, including relative strings and spaces;
 it does not validate or resolve an RDF IRI. Custom datatype relations stay unknown.
 
+Concrete `QueryScope` and `QueryResult` types live in
+`bijux_ontology.rdf.queries.types`; `rdf.queries` remains the public query entry.
+
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
 Use `check_rdf_stream(path, vocabulary)` from `bijux_ontology.data.streams` for

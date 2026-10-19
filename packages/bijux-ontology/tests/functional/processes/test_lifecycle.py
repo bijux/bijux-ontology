@@ -21,7 +21,8 @@ from bijux_ontology.execution.limits import Limits
 from bijux_ontology.execution.processes import transport as worker_transport
 from bijux_ontology.execution.processes.transport import stop_process
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.rdf.queries.access import QueryScope, query_rdf
+from bijux_ontology.rdf.queries.access import query_rdf
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.shacl.execution import transport as shacl_transport
 
 pytestmark = pytest.mark.skipif(

@@ -22,10 +22,11 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, _result
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import term_data
+from bijux_ontology.rdf.queries.results import adopt_result
 from bijux_ontology.rdf.queries.syntax import prepare_local_query
+from bijux_ontology.rdf.queries.types import QueryResult, QueryScope
 
 from .native import native_term, qualify_literal, rdf_term
 from .protocol import execute, failure, scope_data
@@ -70,7 +71,7 @@ def query_snapshot(
         )
         raw = json.dumps(response, ensure_ascii=True, separators=(",", ":")).encode()
         operation.consume("bytes", len(raw))
-        result = _result(raw, scope, operation.limits, max_rows, budget=operation)
+        result = adopt_result(raw, scope, operation.limits, max_rows, budget=operation)
         retain_report(result.report, operation, issues)
         if scope.kind == "dataset" and snapshot.graph_fidelity != "complete":
             issues.append(

@@ -13,8 +13,8 @@ from bijux_ontology.json.values import (
     own_json,
     text_value,
 )
-from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import read_term
+from bijux_ontology.rdf.queries.types import QueryScope
 
 from .types import QueryAnswers, QueryRule
 

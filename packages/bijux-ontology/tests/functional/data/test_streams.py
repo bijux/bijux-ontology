@@ -11,7 +11,7 @@ from rdflib.namespace import OWL, RDF, SH
 from bijux_ontology.data.streams import check_rdf_stream
 from bijux_ontology.data.usage import check_data_usage
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.queries.access import QueryScope
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.stores.preparation import snapshot_rdf

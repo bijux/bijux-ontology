@@ -248,7 +248,7 @@ def test_bounded_capture_retains_a_known_collision_before_tail_exhaustion() -> N
 def test_real_query_projection_matches_native_and_preserves_owned_targets() -> None:
     from bijux_ontology.data.keys import project_record_key
     from bijux_ontology.data.query_rules.checking import run_query_rules
-    from bijux_ontology.rdf.queries.access import QueryScope
+    from bijux_ontology.rdf.queries.types import QueryScope
 
     targets = [EX.a, EX.b]
     contract = KeyContract("projection", (KeyComponent(~EX.link / EX.code),))
@@ -304,7 +304,7 @@ def test_real_query_projection_matches_native_and_preserves_owned_targets() -> N
 def test_actual_shacl_projection_matches_native() -> None:
     pytest.importorskip("pyshacl")
     from bijux_ontology.data.keys import project_record_key
-    from bijux_ontology.rdf.queries.access import QueryScope
+    from bijux_ontology.rdf.queries.types import QueryScope
     from bijux_ontology.shacl.checking import validate_shapes
 
     contract = KeyContract("shacl", (KeyComponent(EX.p), KeyComponent(EX.q)))
@@ -344,7 +344,7 @@ def test_rdf_string_identity_counts_and_intermediate_path_joins() -> None:
 
     from bijux_ontology.data.keys import project_record_key
     from bijux_ontology.data.query_rules.checking import run_query_rules
-    from bijux_ontology.rdf.queries.access import QueryScope
+    from bijux_ontology.rdf.queries.types import QueryScope
     from bijux_ontology.shacl.checking import validate_shapes
 
     collision = (

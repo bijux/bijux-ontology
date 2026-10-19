@@ -13,7 +13,7 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, boun
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.paths.traversal import finite_path_steps
 from bijux_ontology.rdf.paths.types import capture_path
-from bijux_ontology.rdf.queries.access import QueryScope
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 
 from .types import KeyProjection
