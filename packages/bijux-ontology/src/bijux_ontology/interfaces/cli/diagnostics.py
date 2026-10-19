@@ -502,6 +502,7 @@ _CODES = {
         "path_unverified finding_unverified "
         "function_unavailable function_malformed function_untrusted "
         "function_recursive capability_unavailable "
+        "jena_unavailable jena_input_error jena_capability_unavailable "
         "constraint_unavailable constraint_malformed constraint_not_evaluated "
         "coverage_minimum coverage_missing coverage_pair_missing coverage_incomplete "
         "shapes_invalid unavailable "
