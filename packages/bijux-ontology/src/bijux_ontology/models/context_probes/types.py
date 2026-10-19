@@ -4,10 +4,10 @@ import json
 from dataclasses import KW_ONLY, dataclass
 from dataclasses import field as dataclass_field
 
-from bijux_ontology._json import decode_json, own_json
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
+from bijux_ontology.json.values import decode_json, own_json
 
 
 @dataclass(frozen=True, init=False)

@@ -12,12 +12,12 @@ from typing import cast
 from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, URIRef
 from rdflib.graph import DATASET_DEFAULT_GRAPH_ID
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, IssueKind, Report
 from bijux_ontology.execution.limits import Budget, BudgetKind, Limits
 from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource

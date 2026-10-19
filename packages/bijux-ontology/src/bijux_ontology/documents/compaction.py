@@ -2,10 +2,10 @@
 
 import json
 
-from bijux_ontology._json import own_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import (
     DocumentLoader,

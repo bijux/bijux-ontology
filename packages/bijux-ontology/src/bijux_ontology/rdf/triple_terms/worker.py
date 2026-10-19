@@ -9,11 +9,11 @@ from typing import Any, BinaryIO, cast
 
 import pyoxigraph as ox
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.loading import _read
 
 from .protocol import decode_quads, encode_quads, encode_term

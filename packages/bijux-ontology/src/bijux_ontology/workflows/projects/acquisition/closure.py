@@ -10,10 +10,10 @@ from typing import cast
 from urllib.parse import urljoin
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from bijux_ontology._json import decode_json, object_value, own_json
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.archive import resource_path
 from bijux_ontology.execution.limits import bound_text
+from bijux_ontology.json.values import decode_json, object_value, own_json
 from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.jsonld.resources import OfflineDocument, OfflineDocumentLoader
 from bijux_ontology.jsonld.runtime import processor

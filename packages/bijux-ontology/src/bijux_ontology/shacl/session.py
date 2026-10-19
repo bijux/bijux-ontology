@@ -11,13 +11,13 @@ from typing import cast
 
 from rdflib import Dataset, Graph, Literal
 
-from bijux_ontology._jsonpaths import bound_index
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.budgets import Operation, operation
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.paths import bound_index
 from bijux_ontology.rdf.loading import _charge_graph
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource

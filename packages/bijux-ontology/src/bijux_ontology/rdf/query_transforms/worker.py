@@ -11,11 +11,11 @@ from rdflib.plugins import sparql
 from rdflib.plugins.sparql.processor import SPARQLProcessor, SPARQLUpdateProcessor
 from rdflib.term import Identifier, Node
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.patches.codecs import read_term, read_witness, witness_data
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,

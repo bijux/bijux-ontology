@@ -4,7 +4,10 @@ from collections.abc import Callable
 from itertools import chain
 from typing import cast
 
-from bijux_ontology._jsonpaths import (
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector
+from bijux_ontology.json.paths import (
     SourcePath,
     at_path,
     bound_index,
@@ -12,9 +15,6 @@ from bijux_ontology._jsonpaths import (
     bound_pointer_text,
     bounded_location,
 )
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.jsonld.entities import (
     EntityInventory,
     EntityKey,

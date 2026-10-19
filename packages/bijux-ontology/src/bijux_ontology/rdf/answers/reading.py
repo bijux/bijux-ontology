@@ -8,7 +8,6 @@ from typing import cast
 
 from rdflib import BNode
 
-from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
@@ -21,6 +20,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.queries.access import QueryResult
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
 from bijux_ontology.rdf.terms import bound_node

@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import cast
 
-from bijux_ontology._json import decode_json, own_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import AcceptancePolicy, Issue, Report
 from bijux_ontology.execution.limits import (
@@ -13,6 +12,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.values import decode_json, own_json
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.findings import ShaclFinding, term_data

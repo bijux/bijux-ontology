@@ -1,9 +1,9 @@
 """Bounded original-literal locations for nested JSON value evidence."""
 
-from bijux_ontology._jsonpaths import bounded_location
 from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.diagnostics.reports import Location
 from bijux_ontology.execution.limits import Budget
+from bijux_ontology.json.paths import bounded_location
 
 
 def value_location(

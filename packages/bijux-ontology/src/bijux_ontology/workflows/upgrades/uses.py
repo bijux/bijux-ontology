@@ -6,7 +6,6 @@ from typing import Literal
 
 from rdflib import URIRef
 
-from bijux_ontology._jsonpaths import SourcePath, location
 from bijux_ontology.data.query_usage.types import QueryUsage
 from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
@@ -18,6 +17,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.paths import SourcePath, location
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.identifiers import absolute_iri

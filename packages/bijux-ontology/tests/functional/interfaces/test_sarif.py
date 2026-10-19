@@ -236,7 +236,7 @@ def test_pointer_parser_region_and_iri_only_locations_are_not_conflated(
     assert "physicalLocation" not in semantic and "logicalLocations" in semantic
     _save(tmp_path / "locations.sarif", document)
 
-    from bijux_ontology._json import decode_json
+    from bijux_ontology.json.values import decode_json
     from bijux_ontology.rdf.loading import prepare_rdf
     from bijux_ontology.rdf.sources import RdfSource
 

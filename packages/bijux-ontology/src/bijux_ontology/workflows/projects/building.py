@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Self, TypeVar
 
-from bijux_ontology._json import own_json
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.json.values import own_json
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.upgrades.corpus import CorpusBranch
 

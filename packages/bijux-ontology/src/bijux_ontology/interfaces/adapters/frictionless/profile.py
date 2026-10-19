@@ -4,9 +4,9 @@ from collections.abc import Mapping
 from pathlib import PurePosixPath
 from typing import cast
 
-from bijux_ontology._json import _measure, own_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.values import _measure, own_json
 
 
 class UnsupportedPackage(ResourceError):

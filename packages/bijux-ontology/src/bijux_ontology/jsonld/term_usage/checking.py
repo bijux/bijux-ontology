@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import cast
 
-from bijux_ontology._jsonpaths import SourcePath, at_path, bound_path, bounded_location
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import (
@@ -13,6 +12,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.paths import SourcePath, at_path, bound_path, bounded_location
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.contexts.usages import (
     SourceTerm,

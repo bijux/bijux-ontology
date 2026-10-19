@@ -7,9 +7,9 @@ from copy import deepcopy
 from dataclasses import replace
 from typing import cast
 
-from bijux_ontology._jsonpaths import SourcePath, at_path, location
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget
+from bijux_ontology.json.paths import SourcePath, at_path, location
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
     ObservedUsage,

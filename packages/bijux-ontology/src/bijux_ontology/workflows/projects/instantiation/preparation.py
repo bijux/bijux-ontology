@@ -9,13 +9,13 @@ from typing import Literal, cast
 from rdflib import Literal as RdfLiteral
 from rdflib import URIRef
 
-from bijux_ontology._json import object_value
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.archive import resource_path
 from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import IssueCollector, bound_text, retain_report
+from bijux_ontology.json.values import object_value
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.authoring.compiling import compile_shapes

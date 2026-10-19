@@ -11,10 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn, cast
 
-from bijux_ontology._jsonpaths import bound_index
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Limits, bound_text
+from bijux_ontology.json.paths import bound_index
 
 if TYPE_CHECKING:
     from bijux_ontology.execution.limits import Budget

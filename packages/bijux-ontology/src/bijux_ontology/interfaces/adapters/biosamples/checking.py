@@ -6,8 +6,6 @@ from typing import cast
 
 from rdflib import Graph, Literal, URIRef
 
-from bijux_ontology._json import owned_json
-from bijux_ontology._jsonpaths import bounded_location
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
@@ -24,6 +22,8 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
     compile_allowed,
 )
+from bijux_ontology.json.paths import bounded_location
+from bijux_ontology.json.values import owned_json
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

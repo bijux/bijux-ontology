@@ -12,7 +12,6 @@ import pyoxigraph as ox
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.errors import (
     InputError,
@@ -24,6 +23,7 @@ from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import IssueCollector, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
 from bijux_ontology.rdf.snapshots import PreparedSource

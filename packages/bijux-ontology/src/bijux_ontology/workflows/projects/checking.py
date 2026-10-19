@@ -6,7 +6,6 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from typing import cast
 
-from bijux_ontology._json import known_keys, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import (
     Issue,
@@ -16,6 +15,7 @@ from bijux_ontology.diagnostics.reports import (
     combine_reports,
 )
 from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.values import known_keys, object_value
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.sources.view import Vocabulary

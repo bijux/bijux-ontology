@@ -2,9 +2,9 @@
 
 from typing import cast
 
-from bijux_ontology._json import object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.values import object_value
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from ...axioms.types import DataProperty, NamedEntity, ObjectProperty

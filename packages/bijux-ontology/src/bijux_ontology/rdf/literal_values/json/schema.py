@@ -4,12 +4,12 @@ from decimal import Decimal
 from sys import getsizeof
 from typing import Any
 
-from bijux_ontology._json import owned_json
-from bijux_ontology._jsonschema import DIALECT, backend, validator
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
+from bijux_ontology.json.schema import DIALECT, backend, validator
+from bijux_ontology.json.values import owned_json
 
 from .decoding import decimal_bound, integral
 from .locations import value_location

@@ -12,7 +12,6 @@ from uuid import uuid4
 
 from rdflib import URIRef
 
-from bijux_ontology._json import _measure
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.declarations.types import ModelDeclaration
@@ -28,6 +27,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.values import _measure
 from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader

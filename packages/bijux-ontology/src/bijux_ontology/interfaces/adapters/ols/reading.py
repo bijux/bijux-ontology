@@ -11,7 +11,6 @@ from urllib.parse import parse_qsl, quote, urlencode, urlsplit
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF
 
-from bijux_ontology._json import _measure, decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
@@ -23,6 +22,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.values import _measure, decode_json, object_value
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.browsing.inspection import (

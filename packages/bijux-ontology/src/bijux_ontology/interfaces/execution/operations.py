@@ -5,7 +5,12 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Literal, cast
 
-from bijux_ontology._json import (
+from bijux_ontology.absence import ABSENT
+from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Limits
+from bijux_ontology.json.values import (
     array_value,
     boolean_value,
     known_keys,
@@ -13,11 +18,6 @@ from bijux_ontology._json import (
     optional_string_value,
     string_value,
 )
-from bijux_ontology.absence import ABSENT
-from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.execution.limits import Limits
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.comparison import compare_serializations

@@ -44,7 +44,7 @@ class SessionBackend(FramedSession):
         budget: Budget | None = None,
     ) -> bytes:
         """Replay a fixed plan on fresh starts and exchange one independent job."""
-        from bijux_ontology._json import decode_json
+        from bijux_ontology.json.values import decode_json
 
         self._interrupted(deadline, cancel)
         try:

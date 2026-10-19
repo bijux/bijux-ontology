@@ -8,11 +8,11 @@ from decimal import Decimal
 from importlib.metadata import version
 from typing import cast
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.values import decode_json
 
 from .profile import array, object_value, text
 

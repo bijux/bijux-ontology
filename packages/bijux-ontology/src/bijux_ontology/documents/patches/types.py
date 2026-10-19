@@ -4,10 +4,10 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from bijux_ontology._jsonpaths import SourcePath, validate_path
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.documents.forms.types import DocumentFormCheck
+from bijux_ontology.json.paths import SourcePath, validate_path
 
 
 @dataclass(frozen=True)

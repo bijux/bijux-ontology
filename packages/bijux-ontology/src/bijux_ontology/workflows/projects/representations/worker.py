@@ -7,7 +7,6 @@ from dataclasses import asdict, replace
 from email.message import Message
 from typing import Any, cast
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.documents.preparation import prepare_source
@@ -21,6 +20,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.values import decode_json
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.rdf.comparison import compare_rdf

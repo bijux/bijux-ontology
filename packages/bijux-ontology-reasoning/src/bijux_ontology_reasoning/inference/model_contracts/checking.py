@@ -7,7 +7,6 @@ from tempfile import TemporaryDirectory
 from threading import Event
 from typing import cast
 
-from bijux_ontology._json import object_value
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
@@ -18,6 +17,7 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
+from bijux_ontology.json.values import object_value
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource

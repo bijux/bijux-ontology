@@ -5,10 +5,10 @@ from collections import Counter
 from collections.abc import Sequence
 from typing import cast
 
-from bijux_ontology._jsonpaths import bounded_location, location
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector
+from bijux_ontology.json.paths import bounded_location, location
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.expectations import compare_usage
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage

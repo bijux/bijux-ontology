@@ -8,11 +8,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
 
-from bijux_ontology._json import own_json
-from bijux_ontology._jsonpaths import SourcePath, at_path, location
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget
+from bijux_ontology.json.paths import SourcePath, at_path, location
+from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.observations import ObservedUsage
 
 from .selection import Expansion, UsageIndex

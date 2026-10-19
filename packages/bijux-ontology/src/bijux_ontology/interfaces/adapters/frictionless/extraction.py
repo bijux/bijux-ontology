@@ -13,7 +13,6 @@ from typing import cast
 
 from rdflib import Graph
 
-from bijux_ontology._json import _measure, decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.budgets import operation
@@ -25,6 +24,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
 )
 from bijux_ontology.execution.processes.transport import checkpoint, exchange_worker
+from bijux_ontology.json.values import _measure, decode_json
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 

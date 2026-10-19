@@ -6,8 +6,6 @@ from dataclasses import fields, is_dataclass
 from math import isfinite
 from typing import Any, TypeVar, cast
 
-from bijux_ontology._json import own_json
-from bijux_ontology._jsonpaths import bound_index
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
@@ -18,6 +16,8 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.paths import bound_index
+from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.resources import (
     ContextInputError,
     ContextResources,

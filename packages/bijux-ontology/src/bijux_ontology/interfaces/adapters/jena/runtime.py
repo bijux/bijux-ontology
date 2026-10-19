@@ -6,12 +6,12 @@ import os
 import time
 from pathlib import Path
 
-from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.execution.processes.transport import exchange_worker
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.stores.seals import seal_files, verify_files
 
 from .types import JenaBackend

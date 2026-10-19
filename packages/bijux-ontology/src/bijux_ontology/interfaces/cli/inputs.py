@@ -4,9 +4,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from bijux_ontology._json import decode_json, object_value, read_json
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
+from bijux_ontology.json.values import decode_json, object_value, read_json
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources import RdfSource
 

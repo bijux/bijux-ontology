@@ -3,12 +3,12 @@
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
-from bijux_ontology._json import own_json
-from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.json.paths import SourcePath
+from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.comparison import compare_context_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy

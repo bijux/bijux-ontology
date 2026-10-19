@@ -4,8 +4,8 @@ import json
 from dataclasses import dataclass, field
 from typing import cast
 
-from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.execution.limits import Budget
+from bijux_ontology.json.paths import SourcePath
 
 from .values import ValueTraits, value_traits
 

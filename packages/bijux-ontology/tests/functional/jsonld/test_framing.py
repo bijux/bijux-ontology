@@ -11,7 +11,6 @@ from typing import cast
 import pytest
 from rdflib import RDF, XSD, Literal, URIRef
 
-from bijux_ontology._jsonpaths import at_path
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
@@ -19,6 +18,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.execution import WorkerExecutor
+from bijux_ontology.json.paths import at_path
 from bijux_ontology.jsonld.framing import FramedDocument, frame_document
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.selectors import EntitySelector

@@ -13,9 +13,7 @@ FOUNDATION = {
     "execution",
     "absence",
     "diagnostics",
-    "_json",
-    "_jsonpaths",
-    "_jsonschema",
+    "json",
 }
 PACKAGES = {
     "rdf",
@@ -212,7 +210,7 @@ def test_library_dependencies_follow_feature_ownership(
             target_owner = _owner(target)
             if owner in FOUNDATION:
                 assert target_owner in FOUNDATION, f"{module} -> {target}"
-            if module == "bijux_ontology._jsonpaths":
+            if module == "bijux_ontology.json.paths":
                 assert target_owner in FOUNDATION, f"{module} -> {target}"
             if owner == "rdf":
                 assert target_owner in FOUNDATION | {"rdf"}, f"{module} -> {target}"
@@ -287,6 +285,7 @@ import bijux_ontology.shacl
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.values import own_json
 assert not any(name.startswith("rdflib") for name in sys.modules)
 assert "bijux_ontology.interfaces.api" not in sys.modules
 assert "bijux_ontology.models.contracts.checking" not in sys.modules

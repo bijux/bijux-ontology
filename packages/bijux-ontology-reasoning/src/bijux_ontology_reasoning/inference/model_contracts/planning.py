@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from itertools import combinations
 
-from bijux_ontology._json import _decode_json
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.declarations.types import ModelDeclaration
@@ -12,6 +11,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
+from bijux_ontology.json.values import _decode_json
 from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.groups import declaration_states, group_limitation
 from bijux_ontology.models.persistence.codecs import declaration_data, json_bytes

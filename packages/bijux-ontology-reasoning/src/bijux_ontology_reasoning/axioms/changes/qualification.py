@@ -1,9 +1,9 @@
 """Shared qualification of native edit losses and operation failures."""
 
-from bijux_ontology._json import object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import IssueCollector
+from bijux_ontology.json.values import object_value
 
 from ..codec.decoding import ProjectionDecoder
 

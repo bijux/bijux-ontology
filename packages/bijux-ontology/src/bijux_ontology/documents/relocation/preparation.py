@@ -5,11 +5,11 @@ from dataclasses import replace
 from typing import cast
 from urllib.parse import urljoin
 
-from bijux_ontology._json import owned_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.forms.types import FormRequirement
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.values import owned_json
 from bijux_ontology.jsonld.contexts.processing import _data, _preflight
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.resources import (

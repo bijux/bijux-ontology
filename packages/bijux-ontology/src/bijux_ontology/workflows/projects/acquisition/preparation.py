@@ -11,7 +11,6 @@ from itertools import chain
 from pathlib import Path
 from typing import Literal, cast
 
-from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import (
     InputError,
     InputFailure,
@@ -31,6 +30,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 from .types import (

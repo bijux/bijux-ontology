@@ -134,7 +134,7 @@ def read_capture(
     path: Path, budget: Budget
 ) -> tuple[ProjectConfig, Mapping[Path, bytes | Exception]]:
     """Read only private captures; absent entries never reopen original files."""
-    from bijux_ontology._json import _decode_json
+    from bijux_ontology.json.values import _decode_json
 
     encoded = _read_snapshot(path, budget)
     value = _decode_json(

@@ -3,11 +3,11 @@
 from collections.abc import Sequence
 from typing import cast
 
-from bijux_ontology._json import own_json
-from bijux_ontology._jsonpaths import SourcePath, bound_path, bounded_location, location
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.json.paths import SourcePath, bound_path, bounded_location, location
+from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import (

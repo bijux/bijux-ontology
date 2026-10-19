@@ -4,7 +4,6 @@ import argparse
 from pathlib import Path
 from typing import cast
 
-from bijux_ontology._json import object_value
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.documents.export import export_rdf, write_export
@@ -19,6 +18,7 @@ from bijux_ontology.interfaces.cli.inputs import (
     rdf_input,
 )
 from bijux_ontology.interfaces.cli.results import CommandResult
+from bijux_ontology.json.values import object_value
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import (
     extract_neighbourhood,

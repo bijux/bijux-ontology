@@ -5,7 +5,6 @@ from typing import Literal
 
 from rdflib import URIRef
 
-from bijux_ontology._json import array_value
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
@@ -23,6 +22,7 @@ from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.types imp
     AllowedDifference,
     AllowedUnion,
 )
+from bijux_ontology.json.values import array_value
 
 from ..code_system.checking import check_code_membership
 from ..code_system.reading import _operation as operation

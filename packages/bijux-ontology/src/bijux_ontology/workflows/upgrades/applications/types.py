@@ -7,8 +7,6 @@ from dataclasses import field as dataclass_field
 from types import MappingProxyType
 from typing import TypeVar, cast
 
-from bijux_ontology._json import own_json
-from bijux_ontology._jsonpaths import SourcePath, bound_path
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
@@ -18,6 +16,8 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.paths import SourcePath, bound_path
+from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.models.corpus.checking import SerializerCase

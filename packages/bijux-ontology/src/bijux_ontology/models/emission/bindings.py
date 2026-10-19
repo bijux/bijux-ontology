@@ -1,8 +1,8 @@
 """Processor-confirmed source node traits and nested model contribution identity."""
 
-from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget
+from bijux_ontology.json.paths import SourcePath
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.entities import EntityKey
 from bijux_ontology.jsonld.entities import source_entity as establish_source_entity

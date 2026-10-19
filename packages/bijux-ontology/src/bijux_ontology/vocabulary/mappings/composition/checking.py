@@ -6,7 +6,6 @@ from collections.abc import Sequence
 from rdflib import Variable
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
-from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
@@ -18,6 +17,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.vocabulary.mappings.types import (
     MappingRead,
     MappingRow,

@@ -3,10 +3,10 @@
 from collections.abc import Sequence
 from typing import Any
 
-from bijux_ontology._json import _measure
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.values import _measure
 
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 DRAFT07 = "http://json-schema.org/draft-07/schema#"

@@ -8,12 +8,12 @@ from typing import cast
 
 from rdflib.namespace import RDF
 
-from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import FieldDeclaration, ValueDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.json.values import own_json
 
 from ..context_probes.checking import probe_context
 from ..context_probes.types import ContextProbe

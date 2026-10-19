@@ -6,10 +6,10 @@ import os
 import stat
 from pathlib import Path
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, report_from_data
 from bijux_ontology.execution.limits import Limits
+from bijux_ontology.json.values import decode_json
 
 
 def retain_completed(report: Report, directory: Path, *, max_bytes: int) -> None:

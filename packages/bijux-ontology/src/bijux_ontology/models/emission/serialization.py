@@ -9,12 +9,12 @@ from typing import TYPE_CHECKING, cast
 
 from rdflib import Graph
 
-from bijux_ontology._json import encode_json, own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.json.values import encode_json, own_json
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.expectations import ContextExpectation

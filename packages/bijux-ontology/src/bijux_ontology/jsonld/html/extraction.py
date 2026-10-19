@@ -5,7 +5,6 @@ from email.message import Message
 from typing import Any, Literal
 from urllib.parse import unquote, urldefrag
 
-from bijux_ontology._json import decode_json, own_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import (
@@ -15,6 +14,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.values import decode_json, own_json
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader, _consume_work

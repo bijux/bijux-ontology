@@ -7,15 +7,15 @@ from typing import cast
 from rdflib import BNode, Dataset, Literal, URIRef
 from rdflib.term import Node
 
-from bijux_ontology._json import (
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.json.values import (
     array_value,
     boolean_value,
     object_value,
     optional_string_value,
     string_value,
 )
-from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource

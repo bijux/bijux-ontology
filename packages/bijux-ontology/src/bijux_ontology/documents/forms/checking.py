@@ -4,15 +4,15 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import TypeVar, cast
 
-from bijux_ontology._jsonpaths import (
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.json.paths import (
     SourcePath,
     at_path,
     bound_pointer_text,
     bounded_location,
 )
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
-from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import source_entity

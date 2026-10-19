@@ -5,7 +5,6 @@ from itertools import islice
 
 from rdflib import BNode, Literal, Variable
 
-from bijux_ontology._json import _measure
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.forms.types import FormRequirement
@@ -26,6 +25,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.values import _measure
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.preparation import prepare_jsonld

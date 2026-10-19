@@ -1,6 +1,5 @@
 """Explicit cross-format preparation into owned RDF graph and dataset snapshots."""
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import (
     InputError,
     LimitExceeded,
@@ -8,6 +7,7 @@ from bijux_ontology.diagnostics.errors import (
     attach_input_failure,
 )
 from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.json.values import decode_json
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.rdf.loading import prepare_input, prepare_native

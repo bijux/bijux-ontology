@@ -7,12 +7,12 @@ from typing import TYPE_CHECKING, cast
 
 from rdflib import Literal
 
-from bijux_ontology._jsonpaths import SourcePath, at_path, location
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, IssueCollector
+from bijux_ontology.json.paths import SourcePath, at_path, location
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import EntityKey, object_key

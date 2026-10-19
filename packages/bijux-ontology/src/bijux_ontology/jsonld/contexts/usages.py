@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 from typing import Any
 
-from bijux_ontology._jsonpaths import SourcePath, at_path, bound_path
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.paths import SourcePath, at_path, bound_path
 from bijux_ontology.jsonld.resources import ContextInputError, ContextResources
 from bijux_ontology.jsonld.runtime import processor
 

@@ -2,7 +2,9 @@
 
 from typing import cast
 
-from bijux_ontology._json import (
+from bijux_ontology.absence import ABSENT
+from bijux_ontology.declarations.types import SubjectIdentity
+from bijux_ontology.json.values import (
     array_value,
     boolean_value,
     known_keys,
@@ -10,8 +12,6 @@ from bijux_ontology._json import (
     optional_string_value,
     string_value,
 )
-from bijux_ontology.absence import ABSENT
-from bijux_ontology.declarations.types import SubjectIdentity
 from bijux_ontology.models.emission.types import ModelUsage
 
 

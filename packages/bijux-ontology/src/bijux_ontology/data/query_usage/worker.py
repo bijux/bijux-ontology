@@ -14,12 +14,12 @@ from rdflib.plugins.sparql.algebra import translateQuery, translateUpdate
 from rdflib.plugins.sparql.parser import parseQuery, parseUpdate
 from rdflib.plugins.sparql.parserutils import CompValue
 
-from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.patches.operations import serialized
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import IssueCollector, Limits, bound_text
+from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import literal_datatype
 

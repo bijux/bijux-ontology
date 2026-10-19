@@ -4,13 +4,6 @@ import hashlib
 from collections.abc import Mapping, Sequence
 from typing import cast
 
-from bijux_ontology._json import (
-    _decode_json,
-    array_value,
-    object_value,
-    optional_string_value,
-    string_value,
-)
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.declarations.types import ModelDeclaration
@@ -21,6 +14,13 @@ from bijux_ontology.execution.limits import (
     IssueCollector,
     Limits,
     retain_report,
+)
+from bijux_ontology.json.values import (
+    _decode_json,
+    array_value,
+    object_value,
+    optional_string_value,
+    string_value,
 )
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader

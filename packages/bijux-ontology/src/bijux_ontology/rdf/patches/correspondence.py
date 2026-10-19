@@ -9,12 +9,12 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.compare import isomorphic
 from rdflib.term import Node
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget, Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.values import decode_json
 
 from .codecs import read_witness, term_data, witness_data
 from .types import PatchBlank, PatchUnavailable, PatchValue, SnapshotWitness

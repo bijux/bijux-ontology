@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from threading import Event
 from uuid import uuid4
 
-from bijux_ontology._jsonpaths import bound_path
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import SubjectIdentity
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
@@ -20,6 +19,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
 )
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.paths import bound_path
 from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.emission.types import ModelUsage
 
