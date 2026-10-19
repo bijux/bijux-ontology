@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import IO, Any, BinaryIO, cast
 
 import pyoxigraph as ox
-from rdflib import BNode, Dataset, Graph, Literal, URIRef
+from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.declarations.types import TermDeclaration
@@ -26,13 +26,10 @@ from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
-from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.stores.native import DeclarationReader
 from bijux_ontology.rdf.terms import bound_node, oxigraph_term
-from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.membership import membership_issue, read_graph_kinds
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
-from bijux_ontology.vocabulary.sources.types import OwnedSource
-from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .protocol import read_stored
 
@@ -116,34 +113,6 @@ def _term(value: object, budget: ControlBudget) -> QueryTerm | None:
     )
     bound_node(node, budget)
     return cast(QueryTerm, node)
-
-
-def _projected_vocabulary(graph: Graph, budget: ControlBudget) -> Vocabulary:
-    """Adopt a tiny derived selection without acquiring another input resource."""
-    budget.consume("states", 3)
-    budget.consume("bytes", 192)
-    dataset = Dataset()
-    for triple in graph:
-        budget.consume("work")
-        budget.consume("triples")
-        budget.consume("states")
-        budget.consume("bytes", 88)
-        dataset.default_graph.add(triple)
-    prepared = PreparedSource._from_owned(
-        dataset,
-        is_dataset=False,
-        document_iri=None,
-        effective_url=None,
-        literal_fidelity="supplied_terms",
-        max_triples=budget.limits.max_triples,
-    )
-    selected = prepared._read(budget=budget)
-    return Vocabulary._from_owned(
-        OwnedSource(prepared, selected),
-        (),
-        (),
-        budget.limits,
-    )
 
 
 def evaluate(request: dict[str, Any]) -> dict[str, object]:
@@ -287,17 +256,30 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
                                 statement,
                             )
                     if declarations:
-                        current = vocabulary
-                        if declarations_reader is not None:
-                            projection = declarations_reader.graph(
+                        projection = (
+                            declarations_reader.graph(
                                 tuple(term.iri for term in declarations)
                             )
-                            current = _projected_vocabulary(projection, budget)
-                        assert current is not None
-                        adopt(
-                            check_vocabulary(current, declarations, budget=budget),
-                            statement,
+                            if declarations_reader is not None
+                            else None
                         )
+                        for declaration in declarations:
+                            budget.consume("work")
+                            checks += 1
+                            if projection is not None:
+                                kinds = read_graph_kinds(
+                                    projection, declaration.iri, budget
+                                )
+                            else:
+                                assert vocabulary is not None
+                                kinds = vocabulary._declared(
+                                    declaration.iri, ("local", "imports", "lookup")
+                                )
+                            issue = membership_issue(
+                                declaration, kinds, include_builtins=True, regime="rdf"
+                            )
+                            if issue is not None:
+                                keep(issue, statement)
                     if request["check_literals"] and isinstance(value, Literal):
                         adopt(
                             check_literal(value, location=location, budget=budget),
