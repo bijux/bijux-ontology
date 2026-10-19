@@ -16,14 +16,14 @@ from bijux_ontology_reasoning.axioms import (
     NativeLiteral,
 )
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.datatypes import (
+from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
+from bijux_ontology_reasoning.inference.datatypes import (
     DatatypeFieldBranch,
     DatatypeObligation,
     check_datatype_branches,
     check_datatype_fields,
     check_datatype_obligations,
 )
-from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
 from rdflib import Literal
 from rdflib.namespace import XSD
 

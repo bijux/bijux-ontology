@@ -16,8 +16,11 @@ from bijux_ontology_reasoning.axioms.types import (
     ObjectQuantifier,
 )
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.queries import ClassQueryResult
-from bijux_ontology_reasoning.sessions import ReasoningSession, prepare_reasoning_theory
+from bijux_ontology_reasoning.inference.classes import ClassQueryResult
+from bijux_ontology_reasoning.inference.sessions import (
+    ReasoningSession,
+    prepare_reasoning_theory,
+)
 from rdflib import URIRef
 from rdflib.namespace import RDFS
 

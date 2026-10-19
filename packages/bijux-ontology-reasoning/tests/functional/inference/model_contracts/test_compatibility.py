@@ -8,7 +8,7 @@ import pytest
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
 from bijux_ontology_reasoning.inference.datatypes.types import DatatypeFieldBranch
-from bijux_ontology_reasoning.models.compatibility import check_model_compatibility
+from bijux_ontology_reasoning.inference.model_contracts import check_model_compatibility
 from rdflib import Dataset, Graph, URIRef
 from rdflib.namespace import RDF
 

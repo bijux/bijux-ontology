@@ -19,10 +19,13 @@ from bijux_ontology_reasoning.axioms.types import (
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.backend.types import ProfileDocument
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.entailment import EntailmentCheck, check_entailments
+from bijux_ontology_reasoning.inference.entailment import (
+    EntailmentCheck,
+    check_entailments,
+)
+from bijux_ontology_reasoning.inference.relationships import InferredQuery
 from bijux_ontology_reasoning.inference.relationships.types import InferredContracts
-from bijux_ontology_reasoning.relationships import InferredQuery
-from bijux_ontology_reasoning.sessions import (
+from bijux_ontology_reasoning.inference.sessions import (
     InferenceSelection,
     PreparedReasoningTheory,
     ReasoningSession,

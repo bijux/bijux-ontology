@@ -13,7 +13,6 @@ from bijux_ontology_reasoning.documents import (
     convert_ontology,
     prepare_owl_document,
 )
-from bijux_ontology_reasoning.entailment import check_entailments
 from bijux_ontology_reasoning.entities.renaming import (
     AnnotationRole,
     ModuleCheck,
@@ -22,6 +21,7 @@ from bijux_ontology_reasoning.entities.renaming import (
     RoleRename,
     prepare_role_rename,
 )
+from bijux_ontology_reasoning.inference.entailment import check_entailments
 
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.limits import Budget

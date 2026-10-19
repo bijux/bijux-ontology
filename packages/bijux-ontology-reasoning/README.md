@@ -83,7 +83,7 @@ jar pinned to SHA256
 Sealing its 82,708,624 bytes needs an explicit preparation allowance such as
 `Limits(max_total_bytes=128_000_000)`; execution uses a separate caller budget.
 
-`diagnosis.check_consistency(backend, source, named_classes=None)` asks actual
+`inference.consistency.check_consistency(backend, source, named_classes=None)` asks actual
 ontology consistency and separate named-class satisfiability questions. A
 consistent ontology may contain unsatisfiable classes. An inconsistent ontology
 provides no ordinary class proof. `None` selects the actual class signature;
@@ -93,7 +93,7 @@ qualified original input, complete supplied imports and OWL 2 DL membership.
 Unsupported datatypes, axioms and failed execution remain unknown. The reported
 Maven artifact version and native reasoner version are retained separately.
 
-`entailment.check_entailments(backend, source, obligations)` accepts existing typed
+`inference.entailment.check_entailments(backend, source, obligations)` accepts existing typed
 `SubClassOf` and `ClassAssertion` requests with supported class expressions.
 Each answer is `entailed`, `not_entailed` or `unknown`. A negative assertion uses
 an explicit `ClassComplement`; failure to entail a positive assertion never
@@ -126,7 +126,7 @@ syntax alone proves no consistency. Inspect the candidate, then publish unchange
 checked bytes with `write_axiom_change(candidate, path, accept=True)`. A failed
 check, stale receipt or interrupted operation cannot replace the destination.
 
-`relationships.query_inferred_contracts(backend, source, queries)` enumerates
+`inference.relationships.query_inferred_contracts(backend, source, queries)` enumerates
 named class and object/data property relationships through actual HermiT APIs.
 Use `InferredQuery` with existing typed entity values and explicit direct/indirect
 hierarchy selection. Native equivalence nodes, inverse expressions, builtins and
@@ -147,7 +147,7 @@ Nonempty `ModuleCheck` postconditions receive the complete candidate module set
 and shared budget. Returned checked bytes form a reviewable transaction;
 publication across multiple destinations remains the caller's responsibility.
 
-`datatypes.check_datatype_obligations` uses actual datatype difference/intersection
+`inference.datatypes.check_datatype_obligations` uses actual datatype difference/intersection
 satisfiability to check universal inclusion or disjointness. It qualifies original
 consistency and an explicitly fresh temporary property; finite samples prove no
 universal range relationship. `check_datatype_fields` checks every original value
@@ -158,7 +158,7 @@ through `check_datatype_branches` retains original field identity and indices;
 combined consumers own coverage of the remaining branches. Class-context and
 model co-emission obligations belong to model compatibility.
 
-`models.compatibility.check_model_compatibility(backend, source, declarations)`
+`inference.model_contracts.check_model_compatibility(backend, source, declarations)`
 checks a finite automatic subset of existing model contracts. Required endpoint
 subsumption, possible type satisfiability and declared co-emission contradictions
 remain separate answers at original model/field locations. Anonymous intersection
@@ -168,7 +168,7 @@ Unsupported contexts and uncovered scenarios remain unknown. Logical existence
 or cardinality never certifies emitted required fields; use ordinary model/output
 checking for those obligations.
 
-`instances.check_emitted_consistency(backend, ontology, emitted, bindings)`
+`inference.instances.check_emitted_consistency(backend, ontology, emitted, bindings)`
 checks all statements in the two explicitly selected prepared RDF graphs with
 one captured ontology import closure. Inspect `.diagnosis` for global logical
 consistency and `.records` for original node participation. Bindings never filter
@@ -177,7 +177,7 @@ from the derived joint input. Missing explicit existential values and different
 IRIs retain ordinary OWL semantics; submission conformance remains a separate
 model/output check.
 
-`explanations.explain_reasoning(backend, document, ExplanationQuestion(...))`
+`inference.explanations.explain_reasoning(backend, document, ExplanationQuestion(...))`
 returns one bounded maintained owlexplanation 5.0.1 justification for a selected
 entailment, named-class unsatisfiability or inconsistency. Original annotated
 structural axioms retain their source modules and rendering hashes; these are
@@ -248,7 +248,7 @@ Changed contract fingerprints stay visible; unmatched consumers remain unknown.
 Selected explanations provide actual positive support and cannot erase a proved
 regression when unavailable. No ontology-wide compatibility is asserted.
 
-`sessions.prepare_reasoning_theory` captures one exact native/RDF closure and
+`inference.sessions.prepare_reasoning_theory` captures one exact native/RDF closure and
 backend revision. `with sessions.ReasoningSession(theory)` loads and classifies
 once, then recomputes supported queries and batches. Capture and `bind` a new
 theory for changed imports or backend semantics; external mutable inputs are

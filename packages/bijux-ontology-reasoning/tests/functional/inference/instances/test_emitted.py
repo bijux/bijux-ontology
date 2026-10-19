@@ -9,7 +9,7 @@ from threading import Event
 
 import pytest
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.instances import check_emitted_consistency
+from bijux_ontology_reasoning.inference.instances import check_emitted_consistency
 from rdflib import BNode, Dataset, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 

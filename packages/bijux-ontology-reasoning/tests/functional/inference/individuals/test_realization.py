@@ -13,12 +13,12 @@ from bijux_ontology_reasoning.axioms.types import (
 )
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import prepare_owl_document
-from bijux_ontology_reasoning.realization import (
+from bijux_ontology_reasoning.inference.individuals import (
     IndividualFamily,
     IndividualQuery,
     RealizationGroup,
 )
-from bijux_ontology_reasoning.sessions import (
+from bijux_ontology_reasoning.inference.sessions import (
     PreparedReasoningTheory,
     ReasoningSession,
     prepare_reasoning_theory,

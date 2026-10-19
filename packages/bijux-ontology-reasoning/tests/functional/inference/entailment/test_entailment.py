@@ -19,7 +19,7 @@ from bijux_ontology_reasoning.axioms import (
 )
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.entailment import check_entailments
+from bijux_ontology_reasoning.inference.entailment import check_entailments
 from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 

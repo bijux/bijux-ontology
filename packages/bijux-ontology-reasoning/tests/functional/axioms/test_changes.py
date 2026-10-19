@@ -30,13 +30,13 @@ from bijux_ontology_reasoning.axioms.changes import (
 )
 from bijux_ontology_reasoning.axioms.types import DataProperty
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.diagnosis import check_consistency
 from bijux_ontology_reasoning.documents import (
     OwlDocument,
     convert_ontology,
     prepare_owl_document,
 )
-from bijux_ontology_reasoning.entailment import check_entailments
+from bijux_ontology_reasoning.inference.consistency import check_consistency
+from bijux_ontology_reasoning.inference.entailment import check_entailments
 
 from bijux_ontology.errors import ResourceError
 from bijux_ontology.limits import Budget, Limits

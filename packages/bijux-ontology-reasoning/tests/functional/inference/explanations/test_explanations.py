@@ -11,11 +11,14 @@ from typing import Literal, cast
 import pytest
 from bijux_ontology_reasoning.axioms import NamedEntity, SubClassOf
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.diagnosis import check_consistency
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.entailment import check_entailments
-from bijux_ontology_reasoning.explanations import ExplanationQuestion, explain_reasoning
+from bijux_ontology_reasoning.inference.consistency import check_consistency
 from bijux_ontology_reasoning.inference.consistency.types import ConsistencyCheck
+from bijux_ontology_reasoning.inference.entailment import check_entailments
+from bijux_ontology_reasoning.inference.explanations import (
+    ExplanationQuestion,
+    explain_reasoning,
+)
 from rdflib import URIRef
 
 from bijux_ontology.limits import Budget, Limits

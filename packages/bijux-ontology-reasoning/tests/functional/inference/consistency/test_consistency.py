@@ -8,8 +8,8 @@ from threading import Event
 
 import pytest
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.diagnosis import check_consistency
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
+from bijux_ontology_reasoning.inference.consistency import check_consistency
 from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 

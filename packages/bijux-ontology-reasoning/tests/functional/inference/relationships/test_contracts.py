@@ -16,12 +16,12 @@ from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
 from bijux_ontology_reasoning.inference.consistency.types import (
     ReasonerIdentity as PublicReasoner,
 )
-from bijux_ontology_reasoning.profiles.types import LoaderQualification as PublicLoader
-from bijux_ontology_reasoning.relationships import (
+from bijux_ontology_reasoning.inference.relationships import (
     InferredAnswer,
     InferredQuery,
     query_inferred_contracts,
 )
+from bijux_ontology_reasoning.profiles.types import LoaderQualification as PublicLoader
 from rdflib import Dataset, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
