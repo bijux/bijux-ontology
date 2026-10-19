@@ -10,7 +10,7 @@ from threading import Event, Lock
 from typing import Any, Self
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.execution.processes.sessions import FramedSession, WorkerGeneration
@@ -301,8 +301,10 @@ class NativeSession:
                     "owl.reasoning_session_unverified"
                     if unknown
                     else "owl.reasoning_session_input_error",
-                    str(error),
+                    str(error) or "Reasoning session is unavailable",
+                    error.location if isinstance(error, InputError) else "",
                     kind="unverified" if unknown else "input_error",
+                    details=Location.from_error(error),
                 )
             )
         except LimitExceeded as stopped:

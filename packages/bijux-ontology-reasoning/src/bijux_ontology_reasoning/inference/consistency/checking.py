@@ -12,7 +12,7 @@ from typing import cast
 from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.json.values import object_value
@@ -40,7 +40,10 @@ def _classes(
     if selection is None:
         return None
     if not isinstance(selection, Sequence) or isinstance(selection, str | bytes):
-        raise InputError("Named classes require a finite URIRef sequence or None")
+        raise InputError(
+            "Named classes require a finite URIRef sequence or None",
+            location="named_classes",
+        )
     size = len(selection)
     budget.consume("states", size)
     budget.consume("bytes", 64 + 32 * size)
@@ -50,11 +53,17 @@ def _classes(
         budget.consume("work")
         value = selection[index]
         if type(value) is not URIRef:
-            raise InputError("Named class selections require URIRef terms")
+            raise InputError(
+                "Named class selections require URIRef terms",
+                location=f"named_classes/{index}",
+            )
         bound_text(value, budget)
-        absolute_iri(value)
+        absolute_iri(value, location=f"named_classes/{index}")
         if value in seen:
-            raise InputError("Named class requests must be distinct")
+            raise InputError(
+                "Named class requests must be distinct",
+                location=f"named_classes/{index}",
+            )
         seen.add(value)
         selected.append(value)
     return tuple(selected)
@@ -236,17 +245,22 @@ def check_consistency(
             complete = True
     except LimitExceeded as error:
         issues.exhausted(str(error), location="owl.diagnosis")
-    except (InputError, OSError):
+    except (InputError, OSError) as error:
         try:
+            unavailable = isinstance(error, ResourceError | OSError)
             issues.append(
                 Issue(
-                    "owl.diagnosis_unverified",
-                    "DL diagnosis or its exact selected interpretation is unavailable",
-                    kind="unverified",
+                    "owl.diagnosis_unverified"
+                    if unavailable
+                    else "owl.diagnosis_input_error",
+                    str(error) or "DL diagnosis is unavailable",
+                    error.location if isinstance(error, InputError) else "",
+                    kind="unverified" if unavailable else "input_error",
+                    details=Location.from_error(error),
                 )
             )
-        except LimitExceeded as error:
-            issues.exhausted(str(error), location="owl.diagnosis")
+        except LimitExceeded as stopped:
+            issues.exhausted(str(stopped), location="owl.diagnosis")
     report = Report(
         "owl.diagnosis",
         int(consistent is not None) + len(answers),

@@ -10,7 +10,7 @@ from threading import Event
 from typing import cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.values import object_value
@@ -256,17 +256,22 @@ def check_entailments(
                 )
     except LimitExceeded as error:
         issues.exhausted(str(error), location="owl.entailment")
-    except (InputError, OSError):
+    except (InputError, OSError) as error:
         try:
+            unavailable = isinstance(error, ResourceError | OSError)
             issues.append(
                 Issue(
-                    "owl.entailment_unverified",
-                    "Entailment or its selected interpretation is unavailable",
-                    kind="unverified",
+                    "owl.entailment_unverified"
+                    if unavailable
+                    else "owl.entailment_input_error",
+                    str(error) or "Entailment is unavailable",
+                    error.location if isinstance(error, InputError) else "",
+                    kind="unverified" if unavailable else "input_error",
+                    details=Location.from_error(error),
                 )
             )
-        except LimitExceeded as error:
-            issues.exhausted(str(error), location="owl.entailment")
+        except LimitExceeded as stopped:
+            issues.exhausted(str(stopped), location="owl.entailment")
     pending_issues = tuple(issue for issue in issues if issue.kind != "finding")
     # Every placeholder below uses the prepaid finite inventory and existing
     # paid stop evidence; no fresh allowance can lose an adopted answer.

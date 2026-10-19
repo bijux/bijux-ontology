@@ -141,7 +141,9 @@ def prepare_profile_backend(
 def qualify_backend(backend: OwlProfileBackend, budget: Budget) -> None:
     """Reject changed bundles and ambient JVM injection before native execution."""
     if not isinstance(backend, OwlProfileBackend):
-        raise ResourceError("An explicitly prepared OWL profile backend is required")
+        raise InputError(
+            "An explicitly prepared OWL profile backend is required", location="backend"
+        )
     if os.name != "posix":
         raise ResourceError(
             "This OWL backend profile requires qualified POSIX ownership"
