@@ -257,7 +257,14 @@ def check_literal(
     try:
         bound_text(location, operation)
         anchor = location
-        bound_node(value, operation)
+        try:
+            bound_node(value, operation)
+        except LimitExceeded:
+            raise
+        except InputError as error:
+            raise InputError(
+                str(error), location=anchor, failure=error.failure
+            ) from error
         operation.consume("states")
         operation.reserve_storage(128 + 4 * (len(value) + len(value.datatype or "")))
         datatype = str(

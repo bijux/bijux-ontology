@@ -1,6 +1,7 @@
 """Resolve declared source traversals and exact asserted entity selections."""
 
 from collections.abc import Callable
+from itertools import chain
 from typing import cast
 
 from bijux_ontology.errors import InputError, LimitExceeded
@@ -42,7 +43,7 @@ def _selector_metadata(
         bound_path(selector.start, budget)
     elif isinstance(selector, EntitySelector):
         budget.consume("states", len(selector.identifiers) + len(selector.types))
-        for value in (*selector.identifiers, *selector.types):
+        for value in chain(selector.identifiers, selector.types):
             bound_pointer_text(value, budget)
         if selector.graph is not None:
             bound_pointer_text(selector.graph, budget)
@@ -96,7 +97,12 @@ def resolve_selection(
     issues = IssueCollector(budget)
     paths: tuple[SourcePath, ...] = ()
     entities: tuple[EntityKey, ...] = ()
-    unit: CoverageUnit = "source_occurrence"
+    unit: CoverageUnit = (
+        selector.coverage_unit
+        if isinstance(selector, EntitySelector)
+        else "source_occurrence"
+    )
+    matching: list[EntityKey] = []
 
     def count_matches(
         count: int,
@@ -127,54 +133,92 @@ def resolve_selection(
     def traverse(
         starts: tuple[SourcePath, ...], steps: tuple[Step, ...]
     ) -> tuple[SourcePath, ...]:
-        """Traverse each parent independently using actual source containers."""
+        """Prepay each child path and retain only completed final-step matches."""
+        nonlocal paths
+
+        def append(
+            parent: SourcePath,
+            key: str | int,
+            children: list[SourcePath],
+            completed: list[SourcePath] | None,
+        ) -> None:
+            """Own a path tuple and its traversal/output reference slots."""
+            budget.consume("states")
+            budget.reserve_storage(128 + 8 * (len(parent) + 1))
+            child = (*parent, key)
+            children.append(child)
+            if completed is not None:
+                completed.append(child)
+
         selected = starts
-        for step in steps:
-            following = []
-            for parent in selected:
-                budget.consume("work")
-                value = at_path(document, parent)
-                children: list[SourcePath] = []
-                if isinstance(step, Property) and isinstance(value, dict):
-                    if step.key in value:
-                        children.append((*parent, step.key))
-                elif isinstance(step, ArrayItems) and isinstance(value, list):
-                    budget.consume("work", len(value))
-                    children.extend((*parent, index) for index in range(len(value)))
-                elif isinstance(step, KeyedItems) and isinstance(value, dict):
-                    keys = (
-                        tuple(value)
-                        if step.keys is None
-                        else tuple(dict.fromkeys(step.keys))
-                    )
-                    for key in keys:
-                        budget.consume("work")
-                        if key in value:
-                            children.append((*parent, key))
-                else:
-                    issues.append(
-                        Issue(
-                            "selector.structure_mismatch",
-                            "Selected parent has the wrong source container kind",
-                            bounded_location(parent, budget),
-                            actual=type(value).__name__,
+        for number, step in enumerate(steps):
+            budget.reserve_storage(192)
+            following: list[SourcePath] = []
+            final = number == len(steps) - 1
+            completed: list[SourcePath] = []
+            try:
+                for parent in selected:
+                    budget.consume("work")
+                    value = at_path(document, parent)
+                    budget.reserve_storage(64)
+                    children: list[SourcePath] = []
+
+                    if isinstance(step, Property) and isinstance(value, dict):
+                        if step.key in value:
+                            append(
+                                parent, step.key, children, completed if final else None
+                            )
+                    elif isinstance(step, ArrayItems) and isinstance(value, list):
+                        for index in range(len(value)):
+                            budget.consume("work")
+                            append(
+                                parent, index, children, completed if final else None
+                            )
+                    elif isinstance(step, KeyedItems) and isinstance(value, dict):
+                        budget.reserve_storage(256)
+                        seen: set[str] = set()
+                        for key in value if step.keys is None else step.keys:
+                            budget.consume("work")
+                            if step.keys is not None:
+                                if key in seen:
+                                    continue
+                                budget.consume("states")
+                                budget.reserve_storage(64)
+                                seen.add(key)
+                            if key in value:
+                                if step.keys is None:
+                                    bound_pointer_text(key, budget)
+                                append(
+                                    parent, key, children, completed if final else None
+                                )
+                    else:
+                        issues.append(
+                            Issue(
+                                "selector.structure_mismatch",
+                                "Selected parent has the wrong source container kind",
+                                bounded_location(parent, budget),
+                                actual=type(value).__name__,
+                            )
                         )
+                    if isinstance(step, Property):
+                        budget.consume("work", len(step.key))
+                        budget.consume("bytes", 64 + 12 * len(step.key))
+                    count_matches(
+                        len(children),
+                        step.minimum,
+                        step.maximum,
+                        bounded_location(parent, budget),
+                        parent=f"property {step.key!r}"
+                        if isinstance(step, Property)
+                        else "array members"
+                        if isinstance(step, ArrayItems)
+                        else "keyed members",
                     )
-                if isinstance(step, Property):
-                    budget.consume("work", len(step.key))
-                    budget.consume("bytes", 64 + 12 * len(step.key))
-                count_matches(
-                    len(children),
-                    step.minimum,
-                    step.maximum,
-                    bounded_location(parent, budget),
-                    parent=f"property {step.key!r}"
-                    if isinstance(step, Property)
-                    else "array members"
-                    if isinstance(step, ArrayItems)
-                    else "keyed members",
-                )
-                following.extend(children)
+                    following.extend(children)
+            except LimitExceeded:
+                if final:
+                    paths = tuple(completed)
+                raise
             selected = tuple(following)
         return selected
 
@@ -182,6 +226,8 @@ def resolve_selection(
         keys: set[EntityKey], include_references: bool
     ) -> tuple[SourcePath, ...]:
         """Associate selected entities with actual describing source objects."""
+        nonlocal paths
+        budget.reserve_storage(320)
         result: list[SourcePath] = []
         established: set[EntityKey] = set()
         if not keys:
@@ -208,19 +254,26 @@ def resolve_selection(
                 return
             if isinstance(value, list):
                 for index, item in enumerate(value):
+                    budget.consume("states")
+                    budget.reserve_storage(64 + 8 * (len(path) + 1))
                     walk(item, (*path, index))
                 return
             node = cast(dict[str, object], value)
             if "@value" in node:
                 return
-            wrapper = bool(node) and not set(node) - {
-                "@context",
-                "@graph",
-                "@included",
-                "@list",
-                "@set",
-                "@index",
-            }
+            budget.consume("work", len(node))
+            wrapper = bool(node) and all(
+                key
+                in {
+                    "@context",
+                    "@graph",
+                    "@included",
+                    "@list",
+                    "@set",
+                    "@index",
+                }
+                for key in node
+            )
             if not wrapper:
                 try:
                     binding = source_entity(node, path, observe, budget)
@@ -230,6 +283,8 @@ def resolve_selection(
                     binding = None
                 if binding is not None and binding.key in keys:
                     if binding.described or include_references:
+                        budget.consume("states", 2)
+                        budget.reserve_storage(128)
                         result.append(path)
                         established.add(binding.key)
                 elif binding is None and usage is not None:
@@ -250,9 +305,20 @@ def resolve_selection(
                         )
             for key, item in node.items():
                 if key != "@context":
+                    budget.consume("states")
+                    budget.reserve_storage(64 + 8 * (len(path) + 1))
                     walk(item, (*path, key))
 
-        walk(document, ())
+        try:
+            walk(document, ())
+        except LimitExceeded:
+            if not selector.steps:
+                paths = tuple(result)
+            raise
+        if not selector.steps:
+            paths = tuple(result)
+        budget.consume("states", len(keys) * 2)
+        budget.reserve_storage(256 + 128 * len(keys))
         for key in sorted(
             keys - established,
             key=lambda item: (
@@ -283,15 +349,17 @@ def resolve_selection(
             where = bounded_location(selector.start, budget)
         elif isinstance(selector, EntitySelector):
             unit = selector.coverage_unit
-            matching = []
+            budget.reserve_storage(256 + 64 * len(selector.types))
             required_types = set(selector.types)
-            for entity in inventory.entities:
+            for entity in inventory.iter_entities(budget=budget):
                 budget.consume("work")
                 key = entity.key
                 if key.anonymous_graph or key.graph != selector.graph:
                     continue
                 if selector.identifiers and key.identifier not in selector.identifiers:
                     continue
+                budget.consume("states", len(entity.types))
+                budget.reserve_storage(256 + 64 * len(entity.types))
                 asserted = set(entity.types)
                 if (
                     required_types != asserted
@@ -300,6 +368,8 @@ def resolve_selection(
                 ):
                     continue
                 if entity.described or selector.include_references:
+                    budget.consume("states")
+                    budget.reserve_storage(128)
                     matching.append(key)
             if unit == "rdf_entity":
                 entities = tuple(
@@ -312,6 +382,8 @@ def resolve_selection(
                     )
                 )
             else:
+                budget.consume("states", len(matching))
+                budget.reserve_storage(256 + 64 * len(matching))
                 paths = traverse(
                     source_paths(set(matching), selector.include_references),
                     selector.steps,
@@ -354,6 +426,8 @@ def resolve_selection(
                         )
                     )
     except LimitExceeded as error:
+        if unit == "rdf_entity":
+            entities = tuple(matching)
         issues.exhausted(str(error))
     count = len(paths) if unit == "source_occurrence" else len(entities)
     report = Report(

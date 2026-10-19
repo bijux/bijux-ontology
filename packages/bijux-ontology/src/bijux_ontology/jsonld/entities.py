@@ -4,7 +4,7 @@ Anonymous tokens belong to this preparation only. This inventory joins RDF
 identities; it performs no OWL equality, inequality or type inference.
 """
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -112,6 +112,15 @@ class EntityInventory:
     def entities(self) -> tuple[EntityDescription, ...]:
         """Enumerate established entities without exposing mutable processor data."""
         return tuple(self._entities.values())
+
+    def iter_entities(self, *, budget: Budget) -> Iterator[EntityDescription]:
+        """Yield owned records under the caller's finite traversal allowance."""
+        budget.reserve_storage(128)
+        for entity in self._entities.values():
+            budget.consume("work")
+            budget.consume("states")
+            budget.reserve_storage(64)
+            yield entity
 
     def get(self, key: EntityKey) -> EntityDescription | None:
         """Look up exact RDF identity without graph union or OWL inference."""

@@ -4,6 +4,7 @@ import pytest
 from rdflib import Literal, URIRef
 from rdflib.namespace import RDF, XSD
 
+from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
 
@@ -61,6 +62,9 @@ def test_language_and_unsupported_datatypes_retain_honest_scope() -> None:
     assert not check_literal(Literal("no language", datatype=RDF.langString)).verified
     report = check_literal(Literal("value", datatype="https://example.org/Custom"))
     assert report.issues[0].kind == "unverified"
+    with pytest.raises(InputError) as failure:
+        check_literal(Literal("x", datatype="relative"), location="/sample")
+    assert failure.value.location == "/sample"
 
 
 def test_sample_bounds_precede_validation_and_share_the_callers_allowance() -> None:

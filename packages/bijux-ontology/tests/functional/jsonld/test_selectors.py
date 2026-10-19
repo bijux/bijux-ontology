@@ -450,3 +450,75 @@ def test_describing_node_association_is_distinct_from_whole_contribution() -> No
             require_usage=False,
             association_only=True,
         )
+
+
+@pytest.mark.parametrize("keyed", (False, True))
+def test_selector_match_storage_is_prepaid_and_keeps_only_the_paid_prefix(
+    keyed: bool,
+) -> None:
+    """Source matching must not publish an unbounded path inventory as verified."""
+    values: list[int] | dict[str, int] = (
+        {str(index): index for index in range(256)} if keyed else list(range(256))
+    )
+    document = {"@context": {"@vocab": EX}, "items": values}
+    prepared = prepare_usages(document)
+    selector = SourceSelector(
+        (Property("items"), KeyedItems() if keyed else ArrayItems())
+    )
+    partial = resolve_selection(
+        selector,
+        document,
+        prepared.entities,
+        prepared.observe,
+        Budget(Limits(max_states=8)),
+        require_usage=False,
+    )
+    assert partial.report.outcome == "exhausted" and not partial.report.complete
+    assert 0 < partial.count < len(values)
+    for index, path in enumerate(partial.paths):
+        assert path == ("items", str(index) if keyed else index)
+    storage = Budget(Limits(max_total_bytes=2048))
+    stopped = resolve_selection(
+        selector,
+        document,
+        prepared.entities,
+        prepared.observe,
+        storage,
+        require_usage=False,
+    )
+    assert stopped.report.outcome == "exhausted" and not stopped.report.complete
+    assert stopped.count < len(values) and storage.remaining("bytes") >= 0
+    recovered = resolve_selection(
+        selector,
+        document,
+        prepared.entities,
+        prepared.observe,
+        Budget(),
+        require_usage=False,
+    )
+    assert recovered.report.verified and recovered.count == len(values)
+
+
+def test_entity_inventory_selection_streams_with_qualified_partial_coverage() -> None:
+    """Entity matching cannot allocate its whole inventory before using the budget."""
+    document = {
+        "@context": {"@vocab": EX},
+        "@graph": [{"@id": EX + str(index), "@type": "Record"} for index in range(32)],
+    }
+    prepared = prepare_usages(document)
+    selector = EntitySelector(types=(EX + "Record",), graph=None)
+    partial = resolve_selection(
+        selector,
+        document,
+        prepared.entities,
+        prepared.observe,
+        Budget(Limits(max_states=8)),
+    )
+    assert partial.coverage_unit == "rdf_entity"
+    assert partial.report.outcome == "exhausted" and not partial.report.complete
+    assert 0 < partial.count < 32 and not partial.paths
+    assert all(
+        entity.identifier in {EX + str(i) for i in range(32)}
+        for entity in partial.entities
+    )
+    assert prepared.select(selector).count == 32
