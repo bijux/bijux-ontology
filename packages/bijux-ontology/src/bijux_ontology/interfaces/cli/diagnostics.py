@@ -28,6 +28,16 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "mapping": frozenset(
+        "endpoint_unverified endpoint_kind semantics_unverified relation_forbidden "
+        "relation_conflict maximum_exceeded minimum_missing invalid_input "
+        "interchange_unverified".split()
+    ),
+    "taxonomy": frozenset(
+        "class_role_unverified expression_unrepresented outside_parent "
+        "annotation_invalid label_choice_invalid label_ambiguous "
+        "scope_unverified".split()
+    ),
     "acquisition": frozenset("resource_failed unavailable".split()),
     "schema": frozenset(
         "translation_invalid translation_unverified "
@@ -203,6 +213,8 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "rules_unverified rules_input_error "
+        "target_unavailable upgrade_unverified upgrade_target_removed "
         "component_unverified "
         "analysis_metadata_unverified analysis_profile_unverified "
         "analysis_qualification_unverified analysis_recursion_unverified "
@@ -289,6 +301,21 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "mapping": (
+        "explicit SSSOM interchange and mapping policy",
+        "A supplied mapping row or required consumer scope failed qualification.",
+        "Inspect original rows, exact endpoint vocabulary scopes and explicit "
+        "relation, role and cardinality policies; retain unsupported semantics.",
+        "check_mappings(mapping_set, subject_vocabulary=subjects, "
+        "object_vocabulary=objects, policy=policy)",
+    ),
+    "taxonomy": (
+        "explicit named taxonomy publication",
+        "A selected class role, hierarchy assertion or publication choice failed.",
+        "Inspect exact source and hierarchy selections, class bindings, label "
+        "choices and omission policies; rerun the required consumer checks.",
+        "project_taxonomy(source, hierarchy, policy, hierarchy_basis='asserted')",
+    ),
     "acquisition": (
         "explicit offline resource preparation",
         "A selected acquisition closure failed or could not be qualified.",

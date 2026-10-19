@@ -32,6 +32,7 @@ from bijux_ontology.shacl.functions import (
     prepare_functions,
 )
 from bijux_ontology.shacl.paths import decode_path
+from bijux_ontology.shacl.targets.preparation import prepare_targets
 from bijux_ontology.vocabulary.loading import load_vocabulary
 
 _UNSUPPORTED = frozenset(
@@ -58,10 +59,16 @@ def _query_forms(value: object) -> set[str]:
 
 
 def _features(
-    shapes: Graph, *, trusted_sparql: bool, nodes: frozenset[Node] | None = None
+    shapes: Graph,
+    *,
+    trusted_sparql: bool,
+    trusted_targets: bool,
+    nodes: frozenset[Node] | None = None,
 ) -> tuple[Issue, ...]:
     issues = []
     for predicate in sorted(_UNSUPPORTED, key=str):
+        if predicate == SH.target and trusted_targets:
+            continue
         if any(nodes is None or node in nodes for node in shapes.subjects(predicate)):
             issues.append(
                 Issue(
@@ -162,6 +169,7 @@ def _select_roots(
         SH.targetNode,
         SH.targetSubjectsOf,
         SH.targetObjectsOf,
+        SH.target,
     ):
         for shape in tuple(graph.subjects(predicate)):
             if mode == "pairs" or shape not in roots:
@@ -186,6 +194,7 @@ class _ShapePlan:
     allow_empty: bool
     coverage: ShaclCoverageContract | None
     required_constraints: tuple[ShaclConstraintRequirement, ...]
+    trusted_targets: bool
 
 
 def _prepare_plan(
@@ -194,6 +203,7 @@ def _prepare_plan(
     ontology: Graph | PreparedSource | None,
     imports: Mapping[str, RdfSource | Payload] | None,
     trusted_sparql: bool,
+    trusted_targets: bool,
     use_shapes: Sequence[TermSelection],
     mode: str,
     preflight: bool,
@@ -210,13 +220,17 @@ def _prepare_plan(
     families = (
         "shacl-core",
         *(("shacl-sparql",) if trusted_sparql else ()),
+        *(("shacl-targets",) if trusted_targets else ()),
         *(("meta-shacl",) if preflight else ()),
         *(("shacl-functions",) if functions is not None else ()),
     )
     if any(
-        type(value) is not bool for value in (trusted_sparql, preflight, allow_empty)
+        type(value) is not bool
+        for value in (trusted_sparql, trusted_targets, preflight, allow_empty)
     ):
-        raise InputError("trusted_sparql, preflight and allow_empty must be booleans")
+        raise InputError(
+            "SHACL trust, preflight and allow_empty options must be booleans"
+        )
     if coverage is not None and not isinstance(coverage, ShaclCoverageContract):
         raise InputError("coverage requires a ShaclCoverageContract")
     if isinstance(cast(object, required_constraints), (str, bytes)) or any(
@@ -263,12 +277,32 @@ def _prepare_plan(
         trusted_sparql=trusted_sparql,
         limits=selected,
         enabled_functions=frozenset(URIRef(name) for name in function_plan.names),
+        inspect_targets=trusted_targets,
     )
-    for query_node, predicate, text in capabilities.queries:
+    targets = prepare_targets(
+        _select_roots(sg, selected_shapes, mode),
+        selected_shapes,
+        enabled=trusted_targets,
+        limits=selected,
+        enabled_functions=frozenset(URIRef(name) for name in function_plan.names),
+    )
+    for query_node, predicate, text in (*capabilities.queries, *targets.queries):
         sg.set((query_node, predicate, text))
+    # Missing backend discovery cannot classify target bodies as constraints.
+    # Capability diagnostics already prevent execution in that case.
     features = (
-        _features(sg, trusted_sparql=trusted_sparql, nodes=capabilities.nodes)
+        (
+            ()
+            if trusted_targets and capabilities.nodes is None
+            else _features(
+                sg,
+                trusted_sparql=trusted_sparql,
+                trusted_targets=trusted_targets,
+                nodes=capabilities.nodes,
+            )
+        )
         + capabilities.issues
+        + targets.issues
         + function_plan.issues
     )
     path_budget = Budget(selected)
@@ -311,6 +345,7 @@ def _prepare_plan(
         allow_empty,
         coverage,
         required_constraints,
+        trusted_targets,
     )
 
 
@@ -384,4 +419,5 @@ def _options(
         "preflight": plan.preflight,
         "coverage": plan.coverage is not None or bool(plan.required_constraints),
         "functions": plan.function_plan.names,
+        "trusted_targets": plan.trusted_targets,
     }

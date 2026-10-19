@@ -228,7 +228,16 @@ def test_rdf_terms_and_false_ask_results_are_not_coerced_by_return_metadata() ->
 
 @pytest.mark.parametrize(
     "failure",
-    ("body", "language", "recursive", "dependency", "projection", "untrusted"),
+    (
+        "body",
+        "language",
+        "query_language",
+        "query_datatype",
+        "recursive",
+        "dependency",
+        "projection",
+        "untrusted",
+    ),
 )
 def test_unavailable_catalogs_cannot_satisfy_required_constraints(failure: str) -> None:
     graph = function("SELECT ($x * 2 AS ?result) WHERE {}").graph()
@@ -239,6 +248,14 @@ def test_unavailable_catalogs_cannot_satisfy_required_constraints(failure: str) 
         graph.remove((EX.double, RDF.type, None))
         graph.add((EX.double, RDF.type, SH.JSFunction))
         expected = "shacl.function_unavailable"
+    elif failure in ("query_language", "query_datatype"):
+        body = "SELECT ($x * 2 AS ?result) WHERE {}"
+        query = (
+            Literal(body, lang="en")
+            if failure == "query_language"
+            else Literal(body, datatype=XSD.anyURI)
+        )
+        graph.set((EX.double, SH.select, query))
     elif failure in ("recursive", "dependency"):
         target = EX.double if failure == "recursive" else EX.missing
         graph.set(

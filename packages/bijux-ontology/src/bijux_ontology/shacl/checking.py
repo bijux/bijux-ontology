@@ -43,6 +43,7 @@ def validate_shapes(
     union: bool = False,
     imports: Mapping[str, RdfSource | Payload] | None = None,
     trusted_sparql: bool = False,
+    trusted_targets: bool = False,
     focus_nodes: Sequence[TermSelection] = (),
     use_shapes: Sequence[TermSelection] = (),
     mode: str = "targets",
@@ -66,6 +67,10 @@ def validate_shapes(
     Zero discovered shapes are an empty required scope by default. Explicit
     allow_empty=True makes it not applicable, never verified. Raw backend
     conformance and its RDF report remain available either way.
+    ``trusted_targets=True`` separately authorizes supported SPARQL targets and
+    parameterized target types. Actual target enumeration runs once inside the
+    owned worker before Core validation; it does not enable constraint queries,
+    rules, JavaScript or ambient function definitions.
     An optional ``coverage`` contract additionally requires evaluated root
     targets; it changes no raw conformance or targetless-shape semantics.
     Literal and owned blank focus terms require explicit ``mode="pairs"``.
@@ -97,6 +102,7 @@ def validate_shapes(
         ontology=ontology,
         imports=imports,
         trusted_sparql=trusted_sparql,
+        trusted_targets=trusted_targets,
         use_shapes=use_shapes,
         mode=mode,
         preflight=preflight,

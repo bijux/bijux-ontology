@@ -48,6 +48,8 @@ class ShaclSession:
     Construct another session to replace resources or fixed options. Original
     Paths, graphs and catalogs are not consulted again. Each validation owns its
     data selection. No validation state or function registration crosses jobs.
+    Independently trusted SPARQL targets are enumerated for each fresh job;
+    their results never replace the fixed authored targeting contract.
     The first job includes worker startup; subsequent jobs reuse parsed roles.
     Deadlines include queueing, startup and backend execution. Cancellation while
     queueing does not stop another request. Close cancels active work and reaps
@@ -61,6 +63,7 @@ class ShaclSession:
         ontology: Graph | PreparedSource | None = None,
         imports: Mapping[str, RdfSource | Payload] | None = None,
         trusted_sparql: bool = False,
+        trusted_targets: bool = False,
         use_shapes: Sequence[TermSelection] = (),
         mode: str = "targets",
         preflight: bool = False,
@@ -85,6 +88,7 @@ class ShaclSession:
             ontology=ontology,
             imports=imports,
             trusted_sparql=trusted_sparql,
+            trusted_targets=trusted_targets,
             use_shapes=use_shapes,
             mode=mode,
             preflight=preflight,

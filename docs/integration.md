@@ -1034,3 +1034,56 @@ explicit acceptance for portable RDF. Excluded collection members block complete
 publication; mapping exclusions remain explicit. Shared labels, list order and
 authored membership direction are retained. This certifies the selected
 publication contract, without claiming OWL equivalence or global minimality.
+
+`bijux_ontology.workflows.ontology.taxonomy.project_taxonomy` publishes a selected
+named subclass hierarchy through the same checked publication/export boundary.
+Supply source and hierarchy snapshots, `TaxonomyProjection` and an explicit
+`hierarchy_basis="asserted"` or `"supplied-inferred"`; the latter declares supplied
+evidence rather than running inference. Choose `same-iri-punning` or complete
+`ClassConcept` bindings with an ordinary source-class annotation predicate.
+Required consumer checks validate the actual SKOS result. Competing preferred
+labels and unrepresented selected expressions block publication until exact
+source-label choices or explicit omission policies resolve them. Original
+assertions, identity bindings and omission witnesses remain inspectable.
+
+`bijux_ontology.workflows.upgrades.shapes.assess_shape_upgrade` compares two
+selected `ShapeProfile` releases on the same owned `ShapeSample` data. Inspect
+introduced/resolved/persistent/uncertain finding groups and completed target
+changes alongside both original `ShaclResult` objects and their raw RDF reports.
+Named shape renames can use explicit `ShapeCorrespondence`; exact failing values
+and severities retain distinct identities. Pure anonymous shape/path-label churn
+can qualify through bounded RDF isomorphism; edited anonymous attribution stays
+unknown. Lost targets cannot resolve prior failures or certify compatibility.
+Comparison agreement is finite representative evidence, separate from raw data
+conformance and universal profile refinement.
+
+`bijux_ontology.vocabulary.mappings` reads and exports SSSOM TSV through the
+optional `[sssom]` extra and maintained schema/parser/writer. Supply explicit
+`mapping_set_id` and `license`; original rows, duplicates, lexical cells and
+metadata remain inspectable. `check_mappings` applies a `MappingPolicy` to exact
+subject/object `VocabularyView` scopes, independently of interchange validity.
+SKOS mapping directions remain distinct; confidence does not establish truth.
+Endpoint roles, cardinalities and conflicts require explicit consumer policy.
+Modifiers, composed/literal endpoints, extension semantics and unmapped sentinels
+remain unknown; sentinels cannot satisfy required cardinality. The supported TSV
+body excludes hash characters because maintained comment handling can lose data.
+
+`validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
+opt into supported SPARQL targets and parameterized target types. The existing
+owned worker enumerates each selected root once, then validates ordinary Core
+constraints and coverage against those exact focus nodes. Target types use
+maintained required/optional binding and Core datatype/class/node-kind guards.
+Constraint queries and function catalogs retain their separate trust controls;
+unselected targets and pair-mode targets stay inactive. Unsupported target kinds,
+missing required bindings, forbidden retrieval and incomplete enumeration cannot
+verify. Empty targets may conform while failing an explicit coverage minimum.
+
+`bijux_ontology.shacl.rules.materialize_rules` runs explicitly trusted selected
+TripleRules or controlled SPARQL CONSTRUCT rules. Inspect separate asserted and
+derived RDF, mode and completed pass count. `ordered-pass` executes one complete
+ordered program; `global-fixed-point` repeats the entire program until a full
+pass adds no exact RDF terms. Fresh blank-node growth cannot fake convergence.
+The initial profile requires one physical graph and named selected owners with
+distinct orders; unsupported rules, exhausted closure and missing required
+`MigrationCheck` callbacks prevent a verified publication candidate. The result
+uses the ordinary checked migration export and explicit acceptance gate.
