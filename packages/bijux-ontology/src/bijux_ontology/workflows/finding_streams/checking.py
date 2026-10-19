@@ -13,8 +13,8 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, BudgetKind, Limits, _issue_metadata
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.emission.types import ModelUsage
-from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Outcome, Report, combine_reports
 

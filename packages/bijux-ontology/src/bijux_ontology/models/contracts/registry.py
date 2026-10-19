@@ -3,10 +3,9 @@
 from collections.abc import Sequence
 
 from bijux_ontology.declarations.types import ModelDeclaration
+from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, IssueCollector
-
-from ..errors import InputError
-from ..reports import Issue
+from bijux_ontology.reports import Issue
 
 
 def index_models(

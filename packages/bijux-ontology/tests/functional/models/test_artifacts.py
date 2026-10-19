@@ -146,7 +146,7 @@ def test_native_reuse_keeps_fresh_nested_checks_and_ownership() -> None:
     assert loaded.prepared is not None, loaded.report.to_dict()
     assert loaded.report.verified
     assert not any(key.endswith((".parse_dataset", ".view._index")) for key in calls)
-    assert calls["bijux_ontology.models.checking.check_models"] == 1
+    assert calls["bijux_ontology.models.contracts.checking.check_models"] == 1
     assert loaded.reused.sources == ("local", "import[0]")
     assert loaded.reused.inspections
     plan = loaded.prepared

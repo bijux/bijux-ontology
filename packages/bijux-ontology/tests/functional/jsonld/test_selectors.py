@@ -22,7 +22,8 @@ from bijux_ontology.jsonld.selectors.types import (
     SourceSelector,
 )
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models import ModelUsage, check_emission
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.types import ModelUsage
 
 EX = "https://example.org/"
 

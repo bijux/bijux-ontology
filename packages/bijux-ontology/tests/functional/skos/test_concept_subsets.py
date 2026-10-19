@@ -17,7 +17,7 @@ from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission

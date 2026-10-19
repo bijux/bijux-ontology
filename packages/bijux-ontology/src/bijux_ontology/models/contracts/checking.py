@@ -17,8 +17,16 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     TermDeclaration,
 )
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.models.contracts.constraints import (
+    _emission_issues,
+    _field_issues,
+    _value_contract_issues,
+)
+from bijux_ontology.models.contracts.propagation import ModelContracts
+from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.application import retain_enumeration_report
 from bijux_ontology.models.emission.direction import project_direction
 from bijux_ontology.models.emission.matching import trait_matches
@@ -30,15 +38,10 @@ from bijux_ontology.owl.obligations import (
 )
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals import Regime, check_literal
+from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
-
-from ..errors import InputError, LimitExceeded
-from ..reports import Issue, Report, combine_reports
-from .constraints import _emission_issues, _field_issues, _value_contract_issues
-from .propagation import ModelContracts
-from .registry import index_models
 
 
 def check_models(

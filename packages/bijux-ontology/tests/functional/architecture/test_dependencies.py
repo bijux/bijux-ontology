@@ -292,7 +292,7 @@ from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
 assert not any(name.startswith("rdflib") for name in sys.modules)
 assert "bijux_ontology.interfaces.api" not in sys.modules
-assert "bijux_ontology.models.checking" not in sys.modules
+assert "bijux_ontology.models.contracts.checking" not in sys.modules
 assert "bijux_ontology.shacl.checking" not in sys.modules
 assert "__getattr__" not in vars(bijux_ontology)
 assert "__getattr__" not in vars(bijux_ontology.shacl)

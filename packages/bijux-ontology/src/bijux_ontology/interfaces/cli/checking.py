@@ -26,7 +26,7 @@ from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Limits
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.rdf.literals import Regime as ModelRegime
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary

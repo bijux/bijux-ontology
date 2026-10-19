@@ -13,7 +13,7 @@ from bijux_ontology.jsonld.paths import bound_index, bound_path
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.serialization import (
     InstanceCheck,
     check_instance,

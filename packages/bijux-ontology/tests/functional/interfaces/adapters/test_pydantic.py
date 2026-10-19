@@ -12,7 +12,7 @@ from bijux_ontology.declarations import ValueDeclaration as Value
 from bijux_ontology.errors import InputError
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
-from bijux_ontology.models import check_models
+from bijux_ontology.models.contracts.checking import check_models
 
 EX = Namespace("https://example.org/")
 

@@ -17,7 +17,8 @@ from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.html import extract_html_jsonld
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models import ModelUsage, check_emission
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.types import ModelUsage
 
 URL = "https://example.org/pages/document"
 P = "https://example.org/name"

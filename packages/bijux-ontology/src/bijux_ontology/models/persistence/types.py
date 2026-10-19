@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from bijux_ontology.errors import InputError
-from bijux_ontology.models.preparation import PreparedModels
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.reports import Report
 
 

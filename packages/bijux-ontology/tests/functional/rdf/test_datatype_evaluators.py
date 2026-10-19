@@ -20,7 +20,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.serialization import check_instance

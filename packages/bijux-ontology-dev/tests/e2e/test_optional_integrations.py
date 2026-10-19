@@ -37,7 +37,8 @@ import pytest
         from bijux_ontology.interfaces.adapters.contracts import RdfField
         from bijux_ontology.interfaces.adapters.pydantic import model_declarations
         from bijux_ontology.declarations import ValueDeclaration
-        from bijux_ontology.models import ModelUsage, check_emission
+        from bijux_ontology.models.emission.types import ModelUsage
+        from bijux_ontology.models.emission.checking import check_emission
         class Record(BaseModel):
             title: Annotated[str, RdfField(
                 "https://example.org/name",

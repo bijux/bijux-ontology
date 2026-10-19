@@ -26,7 +26,7 @@ from bijux_ontology.interfaces.adapters.arrow import (
     prepare_arrow_contract,
 )
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.preparation import PreparedModels
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import term_key
 

@@ -11,7 +11,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.codecs import usages_from_data
+from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.planning import Captured, capture_source

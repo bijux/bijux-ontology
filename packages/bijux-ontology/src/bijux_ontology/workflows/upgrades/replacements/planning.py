@@ -13,7 +13,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCandidate,
     MigrationCheck,

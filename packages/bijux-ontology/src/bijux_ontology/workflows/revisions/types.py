@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from threading import Lock
 
 from bijux_ontology.errors import InputError
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.persistence.types import (
     ModelPreparationArtifact,
     PreparationIdentity,
 )
-from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Report

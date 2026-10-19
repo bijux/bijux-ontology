@@ -11,9 +11,9 @@ from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.groups import declaration_states, group_limitation
 from bijux_ontology.models.persistence.codecs import declaration_data, json_bytes
-from bijux_ontology.models.registry import index_models
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue
 

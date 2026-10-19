@@ -16,10 +16,10 @@ from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.paths import bound_path, location
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.application import retain_enumeration_report
 from bijux_ontology.models.emission.direction import DirectionCheck
 from bijux_ontology.models.emission.types import ModelUsage
-from bijux_ontology.models.registry import index_models
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.reports import Issue, Report

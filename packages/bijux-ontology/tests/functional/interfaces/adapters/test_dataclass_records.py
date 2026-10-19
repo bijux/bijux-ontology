@@ -19,7 +19,9 @@ from bijux_ontology.interfaces.adapters.typed_dict import (
     model_declarations as typed_dict_declarations,
 )
 from bijux_ontology.limits import Limits
-from bijux_ontology.models import ModelUsage, check_emission, check_models
+from bijux_ontology.models.contracts.checking import check_models
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.sources import RdfSource
 
 EX = Namespace("https://example.org/catalogue#")

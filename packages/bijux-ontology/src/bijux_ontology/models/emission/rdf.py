@@ -13,6 +13,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.application import (
     application_matches,
     retain_enumeration_report,
@@ -23,7 +24,6 @@ from bijux_ontology.models.emission.direction import project_direction
 from bijux_ontology.models.emission.groups import TermKey, check_groups
 from bijux_ontology.models.emission.matching import identity_matches, matches_value
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.models.registry import index_models
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals import check_literal

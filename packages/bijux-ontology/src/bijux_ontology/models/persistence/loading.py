@@ -18,7 +18,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.models.preparation import PreparedModels
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.rdf.literals import Regime
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Issue, Report

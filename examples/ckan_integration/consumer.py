@@ -21,7 +21,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.documents.compaction import export_jsonld
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.comparison import compare_rdf

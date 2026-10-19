@@ -17,6 +17,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, Limits, bound_text
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.context import same_context
 from bijux_ontology.models.emission.rdf import check_rdf_emission
@@ -27,8 +28,6 @@ from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
-
-from .checking import check_models
 
 
 def _prepared_json(value: object, operation: Budget) -> object:

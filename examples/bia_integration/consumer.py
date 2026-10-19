@@ -26,7 +26,7 @@ from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.namespaces import namespace_inventory
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
 from bijux_ontology.interfaces.execution.executor import WorkerExecutor
-from bijux_ontology.models.checking import assess_models, check_models
+from bijux_ontology.models.contracts.checking import assess_models, check_models
 from bijux_ontology.owl.obligations import OntologyObligation
 from bijux_ontology.workflows.projects.contracts import (
     ContractObligation,

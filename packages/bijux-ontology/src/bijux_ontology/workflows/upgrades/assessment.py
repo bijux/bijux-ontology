@@ -13,7 +13,7 @@ from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.resource_roles.checking import check_resource_roles
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.reports import Issue, Report

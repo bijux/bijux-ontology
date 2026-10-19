@@ -22,13 +22,13 @@ from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.models.context_probes.checking import probe_context
 from bijux_ontology.models.context_probes.types import ContextProbe
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.corpus.checking import (
     SerializerCase,
     check_serializer_corpus,
 )
 from bijux_ontology.models.corpus.types import BranchCoverage
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
-from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 

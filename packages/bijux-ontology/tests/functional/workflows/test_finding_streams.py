@@ -16,8 +16,8 @@ from bijux_ontology.declarations import (
     ValueDeclaration,
 )
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.emission.types import ModelUsage
-from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.workflows.finding_streams import (
     CallbackFindingSink,
