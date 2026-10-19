@@ -137,10 +137,14 @@ def run_check(
             _owned_worker=_owned_worker,
         ).report
     if kind == "query-rules":
-        from bijux_ontology.data.query_rules.checking import run_query_rules
+        from bijux_ontology.data.query_rules.checking import (
+            _run_query_rules_owned,
+            run_query_rules,
+        )
         from bijux_ontology.data.query_rules.loading import load_query_rules
 
-        return run_query_rules(
+        execute = _run_query_rules_owned if _owned_worker else run_query_rules
+        return execute(
             resources.source(text_value(job.get("source"), location="source")),
             load_query_rules(
                 config.path(job.get("rules"), location="rules"), limits=config.limits
@@ -149,7 +153,6 @@ def run_check(
             max_rows=cast(int, job.get("max_rows", 1000)),
             timeout=cast(float, job.get("timeout", 30.0)),
             allow_empty=boolean(job.get("allow_empty", False)),
-            _owned_worker=_owned_worker,
         ).report
     selection = VocabularySelection.from_job(job)
     vocabulary = resources.vocabulary(

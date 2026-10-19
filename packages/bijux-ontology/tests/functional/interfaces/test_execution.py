@@ -449,3 +449,73 @@ def test_isolated_project_native_jobs_stay_owned_and_honor_timeout(
     )
     assert recovered.report.verified
     assert not list(runs.iterdir())
+
+
+def test_query_rules_direct_and_owned_project_keep_completed_answers_and_locations(
+    tmp_path: Path,
+) -> None:
+    """Compare real worker composition, including false, empty and failing answers."""
+    import json
+    from dataclasses import replace
+
+    from rdflib import URIRef
+
+    from bijux_ontology.data.query_rules.checking import run_query_rules
+    from bijux_ontology.data.query_rules.loading import load_query_rules
+    from bijux_ontology.documents.preparation import prepare_source
+
+    data = tmp_path / "data.ttl"
+    data.write_text('<urn:record> <urn:p> "value".')
+    rule_file = tmp_path / "rules.json"
+    rule_file.write_text(
+        json.dumps(
+            [
+                {
+                    "name": "false-answer",
+                    "query": "ASK {<urn:absent> ?p ?o}",
+                    "scope": {"kind": "default"},
+                    "expected": False,
+                },
+                {
+                    "name": "empty-answer",
+                    "query": "SELECT ?term WHERE {?term <urn:absent> ?v}",
+                    "scope": {"kind": "default"},
+                },
+                {
+                    "name": "actual-finding",
+                    "query": "SELECT ?term WHERE {?term <urn:p> ?v}",
+                    "scope": {"kind": "default"},
+                },
+            ]
+        )
+    )
+    direct = run_query_rules(prepare_source(data), load_query_rules(rule_file))
+    assert direct.results[0][1].answer is False
+    assert direct.results[1][1].rows == ()
+    assert direct.results[2][1].rows == ((URIRef("urn:record"),),)
+    assert direct.report.complete and direct.report.outcome == "disagreement"
+    configuration = {
+        "version": 1,
+        "rdf": {"data": {"path": "data.ttl"}},
+        "checks": [
+            {
+                "name": "rules",
+                "kind": "query-rules",
+                "source": "data",
+                "rules": "rules.json",
+                "timeout": 5.0,
+            }
+        ],
+    }
+    owned = WorkerExecutor(artifacts=tmp_path / "runs", timeout=6).run(
+        "project", {"configuration": configuration, "directory": str(tmp_path)}
+    )
+    assert owned.report.complete and owned.report.outcome == "disagreement"
+    assert owned.report.children == (replace(direct.report, scope="rules"),)
+    finding = next(
+        issue for issue in owned.report.issues if issue.code == "data.query_violation"
+    )
+    assert finding.details is not None
+    assert finding.details.source == str(rule_file)
+    assert finding.details.term == "urn:record"
+    assert not list((tmp_path / "runs").iterdir())

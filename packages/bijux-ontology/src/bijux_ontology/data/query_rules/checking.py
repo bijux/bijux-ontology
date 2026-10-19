@@ -14,7 +14,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Location, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.execution.processes.transport import checkpoint
-from bijux_ontology.rdf.queries.access import query_rdf
+from bijux_ontology.rdf.queries.access import _query_rdf_owned, query_rdf
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
 from bijux_ontology.rdf.queries.types import QueryResult, QueryScope
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
@@ -217,7 +217,8 @@ def _query(
     remaining = deadline - time.monotonic()
     if remaining <= 0:
         raise LimitExceeded("Query rule suite exceeded its wall-clock deadline")
-    result = query_rdf(
+    execute = _query_rdf_owned if owned_worker else query_rdf
+    result = execute(
         source,
         text,
         scope=scope,
@@ -225,7 +226,6 @@ def _query(
         limits=limits,
         timeout=remaining,
         cancel=cancel,
-        _owned_worker=owned_worker,
     )
     checkpoint(deadline, cancel)
     return result
@@ -249,7 +249,6 @@ def run_query_rules(
     timeout: float = 30.0,
     cancel: threading.Event | None = None,
     allow_empty: bool = False,
-    _owned_worker: bool = False,
 ) -> QueryRuleResult:
     """Run finite named ASK/SELECT obligations on one owned prepared resource.
 
@@ -261,6 +260,56 @@ def run_query_rules(
     parser/evaluation and reply stages; opaque search is bounded by real workers.
     These rules concern supplied asserted RDF, never implicit OWL entailment.
     """
+    return _run_query_rules(
+        source,
+        rules,
+        limits=limits,
+        max_rows=max_rows,
+        timeout=timeout,
+        cancel=cancel,
+        allow_empty=allow_empty,
+        owned_worker=False,
+    )
+
+
+def _run_query_rules_owned(
+    source: PreparedSource,
+    rules: Sequence[QueryRule],
+    *,
+    limits: Limits | None = None,
+    max_rows: int = 1000,
+    timeout: float = 30.0,
+    cancel: threading.Event | None = None,
+    allow_empty: bool = False,
+) -> QueryRuleResult:
+    """Run one query suite inside its fixed caller's owned process lifetime.
+
+    Both the nonempty guard and every selected rule retain the suite deadline.
+    """
+    return _run_query_rules(
+        source,
+        rules,
+        limits=limits,
+        max_rows=max_rows,
+        timeout=timeout,
+        cancel=cancel,
+        allow_empty=allow_empty,
+        owned_worker=True,
+    )
+
+
+def _run_query_rules(
+    source: PreparedSource,
+    rules: Sequence[QueryRule],
+    *,
+    limits: Limits | None = None,
+    max_rows: int = 1000,
+    timeout: float = 30.0,
+    cancel: threading.Event | None = None,
+    allow_empty: bool = False,
+    owned_worker: bool,
+) -> QueryRuleResult:
+    """Share semantic admission and result handling for fixed owned routes."""
     if not isinstance(source, PreparedSource):
         raise InputError("Query rules require an owned PreparedSource")
     if not isinstance(rules, Sequence) or isinstance(cast(object, rules), str | bytes):
@@ -366,7 +415,7 @@ def run_query_rules(
                     max_rows,
                     deadline,
                     cancel,
-                    _owned_worker,
+                    owned_worker,
                 )
                 guards[rule.scope] = guard
             if guard is not None and not guard.report.verified:
@@ -400,7 +449,7 @@ def run_query_rules(
                     max_rows,
                     deadline,
                     cancel,
-                    _owned_worker,
+                    owned_worker,
                 )
                 _retain_rows(result.variables, result.rows, budget, deadline, cancel)
                 results.append((rule.name, result))

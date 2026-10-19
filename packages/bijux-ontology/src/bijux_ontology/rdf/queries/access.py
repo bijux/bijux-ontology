@@ -26,7 +26,6 @@ def query_rdf(
     limits: Limits | None = None,
     timeout: float = 10.0,
     cancel: threading.Event | None = None,
-    _owned_worker: bool = False,
 ) -> query_types.QueryResult:
     """Run local ASK/SELECT with explicit graph scope and an owned deadline.
 
@@ -38,6 +37,57 @@ def query_rdf(
     engine search uses the real deadline, not an instruction counter. Namespace
     bindings come only from supplied selected graphs or explicit query PREFIX.
     """
+    return _query_rdf(
+        source,
+        text,
+        scope=scope,
+        max_rows=max_rows,
+        limits=limits,
+        timeout=timeout,
+        cancel=cancel,
+        owned_worker=False,
+    )
+
+
+def _query_rdf_owned(
+    source: Graph | PreparedSource,
+    text: str,
+    *,
+    scope: query_types.QueryScope,
+    max_rows: int = 1000,
+    limits: Limits | None = None,
+    timeout: float = 10.0,
+    cancel: threading.Event | None = None,
+) -> query_types.QueryResult:
+    """Run the same query inside an already supervised disposable worker.
+
+    Its fixed caller owns opaque engine deadlines and cancellation; this entry
+    preserves the ordinary capture, syntax and answer qualification.
+    """
+    return _query_rdf(
+        source,
+        text,
+        scope=scope,
+        max_rows=max_rows,
+        limits=limits,
+        timeout=timeout,
+        cancel=cancel,
+        owned_worker=True,
+    )
+
+
+def _query_rdf(
+    source: Graph | PreparedSource,
+    text: str,
+    *,
+    scope: query_types.QueryScope,
+    max_rows: int = 1000,
+    limits: Limits | None = None,
+    timeout: float = 10.0,
+    cancel: threading.Event | None = None,
+    owned_worker: bool,
+) -> query_types.QueryResult:
+    """Share semantic admission and result handling for fixed owned routes."""
     if not isinstance(scope, query_types.QueryScope):
         raise InputError("Queries require an explicit QueryScope")
     if not isinstance(text, str) or not text.strip():
@@ -61,7 +111,7 @@ def query_rdf(
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise LimitExceeded("RDF operation exceeded its wall-clock deadline")
-        if _owned_worker:
+        if owned_worker:
             # The fixed project worker's host owns cancellation and its absolute
             # job deadline, including opaque native search. A second process
             # group would escape that ownership when the project is stopped.
