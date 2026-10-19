@@ -1,13 +1,39 @@
 """Finite structural decoding distinguishes malformed and unsupported input."""
 
 import pytest
-from rdflib import BNode, Graph, Literal, Namespace
+from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.structure import iter_rdf_list, read_rdf_list
+
+
+def test_constant_cell_memory_preserves_order_and_rejects_long_cycles() -> None:
+    """Streaming qualification can inspect a broad list under a small state cap."""
+    graph = Graph()
+    cells = tuple(BNode() for _ in range(1000))
+    for index, cell in enumerate(cells):
+        graph.add((cell, RDF.first, URIRef(f"urn:list:item:{index}")))
+        graph.add((cell, RDF.rest, cells[index + 1] if index < 999 else RDF.nil))
+    budget = Budget(Limits(max_states=10, max_work=5000))
+    members = tuple(iter_rdf_list(graph, cells[0], budget=budget, constant_space=True))
+    assert len(members) == 1000 and str(members[-1]) == "urn:list:item:999"
+    assert budget.remaining("states") == 10
+    graph.set((cells[-1], RDF.rest, cells[500]))
+    with pytest.raises(InputError, match="cycle"):
+        tuple(
+            iter_rdf_list(
+                graph,
+                cells[0],
+                budget=Budget(Limits(max_states=10, max_work=5000)),
+                constant_space=True,
+            )
+        )
+    with pytest.raises(LimitExceeded):
+        tuple(iter_rdf_list(graph, cells[0], max_items=20, constant_space=True))
+
 
 EX = Namespace("https://example.org/")
 

@@ -54,30 +54,45 @@ def iter_rdf_list(
     *,
     max_items: int = 10_000,
     budget: Budget | None = None,
+    constant_space: bool = False,
 ) -> Iterator[Node]:
     """Yield proved positions, retaining a prefix before malformed or bounded tails.
 
     The current cell must have one first and one rest before its member is
     exposed. A caller may share its operation budget with list traversal.
+    Constant-space cycle detection retains two cells instead of a visited set;
+    consumers using it must qualify completion before accepting streamed members.
     """
     if type(max_items) is not int or max_items <= 0:
         raise InputError("max_items must be a positive integer")
     if budget is not None and not isinstance(budget, Budget):
         raise InputError("RDF list traversal requires Budget")
-    seen: set[Node] = set()
+    if type(constant_space) is not bool:
+        raise InputError("Constant-space traversal must be boolean")
+    seen: set[Node] | None = None if constant_space else set()
     count = 0
     current = head
+    checkpoint = head
+    power, distance = 1, 0
     while current != RDF.nil:
         if not isinstance(current, URIRef | BNode):
             raise InputError("RDF list link must be an IRI or blank node")
-        if current in seen:
+        if (seen is not None and current in seen) or (
+            constant_space and count and current == checkpoint
+        ):
             raise InputError("RDF list contains a cycle")
         if count >= max_items:
             raise LimitExceeded("RDF list exceeds max_items")
         if budget is not None:
             budget.consume("work")
-            budget.consume("states")
-        seen.add(current)
+            if seen is not None:
+                budget.consume("states")
+        if seen is not None:
+            seen.add(current)
+        elif distance == power:
+            checkpoint = current
+            power *= 2
+            distance = 0
         first = _list_slot(graph, current, RDF.first, budget)
         rest = _list_slot(graph, current, RDF.rest, budget)
         if len(first) != 1:
@@ -87,3 +102,4 @@ def iter_rdf_list(
         count += 1
         yield first[0]
         current = rest[0]
+        distance += 1

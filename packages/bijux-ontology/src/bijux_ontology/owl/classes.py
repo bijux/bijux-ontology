@@ -9,7 +9,7 @@ from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.term import Node
 
 from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.structure import read_rdf_list
+from bijux_ontology.rdf.structure import iter_rdf_list
 
 from ..errors import InputError, LimitExceeded
 from .constructs import unsupported_constructs
@@ -80,26 +80,40 @@ class ClassContracts:
             anonymous |= unsupported
         return frozenset(seen), anonymous
 
-    def _named_members(self, head: Node) -> tuple[str, ...] | None:
+    def _named_members(
+        self, head: Node, wanted: dict[URIRef, str]
+    ) -> tuple[str, ...] | None:
+        """Validate the entire list while retaining only relevant member evidence."""
+        selected: list[str] = []
+        occurrences: dict[URIRef, int] = {}
         try:
-            members = read_rdf_list(
+            for member in iter_rdf_list(
                 self.graph,
                 head,
                 max_items=self.budget.limits.max_work,
                 budget=self.budget,
-            )
-            self.budget.consume("work", len(members))
+                constant_space=True,
+            ):
+                self.budget.consume("work")
+                if not isinstance(member, URIRef):
+                    return None
+                # Two occurrences establish self-disjointness; retaining further
+                # repeats cannot add a distinct selected class obligation.
+                if member in wanted and occurrences.get(member, 0) < 2:
+                    self.budget.consume("states", 2)
+                    self.budget.consume("bytes", 64)
+                    selected.append(wanted[member])
+                    occurrences[member] = occurrences.get(member, 0) + 1
         except LimitExceeded:
             raise
         except InputError:
             return None
-        return (
-            tuple(map(str, members))
-            if all(isinstance(item, URIRef) for item in members)
-            else None
-        )
+        return tuple(selected)
 
-    def _mentioned(self, heads: Sequence[Node]) -> set[str]:
+    def _mentioned(self, heads: Sequence[Node], wanted: dict[URIRef, str]) -> set[str]:
+        """Bound malformed branches while retaining only relevant mentions."""
+        self.budget.consume("states", len(heads))
+        self.budget.consume("bytes", 64 + 16 * len(heads))
         pending = list(heads)
         visited: set[Node] = set()
         mentioned: set[str] = set()
@@ -108,17 +122,28 @@ class ClassContracts:
             cell = pending.pop()
             if cell in visited:
                 continue
+            self.budget.consume("states")
+            self.budget.consume("bytes", 64)
             visited.add(cell)
-            mentioned.update(
-                str(item)
-                for item in self.graph.objects(cell, RDF.first)
-                if isinstance(item, URIRef)
-            )
-            pending.extend(self.graph.objects(cell, RDF.rest))
+            for item in self.graph.objects(cell, RDF.first):
+                self.budget.consume("work")
+                if (
+                    isinstance(item, URIRef)
+                    and item in wanted
+                    and wanted[item] not in mentioned
+                ):
+                    self.budget.consume("states")
+                    mentioned.add(wanted[item])
+            for tail in self.graph.objects(cell, RDF.rest):
+                self.budget.consume("work")
+                self.budget.consume("states")
+                self.budget.consume("bytes", 16)
+                pending.append(tail)
         return mentioned
 
     def prepare_disjoint(self, relevant: set[str]) -> tuple[Node, ...]:
         """Prepare reachable groups and return relevant unsupported group nodes."""
+        wanted: dict[URIRef, str] | None = None
         unsupported: list[Node] = []
         for left, right in self.graph.subject_objects(OWL.disjointWith):
             self.budget.consume("work")
@@ -134,10 +159,21 @@ class ClassContracts:
                     self._pairs.add(pair)
         for group in self.graph.subjects(RDF.type, OWL.AllDisjointClasses):
             self.budget.consume("work")
-            heads = list(self.graph.objects(group, OWL.members))
-            members = self._named_members(heads[0]) if len(heads) == 1 else None
+            if wanted is None:
+                self.budget.consume("states", len(relevant))
+                size = sum(map(len, relevant))
+                self.budget.consume("work", len(relevant) + size)
+                self.budget.consume("bytes", 64 + 64 * len(relevant) + 4 * size)
+                wanted = {URIRef(name): name for name in relevant}
+            heads = []
+            for head in self.graph.objects(group, OWL.members):
+                self.budget.consume("work")
+                self.budget.consume("states")
+                self.budget.consume("bytes", 16)
+                heads.append(head)
+            members = self._named_members(heads[0], wanted) if len(heads) == 1 else None
             if members is None:
-                if self._mentioned(heads).intersection(relevant):
+                if self._mentioned(heads, wanted):
                     unsupported.append(group)
                 continue
             selected: set[str] = set()
