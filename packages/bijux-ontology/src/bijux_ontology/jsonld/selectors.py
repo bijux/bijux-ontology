@@ -153,6 +153,97 @@ class EntitySelector:
         _bounds(self.minimum, self.maximum)
 
 
+def _text_metadata(value: str, budget: Budget) -> int:
+    """Bound text and reserve its escaped pointer storage before diagnostics."""
+    if not isinstance(value, str):
+        raise InputError("Selector metadata requires text")
+    if len(value) > budget.limits.max_bytes:
+        raise LimitExceeded("Selector text exceeds max_bytes")
+    budget.consume("work", len(value) + 1)
+    try:
+        size = len(value.encode("utf-8"))
+    except UnicodeEncodeError as error:
+        raise InputError("Selector metadata requires valid Unicode") from error
+    escaped = size + value.count("~") + value.count("/")
+    if size > budget.limits.max_bytes or escaped > budget.limits.max_bytes:
+        raise LimitExceeded("Selector text exceeds max_bytes")
+    budget.consume("bytes", 64 + size + 2 * escaped)
+    return escaped
+
+
+def _number_metadata(value: int, budget: Budget) -> int:
+    """Bound decimal indexes/counts before Python or diagnostics format them."""
+    digits = max(1, (value.bit_length() * 30103) // 100000 + 1)
+    if digits > budget.limits.max_bytes:
+        raise LimitExceeded("Selector number exceeds max_bytes")
+    budget.consume("work", digits)
+    budget.consume("bytes", 64 + digits)
+    try:
+        text = str(value)
+    except ValueError as error:
+        raise LimitExceeded("Selector number exceeds runtime text bounds") from error
+    return _text_metadata(text, budget)
+
+
+def _path_metadata(path: SourcePath, budget: Budget) -> None:
+    """Charge finite path components and pointer bounds before source lookup."""
+    if not isinstance(path, tuple):
+        raise InputError("Expected a concrete key/index path")
+    if len(path) > budget.limits.max_states:
+        raise LimitExceeded("Selector path exceeds max_states")
+    budget.consume("work", len(path))
+    budget.consume("bytes", 64 + 16 * len(path))
+    _path(path)
+    size = 1
+    for part in path:
+        size += (
+            _number_metadata(part, budget)
+            if isinstance(part, int)
+            else _text_metadata(part, budget)
+        ) + 1
+    if size > budget.limits.max_bytes:
+        raise LimitExceeded("Selector pointer exceeds max_bytes")
+    budget.consume("work", size)
+    budget.consume("bytes", 64 + size)
+
+
+def _bounded_location(path: SourcePath, budget: Budget) -> str:
+    """Render diagnostic text only after charging its actual source path."""
+    _path_metadata(path, budget)
+    return location(path)
+
+
+def _selector_metadata(
+    selector: SourceSelector | EntitySelector, budget: Budget
+) -> None:
+    """Bound immutable selector declarations without traversing source data."""
+    if isinstance(selector, SourceSelector):
+        _path_metadata(selector.start, budget)
+    elif isinstance(selector, EntitySelector):
+        budget.consume("states", len(selector.identifiers) + len(selector.types))
+        for value in (*selector.identifiers, *selector.types):
+            _text_metadata(value, budget)
+        if selector.graph is not None:
+            _text_metadata(selector.graph, budget)
+    else:
+        raise InputError("Expected a typed JSON-LD selector")
+    _number_metadata(selector.minimum, budget)
+    if selector.maximum is not None:
+        _number_metadata(selector.maximum, budget)
+    budget.consume("states", len(selector.steps))
+    budget.consume("work", len(selector.steps))
+    for step in selector.steps:
+        _number_metadata(step.minimum, budget)
+        if step.maximum is not None:
+            _number_metadata(step.maximum, budget)
+        if isinstance(step, Property):
+            _text_metadata(step.key, budget)
+        elif isinstance(step, KeyedItems) and step.keys is not None:
+            budget.consume("states", len(step.keys))
+            for key in step.keys:
+                _text_metadata(key, budget)
+
+
 @dataclass(frozen=True)
 class Selection:
     """Concrete matches and truthful coverage, separate from semantic checking."""
@@ -178,8 +269,16 @@ def resolve_selection(
     inventory: EntityInventory,
     observe: Callable[[SourcePath], ObservedUsage],
     budget: Budget,
+    *,
+    require_usage: bool = True,
 ) -> Selection:
-    """Resolve a bounded operation using owned input and original observations."""
+    """Resolve bounded source paths or semantically associated entity selections.
+
+    Explicit source form checking may omit usage attribution. Entity selection
+    always retains its original semantic association requirements.
+    """
+    if type(require_usage) is not bool:
+        raise InputError("require_usage must be a boolean")
     issues = IssueCollector(budget)
     paths: tuple[SourcePath, ...] = ()
     entities: tuple[EntityKey, ...] = ()
@@ -243,15 +342,18 @@ def resolve_selection(
                         Issue(
                             "selector.structure_mismatch",
                             "Selected parent has the wrong source container kind",
-                            location(parent),
+                            _bounded_location(parent, budget),
                             actual=type(value).__name__,
                         )
                     )
+                if isinstance(step, Property):
+                    budget.consume("work", len(step.key))
+                    budget.consume("bytes", 64 + 12 * len(step.key))
                 count_matches(
                     len(children),
                     step.minimum,
                     step.maximum,
-                    location(parent),
+                    _bounded_location(parent, budget),
                     parent=f"property {step.key!r}"
                     if isinstance(step, Property)
                     else "array members"
@@ -328,7 +430,7 @@ def resolve_selection(
                             Issue(
                                 "selector.binding_unverified",
                                 usage.limitation,
-                                location(path),
+                                _bounded_location(path, budget),
                                 kind="unverified",
                             )
                         )
@@ -356,6 +458,7 @@ def resolve_selection(
         return tuple(result)
 
     try:
+        _selector_metadata(selector, budget)
         if isinstance(selector, SourceSelector):
             try:
                 at_path(document, selector.start)
@@ -363,7 +466,7 @@ def resolve_selection(
                 paths = ()
             else:
                 paths = traverse((selector.start,), selector.steps)
-            where = location(selector.start)
+            where = _bounded_location(selector.start, budget)
         elif isinstance(selector, EntitySelector):
             unit = selector.coverage_unit
             matching = []
@@ -404,7 +507,9 @@ def resolve_selection(
             raise InputError("Expected a typed JSON-LD selector")
         count = len(paths) if unit == "source_occurrence" else len(entities)
         count_matches(count, selector.minimum, selector.maximum, where)
-        if unit == "source_occurrence":
+        if unit == "source_occurrence" and (
+            require_usage or isinstance(selector, EntitySelector)
+        ):
             for path in paths:
                 if not path:
                     continue
@@ -418,7 +523,7 @@ def resolve_selection(
                         Issue(
                             "selector.binding_unverified",
                             str(error),
-                            location(path),
+                            _bounded_location(path, budget),
                             kind="unverified",
                         )
                     )
@@ -428,7 +533,7 @@ def resolve_selection(
                         Issue(
                             "selector.binding_unverified",
                             usage.limitation,
-                            location(path),
+                            _bounded_location(path, budget),
                             kind="unverified",
                         )
                     )

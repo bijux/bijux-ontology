@@ -61,6 +61,69 @@ class UsageIndex:
             else False
         )
 
+    def index_derivative(
+        self, path: SourcePath
+    ) -> tuple[
+        ObservedUsage,
+        tuple[ObservedOccurrence, ...],
+        tuple[ObservedOccurrence, ...],
+        str | None,
+        str | None,
+    ]:
+        """Rename one source map key using this owned expansion/resource operation.
+
+        Returned original observations retain their original identities. Control
+        observations belong to a separate expansion; callers must not join its
+        generated blank, graph or list labels to original identities.
+        """
+        usage = self.select(path)
+        if usage.limitation or not usage.occurrences:
+            return (
+                usage,
+                self._original,
+                (),
+                None,
+                usage.limitation or "No attributable indexed contribution",
+            )
+        if not path or not isinstance(path[-1], str):
+            raise InputError("Index origin requires a source map key")
+        parent = at_path(self._document, path[:-1])
+        if not isinstance(parent, dict) or path[-1] not in parent:
+            raise InputError("Index origin requires an existing source map key")
+        if "@context" in path:
+            raise InputError("Context definitions are not index-map usages")
+        self._budget.consume("resources")
+        marker = "https://bijux.org/ontology/index-origin"
+        for attempt in range(self._budget.limits.max_states):
+            self._budget.consume("work")
+            sentinel = f"{marker}/{attempt}"
+            self._budget.consume(
+                "work", sum(len(item.value_json) for item in usage.occurrences)
+            )
+            if sentinel not in parent and all(
+                sentinel not in item.value_json for item in usage.occurrences
+            ):
+                break
+        else:
+            raise LimitExceeded("Cannot allocate a fresh bounded index probe key")
+        changed = deepcopy(self._document)
+        selected = at_path(changed, path[:-1])
+        assert isinstance(selected, dict)
+        selected[sentinel] = selected.pop(path[-1])
+        try:
+            control = occurrences(self._expand(changed), budget=self._budget)
+        except LimitExceeded:
+            raise
+        except InputError:
+            return (
+                usage,
+                self._original,
+                (),
+                sentinel,
+                "The key-renaming control cannot be processed safely",
+            )
+        return usage, self._original, control, sentinel, None
+
     def _flat_projection(
         self, path: SourcePath, original: object
     ) -> ObservedUsage | None:

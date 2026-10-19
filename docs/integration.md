@@ -139,6 +139,24 @@ Fallback is explicit, requires an empty completed primary inventory and never
 fills a nonempty deficit. Original assertions and chosen fallback witnesses stay
 visible; incomplete inventories cannot establish missing minima.
 
+Use `project_restrictions(view, class_iri, inherited=True)` for finite asserted
+OWL restriction records. Some/all/value quantifiers remain distinct; supported
+intersections and named superclass paths retain original source/list witnesses.
+`existential_path(view, source, target, properties=(property_iri,))` follows only
+selected `someValuesFrom` projections. It creates no RDF relation triples and
+claims no transitive-property entailment. Unsupported alternatives remain in the
+report even when an independent path is found; incomplete coverage cannot prove
+unreachability. Expression components stay in their attachment's source scope.
+
+Use `read_obo_records(view, term_iri)` for explicitly selected OBO-in-OWL
+definitions and exact/broad/narrow/related synonyms. Records retain original
+literal terms and separate axiom attachments, including cross-references,
+synonym types and opaque qualifiers. Attachments require exact anchors and a
+matching assertion in the same source scope; malformed or ambiguous structures
+remain visible. Attachment `complete` describes its outgoing structure, while
+`status` and `assertions` establish the association. Ordinary RDF and SKOS
+annotations remain outside this selected convention.
+
 Use `terms_page`, `statements_page` and `search_page` to browse an immutable
 `VocabularyView` with `page_size` and its returned `next_cursor`. A page report
 covers that page; only `enumeration_complete` certifies the whole selection.
@@ -323,6 +341,36 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `bijux-ontology[patterns]` for RE2 UTF-8 patterns with explicit `fullmatch` or
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
+
+`check_index_maps(prepared_usages, expectations)` checks exact source map keys
+and processor-qualified correspondence using `IndexMapExpectation` and named,
+graph-qualified `IndexBinding` records. Raw key facts survive unresolved origin;
+merged or anonymous records remain unverified. `ContextExpectation(index=...)`
+checks expanded node/value metadata; `list_index=...` checks the wrapper metadata
+separately from members. `None` leaves either unchecked; `ABSENT` requires absence.
+Plain index metadata and source keys do not change RDF equality. An explicit
+`index_property` selects a custom property index whose contribution is ordinary
+RDF. No association is inferred from raw positions or generated blank labels.
+
+`check_document_form(document_or_prepared, requirements, expectations=...)`
+checks explicit source representation with `FormRequirement` selectors for
+object/array/scalar shape, exact required/allowed keys and reference/inline
+embedding. Selections require source occurrences. Unrequested forms remain
+unrestricted. `form_report` records representation, `semantic_report` requires
+maintained conversion and selected `ContextExpectation` meanings, and `report`
+requires both. RDF-equivalent flat and nested documents can have different form
+outcomes. Reused `PreparedUsages` pins its snapshot, resources and shared budget;
+applied source omissions cannot witness original form.
+
+Use `compile_context(probes, type_scoped=False)` to generate mappings from
+explicit `ContextProbe` model/field intent. Supported forward/reverse fields,
+IRI coercions, datatypes, languages and list/set containers are checked by the
+maintained processor. Type-scoped mode requires explicit compact type terms.
+Conflicts, unsupported scope or exhausted qualification withhold `.context`;
+a successful export is an independent JSON object. Retain `compiled.report`
+with `check_instance(..., context=compiled.context,
+declaration_report=compiled.report)` when checking actual serializer output.
+Generated representatives do not establish every possible output.
 
 For ordinary nested Pydantic models, an authoritative context can supply the RDF
 mappings without duplicate primitive declarations:

@@ -33,6 +33,11 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.documents.compaction import export_jsonld
 from bijux_ontology.documents.export import RDFExport, export_rdf, write_export
+from bijux_ontology.documents.forms import (
+    DocumentFormCheck,
+    FormRequirement,
+    check_document_form,
+)
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.interfaces.execution.executor import ExecutionResult, WorkerExecutor
@@ -49,6 +54,13 @@ from bijux_ontology.jsonld.flattening import (
     FlatNode,
     FlattenedDocument,
     flatten_document,
+)
+from bijux_ontology.jsonld.index_maps import (
+    IndexBinding,
+    IndexMapCheck,
+    IndexMapExpectation,
+    IndexMapObservation,
+    check_index_maps,
 )
 from bijux_ontology.jsonld.lists import ExpectedList
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
@@ -69,6 +81,7 @@ from bijux_ontology.jsonld.selectors import (
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
+from bijux_ontology.models.context_compilation import CompiledContext, compile_context
 from bijux_ontology.models.context_probes.checking import probe_context
 from bijux_ontology.models.context_probes.types import ContextProbe, ProbeSample
 from bijux_ontology.models.corpus import (
@@ -155,11 +168,23 @@ from bijux_ontology.vocabulary.comparison import (
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.languages import matches_language, negotiate_annotations
 from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.obo import (
+    OboAttachment,
+    OboRecord,
+    OboRecords,
+    read_obo_records,
+)
 from bijux_ontology.vocabulary.registry import (
     IdentifierRegistry,
     NamespaceContribution,
     RegistryMerge,
     merge_identifier_registry,
+)
+from bijux_ontology.vocabulary.restrictions import (
+    RestrictionPath,
+    RestrictionProjection,
+    existential_path,
+    project_restrictions,
 )
 from bijux_ontology.vocabulary.results import TermInfo
 from bijux_ontology.vocabulary.templates import (
@@ -205,6 +230,7 @@ __all__ = [
     "CheckError",
     "CollectionExpansion",
     "CollectionOccurrence",
+    "CompiledContext",
     "ContextCorpusDocument",
     "ContextCorpusUpgrade",
     "ContextExpectation",
@@ -217,6 +243,7 @@ __all__ = [
     "CorpusCheck",
     "CorpusWitness",
     "DataView",
+    "DocumentFormCheck",
     "EntitySelector",
     "ExecutionResult",
     "ExpectedList",
@@ -227,11 +254,16 @@ __all__ = [
     "FieldDeclaration",
     "FlatNode",
     "FlattenedDocument",
+    "FormRequirement",
     "IdentifierBatch",
     "IdentifierRecognition",
     "IdentifierRecord",
     "IdentifierRegistry",
     "IdentifierTemplate",
+    "IndexBinding",
+    "IndexMapCheck",
+    "IndexMapExpectation",
+    "IndexMapObservation",
     "InputError",
     "InstanceCheck",
     "Issue",
@@ -247,6 +279,9 @@ __all__ = [
     "ModelAssessment",
     "ModelDeclaration",
     "OutputRequirement",
+    "OboAttachment",
+    "OboRecord",
+    "OboRecords",
     "NamespaceContribution",
     "ModelUsage",
     "ObligationResult",
@@ -274,6 +309,8 @@ __all__ = [
     "RegistryMerge",
     "Report",
     "ResourceError",
+    "RestrictionPath",
+    "RestrictionProjection",
     "ScenarioCoverage",
     "Selection",
     "SourceSelector",
@@ -311,8 +348,10 @@ __all__ = [
     "check_context",
     "check_contract",
     "check_data_usage",
+    "check_document_form",
     "check_emission",
     "check_instance",
+    "check_index_maps",
     "check_label_collisions",
     "check_models",
     "check_ontology",
@@ -329,8 +368,10 @@ __all__ = [
     "compare_rdf",
     "compare_serializations",
     "compare_vocabularies",
+    "compile_context",
     "context_document_loader",
     "convert_to_rdf",
+    "existential_path",
     "expand_collection",
     "expand_document",
     "expectations_from_data",
@@ -353,9 +394,11 @@ __all__ = [
     "prepare_source",
     "prepare_usages",
     "probe_context",
+    "project_restrictions",
     "query_rdf",
     "query_rules_from_data",
     "prove_obligations",
+    "read_obo_records",
     "recheck_transformation",
     "remap_iris",
     "run_rules",

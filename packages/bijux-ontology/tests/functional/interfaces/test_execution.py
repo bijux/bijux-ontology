@@ -269,3 +269,38 @@ def test_isolated_entity_bindings_survive_reordering_and_reject_identity_mutatio
         },
     )
     assert malformed.report.outcome == "input_error"
+
+
+@pytest.mark.parametrize("field", ("index", "list_index"))
+def test_isolated_context_preserves_index_requirements(
+    tmp_path: Path, field: str
+) -> None:
+    value: dict[str, object] = {"@index": "chapter"}
+    if field == "index":
+        value["@value"] = "text"
+    else:
+        value["@list"] = [{"@id": "urn:member"}]
+    executor = WorkerExecutor(artifacts=tmp_path)
+    for wanted, agrees in (
+        ("chapter", True),
+        ("different", False),
+        (None, True),
+        ({"absent": True}, False),
+    ):
+        expectations = [
+            {"path": ["urn:items"], "predicate": "urn:items", field: wanted}
+        ]
+        result = executor.run(
+            "context",
+            {
+                "document": {"@id": "urn:Root", "urn:items": value},
+                "expectations": expectations,
+            },
+        )
+        assert result.report.verified is agrees
+        assert result.report.outcome == ("agreement" if agrees else "disagreement")
+        if not agrees:
+            assert {issue.code for issue in result.report.issues} == {
+                f"context.{field}_mismatch"
+            }
+    assert not list(tmp_path.iterdir())

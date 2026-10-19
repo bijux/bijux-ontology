@@ -28,6 +28,14 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "documents": frozenset(
+        "form_shape form_key_missing form_key_unexpected form_embedding "
+        "form_binding_unverified form_scope_unverified".split()
+    ),
+    "obo": frozenset(
+        "attachment_shape attachment_unverified base_missing "
+        "synonym_type_shape value_kind".split()
+    ),
     "annotations": frozenset(
         "minimum_missing maximum_exceeded language_minimum_missing "
         "language_maximum_exceeded value_kind datatype entity_unresolved".split()
@@ -44,6 +52,10 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "compilation_conflict compilation_unverified "
+        "index_mismatch list_index_mismatch index_keys_mismatch "
+        "index_origin_mismatch index_unverified index_binding_mismatch "
+        "index_binding_missing "
         "list_group_mismatch list_order_mismatch list_unverified "
         "probe_unverified "
         "change_unverified before_input_error after_input_error "
@@ -173,6 +185,7 @@ _CODES = {
         "xl_form_conflict xl_form_unresolved xl_role_conflict xl_role_overlap".split()
     ),
     "terms": frozenset(
+        "restriction_malformed restriction_unverified "
         "collection_member_invalid collection_member_unverified "
         "collection_root_unverified collection_containment_cycle "
         "collection_list_ambiguous collection_list_malformed "
@@ -197,6 +210,20 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "documents": (
+        "selected JSON-LD source representation",
+        "A selected source occurrence violates its explicit form or lacks a binding.",
+        "Inspect the original source paths and requested keys, shapes or embedding; "
+        "retain the independent semantic report.",
+        'FormRequirement(SourceSelector(()), required_keys=("@graph",))',
+    ),
+    "obo": (
+        "selected OBO annotation records",
+        "The selected native OBO annotation convention is not established.",
+        "Inspect literal roles, exact source/property/target anchors and their "
+        "base assertions in the original source scope; retain opaque qualifiers.",
+        'read_obo_records(view, "https://example.org/term")',
+    ),
     "annotations": (
         "selected annotation publication requirements",
         "Selected values violate an explicit shape/count or remain unresolved.",
