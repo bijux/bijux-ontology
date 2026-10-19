@@ -252,21 +252,27 @@ def test_library_dependencies_follow_feature_ownership(
                     "preparation",
                 )
             )
-        if module in {
-            "bijux_ontology.workflows.projects.configuration",
-            "bijux_ontology.workflows.projects.jobs",
-            "bijux_ontology.workflows.projects.resources",
-        }:
+        if _within(
+            module,
+            (
+                "bijux_ontology.workflows.projects.configuration",
+                "bijux_ontology.workflows.projects.jobs",
+                "bijux_ontology.workflows.projects.resources",
+            ),
+        ):
             forbidden.extend(
                 (
                     "bijux_ontology.workflows.projects.checking",
                     "bijux_ontology.workflows.projects.operations",
                 )
             )
-        if module in {
-            "bijux_ontology.workflows.projects.configuration",
-            "bijux_ontology.workflows.projects.jobs",
-        }:
+        if _within(
+            module,
+            (
+                "bijux_ontology.workflows.projects.configuration",
+                "bijux_ontology.workflows.projects.jobs",
+            ),
+        ):
             forbidden.append("bijux_ontology.workflows.projects.resources")
         for target in targets:
             assert not _within(target, tuple(forbidden)), f"{module} -> {target}"

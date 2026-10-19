@@ -7,7 +7,8 @@ from pathlib import Path
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, BudgetKind, bound_text
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
-from bijux_ontology.workflows.projects.jobs import check_kind
+from bijux_ontology.workflows.projects.jobs.decoding import check_kind
+from bijux_ontology.workflows.projects.jobs.descriptors import describe
 from bijux_ontology.workflows.projects.resources import _CapturedFiles, _read_snapshot
 
 KINDS: tuple[BudgetKind, ...] = (
@@ -26,8 +27,9 @@ def supported(job: Mapping[str, object]) -> bool:
         kind = check_kind(job)
     except InputError:
         return False
-    return kind in ("vocabulary", "shacl") or (
-        kind == "context" and "documents" not in job
+    worker = describe(kind).worker
+    return worker == "isolated" or (
+        worker == "single-document" and "documents" not in job
     )
 
 

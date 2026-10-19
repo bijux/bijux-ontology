@@ -23,7 +23,8 @@ from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
-from bijux_ontology.workflows.projects.jobs import check_kind, input_paths
+from bijux_ontology.workflows.projects.jobs.decoding import check_kind
+from bijux_ontology.workflows.projects.jobs.inputs import input_paths
 
 
 class PreparedBundle:

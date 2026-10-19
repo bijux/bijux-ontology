@@ -26,7 +26,7 @@ from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
-from bijux_ontology.workflows.projects.jobs import VocabularySelection, strings
+from bijux_ontology.workflows.projects.jobs.decoding import VocabularySelection, strings
 from bijux_ontology.workflows.projects.resources import ProjectResources
 from bijux_ontology.workflows.upgrades.applications.comparison import (
     compare_applications,

@@ -21,11 +21,8 @@ from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.inputs import ShaclJobInput, capture_job_inputs
-from bijux_ontology.workflows.projects.jobs import (
-    APPLICATION_KINDS,
-    check_kind,
-    dependencies,
-)
+from bijux_ontology.workflows.projects.jobs.decoding import check_kind, dependencies
+from bijux_ontology.workflows.projects.jobs.descriptors import APPLICATION_KINDS
 from bijux_ontology.workflows.projects.operations import run_check
 from bijux_ontology.workflows.projects.resources import ProjectResources
 
