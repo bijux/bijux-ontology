@@ -9,6 +9,7 @@ from bijux_ontology.declarations.codecs import (
 )
 from bijux_ontology.declarations.types import (
     EmissionCondition,
+    EmissionCoverage,
     EmissionGroup,
     EmissionScenario,
     FieldDeclaration,
@@ -18,6 +19,7 @@ from bijux_ontology.declarations.types import (
     TermDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.documents.compaction import export_jsonld
 from bijux_ontology.documents.export import RDFExport, export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
@@ -55,6 +57,7 @@ from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
 from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
 from bijux_ontology.models.serialization import InstanceCheck, check_instance
 from bijux_ontology.owl.obligations import (
@@ -63,6 +66,7 @@ from bijux_ontology.owl.obligations import (
     prove_obligations,
 )
 from bijux_ontology.rdf.comparison import compare_rdf
+from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.transforms import (
@@ -134,6 +138,7 @@ __all__ = [
     "EntitySelector",
     "ExecutionResult",
     "EmissionCondition",
+    "EmissionCoverage",
     "EmissionGroup",
     "EmissionScenario",
     "FieldDeclaration",
@@ -159,10 +164,13 @@ __all__ = [
     "OntologyObligation",
     "OntologyVersion",
     "PreparedChecks",
+    "PreparedModels",
     "PreparedSource",
     "PreparedUsages",
     "ProjectConfig",
     "Property",
+    "QueryResult",
+    "QueryScope",
     "RDFConversion",
     "RDFExport",
     "RdfModelUsage",
@@ -206,6 +214,7 @@ __all__ = [
     "convert_to_rdf",
     "expand_document",
     "expectations_from_data",
+    "export_jsonld",
     "export_rdf",
     "extract_neighbourhood",
     "flatten_document",
@@ -219,6 +228,7 @@ __all__ = [
     "prepare_jsonld",
     "prepare_source",
     "prepare_usages",
+    "query_rdf",
     "prove_obligations",
     "recheck_transformation",
     "remap_iris",

@@ -19,6 +19,7 @@ from bijux_ontology._json import (
 from bijux_ontology.declarations.types import (
     Emission,
     EmissionCondition,
+    EmissionCoverage,
     EmissionGroup,
     EmissionScenario,
     FieldDeclaration,
@@ -116,6 +117,7 @@ def models_from_data(
                     "location",
                     "subject",
                     "emission_groups",
+                    "coverage",
                 },
                 location="",
                 message="Unknown declaration keys",
@@ -196,9 +198,34 @@ def models_from_data(
                         _group(group)
                         for group in array_value(model.get("emission_groups", []))
                     ),
+                    coverage=_coverage(model.get("coverage")),
                 )
             )
     return tuple(result)
+
+
+def _coverage(value: object) -> EmissionCoverage | None:
+    if value is None:
+        return None
+    data = object_value(value, location="coverage")
+    known_keys(
+        data,
+        {"extensions", "reverse_extensions", "metadata", "aliases"},
+        location="coverage",
+        message="Unknown emission coverage keys",
+    )
+    aliases = []
+    for pair in array_value(data.get("aliases", [])):
+        values = string_values(pair)
+        if len(values) != 2:
+            raise InputError("Coverage aliases require source-key/field-name pairs")
+        aliases.append((values[0], values[1]))
+    return EmissionCoverage(
+        extensions=string_values(data.get("extensions", [])),
+        reverse_extensions=string_values(data.get("reverse_extensions", [])),
+        metadata=string_values(data.get("metadata", ["@context"])),
+        aliases=tuple(aliases),
+    )
 
 
 def _sample(value: object) -> "RDFLiteral":

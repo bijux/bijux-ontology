@@ -4,6 +4,7 @@ import subprocess
 import sys
 import threading
 import time
+from contextlib import suppress
 from typing import BinaryIO
 
 from bijux_ontology.errors import LimitExceeded, ResourceError
@@ -87,3 +88,227 @@ def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes
         detail = stderr.decode(errors="replace")[:2000]
         raise ResourceError(f"SHACL worker exited {process.returncode}: {detail}")
     return bytes(stdout)
+
+
+def _stop_group(process: subprocess.Popen[bytes]) -> None:
+    """Reap the worker and its owned POSIX process group after every stop path."""
+    import os
+    import signal
+
+    if os.name == "posix":
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGTERM)
+    elif process.poll() is None:
+        process.terminate()
+    try:
+        process.wait(timeout=0.2)
+    except subprocess.TimeoutExpired:
+        if os.name == "posix":
+            with suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
+        else:
+            process.kill()
+        process.wait()
+    # The leader may have exited while a descendant still owns a pipe.
+    if os.name == "posix":
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+
+
+class SessionBackend:
+    """One SHACL-only fixed-plan worker with bounded request/response framing."""
+
+    def __init__(self, preparation: bytes, *, cap: int) -> None:
+        self._preparation = preparation
+        self._cap = cap
+        self._process: subprocess.Popen[bytes] | None = None
+        self._guard = threading.Lock()
+        self._closed = threading.Event()
+        self._launches = 0
+        self._stderr_overflow = threading.Event()
+        self._stderr_thread: threading.Thread | None = None
+
+    @property
+    def launches(self) -> int:
+        """Count actual process launches, including recovery after failed jobs."""
+        return self._launches
+
+    def close(self) -> None:
+        """Cancel any active request and permanently release this session."""
+        self._closed.set()
+        self.reset()
+
+    def reset(self) -> None:
+        """Discard failed worker state; a later job may replay the owned plan."""
+        with self._guard:
+            process, self._process = self._process, None
+        if process is not None:
+            _stop_group(process)
+            if process.stdin is not None:
+                process.stdin.close()
+            if process.stdout is not None:
+                process.stdout.close()
+        if self._stderr_thread is not None and self._stderr_thread.ident is not None:
+            self._stderr_thread.join(timeout=1)
+
+    def _interrupted(
+        self, deadline: float | None, cancel: threading.Event | None
+    ) -> None:
+        if self._closed.is_set():
+            raise ResourceError("SHACL session is closed")
+        if cancel is not None and cancel.is_set():
+            raise LimitExceeded("SHACL request was cancelled")
+        if deadline is not None and time.monotonic() >= deadline:
+            raise LimitExceeded("SHACL process exceeded requested wall-clock deadline")
+
+    def _start(self) -> None:
+        import os
+
+        if os.name != "posix":
+            raise ResourceError("SHACL session process-group isolation is unavailable")
+        try:
+            process = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-m",
+                    "bijux_ontology.shacl.worker",
+                    str(self._cap),
+                    "--session",
+                ],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                start_new_session=True,
+            )
+        except OSError as error:
+            raise ResourceError("SHACL worker could not be started") from error
+        with self._guard:
+            if self._closed.is_set():
+                _stop_group(process)
+                raise ResourceError("SHACL session is closed")
+            self._process = process
+            self._launches += 1
+        self._stderr_overflow = threading.Event()
+
+        def drain() -> None:
+            """Drain diagnostics without retaining repeated backend output."""
+            assert process.stderr is not None
+            size = 0
+            try:
+                while chunk := process.stderr.read(8192):
+                    size += len(chunk)
+                    if size > self._cap:
+                        self._stderr_overflow.set()
+                        break
+            except (OSError, ValueError):
+                return
+            finally:
+                process.stderr.close()
+
+        self._stderr_thread = threading.Thread(target=drain, daemon=True)
+        self._stderr_thread.start()
+
+    def _exchange(
+        self, payload: bytes, deadline: float | None, cancel: threading.Event | None
+    ) -> bytes:
+        import struct
+
+        if len(payload) > self._cap:
+            raise LimitExceeded("SHACL request exceeds protocol byte bound")
+        process = self._process
+        if process is None or process.stdin is None or process.stdout is None:
+            raise ResourceError("SHACL session worker is not available")
+        incoming, outgoing = process.stdout, process.stdin
+        complete = threading.Event()
+        output: list[bytes] = []
+        errors: list[Exception] = []
+
+        def read_exact(amount: int) -> bytes:
+            data = bytearray()
+            while len(data) < amount:
+                chunk = incoming.read(min(8192, amount - len(data)))
+                if not chunk:
+                    raise ResourceError("SHACL worker closed its response pipe")
+                data.extend(chunk)
+            return bytes(data)
+
+        def communicate() -> None:
+            """Bound frames before allocation and signal all pipe failures."""
+            try:
+                outgoing.write(struct.pack(">Q", len(payload)) + payload)
+                outgoing.flush()
+                size = struct.unpack(">Q", read_exact(8))[0]
+                if size > self._cap:
+                    raise LimitExceeded("SHACL response exceeds protocol byte bound")
+                output.append(read_exact(size))
+            except Exception as error:
+                errors.append(error)
+            finally:
+                complete.set()
+
+        thread = threading.Thread(target=communicate, daemon=True)
+        thread.start()
+        try:
+            while not complete.wait(0.01):
+                self._interrupted(deadline, cancel)
+                if self._stderr_overflow.is_set():
+                    raise LimitExceeded(
+                        "SHACL process diagnostics exceed protocol byte bound"
+                    )
+                if process.poll() is not None:
+                    raise ResourceError(f"SHACL worker exited {process.returncode}")
+            self._interrupted(deadline, cancel)
+            if self._stderr_overflow.is_set():
+                raise LimitExceeded(
+                    "SHACL process diagnostics exceed protocol byte bound"
+                )
+            if errors:
+                if isinstance(errors[0], LimitExceeded):
+                    raise errors[0]
+                raise ResourceError(
+                    f"SHACL worker protocol failed: {errors[0]}"
+                ) from errors[0]
+            return output[0]
+        except BaseException:
+            self.reset()
+            raise
+        finally:
+            thread.join(timeout=1)
+
+    def execute(
+        self, payload: bytes, *, deadline: float | None, cancel: threading.Event | None
+    ) -> bytes:
+        """Replay a fixed plan on fresh starts and exchange one independent job."""
+        from bijux_ontology._json import decode_json
+
+        self._interrupted(deadline, cancel)
+        try:
+            if self._process is None or self._process.poll() is not None:
+                self.reset()
+                self._start()
+                prepared = self._exchange(self._preparation, deadline, cancel)
+                response = decode_json(prepared, max_bytes=self._cap)
+                if not isinstance(response, dict):
+                    raise ResourceError("Invalid SHACL session preparation response")
+                status = response.get("status")
+                if status == "ready":
+                    if set(response) != {"status"}:
+                        raise ResourceError(
+                            "Invalid SHACL session preparation envelope"
+                        )
+                elif isinstance(status, str) and status in {
+                    "exception",
+                    "exhausted",
+                    "unavailable",
+                    "failure",
+                    "input_error",
+                    "shapes_invalid",
+                }:
+                    self.reset()
+                    return prepared
+                else:
+                    raise ResourceError("Expected SHACL preparation acknowledgement")
+            return self._exchange(payload, deadline, cancel)
+        except BaseException:
+            self.reset()
+            raise

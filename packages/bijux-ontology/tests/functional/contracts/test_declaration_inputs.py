@@ -6,6 +6,7 @@ import pytest
 from rdflib import XSD, Literal
 
 from bijux_ontology import ABSENT as ROOT_ABSENT
+from bijux_ontology import EmissionCoverage
 from bijux_ontology import FieldDeclaration as Field
 from bijux_ontology import ModelDeclaration as Model
 from bijux_ontology import ValueDeclaration as Value
@@ -144,3 +145,44 @@ def test_declaration_errors_and_successful_mappings_keep_their_input_source() ->
         )
     assert context_failure.value.location == "context.json#/0"
     assert context_failure.value.__cause__ is not None
+
+
+def test_closed_coverage_python_and_json_share_alias_and_metadata_invariants() -> None:
+    coverage = EmissionCoverage(
+        extensions=[EX + "extension"],  # type: ignore[arg-type]
+        reverse_extensions=(EX + "incoming",),
+        metadata=("@context", "@id"),
+        aliases=(("headline", "title"),),
+    )
+    data = {
+        "identifier": "record",
+        "types": [],
+        "fields": [
+            {
+                "name": "title",
+                "predicate": EX + "title",
+                "values": [{"kind": "literal"}],
+            }
+        ],
+        "coverage": {
+            "extensions": [EX + "extension"],
+            "reverse_extensions": [EX + "incoming"],
+            "metadata": ["@context", "@id"],
+            "aliases": [["headline", "title"]],
+        },
+    }
+    model = models_from_data([data])[0]
+    assert model.coverage == coverage
+    assert coverage.extensions == (EX + "extension",)
+    for invalid in (
+        {"aliases": [["headline", "absent"]]},
+        {"aliases": [["title", "title"]]},
+        {"aliases": [["alias", "title"], ["alias", "title"]]},
+        {"aliases": [["@reverse", "title"]]},
+        {"aliases": [["alias"]]},
+        {"metadata": ["@graph"]},
+        {"extensions": ["relative"]},
+        {"invented": True},
+    ):
+        with pytest.raises(InputError):
+            models_from_data([{**data, "coverage": invalid}])

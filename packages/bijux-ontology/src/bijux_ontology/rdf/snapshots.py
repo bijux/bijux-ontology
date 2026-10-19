@@ -291,6 +291,16 @@ class PreparedSource:
         """Export an independent dataset, retaining graph and blank-node relations."""
         return copy_dataset(self._dataset, self._max_triples, standardize_apart=False)
 
+    def _graph_names(self, *, budget: Budget | None = None) -> Iterator[URIRef | BNode]:
+        """Read owned named identifiers without exporting storage or a new cache."""
+        default = self._dataset.default_graph.identifier
+        for graph in self._dataset.graphs():
+            if budget is not None:
+                budget.consume("work")
+                budget.consume("states")
+            if graph.identifier != default:
+                yield cast(URIRef | BNode, graph.identifier)
+
     def _quad_count(self) -> int:
         """Count owned records across graph contexts without exporting a copy."""
         return sum(len(graph) for graph in self._dataset.graphs())
@@ -352,7 +362,9 @@ class PreparedSource:
                         if isinstance(graph_name, BNode)
                         else URIRef(absolute_iri(str(graph_name)))
                     )
-                    if name not in {item.identifier for item in self._dataset.graphs()}:
+                    if not any(
+                        item == name for item in self._graph_names(budget=budget)
+                    ):
                         raise InputError(
                             "Selected graph is absent from the supplied dataset"
                         )

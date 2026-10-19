@@ -1,13 +1,13 @@
 """Optional supplied-shapes SHACL validation with isolated backend execution."""
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from math import isfinite
 from typing import Any, cast
 
 from pyparsing import ParseBaseException
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
-from rdflib.namespace import OWL, RDF, RDFS, SH
+from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.term import Node
@@ -16,6 +16,7 @@ from bijux_ontology._json import decode_json
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.rdf.loading import _charge_graph
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource, copy_graph
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Issue, IssueKind, Report, Severity, combine_reports
@@ -32,7 +33,11 @@ from bijux_ontology.shacl.coverage import (
 )
 from bijux_ontology.shacl.findings import ShaclFinding as ShaclFinding
 from bijux_ontology.shacl.findings import ShaclSource, project_findings
-from bijux_ontology.shacl.functions import ShaclFunctionCatalog, prepare_functions
+from bijux_ontology.shacl.functions import (
+    FunctionPlan,
+    ShaclFunctionCatalog,
+    prepare_functions,
+)
 from bijux_ontology.shacl.paths import decode_path
 from bijux_ontology.shacl.transport import execute_backend
 from bijux_ontology.vocabulary.loading import load_vocabulary
@@ -173,8 +178,14 @@ def _role(
     resolve_imports: bool = False,
 ) -> Graph:
     if isinstance(source, PreparedSource):
-        graph = source.graph(graph_name, union=union)
+        graph = source._read(graph_name, union=union)
+        _charge_graph(graph, Budget(limits), limits.max_bytes)
+        if resolve_imports:
+            graph = copy_graph(
+                graph, max_triples=limits.max_triples, standardize_apart=False
+            )
     elif graph_name is None and not union and not isinstance(source, Dataset):
+        _charge_graph(source, Budget(limits), limits.max_bytes)
         graph = copy_graph(
             source, max_triples=limits.max_triples, standardize_apart=False
         )
@@ -250,6 +261,451 @@ def _function_evidence(
     }
 
 
+@dataclass(frozen=True)
+class _ShapePlan:
+    """One owned authored/effective shape and fixed target/options contract."""
+
+    shapes: Graph
+    ontology: Graph | None
+    roots: tuple[URIRef | BNode | Literal, ...]
+    function_plan: FunctionPlan
+    has_functions: bool
+    features: tuple[Issue, ...]
+    families: tuple[str, ...]
+    limits: Limits
+    mode: str
+    preflight: bool
+    allow_empty: bool
+    coverage: ShaclCoverageContract | None
+    required_constraints: tuple[ShaclConstraintRequirement, ...]
+
+
+def _prepare_plan(
+    shapes: Graph | PreparedSource,
+    *,
+    ontology: Graph | PreparedSource | None,
+    imports: Mapping[str, RdfSource | Payload] | None,
+    trusted_sparql: bool,
+    use_shapes: Sequence[TermSelection],
+    mode: str,
+    preflight: bool,
+    allow_empty: bool,
+    coverage: ShaclCoverageContract | None,
+    required_constraints: Sequence[ShaclConstraintRequirement],
+    functions: ShaclFunctionCatalog | None,
+    limits: Limits,
+) -> _ShapePlan:
+    """Own and inspect every fixed semantic input exactly once per plan."""
+    if functions is not None and not isinstance(functions, ShaclFunctionCatalog):
+        raise InputError("functions requires an explicit ShaclFunctionCatalog")
+    selected = limits
+    families = (
+        "shacl-core",
+        *(("shacl-sparql",) if trusted_sparql else ()),
+        *(("meta-shacl",) if preflight else ()),
+        *(("shacl-functions",) if functions is not None else ()),
+    )
+    if any(
+        type(value) is not bool for value in (trusted_sparql, preflight, allow_empty)
+    ):
+        raise InputError("trusted_sparql, preflight and allow_empty must be booleans")
+    if coverage is not None and not isinstance(coverage, ShaclCoverageContract):
+        raise InputError("coverage requires a ShaclCoverageContract")
+    if isinstance(cast(object, required_constraints), (str, bytes)) or any(
+        not isinstance(item, ShaclConstraintRequirement)
+        for item in required_constraints
+    ):
+        raise InputError("required_constraints requires typed constraint requirements")
+    required_constraints = tuple(dict.fromkeys(required_constraints))
+    if mode not in ("targets", "pairs"):
+        raise InputError("SHACL mode must be targets or pairs")
+    if mode == "pairs" and not use_shapes:
+        raise InputError("Pairs mode requires focus_nodes and use_shapes")
+    sg = _role(
+        shapes,
+        graph_name=None,
+        union=False,
+        limits=selected,
+        imports=imports,
+        resolve_imports=True,
+    )
+    og = (
+        None
+        if ontology is None
+        else _role(
+            ontology,
+            graph_name=None,
+            union=False,
+            limits=selected,
+            imports=imports,
+            resolve_imports=True,
+        )
+    )
+    selected_shapes = resolve_terms(
+        use_shapes, shapes, sg, shapes=True, limits=selected
+    )
+    for node in selected_shapes:
+        if (node, None, None) not in sg and (None, None, node) not in sg:
+            raise InputError("Selected shape is absent", location=str(node))
+    function_plan = prepare_functions(functions, selected)
+    capabilities = prepare_capabilities(
+        sg,
+        selected_shapes,
+        required_constraints,
+        trusted_sparql=trusted_sparql,
+        limits=selected,
+        enabled_functions=frozenset(URIRef(name) for name in function_plan.names),
+    )
+    for query_node, predicate, text in capabilities.queries:
+        sg.set((query_node, predicate, text))
+    features = (
+        _features(sg, trusted_sparql=trusted_sparql, nodes=capabilities.nodes)
+        + capabilities.issues
+        + function_plan.issues
+    )
+    path_budget = Budget(selected)
+    for shape, path_node in sg.subject_objects(SH.path):
+        if capabilities.nodes is not None and shape not in capabilities.nodes:
+            continue
+        path = decode_path(sg, path_node, budget=path_budget)
+        if path.limitation is not None:
+            features += (
+                Issue(
+                    "shacl.path_unverified",
+                    path.limitation,
+                    str(shape),
+                    kind="unverified",
+                ),
+            )
+    if selected_shapes and any(
+        (kind, RDFS.subClassOf, RDFS.Class) in sg
+        for kind in (SH.NodeShape, SH.PropertyShape)
+    ):
+        features += (
+            Issue(
+                "shacl.implicit_target_unverified",
+                "Shape kinds used as implicit target classes are unsupported "
+                "during root selection",
+                kind="unverified",
+            ),
+        )
+    return _ShapePlan(
+        sg,
+        og,
+        selected_shapes,
+        function_plan,
+        functions is not None,
+        features,
+        families,
+        selected,
+        mode,
+        preflight,
+        allow_empty,
+        coverage,
+        required_constraints,
+    )
+
+
+def _metadata(
+    plan: _ShapePlan, focus: tuple[URIRef | BNode | Literal, ...]
+) -> dict[str, Any]:
+    """Keep caller-owned RDF term objects as the public selection witnesses."""
+    return {
+        "mode": plan.mode,
+        "focus_nodes": tuple(
+            str(node) if isinstance(node, URIRef) else node for node in focus
+        ),
+        "shapes": tuple(
+            str(node) if isinstance(node, URIRef) else node for node in plan.roots
+        ),
+        "preflight": plan.preflight,
+    }
+
+
+def _prepare_data(
+    data: Graph | PreparedSource,
+    plan: _ShapePlan,
+    focus_nodes: Sequence[TermSelection],
+    *,
+    graph_name: GraphSelection | None,
+    union: bool,
+) -> tuple[Graph, tuple[URIRef | BNode | Literal, ...]]:
+    """Resolve one independent dataset and its exact owned focus terms."""
+    if plan.mode == "pairs" and not focus_nodes:
+        raise InputError("Pairs mode requires focus_nodes and use_shapes")
+    if plan.mode == "targets" and focus_nodes and plan.roots:
+        raise InputError(
+            "Combined node/shape selection bypasses targets; choose mode='pairs'"
+        )
+    if not isinstance(data, (Graph, PreparedSource)):
+        raise InputError("SHACL data requires a graph or prepared source")
+    dg = _role(data, graph_name=graph_name, union=union, limits=plan.limits)
+    focus = resolve_terms(focus_nodes, data, dg, limits=plan.limits)
+    if plan.mode == "targets" and any(not isinstance(node, URIRef) for node in focus):
+        raise InputError("Literal and blank focus terms require explicit pairs mode")
+    return dg, focus
+
+
+def _role_graphs(plan: _ShapePlan) -> dict[str, Graph]:
+    """Keep authored shape identity separate from executable root targets."""
+    graphs = {
+        "shapes": _select_roots(plan.shapes, plan.roots, plan.mode),
+        "authored-shapes": plan.shapes,
+    }
+    if plan.ontology is not None:
+        graphs["ontology"] = plan.ontology
+    if plan.has_functions:
+        graphs["functions"] = plan.function_plan.graph
+    return graphs
+
+
+def _options(
+    plan: _ShapePlan, focus: tuple[URIRef | BNode | Literal, ...]
+) -> dict[str, object]:
+    """Encode only the fixed supported backend options and per-job focus filter."""
+    return {
+        "has_ontology": plan.ontology is not None,
+        "limits": asdict(plan.limits),
+        "max_depth": plan.limits.max_depth,
+        "focus_nodes": tuple(str(node) for node in focus)
+        if plan.mode == "targets"
+        else (),
+        "selected_shapes": bool(plan.roots),
+        "pair_mode": plan.mode == "pairs",
+        "binding_count": len(focus) + len(plan.roots),
+        "preflight": plan.preflight,
+        "coverage": plan.coverage is not None or bool(plan.required_constraints),
+        "functions": plan.function_plan.names,
+    }
+
+
+def _incomplete(
+    plan: _ShapePlan, error: Exception, focus: tuple[URIRef | BNode | Literal, ...] = ()
+) -> ShaclResult:
+    """Retain an incomplete operation without inventing raw conformance."""
+    kind: IssueKind = "exhausted" if isinstance(error, LimitExceeded) else "input_error"
+    return ShaclResult(
+        Report(
+            "shacl",
+            0,
+            (Issue("shacl.execution_incomplete", str(error), kind=kind),),
+            requested=1,
+            complete=False,
+            families=plan.families,
+        ),
+        **_metadata(plan, focus),
+    )
+
+
+def _project_result(
+    raw: bytes,
+    plan: _ShapePlan,
+    data: Graph | PreparedSource,
+    dg: Graph,
+    focus: tuple[URIRef | BNode | Literal, ...],
+    *,
+    graph_name: GraphSelection | None,
+    union: bool,
+    source_usages: Sequence[ShaclSource],
+) -> ShaclResult:
+    """Retain the same raw/backend/provenance truth for either worker lifetime."""
+    selected = plan.limits
+    families = plan.families
+    functions = plan.function_plan if plan.has_functions else None
+    function_plan = plan.function_plan
+    coverage, required_constraints = plan.coverage, plan.required_constraints
+    allow_empty = plan.allow_empty
+    sources = tuple(source_usages)
+    if any(not isinstance(source, ShaclSource) for source in sources):
+        raise InputError("Expected explicit prepared SHACL source usages")
+    metadata = _metadata(plan, focus)
+    response = decode_json(raw, max_bytes=selected.max_total_bytes)
+    if not isinstance(response, dict):
+        raise ResourceError("SHACL process returned an invalid protocol object")
+    status = response.get("status")
+    if not isinstance(status, str) or status not in {
+        "result",
+        "exception",
+        "exhausted",
+        "unavailable",
+        "failure",
+        "input_error",
+        "shapes_invalid",
+    }:
+        raise ResourceError("SHACL process returned an invalid result status")
+    backend = response.get("backend", "unavailable")
+    if not isinstance(backend, str):
+        raise ResourceError("SHACL process returned an invalid backend identity")
+    if "functions" in response or status == "result" and functions is not None:
+        metadata.update(
+            _function_evidence(
+                response.get("functions"),
+                function_plan.names,
+                complete=status == "result",
+            )
+        )
+    if status == "exception":
+        raise RuntimeError(
+            f"SHACL worker {response.get('type')}: {response.get('message')}"
+        )
+    if status != "result":
+        issue_kind: IssueKind = "exhausted" if status == "exhausted" else "input_error"
+        return ShaclResult(
+            Report(
+                "shacl",
+                0,
+                (
+                    Issue(
+                        f"shacl.{status}",
+                        str(response.get("message", "Backend incomplete")),
+                        kind=issue_kind,
+                    ),
+                ),
+                requested=1,
+                complete=False,
+                families=families,
+            ),
+            backend=backend,
+            conforms=response.get("conforms")
+            if type(response.get("conforms")) is bool
+            else None,
+            **metadata,
+        )
+    shapes_count = response.get("shapes_count")
+    if type(shapes_count) is not int or shapes_count < 0:
+        raise ResourceError("SHACL process did not identify its discovered shape scope")
+    conforms, raw_report = response.get("conforms"), response.get("report")
+    warnings = response.get("warnings")
+    if type(conforms) is not bool or not isinstance(raw_report, str):
+        raise ResourceError("SHACL process returned an invalid conformance envelope")
+    if not isinstance(warnings, list) or any(
+        not isinstance(warning, str) for warning in warnings
+    ):
+        raise ResourceError("SHACL process returned invalid validation warnings")
+    metadata["shapes_count"] = shapes_count
+    report_graph = prepare_source(raw_report, format="nt", limits=selected).graph()
+    reports = tuple(report_graph.subjects(RDF.type, SH.ValidationReport))
+    if len(reports) != 1:
+        raise ResourceError("SHACL process did not return one RDF ValidationReport")
+    stated = tuple(report_graph.objects(reports[0], SH.conforms))
+    if (
+        len(stated) != 1
+        or not isinstance(stated[0], Literal)
+        or stated[0].datatype != XSD.boolean
+        or stated[0].toPython() is not conforms
+    ):
+        raise ResourceError("SHACL RDF conformance contradicts the result envelope")
+    root_results = tuple(report_graph.objects(reports[0], SH.result))
+    if conforms == bool(root_results) or any(
+        (node, RDF.type, SH.ValidationResult) not in report_graph
+        for node in root_results
+    ):
+        raise ResourceError("SHACL result nodes contradict the stated conformance")
+    correlation_graph = graph_name
+    correlation_union = union
+    if isinstance(data, PreparedSource) and (data.graph_name is not None or data.union):
+        correlation_graph, correlation_union = data.graph_name, data.union
+    findings, roots, findings_complete = project_findings(
+        report_graph,
+        dg,
+        sources=sources,
+        graph_name=(
+            None if correlation_graph in (None, "@default") else str(correlation_graph)
+        ),
+        union=correlation_union or isinstance(correlation_graph, BNode),
+        limits=selected,
+    )
+    issues = []
+    severity_names: dict[Node | None, Severity] = {
+        SH.Info: "info",
+        SH.Warning: "warning",
+    }
+    for finding in findings:
+        severity = severity_names.get(finding.severity, "error")
+        message = (
+            "; ".join(map(str, finding.messages))
+            or "Supplied data does not conform to the shape"
+        )
+        issues.append(
+            Issue(
+                "shacl.nonconformance",
+                message,
+                str(finding.focus_node or ""),
+                severity=severity,
+                details=(
+                    finding.locations[0]
+                    if finding.location_status == "matched"
+                    and len(finding.locations) == 1
+                    else None
+                ),
+                evidence_json=finding.evidence_json,
+            )
+        )
+    if not findings_complete:
+        issues.append(
+            Issue(
+                "shacl.finding_unverified",
+                "Result projection is incomplete; inspect the retained raw RDF report",
+                kind="unverified",
+            )
+        )
+    for warning in warnings:
+        issues.append(Issue("shacl.backend_warning", str(warning), kind="unverified"))
+    if not shapes_count and not allow_empty:
+        issues.append(
+            Issue(
+                "input.empty_scope",
+                "The supplied shapes graph contains no discovered SHACL shapes",
+                "shapes",
+                kind="input_error",
+            )
+        )
+    report = Report(
+        "shacl",
+        int(shapes_count > 0),
+        tuple(issues),
+        requested=int(shapes_count > 0 or not allow_empty),
+        allow_empty=allow_empty,
+        complete=not warnings
+        and findings_complete
+        and (shapes_count > 0 or allow_empty),
+        families=families,
+    )
+    evaluated_coverage = (
+        read_coverage(
+            response.get("coverage"), coverage or ShaclCoverageContract(), selected
+        )
+        if coverage is not None or required_constraints
+        else None
+    )
+    constraint_report = (
+        constraint_execution(required_constraints, evaluated_coverage)
+        if required_constraints and evaluated_coverage is not None
+        else None
+    )
+    additional = tuple(
+        item
+        for item in (
+            evaluated_coverage.report if evaluated_coverage is not None else None,
+            constraint_report,
+        )
+        if item is not None
+    )
+    return ShaclResult(
+        combine_reports("shacl", report, *additional) if additional else report,
+        conforms=conforms,
+        backend=backend,
+        graph=report_graph,
+        findings=findings,
+        root_findings=roots,
+        findings_complete=findings_complete,
+        coverage=evaluated_coverage,
+        conformance_report=report,
+        constraints=constraint_report,
+        **metadata,
+    )
+
+
 def validate_shapes(
     data: Graph | PreparedSource,
     shapes: Graph | PreparedSource,
@@ -304,330 +760,60 @@ def validate_shapes(
     union or graph selection is deliberate; returned conformance covers exactly
     that scope. Backend recursion depth and process deadline are separate limits.
     """
-    sources = tuple(source_usages)
-    if any(not isinstance(source, ShaclSource) for source in sources):
-        raise InputError("Expected explicit prepared SHACL source usages")
-    if functions is not None and not isinstance(functions, ShaclFunctionCatalog):
-        raise InputError("functions requires an explicit ShaclFunctionCatalog")
-    selected = limits if limits is not None else Limits()
-    families = (
-        "shacl-core",
-        *(("shacl-sparql",) if trusted_sparql else ()),
-        *(("meta-shacl",) if preflight else ()),
-        *(("shacl-functions",) if functions is not None else ()),
-    )
-    if any(
-        type(value) is not bool for value in (trusted_sparql, preflight, allow_empty)
-    ):
-        raise InputError("trusted_sparql, preflight and allow_empty must be booleans")
-    if coverage is not None and not isinstance(coverage, ShaclCoverageContract):
-        raise InputError("coverage requires a ShaclCoverageContract")
-    if isinstance(cast(object, required_constraints), (str, bytes)) or any(
-        not isinstance(item, ShaclConstraintRequirement)
-        for item in required_constraints
-    ):
-        raise InputError("required_constraints requires typed constraint requirements")
-    required_constraints = tuple(dict.fromkeys(required_constraints))
-    if isinstance(focus_nodes, (str, bytes)) or isinstance(use_shapes, (str, bytes)):
-        raise InputError("Node and shape selections require finite RDF term sequences")
-    if mode not in ("targets", "pairs"):
-        raise InputError("SHACL mode must be targets or pairs")
-    focus: tuple[URIRef | BNode | Literal, ...] = ()
-    selected_shapes: tuple[URIRef | BNode | Literal, ...] = ()
-    if mode == "pairs" and (not focus_nodes or not use_shapes):
-        raise InputError("Pairs mode requires focus_nodes and use_shapes")
-    if mode == "targets" and focus_nodes and use_shapes:
-        raise InputError(
-            "Combined node/shape selection bypasses targets; choose mode='pairs'"
-        )
     if timeout is not None and (
         type(timeout) not in (int, float) or not isfinite(timeout) or timeout <= 0
     ):
         raise InputError("timeout must be a positive finite number or None")
-    dg = _role(data, graph_name=graph_name, union=union, limits=selected)
-    sg = _role(
+    plan = _prepare_plan(
         shapes,
-        graph_name=None,
-        union=False,
-        limits=selected,
+        ontology=ontology,
         imports=imports,
-        resolve_imports=True,
-    )
-    og = (
-        None
-        if ontology is None
-        else _role(
-            ontology,
-            graph_name=None,
-            union=False,
-            limits=selected,
-            imports=imports,
-            resolve_imports=True,
-        )
-    )
-    focus = resolve_terms(focus_nodes, data, dg, limits=selected)
-    selected_shapes = resolve_terms(
-        use_shapes, shapes, sg, shapes=True, limits=selected
-    )
-    if mode == "targets" and any(not isinstance(node, URIRef) for node in focus):
-        raise InputError("Literal and blank focus terms require explicit pairs mode")
-    for node in selected_shapes:
-        if (node, None, None) not in sg and (None, None, node) not in sg:
-            raise InputError("Selected shape is absent", location=str(node))
-    function_plan = prepare_functions(functions, selected)
-    capabilities = prepare_capabilities(
-        sg,
-        selected_shapes,
-        required_constraints,
         trusted_sparql=trusted_sparql,
-        limits=selected,
-        enabled_functions=frozenset(URIRef(name) for name in function_plan.names),
+        use_shapes=use_shapes,
+        mode=mode,
+        preflight=preflight,
+        allow_empty=allow_empty,
+        coverage=coverage,
+        required_constraints=required_constraints,
+        functions=functions,
+        limits=limits if limits is not None else Limits(),
     )
-    for query_node, predicate, text in capabilities.queries:
-        sg.set((query_node, predicate, text))
-    features = (
-        _features(sg, trusted_sparql=trusted_sparql, nodes=capabilities.nodes)
-        + capabilities.issues
-        + function_plan.issues
+    dg, focus = _prepare_data(
+        data, plan, focus_nodes, graph_name=graph_name, union=union
     )
-    path_budget = Budget(selected)
-    for shape, path_node in sg.subject_objects(SH.path):
-        if capabilities.nodes is not None and shape not in capabilities.nodes:
-            continue
-        path = decode_path(sg, path_node, budget=path_budget)
-        if path.limitation is not None:
-            features += (
-                Issue(
-                    "shacl.path_unverified",
-                    path.limitation,
-                    str(shape),
-                    kind="unverified",
-                ),
-            )
-    if selected_shapes and any(
-        (kind, RDFS.subClassOf, RDFS.Class) in sg
-        for kind in (SH.NodeShape, SH.PropertyShape)
-    ):
-        features += (
-            Issue(
-                "shacl.implicit_target_unverified",
-                "Shape kinds used as implicit target classes are unsupported "
-                "during root selection",
-                kind="unverified",
-            ),
-        )
-    metadata: dict[str, Any] = {
-        "mode": mode,
-        "focus_nodes": tuple(
-            str(node) if isinstance(node, URIRef) else node for node in focus
-        ),
-        "shapes": tuple(
-            str(node) if isinstance(node, URIRef) else node for node in selected_shapes
-        ),
-        "preflight": preflight,
-    }
-    if features:
+    if plan.features:
         return ShaclResult(
             Report(
-                "shacl", 0, features, requested=1, complete=False, families=families
+                "shacl",
+                0,
+                plan.features,
+                requested=1,
+                complete=False,
+                families=plan.families,
             ),
-            **metadata,
+            **_metadata(plan, focus),
         )
     import json
 
-    role_graphs = {
-        "data": dg,
-        "shapes": _select_roots(sg, selected_shapes, mode),
-        "authored-shapes": sg,
-    }
-    if og is not None:
-        role_graphs["ontology"] = og
-    if functions is not None:
-        role_graphs["functions"] = function_plan.graph
-    roles = transport_roles(role_graphs, focus, selected_shapes, selected)
+    roles = transport_roles(
+        {"data": dg, **_role_graphs(plan)}, focus, plan.roots, plan.limits
+    )
     payload = json.dumps(
-        {
-            "graphs": roles.serialize(format="trig"),
-            "has_ontology": og is not None,
-            "limits": asdict(selected),
-            "max_depth": selected.max_depth,
-            "focus_nodes": tuple(str(node) for node in focus)
-            if mode == "targets"
-            else (),
-            "selected_shapes": bool(selected_shapes),
-            "pair_mode": mode == "pairs",
-            "binding_count": len(focus) + len(selected_shapes),
-            "preflight": preflight,
-            "coverage": coverage is not None or bool(required_constraints),
-            "functions": function_plan.names,
-        }
+        {"graphs": roles.serialize(format="trig"), **_options(plan, focus)}
     ).encode()
-    if len(payload) > selected.max_total_bytes:
+    if len(payload) > plan.limits.max_total_bytes:
         raise LimitExceeded("SHACL request exceeds max_total_bytes")
     try:
-        raw = execute_backend(payload, cap=selected.max_total_bytes, timeout=timeout)
+        raw = execute_backend(payload, cap=plan.limits.max_total_bytes, timeout=timeout)
     except (LimitExceeded, ResourceError) as error:
-        kind: IssueKind = (
-            "exhausted" if isinstance(error, LimitExceeded) else "input_error"
-        )
-        return ShaclResult(
-            Report(
-                "shacl",
-                0,
-                (Issue("shacl.execution_incomplete", str(error), kind=kind),),
-                requested=1,
-                complete=False,
-                families=families,
-            ),
-            **metadata,
-        )
-    response = decode_json(raw, max_bytes=selected.max_total_bytes)
-    if not isinstance(response, dict):
-        raise ResourceError("SHACL process returned an invalid protocol object")
-    status = response.get("status")
-    backend = str(response.get("backend", "unavailable"))
-    if "functions" in response or status == "result" and functions is not None:
-        metadata.update(
-            _function_evidence(
-                response.get("functions"),
-                function_plan.names,
-                complete=status == "result",
-            )
-        )
-    if status == "exception":
-        raise RuntimeError(
-            f"SHACL worker {response.get('type')}: {response.get('message')}"
-        )
-    if status != "result":
-        issue_kind: IssueKind = "exhausted" if status == "exhausted" else "input_error"
-        return ShaclResult(
-            Report(
-                "shacl",
-                0,
-                (
-                    Issue(
-                        f"shacl.{status}",
-                        str(response.get("message", "Backend incomplete")),
-                        kind=issue_kind,
-                    ),
-                ),
-                requested=1,
-                complete=False,
-                families=families,
-            ),
-            backend=backend,
-            conforms=response.get("conforms")
-            if type(response.get("conforms")) is bool
-            else None,
-            **metadata,
-        )
-    shapes_count = response.get("shapes_count")
-    if type(shapes_count) is not int or shapes_count < 0:
-        raise ResourceError("SHACL process did not identify its discovered shape scope")
-    metadata["shapes_count"] = shapes_count
-    report_graph = prepare_source(
-        str(response["report"]), format="nt", limits=selected
-    ).graph()
-    correlation_graph = graph_name
-    correlation_union = union
-    if isinstance(data, PreparedSource) and (data.graph_name is not None or data.union):
-        correlation_graph, correlation_union = data.graph_name, data.union
-    findings, roots, findings_complete = project_findings(
-        report_graph,
+        return _incomplete(plan, error, focus)
+    return _project_result(
+        raw,
+        plan,
+        data,
         dg,
-        sources=sources,
-        graph_name=(
-            None if correlation_graph in (None, "@default") else str(correlation_graph)
-        ),
-        union=correlation_union or isinstance(correlation_graph, BNode),
-        limits=selected,
-    )
-    issues = []
-    severity_names: dict[Node | None, Severity] = {
-        SH.Info: "info",
-        SH.Warning: "warning",
-    }
-    for finding in findings:
-        severity = severity_names.get(finding.severity, "error")
-        message = (
-            "; ".join(map(str, finding.messages))
-            or "Supplied data does not conform to the shape"
-        )
-        issues.append(
-            Issue(
-                "shacl.nonconformance",
-                message,
-                str(finding.focus_node or ""),
-                severity=severity,
-                details=(
-                    finding.locations[0]
-                    if finding.location_status == "matched"
-                    and len(finding.locations) == 1
-                    else None
-                ),
-                evidence_json=finding.evidence_json,
-            )
-        )
-    if not findings_complete:
-        issues.append(
-            Issue(
-                "shacl.finding_unverified",
-                "Result projection is incomplete; inspect the retained raw RDF report",
-                kind="unverified",
-            )
-        )
-    for warning in response.get("warnings", []):
-        issues.append(Issue("shacl.backend_warning", str(warning), kind="unverified"))
-    if not shapes_count and not allow_empty:
-        issues.append(
-            Issue(
-                "input.empty_scope",
-                "The supplied shapes graph contains no discovered SHACL shapes",
-                "shapes",
-                kind="input_error",
-            )
-        )
-    report = Report(
-        "shacl",
-        int(shapes_count > 0),
-        tuple(issues),
-        requested=int(shapes_count > 0 or not allow_empty),
-        allow_empty=allow_empty,
-        complete=not response.get("warnings")
-        and findings_complete
-        and (shapes_count > 0 or allow_empty),
-        families=families,
-    )
-    evaluated_coverage = (
-        read_coverage(
-            response.get("coverage"), coverage or ShaclCoverageContract(), selected
-        )
-        if coverage is not None or required_constraints
-        else None
-    )
-    constraint_report = (
-        constraint_execution(required_constraints, evaluated_coverage)
-        if required_constraints and evaluated_coverage is not None
-        else None
-    )
-    additional = tuple(
-        item
-        for item in (
-            evaluated_coverage.report if evaluated_coverage is not None else None,
-            constraint_report,
-        )
-        if item is not None
-    )
-    return ShaclResult(
-        combine_reports("shacl", report, *additional) if additional else report,
-        conforms=bool(response["conforms"]),
-        backend=backend,
-        graph=report_graph,
-        findings=findings,
-        root_findings=roots,
-        findings_complete=findings_complete,
-        coverage=evaluated_coverage,
-        conformance_report=report,
-        constraints=constraint_report,
-        **metadata,
+        focus,
+        graph_name=graph_name,
+        union=union,
+        source_usages=source_usages,
     )

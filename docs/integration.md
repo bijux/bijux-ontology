@@ -4,6 +4,8 @@ Applications supply their own vocabulary snapshots, declarations and representat
 
 Select local, import and lookup scopes deliberately. Use coverage for owned namespaces and membership checks for external terms; lookup documents must not conceal missing local declarations. A required constructor field does not prove RDF emission: declare that guarantee explicitly and check representative serialised output with `check_emission`.
 
+Opt into closed output coverage with `ModelDeclaration(..., coverage=EmissionCoverage(metadata=("@context", "@id", "@type")))`. Additional source keys or directed predicates require declarations or explicit `extensions`/`reverse_extensions`; permitted extensions stay visible as informational findings. `aliases=(("headline", "title"),)` checks alias values, children and combined counts without relaxing required primary-key presence. Native/entity checks cover selected incoming and outgoing predicates while source-key coverage remains unverified. Non-RDF metadata aliases without an established processor witness also remain unverified.
+
 For finite RDFLib namespace classes, `namespace_inventory({"app.BIA": BIA})`
 from `bijux_ontology.interfaces.adapters.namespaces` retains qualified declaration
 names and exact IRIs. Call `inventory.check(vocabulary,
@@ -15,6 +17,8 @@ Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
 `graph_name="@default"`, or `union=True`. Imports, lookup resources and prepared
 SHACL inputs retain that selection. `prepared.dataset()` still exports every
 original graph; conflicting graph overrides fail explicitly.
+
+Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
@@ -28,6 +32,8 @@ explicitly joins their facts. Unsupplied references remain unknown unless
 equality, inequality or classification.
 
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
+
+Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.
 Its report checks RDF preservation, including named empty graphs; its owned
@@ -53,6 +59,8 @@ Obtain blank terms from the corresponding `PreparedSource.graph()` export;
 equal labels from other snapshots are rejected. Transport keeps independent
 role scopes separate and preserves blank node kinds. Literal and blank focus
 selection requires explicit pair mode; findings retain report-local identities.
+
+For repeated datasets, use `with ShaclSession(shapes, ontology=ontology) as session:` from `bijux_ontology.shacl` and call `session.validate(data)`. The session owns its fixed resources and reuses one isolated worker; construct a new session to replace them. `validate_batch(datasets)` retains per-dataset results and explicit pending coverage. Deadlines include worker queueing and startup; cancellation, worker failure and close release owned processes. `scope="records"` preserves local conformance while leaving wider dataset conformance unverified. Sessions currently require POSIX process groups.
 
 For supplied SHACL shapes, `ShaclCoverageContract(minimum_focus=1,
 focus_nodes=record_iris, pairs=shape_focus_pairs)` from `bijux_ontology.shacl`

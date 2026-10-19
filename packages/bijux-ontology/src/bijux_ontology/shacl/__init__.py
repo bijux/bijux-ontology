@@ -14,8 +14,10 @@ from bijux_ontology.shacl.functions import (
     ShaclSparqlFunction,
 )
 from bijux_ontology.shacl.paths import ShaclPath
+from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "ShaclBatchResult",
     "ShaclConstraintRequirement",
     "ShaclCoverage",
     "ShaclCoverageContract",
@@ -23,6 +25,7 @@ __all__ = [
     "ShaclFunctionCatalog",
     "ShaclFunctionParameter",
     "ShaclResult",
+    "ShaclSession",
     "ShaclSource",
     "ShaclSparqlFunction",
     "ShaclPath",

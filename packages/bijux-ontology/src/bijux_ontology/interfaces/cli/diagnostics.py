@@ -55,6 +55,8 @@ _CODES = {
     "data": frozenset("type_unverified".split()),
     "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
+        "source_field_undeclared predicate_undeclared source_coverage_unverified "
+        "extension_allowed "
         "group_unverified group_count_mismatch scenario_unverified "
         "scenario_mismatch "
         "cardinality_unverified empty_forbidden list_length_mismatch list_required "
@@ -112,6 +114,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "dataset_scope_unverified "
         "backend_warning execution_incomplete feature_unverified "
         "path_unverified finding_unverified "
         "function_unavailable function_malformed function_untrusted "
@@ -293,6 +296,21 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "emission.source_field_undeclared": (
+        "A selected source key has no declaration or proven coverage permission.",
+        "Declare the actual field or its alias; allow only intentional extensions.",
+        "ModelDeclaration(..., coverage=EmissionCoverage(...))",
+    ),
+    "emission.predicate_undeclared": (
+        "A selected directed RDF predicate has no application field declaration.",
+        "Declare the predicate or explicitly allow its direction as an extension.",
+        "EmissionCoverage(reverse_extensions=(incoming_predicate,))",
+    ),
+    "emission.extension_allowed": (
+        "An explicit extension is permitted without a declared value contract.",
+        "Retain this visible scope decision; declare values for stronger checks.",
+        "EmissionCoverage(extensions=(extension_predicate,))",
+    ),
     "shacl.function_untrusted": (
         "Selected function definitions have not been explicitly trusted.",
         "Review the supplied catalog and set trusted=True only for approved bodies.",
@@ -350,6 +368,11 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
         "The supplied shapes could not establish a valid supported SHACL scope.",
         "Repair the shapes document; this is distinct from data nonconformance.",
         "validate_shapes(data, corrected_shapes)",
+    ),
+    "shacl.dataset_scope_unverified": (
+        "Record-local validation cannot establish conformance of a wider dataset.",
+        "Retain the local result and validate the complete dataset for global claims.",
+        'session.validate(complete_data, scope="dataset")',
     ),
     "shacl.unavailable": (
         "The optional SHACL capability or required resource is unavailable.",

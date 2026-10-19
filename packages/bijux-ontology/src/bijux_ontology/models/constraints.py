@@ -314,6 +314,7 @@ def _field_issues(
                         types=tuple(sorted(parent_types)),
                         fields=(field,),
                         emission_groups=(),
+                        coverage=None,
                     ),
                     registry,
                     classes,
