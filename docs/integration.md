@@ -37,7 +37,8 @@ Caller streams remain open; individual compressed documents are not archives.
 Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
 `graph_name="@default"`, or `union=True`. Imports, lookup resources and prepared
 SHACL inputs retain that selection. `prepared.dataset()` still exports every
-original graph; conflicting graph overrides fail explicitly.
+original graph; conflicting graph overrides fail explicitly. Required import
+aliases must agree on selected graph ownership and RDF content.
 
 Exact source storage retains distinct `xsd:token` and `xsd:normalizedString`
 spellings through comparison, worker transport, canonicalization and RDF export.
@@ -341,6 +342,56 @@ points, and `iri_namespaces` uses exact IRI prefixes. Install
 `bijux-ontology[patterns]` for RE2 UTF-8 patterns with explicit `fullmatch` or
 `search` mode. Unsupported syntax or conversions remain unverified; constraints
 never rewrite RDF identity or assert ontology inconsistency.
+
+Pass `fact_selection=FactSelection((FactPredicate(predicate_iri),), scopes=("local",))`
+to `compare_vocabularies` or `assess_upgrade` for arbitrary exact assertions.
+The resulting `selected_facts` retains graph ownership, original RDF terms and
+per-position roles alongside categorized changes. Custom endpoint roles require
+explicit `subject_role`/`object_role` choices. Upgrade `role_uses` accepts explicit
+`RoleUse` contracts; `fact_uses` distinguishes direct from uncertain role joins.
+Anonymous comparisons preserve joint sharing through maintained RDF comparison;
+changed anonymous ownership remains unverified. Incomplete inventories establish
+no missing facts, and graph selectors never pair foreign blank labels.
+
+Use `ValueDeclaration("iri", role=ResourceRole("class", punning="allow"))`
+to select class identifiers explicitly. Concept and instance roles remain
+separate; an instance role's `types` require actual asserted or supported named
+witnesses. `check_resource_roles(vocabulary, [RoleUse(term, role)], data=source,
+graph=graph_name)` checks finite selected roles directly. `RoleBridge` follows
+one explicit vocabulary link; target facts never discharge source type
+obligations. Source emission requires named endpoints and leaves bridge-to-instance
+unknown; native checks can use exact owned blank nodes. Punning prohibition is
+application policy. Full OWL profile requests require a separate capability and
+remain unverified when unavailable. `classify_statement` retains per-position
+roles: the two occurrences in `C rdf:type C` are individual and class.
+
+Use `check_data_compatibility(data, vocabulary)` for finite actual RDF checks
+of named domain/range consequences, explicit disjoint types, property kinds and
+supported literal range membership. Select the data `graph_name` or `union` and
+ontology source `scopes` explicitly. The default `mode="inferred"` includes named
+endpoint consequences; `mode="asserted"` examines supplied types. Neither mode
+claims global OWL consistency or complete reasoning. Unsupported expressions
+remain unverified. `asserted_types="required"` adds a separate application
+validation report requiring exact type assertions; open-world consequences do
+not count as missing fields. Raw ontology evidence is retained in `children[0]`.
+
+`compare_literal_values(left, right, regime=...)` returns the original RDF
+literals and an `equal`, `different` or `indeterminate` relation. Choose
+`sparql-1.1` numeric promotion or `owl2-datatype-map` data-value identity;
+the latter preserves disjoint numeric families, signed zeros and timezone
+offsets. Exact RDF term equality remains separate. Supported calendars require
+`[xsd]`, explicit timezone, years 1–9999 and at most six fractional digits;
+SPARQL supports `dateTime`, while OWL also supports `dateTimeStamp`.
+NaN, custom equality and unavailable conversions remain indeterminate.
+
+`DatatypeRegistry` owns exact custom-IRI `DatatypeEvaluator` entries. Supply
+conjunctive sample validators, an optional bounded scalar converter and an
+explicit directional datatype relation independently. `convert` returns a
+`DatatypeConversion` retaining the original literal; conversion establishes no
+inclusion relation. Pass `datatype_registry=` to fresh model, data, source/native
+emission or generic serializer checks. Missing capabilities and callback failures
+remain unverified; standard datatypes cannot be replaced. Callbacks execute in
+process with their ordinary state and are evaluated afresh by each operation.
 
 `check_index_maps(prepared_usages, expectations)` checks exact source map keys
 and processor-qualified correspondence using `IndexMapExpectation` and named,

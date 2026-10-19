@@ -2,7 +2,7 @@
 
 from collections import defaultdict, deque
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from rdflib import Graph, URIRef
@@ -13,6 +13,8 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.resource_roles.checking import check_resource_roles
+from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.comparison import (
@@ -21,9 +23,17 @@ from bijux_ontology.vocabulary.comparison import (
     compare_vocabularies,
     selected_view,
 )
+from bijux_ontology.vocabulary.facts.types import FactSelection
 from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.results import Deprecation
 from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.workflows.upgrades.facts import (
+    FactAffectedUse,
+    change_roles,
+    role_matches,
+    selected_fact_uses,
+)
 from bijux_ontology.workflows.upgrades.uses import Use, UseIndex, index_uses
 
 
@@ -69,6 +79,7 @@ class UpgradeAssessment:
     before: tuple[Report, ...]
     after: tuple[Report, ...]
     report: Report
+    fact_uses: tuple[FactAffectedUse, ...] = field(default=(), kw_only=True)
 
 
 def _key(issue: Issue) -> tuple[object, ...]:
@@ -164,6 +175,9 @@ def _affected_uses(
     budget: Budget,
     issues: IssueCollector,
     result: list[AffectedUse],
+    *,
+    role_aware: bool = False,
+    fact_selection: FactSelection | None = None,
 ) -> None:
     """Join actual references and role-specific named dependency paths."""
     by_iri: dict[str, list[Use]] = defaultdict(list)
@@ -202,10 +216,48 @@ def _affected_uses(
         if change.iri:
             for use in by_iri.get(change.iri, ()):
                 budget.consume("work")
+                if role_aware:
+                    roles = change_roles(
+                        change,
+                        change.iri,
+                        changes.selected_facts,
+                        fact_selection,
+                        budget,
+                    )
+                    answers = tuple(role_matches(use, role) for role in roles)
+                    if use.role != "term" and (not roles or None in answers):
+                        issues.append(
+                            Issue(
+                                "upgrade.fact_impact_unverified",
+                                "Categorized change lacks complete occurrence "
+                                "role coverage for this use",
+                                use.location,
+                                kind="unverified",
+                            )
+                        )
+                    if use.role != "term" and True not in answers:
+                        continue
                 budget.consume("states")
                 result.append(AffectedUse(change, use, "direct"))
                 seen.add((change, use))
         for seed, domain in _dependencies(change):
+            if role_aware:
+                roles = change_roles(
+                    change, seed, changes.selected_facts, fact_selection, budget
+                )
+                if not any(
+                    role == "class"
+                    if domain == "class"
+                    else role
+                    in (
+                        "property",
+                        "object_property",
+                        "datatype_property",
+                        "annotation_property",
+                    )
+                    for role in roles
+                ):
+                    continue
             queue: deque[tuple[str, tuple[str, ...]]] = deque([(seed, ())])
             visited = {seed}
             while queue:
@@ -216,7 +268,9 @@ def _affected_uses(
                     compatible = use.role == "term" or (
                         use.role == "predicate"
                         if domain == "property"
-                        else use.role in ("class", "datatype")
+                        else use.role == "class"
+                        or not role_aware
+                        and use.role == "datatype"
                     )
                     if compatible and (change, use) not in seen:
                         budget.consume("states")
@@ -294,6 +348,8 @@ def assess_upgrade(
     terms: Sequence[TermDeclaration] = (),
     models: Sequence[ModelDeclaration] = (),
     observed_usages: Sequence[ObservedUsage] = (),
+    role_uses: Sequence[RoleUse] = (),
+    fact_selection: FactSelection | None = None,
     contract_reports: Sequence[tuple[Report, Report]] = (),
     local_namespaces: Sequence[str] = (),
     replacement_predicates: Sequence[str] = (),
@@ -315,15 +371,48 @@ def assess_upgrade(
     selected = limits if limits is not None else Limits()
     budget = Budget(selected)
     issues = IssueCollector(budget)
-    uses = index_uses(terms, models, observed_usages=observed_usages, budget=budget)
-    differences = compare_vocabularies(before, after, scopes=scopes, budget=budget)
+    uses = index_uses(
+        terms,
+        models,
+        observed_usages=observed_usages,
+        role_uses=role_uses,
+        budget=budget,
+    )
+    preparation_failed = False
+    try:
+        if fact_selection is not None or role_uses:
+            before = (
+                before
+                if isinstance(before, Vocabulary)
+                else load_vocabulary(before, budget=budget)
+            )
+            after = (
+                after
+                if isinstance(after, Vocabulary)
+                else load_vocabulary(after, budget=budget)
+            )
+        differences = compare_vocabularies(
+            before, after, scopes=scopes, fact_selection=fact_selection, budget=budget
+        )
+    except LimitExceeded as error:
+        preparation_failed = True
+        failed = IssueCollector(budget)
+        failed.exhausted(str(error), location="upgrade.sources")
+        differences = VocabularyChanges(
+            (),
+            Report(
+                "vocabulary.changes", issues=tuple(failed), requested=1, complete=False
+            ),
+        )
     list.extend(issues, (*uses.report.issues, *differences.report.issues))
     pairs: list[tuple[str, Report, Report]] = []
     deltas: list[ContractChange] = []
     affected: list[AffectedUse] = []
     deprecated: list[DeprecatedUse] = []
-    complete = True
+    complete = not preparation_failed
     checked = 0
+    fact_uses: list[FactAffectedUse] = []
+    views: tuple[VocabularyView, VocabularyView] | None = None
     try:
         references = tuple(
             TermDeclaration(
@@ -338,8 +427,20 @@ def assess_upgrade(
                 use.location,
             )
             for use in uses.entries
-            if use.role != "term"
+            if use.role in ("class", "predicate", "datatype")
         )
+        if role_uses:
+            views = (
+                selected_view(before, scopes, selected, budget=budget),
+                selected_view(after, scopes, selected, budget=budget),
+            )
+            pairs.append(
+                (
+                    "roles",
+                    check_resource_roles(views[0], role_uses, budget=budget),
+                    check_resource_roles(views[1], role_uses, budget=budget),
+                )
+            )
         for name, declarations in (("terms", tuple(terms)), ("uses", references)):
             if declarations:
                 pairs.append(
@@ -401,11 +502,35 @@ def assess_upgrade(
                         kind="unverified",
                     )
                 )
-        views = (
-            selected_view(before, scopes, selected),
-            selected_view(after, scopes, selected),
+        if views is None:
+            views = (
+                selected_view(
+                    before,
+                    scopes,
+                    selected,
+                    budget=budget if fact_selection is not None else None,
+                ),
+                selected_view(
+                    after,
+                    scopes,
+                    selected,
+                    budget=budget if fact_selection is not None else None,
+                ),
+            )
+        _affected_uses(
+            differences,
+            uses,
+            views,
+            budget,
+            issues,
+            affected,
+            role_aware=fact_selection is not None or bool(role_uses),
+            fact_selection=fact_selection,
         )
-        _affected_uses(differences, uses, views, budget, issues, affected)
+        if differences.selected_facts is not None:
+            selected_fact_uses(
+                differences.selected_facts, uses, budget, issues, fact_uses
+            )
         _used_deprecations(
             uses, *views, replacement_predicates, budget, issues, deprecated
         )
@@ -485,7 +610,11 @@ def assess_upgrade(
         else "unverified"
         if unverified
         else "informational"
-        if differences.changes or deltas or deprecated
+        if differences.changes
+        or deltas
+        or deprecated
+        or differences.selected_facts is not None
+        and differences.selected_facts.differences
         else "agreement"
     )
     return UpgradeAssessment(
@@ -512,4 +641,5 @@ def assess_upgrade(
                 *(report for _, old, new in pairs for report in (old, new)),
             ),
         ),
+        fact_uses=tuple(fact_uses),
     )

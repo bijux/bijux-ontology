@@ -2,18 +2,19 @@
 
 import re
 from calendar import monthrange
-from typing import Literal as Choice
 
 from rdflib import Literal
 from rdflib.namespace import RDF, XSD
 
 from ..errors import InputError, ResourceError
+from ..limits import Budget
 from ..reports import Issue, Report
+from .datatype_evaluators.registry import DatatypeRegistry
+from .datatype_evaluators.types import DatatypeRelation as DatatypeRelation
+from .datatype_evaluators.types import Regime as Regime
 from .identifiers import absolute_iri, language_tag
 from .xsd_lexicals import XSD_LEXICAL_TYPES, xsd_lexical
 
-DatatypeRelation = Choice["equal", "subset", "overlap", "disjoint", "unknown"]
-Regime = Choice["application", "rdf", "owl-dl"]
 _PARENT = {
     "integer": "decimal",
     "long": "integer",
@@ -70,7 +71,12 @@ def _chain(iri: str) -> tuple[str, ...]:
 
 
 def datatype_relation(
-    actual: str, required: str, *, regime: Regime = "rdf"
+    actual: str,
+    required: str,
+    *,
+    regime: Regime = "rdf",
+    datatype_registry: DatatypeRegistry | None = None,
+    budget: Budget | None = None,
 ) -> DatatypeRelation:
     """Compare supported value spaces, never equating unknown custom datatypes.
 
@@ -82,6 +88,10 @@ def datatype_relation(
     absolute_iri(required)
     if regime not in ("application", "rdf", "owl-dl"):
         raise InputError("Unknown semantic regime")
+    if datatype_registry is not None and not isinstance(
+        datatype_registry, DatatypeRegistry
+    ):
+        raise InputError("Expected an explicit DatatypeRegistry")
     left, right = _chain(actual), _chain(required)
     if (
         actual == required
@@ -91,7 +101,11 @@ def datatype_relation(
         return "equal"
     supported = _ROOTS | {str(RDF.langString)}
     if left[-1] not in supported or right[-1] not in supported:
-        return "unknown"
+        return (
+            datatype_registry.relation(actual, required, regime=regime, budget=budget)
+            if datatype_registry is not None
+            else "unknown"
+        )
     if actual == required:
         return "equal"
     if right[0] in left[1:]:
@@ -196,7 +210,13 @@ def _lexical(text: str, datatype: str) -> bool | None:
     return xsd_lexical(text, local)
 
 
-def check_literal(value: Literal, *, location: str = "") -> Report:
+def check_literal(
+    value: Literal,
+    *,
+    location: str = "",
+    datatype_registry: DatatypeRegistry | None = None,
+    budget: Budget | None = None,
+) -> Report:
     """Validate one supplied lexical form, without generalising to other values.
 
     Unsupported datatypes stay unverified. Inputs are not normalised, rewritten
@@ -206,6 +226,11 @@ def check_literal(value: Literal, *, location: str = "") -> Report:
         raise InputError("Expected an RDF literal", location=location)
     datatype = str(value.datatype or (RDF.langString if value.language else XSD.string))
     absolute_iri(datatype, location=location)
+    if datatype_registry is not None:
+        if not isinstance(datatype_registry, DatatypeRegistry):
+            raise InputError("Expected an explicit DatatypeRegistry")
+        if datatype_registry.lookup(datatype, budget=budget) is not None:
+            return datatype_registry.check(value, location=location, budget=budget)
     valid: bool | None
     unavailable: str | None = None
     if value.language:

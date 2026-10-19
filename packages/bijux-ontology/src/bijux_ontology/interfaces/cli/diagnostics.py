@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "roles": frozenset(
+        "role_unverified punning_forbidden instance_type_missing "
+        "bridge_unverified type_conflict profile_unavailable".split()
+    ),
     "documents": frozenset(
         "form_shape form_key_missing form_key_unexpected form_embedding "
         "form_binding_unverified form_scope_unverified".split()
@@ -73,6 +77,8 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "disjoint_conflict expression_unverified asserted_type_missing "
+        "datatype_conflict datatype_unverified property_unverified property_conflict "
         "type_unverified query_kind_mismatch query_answer_mismatch "
         "query_variables_mismatch query_answer_unexpected query_answer_missing "
         "query_violation query_empty_scope".split()
@@ -101,7 +107,8 @@ _CODES = {
         "value_kind_invalid".split()
     ),
     "literal": frozenset(
-        "datatype_unverified lexical_invalid lexical_unverified".split()
+        "conversion_unverified datatype_unverified "
+        "lexical_invalid lexical_unverified value_unverified".split()
     ),
     "models": frozenset(
         "direction_unverified contextual_direction_unverified "
@@ -192,6 +199,7 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "fact_impact_unverified "
         "child_model_unavailable usage_unavailable deprecation_unverified "
         "corpus_baseline_missing corpus_candidate_missing "
         "corpus_comparison_unverified corpus_coverage_missing "
@@ -199,6 +207,7 @@ _CODES = {
         "no_contracts contract_persistent contract_resolved contract_introduced".split()
     ),
     "vocabulary": frozenset(
+        "fact_role_unverified fact_attribution_unverified fact_graph_unverified "
         "coverage_gap coverage_source_missing declaration_conflict "
         "entity_kind_mismatch fact_changed reference_kind_mismatch reference_missing "
         "term_missing unknown_reserved_term "
@@ -268,10 +277,19 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "and owned contexts.",
         '{"@context":{"label":"https://example.org/label"},"label":"Colour"}',
     ),
+    "roles": (
+        "selected application resource interpretations",
+        "A required class, concept or instance role conflicts with its policy "
+        "or lacks an established witness.",
+        "Inspect the selected resource, actual type witnesses, explicit bridge "
+        "and punning policy; full profile validation needs its own capability.",
+        'ResourceRole("instance", types=("urn:application:Record",))',
+    ),
     "data": (
-        "supplied RDF data and asserted query obligations",
+        "supplied RDF data, named ontology contracts and query obligations",
         "The selected data condition disagrees or cannot be established.",
-        "Inspect selected types, actual query bindings and the explicit "
+        "Inspect selected graphs, named contracts, actual types and query bindings, "
+        "and the explicit "
         "consumer obligation.",
         "<https://example.org/item> a <https://example.org/Image> .",
     ),
@@ -298,11 +316,11 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         '[{"path":["label"],"predicate":"https://example.org/label"}]',
     ),
     "literal": (
-        "RDF literal lexical and datatype checks",
-        "A lexical value violates, or is not supported by, the selected "
-        "datatype check.",
-        "Keep lexical text and datatype distinct; correct the value or "
-        "declare a supported type.",
+        "RDF literal and value checks",
+        "A lexical, datatype or value comparison fails or cannot be "
+        "established under the selected regime.",
+        "Retain the original terms and inspect the selected datatype "
+        "capability or comparison regime.",
         '"01"^^<http://www.w3.org/2001/XMLSchema#integer>',
     ),
     "models": (

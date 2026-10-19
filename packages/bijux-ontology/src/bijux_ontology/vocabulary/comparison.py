@@ -1,7 +1,7 @@
 """Finite vocabulary facts and ownership changes, without compatibility guesses."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal as Kind
 
 from rdflib import BNode, Dataset, Graph, URIRef
@@ -12,10 +12,15 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.facts.comparison import compare_selected_facts
+from bijux_ontology.vocabulary.facts.types import FactSelection, SelectedFactDifferences
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
+from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.results import TermInfo
+from bijux_ontology.vocabulary.sources import source_role
 from bijux_ontology.vocabulary.view import Vocabulary
 
 ANNOTATIONS = (
@@ -106,23 +111,15 @@ class VocabularyChanges:
 
     changes: tuple[Change, ...]
     report: Report
-
-
-def source_role(scope: str) -> str:
-    """Source array order is not semantic ownership; local/import/lookup roles are."""
-    return (
-        "imports"
-        if scope.startswith("import[")
-        else "lookup"
-        if scope.startswith("lookup[")
-        else scope
-    )
+    selected_facts: SelectedFactDifferences | None = field(default=None, kw_only=True)
 
 
 def selected_view(
-    source: Vocabulary | Graph | VocabularyView,
+    source: Vocabulary | Graph | PreparedSource | VocabularyView,
     scopes: Sequence[str],
     limits: Limits | None,
+    *,
+    budget: Budget | None = None,
 ) -> VocabularyView:
     """Use only the requested roles; a preselected view must not silently widen them."""
     if isinstance(source, VocabularyView):
@@ -131,7 +128,9 @@ def selected_view(
                 "Prepared view includes roles outside the requested change scope"
             )
         return source
-    return inspect_vocabulary(source, scopes=scopes, limits=limits)
+    if isinstance(source, PreparedSource):
+        source = load_vocabulary(source, limits=limits)
+    return inspect_vocabulary(source, scopes=scopes, limits=limits, budget=budget)
 
 
 def _inventory(
@@ -223,11 +222,12 @@ def _fact_identity(
 
 
 def compare_vocabularies(
-    before: Vocabulary | Graph | VocabularyView,
-    after: Vocabulary | Graph | VocabularyView,
+    before: Vocabulary | Graph | PreparedSource | VocabularyView,
+    after: Vocabulary | Graph | PreparedSource | VocabularyView,
     *,
     scopes: Sequence[str] = ("local",),
     annotation_predicates: Sequence[str] = ANNOTATIONS,
+    fact_selection: FactSelection | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
 ) -> VocabularyChanges:
@@ -251,6 +251,8 @@ def compare_vocabularies(
         raise InputError("Annotation predicates must be an explicit sequence")
     for iri in annotation_predicates:
         absolute_iri(iri)
+    if fact_selection is not None and not isinstance(fact_selection, FactSelection):
+        raise InputError("Expected an explicit FactSelection")
     if budget is not None and limits is not None and budget.limits != limits:
         raise InputError("Explicit limits conflict with the shared operation budget")
     operation = budget if budget is not None else Budget(limits)
@@ -273,9 +275,35 @@ def compare_vocabularies(
 
     complete = True
     checked = 0
+    selected_facts = None
     try:
-        left = selected_view(before, scopes, operation.limits)
-        right = selected_view(after, scopes, operation.limits)
+        if (
+            fact_selection is not None or isinstance(before, PreparedSource)
+        ) and not isinstance(before, Vocabulary | VocabularyView):
+            before = load_vocabulary(before, budget=operation)
+        if (
+            fact_selection is not None or isinstance(after, PreparedSource)
+        ) and not isinstance(after, Vocabulary | VocabularyView):
+            after = load_vocabulary(after, budget=operation)
+        if fact_selection is not None:
+            selected_facts = compare_selected_facts(
+                before, after, fact_selection, budget=operation
+            )
+            checked += selected_facts.report.checked
+            if selected_facts.report.outcome == "exhausted":
+                raise LimitExceeded("Selected fact comparison exhausted its allowance")
+        left = selected_view(
+            before,
+            scopes,
+            operation.limits,
+            budget=operation if fact_selection is not None else None,
+        )
+        right = selected_view(
+            after,
+            scopes,
+            operation.limits,
+            budget=operation if fact_selection is not None else None,
+        )
         previous = _inventory(left, operation, issues)
         current = _inventory(right, operation, issues)
         if previous is None or current is None:
@@ -283,14 +311,18 @@ def compare_vocabularies(
                 (),
                 Report(
                     "vocabulary.changes",
-                    0,
+                    checked,
                     tuple(issues),
                     allow_empty=True,
-                    requested=1,
+                    requested=checked + 1,
                     complete=False,
                     regime="asserted-scoped-facts",
                     families=("vocabulary.changes",),
+                    children=(selected_facts.report,)
+                    if selected_facts is not None
+                    else (),
                 ),
+                selected_facts=selected_facts,
             )
         for iri in sorted(previous.keys() | current.keys()):
             operation.consume("work")
@@ -409,5 +441,7 @@ def compare_vocabularies(
             complete=complete,
             regime="asserted-scoped-facts",
             families=("vocabulary.changes",),
+            children=(selected_facts.report,) if selected_facts is not None else (),
         ),
+        selected_facts=selected_facts,
     )

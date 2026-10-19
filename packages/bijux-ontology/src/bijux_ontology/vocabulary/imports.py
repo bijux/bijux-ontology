@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 
-from rdflib import Graph, URIRef
+from rdflib import Dataset, Graph, URIRef
 from rdflib.namespace import OWL
 
 from bijux_ontology.documents.preparation import prepare_source
@@ -14,18 +14,51 @@ from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 
 from ..errors import InputError, ResourceError
+from .sources import OwnedSource
 
 
 @dataclass(frozen=True)
 class _Binding:
-    selected: Graph
+    source: OwnedSource
+
+    @property
+    def selected(self) -> Graph:
+        """Reuse the already selected graph for import closure and alias checks."""
+        return self.source.selected
+
+
+def _selected_contexts(source: OwnedSource, budget: Budget) -> tuple[set[str], Dataset]:
+    """Project only an alias's selected contexts for maintained RDF comparison."""
+    if source.prepared.graph_fidelity != "complete":
+        raise ResourceError("Required alias graph ownership is unverified")
+    dataset = Dataset()
+    kinds: set[str] = set()
+    for kind, name, graph in source.contexts(budget):
+        budget.consume("states")
+        kinds.add(kind)
+        target = dataset.default_graph if name is None else dataset.graph(name)
+        for triple in graph:
+            budget.consume("work")
+            budget.consume("triples")
+            budget.consume("states")
+            target.add(triple)
+    return kinds, dataset
 
 
 def _same(first: _Binding, second: _Binding, budget: Budget, alias: str) -> None:
     # Required alias agreement reuses the maintained bounded RDF comparison.
     from bijux_ontology.rdf.comparison import compare_rdf
 
-    report = compare_rdf(first.selected, second.selected, budget=budget)
+    left, right = first.selected, second.selected
+    if first.source.prepared.is_dataset or second.source.prepared.is_dataset:
+        left_kinds, left = _selected_contexts(first.source, budget)
+        right_kinds, right = _selected_contexts(second.source, budget)
+        if left_kinds != right_kinds:
+            raise ResourceError(
+                "Conflicting selected graph ownership for a required document alias",
+                location=alias,
+            )
+    report = compare_rdf(left, right, budget=budget)
     if not report.verified:
         raise ResourceError(
             "Conflicting or unverified supplied sources for a required document alias",
@@ -35,13 +68,13 @@ def _same(first: _Binding, second: _Binding, budget: Budget, alias: str) -> None
 
 def required_imports(
     prepared: PreparedSource,
-    local: Graph,
+    local: OwnedSource,
     supplied: Mapping[str, RdfSource | Payload] | None,
     *,
     budget: Budget,
     preserve_literals: bool,
     document_loader: DocumentLoader | None = None,
-) -> tuple[Graph, ...]:
+) -> tuple[OwnedSource, ...]:
     """Resolve requested keys only; lookup/header IRIs never establish aliases."""
     root = _Binding(local)
     aliases = {
@@ -50,8 +83,8 @@ def required_imports(
         if iri is not None
     }
     requested: set[str] = set()
-    loaded: list[Graph] = []
-    pending = [local]
+    loaded: list[OwnedSource] = []
+    pending = [local.selected]
     while pending:
         graph = pending.pop()
         for reference in sorted(graph.objects(None, OWL.imports), key=str):
@@ -82,7 +115,7 @@ def required_imports(
                 preserve_literals=preserve_literals,
                 document_loader=document_loader,
             )
-            candidate = _Binding(resource._read(budget=budget))
+            candidate = _Binding(OwnedSource(resource, resource._read(budget=budget)))
             names = {
                 value
                 for value in (iri, resource.document_iri, resource.effective_url)
@@ -102,7 +135,7 @@ def required_imports(
             else:
                 representative = candidate
                 imported = candidate.selected
-                loaded.append(imported)
+                loaded.append(candidate.source)
                 pending.append(imported)
             for name in names:
                 aliases[name] = representative

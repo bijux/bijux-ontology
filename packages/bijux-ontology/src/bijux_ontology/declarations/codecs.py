@@ -19,6 +19,11 @@ from bijux_ontology._json import (
     string_values,
 )
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.declarations.resource_roles import (
+    ResourceKind,
+    ResourceRole,
+    RoleBridge,
+)
 from bijux_ontology.declarations.types import (
     Emission,
     EmissionCondition,
@@ -94,6 +99,7 @@ def _value(value: object) -> ValueDeclaration:
             "container",
             "samples",
             "constraints",
+            "role",
         },
         location="",
         message="Unknown declaration keys",
@@ -112,9 +118,43 @@ def _value(value: object) -> ValueDeclaration:
         model=optional_string_value(data.get("model")),
         container=optional_string_value(data.get("container")),
         constraints=_constraints(data.get("constraints")),
+        role=_resource_role(data.get("role")),
         samples=tuple(
             _sample(sample) for sample in array_value(data.get("samples", []))
         ),
+    )
+
+
+def _resource_role(value: object) -> ResourceRole | None:
+    """Read explicit finite facet policies without inferring RDF intent."""
+    if value is None:
+        return None
+    data = object_value(value, location="role")
+    known_keys(
+        data, {"kind", "types", "type_mode", "punning", "bridge"}, location="role"
+    )
+    bridge = None
+    if data.get("bridge") is not None:
+        raw = object_value(data["bridge"], location="role.bridge")
+        known_keys(raw, {"predicate", "source_role", "reverse"}, location="role.bridge")
+        bridge = RoleBridge(
+            string_value(raw.get("predicate")),
+            source_role=cast(
+                ResourceKind, string_value(raw.get("source_role", "concept"))
+            ),
+            reverse=boolean_value(raw.get("reverse", False)),
+        )
+    return ResourceRole(
+        cast(ResourceKind, string_value(data.get("kind"))),
+        types=string_values(data.get("types", [])),
+        type_mode=cast(
+            Literal["asserted", "named"],
+            string_value(data.get("type_mode", "asserted")),
+        ),
+        punning=cast(
+            Literal["allow", "forbid"], string_value(data.get("punning", "forbid"))
+        ),
+        bridge=bridge,
     )
 
 

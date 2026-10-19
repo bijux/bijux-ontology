@@ -23,6 +23,7 @@ def matches_value(
     *,
     container: str = "unordered",
     empty: bool = False,
+    role_result: bool | None = None,
 ) -> bool | None:
     """Compare observed scalar traits without parsing or inferring RDF semantics."""
     if value.kind == "unknown" or value.container not in (None, "@set", "@list"):
@@ -45,7 +46,13 @@ def matches_value(
         return False
     if value.kind == "object" and traits.kind not in {"node", "iri", "blank"}:
         return False
-    required = set(value.types)
+    required = (
+        set()
+        if value.role is not None
+        and value.role.kind == "instance"
+        and value.role.bridge is None
+        else set(value.types)
+    )
     if value.model is not None:
         if value.model not in registry:
             return None
@@ -55,6 +62,8 @@ def matches_value(
         required.update(model.types)
     if required - set(traits.types):
         return None if traits.kind in {"iri", "blank"} and not traits.types else False
+    if value.role is not None:
+        return role_result
     return True
 
 

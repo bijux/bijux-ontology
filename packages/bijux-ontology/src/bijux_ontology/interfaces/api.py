@@ -1,6 +1,7 @@
 """Supported structural checks for RDF vocabularies and application declarations."""
 
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.data.compatibility import check_data_compatibility
 from bijux_ontology.data.query_rules.checking import run_query_rules
 from bijux_ontology.data.query_rules.loading import (
     load_query_rules,
@@ -18,6 +19,7 @@ from bijux_ontology.declarations.codecs import (
     terms_from_data,
 )
 from bijux_ontology.declarations.enumerations import ValueEnumeration
+from bijux_ontology.declarations.resource_roles import ResourceRole, RoleBridge
 from bijux_ontology.declarations.types import (
     EmissionCondition,
     EmissionCoverage,
@@ -94,6 +96,7 @@ from bijux_ontology.models.corpus import (
 from bijux_ontology.models.emission import ModelUsage, check_emission
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
+from bijux_ontology.models.resource_roles import RoleUse, check_resource_roles
 from bijux_ontology.models.serialization import InstanceCheck, check_instance
 from bijux_ontology.owl.obligations import (
     ObligationResult,
@@ -102,7 +105,13 @@ from bijux_ontology.owl.obligations import (
 )
 from bijux_ontology.rdf.canonical.export import CanonicalRDF, canonicalize_rdf
 from bijux_ontology.rdf.comparison import compare_rdf
+from bijux_ontology.rdf.datatype_evaluators import (
+    DatatypeConversion,
+    DatatypeEvaluator,
+    DatatypeRegistry,
+)
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
+from bijux_ontology.rdf.roles import TermRoleOccurrence, classify_statement
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.transforms import (
@@ -111,6 +120,10 @@ from bijux_ontology.rdf.transforms import (
     merge_sources,
     recheck_transformation,
     remap_iris,
+)
+from bijux_ontology.rdf.value_comparison import (
+    LiteralValueComparison,
+    compare_literal_values,
 )
 from bijux_ontology.reports import (
     AcceptancePolicy,
@@ -165,6 +178,16 @@ from bijux_ontology.vocabulary.comparison import (
     VocabularyChanges,
     compare_vocabularies,
 )
+from bijux_ontology.vocabulary.facts import (
+    AnonymousFactComparison,
+    FactGraph,
+    FactPredicate,
+    FactSelection,
+    SelectedFact,
+    SelectedFactDifference,
+    SelectedFactDifferences,
+    compare_selected_facts,
+)
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.languages import matches_language, negotiate_annotations
 from bijux_ontology.vocabulary.loading import load_vocabulary
@@ -214,6 +237,7 @@ from bijux_ontology.workflows.upgrades.corpus import (
     CorpusWitness,
     assess_context_corpus,
 )
+from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 __all__ = [
@@ -243,6 +267,9 @@ __all__ = [
     "CorpusCheck",
     "CorpusWitness",
     "DataView",
+    "DatatypeConversion",
+    "DatatypeEvaluator",
+    "DatatypeRegistry",
     "DocumentFormCheck",
     "EntitySelector",
     "ExecutionResult",
@@ -276,6 +303,7 @@ __all__ = [
     "LimitExceeded",
     "Limits",
     "Location",
+    "LiteralValueComparison",
     "ModelAssessment",
     "ModelDeclaration",
     "OutputRequirement",
@@ -328,10 +356,22 @@ __all__ = [
     "UpgradeAssessment",
     "UseIndex",
     "ValueConstraints",
+    "ResourceRole",
+    "RoleBridge",
+    "RoleUse",
+    "TermRoleOccurrence",
     "ValueDeclaration",
     "ValueEnumeration",
     "ValueTraits",
     "Vocabulary",
+    "AnonymousFactComparison",
+    "FactAffectedUse",
+    "FactGraph",
+    "FactPredicate",
+    "FactSelection",
+    "SelectedFact",
+    "SelectedFactDifference",
+    "SelectedFactDifferences",
     "VocabularyChanges",
     "VocabularyCursor",
     "VocabularyPage",
@@ -347,6 +387,9 @@ __all__ = [
     "check_collection_sequence",
     "check_context",
     "check_contract",
+    "check_resource_roles",
+    "classify_statement",
+    "check_data_compatibility",
     "check_data_usage",
     "check_document_form",
     "check_emission",
@@ -366,7 +409,9 @@ __all__ = [
     "combine_reports",
     "compare_context_usages",
     "compare_rdf",
+    "compare_literal_values",
     "compare_serializations",
+    "compare_selected_facts",
     "compare_vocabularies",
     "compile_context",
     "context_document_loader",

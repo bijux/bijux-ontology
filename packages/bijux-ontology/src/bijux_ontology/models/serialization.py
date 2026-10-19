@@ -16,7 +16,9 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.reports import Issue, Report, combine_reports
+from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 
 from .checking import check_models
@@ -67,6 +69,7 @@ def check_instance(
     budget: Budget | None = None,
     rdf_direction: DirectionPolicy | None = None,
     _corpus: _CorpusEvidence | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> InstanceCheck:
     """Call the actual serializer once with exact options and check its output.
 
@@ -105,6 +108,7 @@ def check_instance(
         budget=operation,
         rdf_direction=rdf_direction,
         _corpus=_corpus,
+        datatype_registry=datatype_registry,
     )
 
 
@@ -144,6 +148,7 @@ def check_serialized(
     budget: Budget | None = None,
     rdf_direction: DirectionPolicy | None = None,
     _corpus: _CorpusEvidence | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> InstanceCheck:
     """Check one already serialized output using the shared semantic budget.
 
@@ -182,9 +187,18 @@ def check_serialized(
             document, max_bytes=selected.max_bytes, max_depth=selected.max_depth
         )
         document_json = json.dumps(document, ensure_ascii=False, allow_nan=False)
+        vocabulary = (
+            vocabulary
+            if isinstance(vocabulary, Vocabulary)
+            else load_vocabulary(vocabulary, budget=operation)
+        )
         reports.append(
             check_models(
-                models, vocabulary, budget=operation, rdf_direction=rdf_direction
+                models,
+                vocabulary,
+                budget=operation,
+                rdf_direction=rdf_direction,
+                datatype_registry=datatype_registry,
             )
         )
         reports.append(
@@ -192,11 +206,13 @@ def check_serialized(
                 document,
                 models,
                 usages,
+                vocabulary=vocabulary,
                 base=base,
                 document_loader=document_loader,
                 budget=operation,
                 rdf_direction=rdf_direction,
                 _corpus=_corpus,
+                datatype_registry=datatype_registry,
             )
         )
     except Exception as error:
