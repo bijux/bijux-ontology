@@ -5,9 +5,9 @@ from typing import Literal
 from rdflib.namespace import RDF, RDFS
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.owl.builtins import builtin_kinds as owl_builtin_kinds
-from bijux_ontology.owl.builtins import declaration_roles
-from bijux_ontology.owl.builtins import reserved_name_known as owl_name_known
+from bijux_ontology.owl.encoding.builtins import builtin_kinds as owl_builtin_kinds
+from bijux_ontology.owl.encoding.builtins import declaration_roles
+from bijux_ontology.owl.encoding.builtins import reserved_name_known as owl_name_known
 from bijux_ontology.rdf.catalogue import builtin_kinds as rdf_builtin_kinds
 from bijux_ontology.rdf.catalogue import reserved_name_known as rdf_name_known
 

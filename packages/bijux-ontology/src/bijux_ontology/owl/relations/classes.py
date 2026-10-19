@@ -10,7 +10,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.owl.constructs import unsupported_constructs
+from bijux_ontology.owl.encoding.constructs import unsupported_constructs
 from bijux_ontology.rdf.structure import iter_rdf_list
 
 

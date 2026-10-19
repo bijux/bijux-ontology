@@ -7,9 +7,8 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, IssueCollector
+from bijux_ontology.owl.encoding.constructs import unsupported_constructs
 from bijux_ontology.rdf.structure import read_rdf_list
-
-from .constructs import unsupported_constructs
 
 _LIST_EXPRESSIONS = frozenset(
     (

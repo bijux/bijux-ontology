@@ -10,7 +10,7 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.owl.constructs import unsupported_constructs
+from bijux_ontology.owl.encoding.constructs import unsupported_constructs
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.sources.snapshots import copy_graph
 from bijux_ontology.vocabulary.browsing.results import (

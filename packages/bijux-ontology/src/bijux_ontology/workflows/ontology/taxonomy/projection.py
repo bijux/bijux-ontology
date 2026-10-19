@@ -20,7 +20,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.owl.constructs import _UNSUPPORTED
+from bijux_ontology.owl.encoding.constructs import _UNSUPPORTED
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.patches.types import PatchUnavailable
 from bijux_ontology.rdf.roles.classification import classify_statement
