@@ -372,7 +372,7 @@ def test_waiting_requests_keep_their_deadlines_without_resetting_native_owner(
 
         def observe(frame: FrameType, event: str, arg: object) -> None:
             """Observe actual query transport entry without replacing execution."""
-            if event == "call" and frame.f_code.co_name == "_exchange":
+            if event == "call" and frame.f_code.co_name == "exchange":
                 payload = frame.f_locals.get("payload", b"")
                 if b'"operation":"entailment"' in payload[:100]:
                     entered.set()

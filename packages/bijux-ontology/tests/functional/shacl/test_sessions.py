@@ -16,6 +16,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.processes.sessions import WorkerGeneration
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
@@ -230,16 +231,19 @@ def test_deadline_and_crashed_worker_restart_without_mixed_batch_state(
     with ShaclSession(_slow_shapes(), trusted_sparql=True, timeout=30) as session:
         assert session.validate(_data()).report.verified
         started = time.monotonic()
-        with monkeypatch.context() as deadline:
-            deadline.setattr(session, "_timeout", 1)
+        with monkeypatch.context() as job_policy:
+            job_policy.setattr(session, "_timeout", 1)
             stopped = session.validate(_slow_data())
         assert time.monotonic() - started < 3
         assert stopped.report.outcome == "exhausted" and not stopped.report.complete
         assert session.validate(_data()).report.verified
-        process = session._backend._process
-        assert process is not None
-        os.kill(process.pid, signal.SIGKILL)
-        process.wait(timeout=2)
+        generation = session._backend.generation
+        assert generation is not None
+        os.kill(generation.pid, signal.SIGKILL)
+        deadline = time.monotonic() + 2
+        while session._backend.generation is generation and time.monotonic() < deadline:
+            time.sleep(0.001)
+        assert session._backend.generation is None
         assert session.validate(_data()).report.verified
         assert session.worker_launches == 3
 
@@ -271,15 +275,15 @@ def test_nested_operation_cancellation_reaches_native_session_work() -> None:
         assert session.validate(_data(), cancel=cancel).report.verified
         with pytest.raises(InputError, match="same Event"):
             session.validate(_slow_data(), cancel=threading.Event())
-        process = session._backend._process
-        assert process is not None
+        generation = session._backend.generation
+        assert generation is not None
         with ThreadPoolExecutor(max_workers=1) as executor:
             active = executor.submit(session.validate, _slow_data())
             time.sleep(0.1)
             cancel.set()
             stopped = active.result(timeout=2)
         assert stopped.report.outcome == "exhausted" and stopped.conforms is None
-        assert process.poll() is not None
+        assert session._backend.generation is None
     with ShaclSession(_shapes()) as recovered:
         assert recovered.validate(_data()).report.verified
         assert recovered.validate(_data("wrong")).conforms is False
@@ -290,10 +294,11 @@ def test_malformed_wire_request_and_response_discard_owned_worker(
 ) -> None:
     with ShaclSession(_shapes()) as session:
         assert session.validate(_data()).report.verified
-        exchange = session._backend._exchange
+        exchange = session._backend.exchange
         sent = False
 
         def malformed(
+            generation: WorkerGeneration,
             payload: bytes,
             deadline: float | None,
             cancel: threading.Event | None,
@@ -304,19 +309,19 @@ def test_malformed_wire_request_and_response_discard_owned_worker(
             if not sent and json.loads(payload).get("command") == "validate":
                 sent = True
                 payload = b'{"command":"unrecognized"}'
-            return exchange(payload, deadline, cancel, budget=budget)
+            return exchange(generation, payload, deadline, cancel, budget=budget)
 
-        monkeypatch.setattr(session._backend, "_exchange", malformed)
+        monkeypatch.setattr(session._backend, "exchange", malformed)
         invalid = session.validate(_data())
         assert invalid.report.outcome == "input_error" and invalid.conforms is None
         assert session.validate(_data()).report.verified
         assert session.worker_launches == 2
         monkeypatch.setattr(
-            session._backend, "_exchange", lambda *args, **kwargs: b'{"bad":'
+            session._backend, "exchange", lambda *args, **kwargs: b'{"bad":'
         )
         invalid_response = session.validate(_data())
         assert invalid_response.report.outcome == "input_error"
-        monkeypatch.setattr(session._backend, "_exchange", exchange)
+        monkeypatch.setattr(session._backend, "exchange", exchange)
         assert session.validate(_data()).report.verified
         assert session.worker_launches == 3
 
@@ -338,10 +343,11 @@ def test_malformed_result_truth_restarts_before_the_next_real_dataset(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     with ShaclSession(_shapes()) as session:
-        exchange = session._backend._exchange
+        exchange = session._backend.exchange
         changed = False
 
         def malformed(
+            generation: WorkerGeneration,
             payload: bytes,
             deadline: float | None,
             cancel: threading.Event | None,
@@ -349,7 +355,7 @@ def test_malformed_result_truth_restarts_before_the_next_real_dataset(
             budget: Budget | None = None,
         ) -> bytes:
             nonlocal changed
-            raw = exchange(payload, deadline, cancel, budget=budget)
+            raw = exchange(generation, payload, deadline, cancel, budget=budget)
             if not changed and json.loads(payload).get("command") == "validate":
                 changed = True
                 response = json.loads(raw)
@@ -357,7 +363,7 @@ def test_malformed_result_truth_restarts_before_the_next_real_dataset(
                 return json.dumps(response).encode()
             return raw
 
-        monkeypatch.setattr(session._backend, "_exchange", malformed)
+        monkeypatch.setattr(session._backend, "exchange", malformed)
         batch = session.validate_batch((_data(), _data()))
         assert batch.results[0].conforms is None
         assert batch.results[0].report.outcome == "unverified"
@@ -370,10 +376,11 @@ def test_preparation_cannot_substitute_a_prior_dataset_result(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     with ShaclSession(_shapes()) as session:
-        exchange = session._backend._exchange
+        exchange = session._backend.exchange
         previous: bytes | None = None
 
         def capture(
+            generation: WorkerGeneration,
             payload: bytes,
             deadline: float | None,
             cancel: threading.Event | None,
@@ -381,22 +388,22 @@ def test_preparation_cannot_substitute_a_prior_dataset_result(
             budget: Budget | None = None,
         ) -> bytes:
             nonlocal previous
-            raw = exchange(payload, deadline, cancel, budget=budget)
+            raw = exchange(generation, payload, deadline, cancel, budget=budget)
             if json.loads(payload).get("command") == "validate":
                 previous = raw
             return raw
 
-        monkeypatch.setattr(session._backend, "_exchange", capture)
+        monkeypatch.setattr(session._backend, "exchange", capture)
         assert session.validate(_data()).report.verified
         assert previous is not None
         session._backend.reset()
         monkeypatch.setattr(
-            session._backend, "_exchange", lambda *args, **kwargs: previous
+            session._backend, "exchange", lambda *args, **kwargs: previous
         )
         invalid = session.validate(_data("bad"))
         assert invalid.conforms is None
         assert invalid.report.outcome == "unverified"
-        monkeypatch.setattr(session._backend, "_exchange", exchange)
+        monkeypatch.setattr(session._backend, "exchange", exchange)
         assert session.validate(_data("bad")).conforms is False
         assert session.worker_launches == 3
 
@@ -468,7 +475,7 @@ def test_close_stops_active_backend_and_rejects_queued_and_later_calls() -> None
             time.sleep(0.1)
             session.close()
             assert active.result(timeout=3).conforms is None
-        assert session._backend._process is None
+        assert session._backend.generation is None
         with pytest.raises(InputError, match="closed"):
             session.validate(_data())
     finally:
