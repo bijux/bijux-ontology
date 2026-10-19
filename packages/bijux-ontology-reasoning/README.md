@@ -198,6 +198,15 @@ and exact source owners; pre-existing failures are preserved without new blame.
 Completion covers the selected combinations and obligations only; unselected
 subsets, absent imports or exhausted explanation work receive no certificate.
 
+`bridges.check_mapping_bridges` checks explicit `BridgeInterpretation` approvals
+of original SSSOM `MappingOccurrence` rows. Choose declared class/property facets
+and nonempty protected entailments; an exactMatch relation or confidence never
+supplies an OWL interpretation. Original source and unbridged union baselines stay
+separate from the joint bridge. Rechecked native justifications correlate candidate
+rows through exact original module ownership, preserving duplicate occurrences
+and pre-existing failures without new blame. Unsupported qualifiers and endpoint
+facets remain unverified; completion covers only the selected obligations.
+
 `locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
 for an explicit typed signature. Choose flattened imports, retained annotations
 and a fresh module identity. Inspect original annotated axiom owners and separate

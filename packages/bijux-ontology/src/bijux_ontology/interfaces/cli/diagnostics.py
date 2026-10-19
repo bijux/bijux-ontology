@@ -400,6 +400,8 @@ _CODES = {
         "integration_class_unverified integration_contract_unverified "
         "integration_comparison_unverified integration_unverified "
         "integration_input_error "
+        "bridge_attribution_unverified bridge_semantics_unverified "
+        "bridge_unverified bridge_input_error "
         "mireot_unusable_class mireot_boundary mireot_required_axiom_absent "
         "mireot_retention_failed mireot_unverified mireot_input_error "
         "upgrade_regression upgrade_unverified upgrade_unmatched_consumer "
