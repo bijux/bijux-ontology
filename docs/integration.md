@@ -18,6 +18,15 @@ original graph; conflicting graph overrides fail explicitly.
 
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 
+Use `SubjectIdentity(expected_iri=record_iri, allow_blank=False)` on a model
+or individual `ModelUsage` to check effective subjects after base resolution.
+`ModelUsage(model_id, reference=record_iri, graph=None)` joins local descriptions
+for that named entity in the default graph; pass an exact graph IRI for a named
+graph. Ordinary path bindings keep per-source-object required fields; `entity=True`
+explicitly joins their facts. Unsupplied references remain unknown unless
+`closed=True` requires a local description. Identity checks perform no OWL
+equality, inequality or classification.
+
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
 
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.
@@ -32,6 +41,12 @@ pointers. Blank-node or anonymous-graph correspondence remains unverified withou
 an identity witness. RDF preservation does not promise original JSON shape.
 
 Keep findings and unsupported comparisons visible. Apply narrow code/location exceptions through `AcceptancePolicy`; they do not change verification truth. Retain application validation, reference checks and any existing reasoning gate. Supplied-shapes validation is an optional additional operation, not general OWL consistency checking.
+
+SHACL findings retain report-local identities, nested details and finite typed
+property paths in `result.findings` and each generic issue’s `evidence`.
+Supply `ShaclSource(prepared_usages, paths, source=...)` through `source_usages=`
+to correlate actual JSON-LD selections. Multiple or unsupported locations remain
+explicit; the full RDF report stays available through `report_graph()`.
 
 For supplied SHACL shapes, `ShaclCoverageContract(minimum_focus=1,
 focus_nodes=record_iris, pairs=shape_focus_pairs)` from `bijux_ontology.shacl`
@@ -82,3 +97,26 @@ extras. No environment installation occurs. `memory_bytes=` requests the platfor
 address-space limit and fails explicitly when unavailable; cancellation accepts a
 `threading.Event`. Worker crashes, protocol failures and limits never verify.
 Synchronous calls keep their existing execution behavior.
+
+Use `load_bundle` from `bijux_ontology.workflows.projects.bundles` for a directory,
+packaged resource or ZIP containing `project.json` and its declared files. Logical
+IRIs and graph selections survive moving the bundle. `bundle.vocabulary(name)`
+and `bundle.document_loader` reuse owned offline resources; `materialize(new_path)`
+returns a project configuration. The CLI accepts `project BUNDLE --bundle`.
+Completeness covers the selected RDF closure and exercised context positions;
+it does not establish semantic acceptance or coverage of future scoped contexts.
+
+`prove_obligations` answers typed `OntologyObligation` questions independently,
+retaining established, contradicted or unknown status and compact witnesses.
+`assess_models(..., obligations=...)` retains raw `model_report` and requires every
+selected answer in its aggregate `report`. A proved named ancestor never removes
+an unresolved class restriction; disjointness does not contradict subsumption
+because the class may be empty. Global consistency remains a separate question.
+
+`check_instance(instance, serializer, models, usages, vocabulary=vocabulary,
+options={"mode": "json", "by_alias": True, "exclude_none": True}, context=context)`
+calls an ordinary serializer once with the chosen keyword options. It returns
+owned `output`, the contextual `document`, and combined declaration/output checks.
+Pass an adapter’s `declaration_report` to retain extraction limitations. This is
+sampled evidence; it does not prove every possible serializer output. Callbacks
+execute in-process.

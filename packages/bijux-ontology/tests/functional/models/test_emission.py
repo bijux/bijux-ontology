@@ -10,6 +10,7 @@ from rdflib.namespace import XSD
 from bijux_ontology.declarations import FieldDeclaration as Field
 from bijux_ontology.declarations import ModelDeclaration as Model
 from bijux_ontology.declarations import ValueDeclaration as Value
+from bijux_ontology.errors import InputError
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
 from bijux_ontology.jsonld.observations import SourcePath, at_path
@@ -387,3 +388,311 @@ def test_nested_model_choices_require_actual_selected_bindings() -> None:
         document, models, [ModelUsage("parent"), ModelUsage("second", ("other",))]
     )
     assert wrong_scope.outcome == "unverified"
+
+
+def test_expected_subject_uses_effective_base_and_rejects_sibling_identity() -> None:
+    from bijux_ontology.declarations.types import SubjectIdentity
+
+    model = Model("record", (EX + "Record",), subject=SubjectIdentity(EX + "records/a"))
+    document = {"@context": {"@vocab": EX}, "@id": "a", "@type": "Record"}
+    assert check_emission(
+        document, [model], [ModelUsage("record")], base=EX + "records/"
+    ).verified
+    for base in (EX + "other/", EX + "records/b/"):
+        report = check_emission(document, [model], [ModelUsage("record")], base=base)
+        assert "emission.subject_mismatch" in {issue.code for issue in report.issues}
+    document["@id"] = "b"
+    assert not check_emission(
+        document, [model], [ModelUsage("record")], base=EX + "records/"
+    ).verified
+    with pytest.raises(InputError, match="conflict"):
+        ModelUsage(
+            "record", reference=EX + "a", subject=SubjectIdentity(EX + "b"), graph=None
+        )
+    with pytest.raises(InputError, match="explicit graph"):
+        ModelUsage("record", reference=EX + "a")
+
+
+@pytest.mark.parametrize("identifier", [None, "_:first", "_:renamed"])
+def test_anonymous_identity_is_allowed_only_by_explicit_policy(
+    identifier: str | None,
+) -> None:
+    from bijux_ontology.declarations.types import SubjectIdentity
+
+    document = {"@context": {"@vocab": EX}, "@type": "Record"}
+    if identifier is not None:
+        document["@id"] = identifier
+    model = Model("record", (EX + "Record",))
+    assert check_emission(document, [model], [ModelUsage("record")]).verified
+    report = check_emission(
+        document,
+        [model],
+        [ModelUsage("record", subject=SubjectIdentity(allow_blank=False))],
+    )
+    assert [issue.code for issue in report.issues] == ["emission.subject_mismatch"]
+
+
+@pytest.mark.parametrize("layout", ["inline", "included", "flat"])
+def test_local_linked_descriptions_join_with_explicit_reference_binding(
+    layout: str,
+) -> None:
+    child = {"@id": EX + "child", "@type": "Child", "label": "Name"}
+    parent = {"@id": EX + "parent", "@type": "Parent", "child": {"@id": EX + "child"}}
+    context = {"@vocab": EX}
+    parent_path: tuple[str | int, ...] = ()
+    document: object
+    if layout == "inline":
+        parent["child"] = child
+        document = {"@context": context, **parent}
+    elif layout == "included":
+        document = {"@context": context, **parent, "@included": [child]}
+    else:
+        document = {"@context": context, "@graph": [parent, child]}
+        parent_path = ("@graph", 0)
+    models = [
+        Model(
+            "parent",
+            (EX + "Parent",),
+            (
+                Field(
+                    "child",
+                    EX + "child",
+                    (Value("object", model="child"),),
+                    emission="guaranteed",
+                ),
+            ),
+        ),
+        Model(
+            "child",
+            (EX + "Child",),
+            (Field("label", EX + "label", (Value("literal"),), emission="guaranteed"),),
+        ),
+    ]
+    usages = [
+        ModelUsage("parent", parent_path),
+        ModelUsage("child", reference=EX + "child", graph=None),
+    ]
+    before = deepcopy(document)
+    assert check_emission(document, models, usages).verified
+    assert document == before
+    child["@type"] = "Other"
+    report = check_emission(document, models, usages)
+    assert "emission.value_mismatch" in {issue.code for issue in report.issues}
+
+
+def test_reference_types_never_leak_from_other_named_graphs() -> None:
+    document = {
+        "@context": {"@vocab": EX},
+        "@id": EX + "parent",
+        "@type": "Parent",
+        "child": {"@id": EX + "child"},
+        "@included": [
+            {
+                "@id": EX + "elsewhere",
+                "@graph": [{"@id": EX + "child", "@type": "Child"}],
+            }
+        ],
+    }
+    models = [
+        Model(
+            "parent",
+            (EX + "Parent",),
+            (Field("child", EX + "child", (Value("object", types=(EX + "Child",)),)),),
+        ),
+        Model("child", (EX + "Child",)),
+    ]
+    report = check_emission(
+        document,
+        models,
+        [ModelUsage("parent"), ModelUsage("child", reference=EX + "child", graph=None)],
+    )
+    assert {issue.code for issue in report.issues} == {
+        "emission.value_unverified",
+        "emission.reference_unverified",
+    }
+    assert check_emission(
+        document,
+        models,
+        [ModelUsage("child", reference=EX + "child", graph=EX + "elsewhere")],
+    ).verified
+    closed = check_emission(
+        document,
+        models,
+        [ModelUsage("child", reference=EX + "child", graph=None, closed=True)],
+    )
+    assert [issue.code for issue in closed.issues] == ["emission.reference_missing"]
+
+
+def test_entity_join_does_not_discharge_source_object_field_obligations() -> None:
+    model = Model(
+        "record",
+        (EX + "Record",),
+        (Field("label", EX + "label", (Value("literal"),), emission="guaranteed"),),
+    )
+    document = {
+        "@context": {"@vocab": EX},
+        "@graph": [
+            {"@id": EX + "record", "@type": "Record"},
+            {"@id": EX + "record", "label": "Name"},
+        ],
+    }
+    source = check_emission(document, [model], [ModelUsage("record", ("@graph", 0))])
+    assert "emission.required_occurrence_missing" in {
+        issue.code for issue in source.issues
+    }
+    assert check_emission(
+        document, [model], [ModelUsage("record", ("@graph", 0), entity=True)]
+    ).verified
+    assert check_emission(
+        document, [model], [ModelUsage("record", reference=EX + "record", graph=None)]
+    ).verified
+    second = at_path(document, ("@graph", 1))
+    assert isinstance(second, dict)
+    second["@id"] = EX + "sibling"
+    report = check_emission(
+        document, [model], [ModelUsage("record", ("@graph", 0), entity=True)]
+    )
+    assert "emission.required_entity_fact_missing" in {
+        issue.code for issue in report.issues
+    }
+
+
+def test_graph_scoped_inventory_keeps_anonymous_subjects_and_graphs_distinct() -> None:
+    from bijux_ontology.jsonld.checking import prepare_usages
+
+    document = {
+        "@context": {"@vocab": EX},
+        "items": [
+            {"@type": "Record", "label": "one"},
+            {"@type": "Record", "label": "two"},
+        ],
+        "@included": [
+            {"@graph": [{"@id": EX + "named", "@type": "Record"}]},
+            {"@graph": [{"@id": EX + "named", "@type": "Other"}]},
+        ],
+    }
+    prepared = prepare_usages(document)
+    records = [
+        entity for entity in prepared.entities.entities if EX + "Record" in entity.types
+    ]
+    assert len(records) == 3
+    anonymous = [entity for entity in records if entity.key.identifier is None]
+    assert len(anonymous) == 2 and anonymous[0].key != anonymous[1].key
+    named = [
+        entity
+        for entity in prepared.entities.entities
+        if entity.key.identifier == EX + "named"
+    ]
+    assert len(named) == 2 and named[0].key != named[1].key
+    model = Model(
+        "record",
+        (EX + "Record",),
+        (Field("label", EX + "label", (Value("literal"),), emission="guaranteed"),),
+    )
+    assert check_emission(
+        document,
+        [model],
+        [
+            ModelUsage("record", ("items", 0), entity=True),
+            ModelUsage("record", ("items", 1), entity=True),
+        ],
+    ).verified
+
+
+def test_repeated_references_resolve_one_entity_without_source_occurrence_fiction() -> (
+    None
+):
+    models = [
+        Model(
+            "parent",
+            (EX + "Parent",),
+            (Field("child", EX + "child", (Value("object", model="child"),)),),
+        ),
+        Model("child", (EX + "Child",)),
+    ]
+    document = {
+        "@context": {"@vocab": EX},
+        "@type": "Parent",
+        "child": [{"@id": EX + "child"}, {"@id": EX + "child"}],
+        "@included": [{"@id": EX + "child", "@type": "Child"}],
+    }
+    assert check_emission(
+        document,
+        models,
+        [ModelUsage("parent"), ModelUsage("child", reference=EX + "child", graph=None)],
+    ).verified
+    report = check_emission(
+        document,
+        models,
+        [
+            ModelUsage("parent"),
+            ModelUsage("child", reference=EX + "child", graph=EX + "other"),
+        ],
+    )
+    assert not report.verified
+    assert "emission.nested_scope_unverified" in {issue.code for issue in report.issues}
+
+
+def test_source_graph_selection_and_rdf_identity_do_not_infer_owl_equality() -> None:
+    from bijux_ontology.declarations.types import SubjectIdentity
+
+    document = {
+        "@context": {"@vocab": EX, "id": "@id", "type": "@type"},
+        "@id": EX + "graph",
+        "@graph": [
+            {
+                "id": EX + "a",
+                "type": "Record",
+                "http://www.w3.org/2002/07/owl#sameAs": {"id": EX + "b"},
+            }
+        ],
+    }
+    model = Model("record", (EX + "Record",))
+    usage = ModelUsage(
+        "record", ("@graph", 0), subject=SubjectIdentity(EX + "a"), graph=EX + "graph"
+    )
+    assert check_emission(document, [model], [usage]).verified
+    mismatch = ModelUsage("record", ("@graph", 0), subject=SubjectIdentity(EX + "b"))
+    assert "emission.subject_mismatch" in {
+        issue.code for issue in check_emission(document, [model], [mismatch]).issues
+    }
+    wrong_graph = ModelUsage("record", ("@graph", 0), graph=None)
+    assert "emission.graph_mismatch" in {
+        issue.code for issue in check_emission(document, [model], [wrong_graph]).issues
+    }
+    unresolved = check_emission(
+        document,
+        [model],
+        [ModelUsage("record", reference=EX + "b", graph=EX + "graph")],
+    )
+    assert [issue.code for issue in unresolved.issues] == [
+        "emission.reference_unverified"
+    ]
+    bounded = check_emission(document, [model], [usage], limits=Limits(max_work=1))
+    assert not bounded.complete
+    assert bounded.issues[-1].kind == "exhausted"
+
+
+def test_subject_identity_plain_declaration_ingestion_is_explicit() -> None:
+    from bijux_ontology.declarations.codecs import models_from_data
+    from bijux_ontology.declarations.types import SubjectIdentity
+
+    models = models_from_data(
+        [
+            {
+                "identifier": "record",
+                "types": [EX + "Record"],
+                "subject": {"expected_iri": EX + "record", "allow_blank": False},
+            }
+        ]
+    )
+    assert models[0].subject == SubjectIdentity(EX + "record", allow_blank=False)
+    for subject in (
+        {"expected_iri": "relative"},
+        {"allow_blank": "yes"},
+        {"unexpected": True},
+    ):
+        with pytest.raises(InputError):
+            models_from_data(
+                [{"identifier": "record", "types": [], "subject": subject}]
+            )

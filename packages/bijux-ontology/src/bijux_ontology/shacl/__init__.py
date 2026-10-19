@@ -7,6 +7,8 @@ from bijux_ontology.shacl.coverage import (
     ShaclCoverageContract,
     ShaclTarget,
 )
+from bijux_ontology.shacl.findings import ShaclSource
+from bijux_ontology.shacl.paths import ShaclPath
 
 __all__ = [
     "ShaclConstraintRequirement",
@@ -14,6 +16,8 @@ __all__ = [
     "ShaclCoverageContract",
     "ShaclFinding",
     "ShaclResult",
+    "ShaclSource",
+    "ShaclPath",
     "ShaclTarget",
     "validate_shapes",
 ]

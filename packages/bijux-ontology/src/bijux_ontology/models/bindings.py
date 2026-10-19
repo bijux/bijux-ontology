@@ -2,6 +2,7 @@
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import PreparedUsages
+from bijux_ontology.jsonld.entities import EntityKey, subject_key
 from bijux_ontology.jsonld.observations import ObservedOccurrence, SourcePath
 from bijux_ontology.jsonld.values import ValueTraits, identifier_kind
 from bijux_ontology.limits import Budget
@@ -113,3 +114,51 @@ def same_contribution(left: ObservedOccurrence, right: ObservedOccurrence) -> bo
         and left.list_id == right.list_id
         and left.list_position == right.list_position
     )
+
+
+def source_entity(
+    node: dict[str, object],
+    path: SourcePath,
+    prepared: PreparedUsages,
+    budget: Budget,
+) -> EntityKey | None:
+    """Associate a source subject with its established graph, never by raw IDs."""
+    keys: set[EntityKey] = set()
+    own_keys: set[EntityKey] = set()
+    for key, raw in node.items():
+        budget.consume("work")
+        if key == "@context":
+            continue
+        try:
+            usage = prepared.observe((*path, key))
+        except LimitExceeded:
+            raise
+        except InputError:
+            continue
+        if usage.limitation or not usage.occurrences:
+            continue
+        depth = min(item.depth for item in usage.occurrences)
+        for item in usage.occurrences:
+            budget.consume("work")
+            if item.depth != depth:
+                continue
+            primitive = (
+                isinstance(raw, str)
+                or isinstance(raw, list)
+                and all(isinstance(value, str) for value in raw)
+            )
+            if item.predicate == "@id" and primitive:
+                own_keys.add(
+                    EntityKey(
+                        item.traits.identifier,
+                        graph=item.graph,
+                        anonymous_graph=item.anonymous_graph,
+                        graph_identity=item.graph_identity,
+                    )
+                )
+            elif item.predicate == "@type" and primitive:
+                own_keys.add(subject_key(item))
+            elif not item.predicate.startswith("@"):
+                keys.add(subject_key(item))
+    selected = own_keys or keys
+    return next(iter(selected)) if len(selected) == 1 else None

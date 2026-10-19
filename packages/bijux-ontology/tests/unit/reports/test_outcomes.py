@@ -184,3 +184,25 @@ def test_valid_unsupported_scope_is_unverified_rather_than_invalid_input() -> No
     assert report.outcome == "unverified"
     assert report.exit_code() == 0 and report.exit_code(strict=True) == 1
     assert not any(issue.kind == "input_error" for issue in report.issues)
+
+
+def test_structured_issue_evidence_is_owned_finite_and_part_of_identity() -> None:
+    issue = Issue(
+        "example.conflict", "Mismatch", evidence_json='{"path":"name","values":[1]}'
+    )
+    reordered = Issue(
+        "example.conflict", "Mismatch", evidence_json='{"values":[1],"path":"name"}'
+    )
+    assert issue == reordered and hash(issue) == hash(reordered)
+    changed = Issue(
+        "example.conflict", "Mismatch", evidence_json='{"path":"age","values":[1]}'
+    )
+    assert len({issue, changed}) == 2
+    copy = issue.evidence
+    assert copy is not None
+    copy["path"] = "unrelated"
+    assert issue.evidence != copy
+    assert issue.to_dict()["evidence"] == {"path": "name", "values": [1]}
+    for invalid in ("[]", '{"value":NaN}', '{"value":Infinity}'):
+        with pytest.raises(InputError):
+            Issue("example.conflict", "Mismatch", evidence_json=invalid)

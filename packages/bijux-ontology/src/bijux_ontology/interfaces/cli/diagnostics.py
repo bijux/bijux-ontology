@@ -51,6 +51,8 @@ _CODES = {
     "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
         "nested_scope_unverified node_kind_mismatch node_unverified "
+        "subject_mismatch graph_mismatch graph_unverified "
+        "reference_unverified reference_missing required_entity_fact_missing "
         "required_occurrence_missing types_mismatch value_mismatch "
         "value_unverified".split()
     ),
@@ -79,6 +81,7 @@ _CODES = {
     ),
     "ontology": frozenset(
         "annotation_shape annotation_statement_missing cardinality_shape "
+        "obligation_unknown obligation_contradicted obligation_exhausted "
         "characteristic_conflict datatype_restriction_shape "
         "declaration_conflict deprecated_term deprecation_unverified "
         "replacement_absent replacement_ambiguous replacement_shape_unverified "
@@ -98,6 +101,7 @@ _CODES = {
     ),
     "shacl": frozenset(
         "backend_warning execution_incomplete feature_unverified "
+        "path_unverified finding_unverified "
         "function_unavailable function_malformed capability_unavailable "
         "constraint_unavailable constraint_malformed constraint_not_evaluated "
         "coverage_minimum coverage_missing coverage_pair_missing coverage_incomplete "

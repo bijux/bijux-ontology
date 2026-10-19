@@ -109,6 +109,11 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
         elif name == "project":
             action.add_argument("configuration", type=Path)
             action.add_argument(
+                "--bundle",
+                action="store_true",
+                help="Read a portable directory or ZIP resource bundle offline",
+            )
+            action.add_argument(
                 "--explain",
                 action="store_true",
                 help="Show resolved configuration without running checks",

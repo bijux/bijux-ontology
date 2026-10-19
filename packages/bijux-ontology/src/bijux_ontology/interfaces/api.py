@@ -10,6 +10,7 @@ from bijux_ontology.declarations.codecs import (
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
+    SubjectIdentity,
     TermDeclaration,
     ValueDeclaration,
 )
@@ -40,8 +41,14 @@ from bijux_ontology.jsonld.resources import (
 )
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.checking import ModelAssessment, assess_models, check_models
 from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.serialization import InstanceCheck, check_instance
+from bijux_ontology.owl.obligations import (
+    ObligationResult,
+    OntologyObligation,
+    prove_obligations,
+)
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
@@ -103,17 +110,21 @@ __all__ = [
     "FlatNode",
     "FlattenedDocument",
     "InputError",
+    "InstanceCheck",
     "Issue",
     "IssueSelection",
     "JSONLDPreparation",
     "LimitExceeded",
     "Limits",
     "Location",
+    "ModelAssessment",
     "ModelDeclaration",
     "ModelUsage",
+    "ObligationResult",
     "ObservedOccurrence",
     "ObservedUsage",
     "OfflineDocumentLoader",
+    "OntologyObligation",
     "PreparedChecks",
     "PreparedSource",
     "PreparedUsages",
@@ -123,6 +134,7 @@ __all__ = [
     "RdfSource",
     "Report",
     "ResourceError",
+    "SubjectIdentity",
     "TermDeclaration",
     "TermInfo",
     "Transformation",
@@ -134,11 +146,13 @@ __all__ = [
     "VocabularyChanges",
     "VocabularyView",
     "WorkerExecutor",
+    "assess_models",
     "assess_upgrade",
     "check_context",
     "check_contract",
     "check_data_usage",
     "check_emission",
+    "check_instance",
     "check_models",
     "check_ontology",
     "check_project",
@@ -165,6 +179,7 @@ __all__ = [
     "prepare_jsonld",
     "prepare_source",
     "prepare_usages",
+    "prove_obligations",
     "recheck_transformation",
     "remap_iris",
     "run_rules",

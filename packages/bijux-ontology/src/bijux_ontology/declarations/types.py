@@ -137,6 +137,20 @@ class FieldDeclaration:
 
 
 @dataclass(frozen=True)
+class SubjectIdentity:
+    """Application-owned expected RDF subject identity, without OWL inference."""
+
+    expected_iri: str | None = None
+    allow_blank: bool = True
+
+    def __post_init__(self) -> None:
+        if self.expected_iri is not None:
+            absolute_iri(self.expected_iri, location="expected_iri")
+        if type(self.allow_blank) is not bool:
+            raise InputError("allow_blank must be a boolean")
+
+
+@dataclass(frozen=True)
 class ModelDeclaration:
     """A stable model identity, simultaneous RDF types and serialised fields."""
 
@@ -144,8 +158,12 @@ class ModelDeclaration:
     types: tuple[str, ...]
     fields: tuple[FieldDeclaration, ...] = ()
     location: str = ""
+    _: KW_ONLY
+    subject: SubjectIdentity = SubjectIdentity()
 
     def __post_init__(self) -> None:
+        if not isinstance(self.subject, SubjectIdentity):
+            raise InputError("Expected a typed subject identity contract")
         _text(self.identifier, "identifier")
         _text(self.location, "location", empty=True)
         object.__setattr__(self, "types", _iris(self.types, self.identifier))

@@ -1,5 +1,6 @@
 """Validate JSON reports exchanged only with the owned execution worker."""
 
+import json
 from typing import cast
 
 from bijux_ontology._json import object_value
@@ -41,6 +42,11 @@ def report_from_data(value: object) -> Report:
                 expected=cast(str | None, item.get("expected")),
                 actual=cast(str | None, item.get("actual")),
                 details=location,
+                evidence_json=(
+                    json.dumps(item["evidence"], allow_nan=False)
+                    if item.get("evidence") is not None
+                    else None
+                ),
             )
         )
     return Report(
