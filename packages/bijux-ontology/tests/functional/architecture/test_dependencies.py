@@ -42,6 +42,7 @@ PACKAGES = {
     "workflows.reproductions",
     "workflows.revisions",
     "workflows.corpus",
+    "workflows.finding_streams",
 }
 
 

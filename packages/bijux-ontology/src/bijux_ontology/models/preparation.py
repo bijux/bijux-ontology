@@ -159,11 +159,11 @@ class PreparedModels:
         """Apply only the explicitly owned external context, preserving conflicts."""
         if self._context_json is None:
             return document
+        bound_text(self._context_json, operation)
+        operation.consume("work", len(self._context_json) + 1)
+        operation.consume("bytes", 128 + 64 * len(self._context_json))
         context = json.loads(self._context_json)
-        output = own_json(
-            document, max_bytes=self.limits.max_bytes, max_depth=self.limits.max_depth
-        )
-        operation.consume("bytes", len(json.dumps(output).encode("utf-8")))
+        output = _prepared_json(document, operation)
         if isinstance(output, dict):
             if "@context" in output and output["@context"] != context:
                 raise InputError("Prepared context conflicts with actual output")
@@ -226,9 +226,21 @@ class PreparedModels:
             return self._failure(error, operation=operation)
         return self._result(report)
 
-    def check(self, document: object, usages: Sequence[ModelUsage]) -> Report:
-        """Check one actual JSON-LD output with its own fixed operation budget."""
-        return self._check(document, usages, Budget(self.limits))
+    def check(
+        self,
+        document: object,
+        usages: Sequence[ModelUsage],
+        *,
+        budget: Budget | None = None,
+    ) -> Report:
+        """Check JSON-LD with a fresh or compatible enclosing budget."""
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Prepared JSON-LD checking requires a Budget")
+        if budget is not None and budget.limits != self.limits:
+            raise InputError("JSON-LD checking budget conflicts with prepared limits")
+        return self._check(
+            document, usages, budget if budget is not None else Budget(self.limits)
+        )
 
     def check_rdf(
         self,

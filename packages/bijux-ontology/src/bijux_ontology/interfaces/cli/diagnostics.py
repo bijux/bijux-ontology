@@ -331,6 +331,7 @@ _CODES = {
         "required_occurrence_missing types_mismatch value_mismatch "
         "value_unverified".split()
     ),
+    "finding_stream": frozenset("failed exhausted".split()),
     "corpus": frozenset(
         "record_unverified input_error key_source_unverified "
         "checkpoint_unverified".split()
@@ -955,6 +956,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Check the selected output path and model alternatives; examples "
         "do not prove all outputs.",
         '{"@id":"https://example.org/item","@type":"https://example.org/Image"}',
+    ),
+    "finding_stream": (
+        "actual record findings and selected export completion",
+        "The producer, record check or finding sink stopped before full delivery.",
+        "Inspect raw counts, semantic completion and export completion separately; "
+        "retained samples do not replace complete findings.",
+        "stream_model_findings(plan, records, usages, sink=sink)",
     ),
     "corpus": (
         "qualified record outcomes and checkpoint durability",

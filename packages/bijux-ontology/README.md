@@ -80,3 +80,15 @@ global key checks run again over every current record. Inspect `semantic_report`
 and `checkpoint_report` separately: a fresh semantic recheck cannot hide corrupt
 or incomplete checkpoint durability. This profile supports immutable native RDF
 inputs and named subjects, with trusted local checkpoint state.
+
+`workflows.finding_streams.stream_model_findings(plan, records, usages, sink=...)`
+checks ordinary prepared-model records and delivers typed results and findings to
+a `JsonlFindingSink` or synchronous `CallbackFindingSink`. `FindingStreamLimits`
+separately caps records, emitted findings, retained samples and output bytes; each
+record keeps its ordinary engine issue limit, with cumulative run work bounds.
+Raw outcomes and coverage remain independent of sample filters. The returned
+summary separates semantic and export completion; a wire footer confirms prior
+frames finished, while final export confirmation follows its successful flush.
+Sink failures, cancellation and truncation stay visible. Whole-report native
+engines are outside this incremental profile; callbacks retain ordinary
+cooperative lifetimes.
