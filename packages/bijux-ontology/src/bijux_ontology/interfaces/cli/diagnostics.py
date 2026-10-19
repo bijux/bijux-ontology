@@ -34,6 +34,9 @@ _CODES = {
         "family_unknown native_capacity backend_unavailable backend_unsupported "
         "backend_failed".split()
     ),
+    "extraction": frozenset(
+        "plan_unverified shape_unverified reference_invalid".split()
+    ),
     "projection": frozenset(
         "term_unverified value_invalid reference_unverified conversion_unverified "
         "path_unverified ambiguous cardinality list_invalid graph_unverified "
@@ -402,6 +405,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "and actual method identity; retain missing terms and incomplete work "
         "rather than shrinking the population.",
         "resnik_similarity(population, left, right)",
+    ),
+    "extraction": (
+        "explicit selected instance paths and reference descriptions",
+        "A requested extraction lacks a qualified finite path or description.",
+        "Select one physical graph, supply finite sequence/inverse paths and "
+        "explicit child fields; inspect required field and shape-plan coverage.",
+        "extract_records(source, (subject,), fields, graph_name=graph)",
     ),
     "projection": (
         "explicit graph-qualified RDF record projection",

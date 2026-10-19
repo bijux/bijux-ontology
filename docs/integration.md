@@ -1377,6 +1377,14 @@ Use `construct_projected(result, factory)` for trusted application construction
 only after every declared check succeeds. The factory owns its runtime and output;
 this read contract makes no serializer inversion or ORM promise.
 
+`bijux_ontology.data.extraction.extract_records` copies finite selected paths,
+actual ordered-list structure and explicitly requested child descriptions.
+`RecordField` wraps a raw `ReadField`; endpoints without children stay
+reference-only. Graph selection remains physical, sharing survives in the owned
+output, and receipts retain input ownership. `record_plan_from_shape` supports
+finite property/node path plans; recursive and other unsupported obligations
+withhold a complete plan. Extraction does not establish SHACL conformance.
+
 `workflows.ontology.modules.check_module_wiring` checks named public exports and
 selected class/property/datatype obligations against explicitly bound provider
 views. Each requirement needs exactly one binding; lookup resources and other
