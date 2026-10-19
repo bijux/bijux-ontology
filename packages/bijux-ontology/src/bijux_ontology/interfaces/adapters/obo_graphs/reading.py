@@ -19,14 +19,8 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, boun
 from bijux_ontology.json.schema import backend
 from bijux_ontology.json.values import array_value, decode_owned_json, owned_json
 
-from .projection import (
-    ImportProjection,
-    UnsupportedProjection,
-    keys,
-    literals,
-    named,
-    obj,
-)
+from .projection.constructs import UnsupportedProjection, keys, literals, named, obj
+from .projection.importing import ImportProjection
 from .types import OboGraphsDocument
 
 _SCHEMA_SIZE = 9765

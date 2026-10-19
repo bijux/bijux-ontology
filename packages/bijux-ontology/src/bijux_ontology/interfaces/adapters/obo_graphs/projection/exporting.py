@@ -1,4 +1,4 @@
-"""Finite class axioms and qualified annotations under the OBOGraphs mapping."""
+"""Qualified RDF projection with exact native evidence and represented assertions."""
 
 from dataclasses import dataclass, field
 
@@ -8,15 +8,11 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
-    bound_text,
     retain_report,
 )
-from bijux_ontology.json.values import array_value, object_value, text_value
-from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.vocabulary.annotations.graphs.reading import (
@@ -28,363 +24,23 @@ from bijux_ontology.vocabulary.obo.reading import read_obo_records
 from bijux_ontology.vocabulary.restrictions.projection import project_restrictions
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
-DEFINITION = URIRef("http://purl.obolibrary.org/obo/IAO_0000115")
-XREF = URIRef("http://www.geneontology.org/formats/oboInOwl#hasDbXref")
-SYNONYM_TYPE = URIRef("http://www.geneontology.org/formats/oboInOwl#hasSynonymType")
-SYNONYMS = {
-    "hasExactSynonym": URIRef(
-        "http://www.geneontology.org/formats/oboInOwl#hasExactSynonym"
-    ),
-    "hasBroadSynonym": URIRef(
-        "http://www.geneontology.org/formats/oboInOwl#hasBroadSynonym"
-    ),
-    "hasNarrowSynonym": URIRef(
-        "http://www.geneontology.org/formats/oboInOwl#hasNarrowSynonym"
-    ),
-    "hasRelatedSynonym": URIRef(
-        "http://www.geneontology.org/formats/oboInOwl#hasRelatedSynonym"
-    ),
-}
-_BUILTINS = (RDFS.label, RDFS.comment, XREF)
-_ANCHORS = {RDF.type, OWL.annotatedSource, OWL.annotatedProperty, OWL.annotatedTarget}
+from .constructs import (
+    NODE_KINDS,
+    SYNONYM_TYPE,
+    SYNONYMS,
+    XREF,
+    UnsupportedProjection,
+    annotation_kind,
+    statement,
+)
+
 Triple = tuple[Node, Node, Node]
-
-
-class UnsupportedProjection(Exception):
-    """An actual supplied feature is outside the selected meaning profile."""
-
-
-def obj(value: object) -> dict[str, object]:
-    """Require original JSON objects instead of silently coercing native models."""
-    return object_value(value, location="")
-
-
-def text(value: object) -> str:
-    """Require original nonempty strings for identifiers and lexical values."""
-    return text_value(value, location="")
-
-
-def named(value: object) -> URIRef:
-    """Interpret only explicit absolute IRIs; no CURIE or context guessing."""
-    return URIRef(absolute_iri(text(value)))
-
-
-def keys(record: dict[str, object], allowed: set[str]) -> None:
-    """Do not let schema-permitted extra fields disappear during interpretation."""
-    if set(record) - allowed:
-        raise UnsupportedProjection(
-            "Source contains fields outside the declared OBOGraphs subset"
-        )
-
-
-def statement(subject: Node, predicate: Node, value: Node) -> AnnotationStatement:
-    """Narrow actual RDF roles before constructing an existing typed statement."""
-    if (
-        not isinstance(subject, URIRef | BNode)
-        or not isinstance(predicate, URIRef)
-        or not isinstance(value, URIRef | BNode | Literal)
-    ):
-        raise InputError("Selected assertions require supported RDF term roles")
-    return AnnotationStatement(subject, predicate, value)
-
-
-def literals(values: tuple[URIRef, ...], budget: Budget) -> tuple[URIRef, ...]:
-    """Qualify explicit plain-literal annotation predicates before key creation."""
-    selected = []
-    for value in capture(values, budget):
-        if type(value) is not URIRef:
-            raise InputError("Literal metadata predicates require named RDF IRIs")
-        bound_text(value, budget)
-        absolute_iri(str(value))
-        selected.append(value)
-    return tuple(dict.fromkeys((*_BUILTINS, *selected)))
-
-
-@dataclass
-class ImportProjection:
-    """Build only the selected explicit class/annotation meaning, under one budget."""
-
-    budget: Budget
-    literal_predicates: tuple[URIRef, ...]
-    graph: Graph = field(default_factory=lambda: Graph(bind_namespaces="none"))
-    roles: dict[URIRef, str] = field(default_factory=dict)
-
-    def add(self, subject: Node, predicate: Node, value: Node) -> None:
-        """Pay for each actual RDF assertion before adding it to the private graph."""
-        self.budget.consume("work")
-        self.budget.consume("triples")
-        self.budget.consume("states")
-        self.graph.add((subject, predicate, value))
-
-    def role(self, value: object, expected: str) -> URIRef:
-        """An edge endpoint's authored node role determines its interpretation."""
-        identifier = named(value)
-        if self.roles.get(identifier) != expected:
-            raise UnsupportedProjection(
-                "Every selected endpoint needs its explicit supported node role"
-            )
-        return identifier
-
-    def restriction(self, record: dict[str, object]) -> BNode:
-        """Encode one named-property existential, never an individual assertion."""
-        keys(record, {"propertyId", "fillerId"})
-        node = BNode()
-        self.add(node, RDF.type, OWL.Restriction)
-        self.add(node, OWL.onProperty, self.role(record.get("propertyId"), "OBJECT"))
-        self.add(node, OWL.someValuesFrom, self.role(record.get("fillerId"), "CLASS"))
-        return node
-
-    def annotation(
-        self, subject: Node, predicate: URIRef, value: Node, metadata: dict[str, object]
-    ) -> None:
-        """Keep one explicit reification boundary, including nested qualifiers."""
-        self.add(subject, predicate, value)
-        keys(metadata, {"xrefs", "meta", "synonymType"})
-        qualifiers: list[tuple[URIRef, Node, dict[str, object]]] = []
-        for xref in array_value(metadata.get("xrefs", [])):
-            qualifiers.append((XREF, Literal(text(xref), normalize=False), {}))
-        if "synonymType" in metadata:
-            qualifiers.append((SYNONYM_TYPE, named(metadata["synonymType"]), {}))
-        nested = obj(metadata.get("meta", {}))
-        keys(nested, {"comments", "basicPropertyValues"})
-        for comment in array_value(nested.get("comments", [])):
-            qualifiers.append(
-                (RDFS.comment, Literal(text(comment), normalize=False), {})
-            )
-        for item in array_value(nested.get("basicPropertyValues", [])):
-            record = obj(item)
-            keys(record, {"pred", "val", "xrefs", "meta"})
-            prop = named(record.get("pred"))
-            if prop not in self.literal_predicates:
-                raise UnsupportedProjection(
-                    "Generic annotation values require an "
-                    "explicitly selected plain-literal predicate"
-                )
-            qualifiers.append(
-                (
-                    prop,
-                    Literal(text(record.get("val")), normalize=False),
-                    {
-                        key: item
-                        for key, item in record.items()
-                        if key not in {"pred", "val"}
-                    },
-                )
-            )
-        if qualifiers:
-            node = BNode()
-            self.add(
-                node,
-                RDF.type,
-                OWL.Annotation if isinstance(subject, BNode) else OWL.Axiom,
-            )
-            self.add(node, OWL.annotatedSource, subject)
-            self.add(node, OWL.annotatedProperty, predicate)
-            self.add(node, OWL.annotatedTarget, value)
-            for prop, term, extra in qualifiers:
-                self.annotation(node, prop, term, extra)
-
-    def metadata(self, subject: URIRef, record: dict[str, object]) -> None:
-        """Interpret node/ontology metadata without borrowing qualifier identity."""
-        keys(
-            record,
-            {
-                "definition",
-                "synonyms",
-                "comments",
-                "xrefs",
-                "basicPropertyValues",
-                "deprecated",
-                "version",
-            },
-        )
-        if "definition" in record:
-            definition = obj(record["definition"])
-            keys(definition, {"val", "xrefs", "meta", "pred"})
-            if "pred" in definition and named(definition["pred"]) != DEFINITION:
-                raise UnsupportedProjection(
-                    "Definition predicate conflicts with the OBO mapping"
-                )
-            self.annotation(
-                subject,
-                DEFINITION,
-                Literal(text(definition.get("val")), normalize=False),
-                {
-                    key: value
-                    for key, value in definition.items()
-                    if key not in {"val", "pred"}
-                },
-            )
-        for item in array_value(record.get("synonyms", [])):
-            synonym = obj(item)
-            keys(synonym, {"val", "pred", "xrefs", "meta", "synonymType"})
-            predicate = SYNONYMS.get(text(synonym.get("pred")))
-            if predicate is None:
-                raise UnsupportedProjection(
-                    "Only the four explicit OBO synonym scopes are supported"
-                )
-            self.annotation(
-                subject,
-                predicate,
-                Literal(text(synonym.get("val")), normalize=False),
-                {
-                    key: value
-                    for key, value in synonym.items()
-                    if key not in {"val", "pred"}
-                },
-            )
-        for item in array_value(record.get("comments", [])):
-            self.annotation(
-                subject, RDFS.comment, Literal(text(item), normalize=False), {}
-            )
-        for item in array_value(record.get("xrefs", [])):
-            xref = obj(item)
-            keys(xref, {"val", "xrefs", "meta", "pred"})
-            if "pred" in xref and named(xref["pred"]) != XREF:
-                raise UnsupportedProjection(
-                    "Xref predicate conflicts with the OBO mapping"
-                )
-            self.annotation(
-                subject,
-                XREF,
-                Literal(text(xref.get("val")), normalize=False),
-                {
-                    key: value
-                    for key, value in xref.items()
-                    if key not in {"val", "pred"}
-                },
-            )
-        for item in array_value(record.get("basicPropertyValues", [])):
-            basic = obj(item)
-            keys(basic, {"pred", "val", "xrefs", "meta"})
-            predicate = named(basic.get("pred"))
-            if predicate not in self.literal_predicates:
-                raise UnsupportedProjection(
-                    "Generic metadata requires an explicit plain-literal predicate"
-                )
-            self.annotation(
-                subject,
-                predicate,
-                Literal(text(basic.get("val")), normalize=False),
-                {
-                    key: value
-                    for key, value in basic.items()
-                    if key not in {"pred", "val"}
-                },
-            )
-        if "deprecated" in record:
-            if type(record["deprecated"]) is not bool:
-                raise InputError("Deprecated requires an original JSON boolean")
-            self.add(
-                subject,
-                OWL.deprecated,
-                Literal(record["deprecated"], datatype=XSD.boolean),
-            )
-        if "version" in record:
-            if self.roles.get(subject) != "ONTOLOGY":
-                raise UnsupportedProjection(
-                    "Version metadata belongs to the selected ontology"
-                )
-            self.add(subject, OWL.versionIRI, named(record["version"]))
-
-    def convert(self, record: dict[str, object], graph_id: URIRef) -> Graph:
-        """Map only explicit class nodes, existential edges and genus/differentia."""
-        keys(record, {"id", "nodes", "edges", "meta", "logicalDefinitionAxioms"})
-        self.roles[graph_id] = "ONTOLOGY"
-        self.add(graph_id, RDF.type, OWL.Ontology)
-        nodes = array_value(record.get("nodes", []))
-        seen = set()
-        for item in nodes:
-            node = obj(item)
-            keys(node, {"id", "type", "propertyType", "lbl", "meta"})
-            identifier = named(node.get("id"))
-            if identifier in seen:
-                raise InputError("Selected graph node IDs must be unique")
-            if identifier == graph_id:
-                raise UnsupportedProjection(
-                    "Ontology and entity node identity need distinct selected roles"
-                )
-            seen.add(identifier)
-            role = text(node.get("type"))
-            if role == "PROPERTY":
-                role = text(node.get("propertyType"))
-            elif "propertyType" in node:
-                raise UnsupportedProjection(
-                    "Property kind belongs only to an authored property node"
-                )
-            if role not in {"CLASS", "OBJECT", "ANNOTATION"}:
-                raise UnsupportedProjection(
-                    "The selected profile needs class, "
-                    "object or annotation property roles"
-                )
-            self.roles[identifier] = role
-            self.add(
-                identifier,
-                RDF.type,
-                {
-                    "CLASS": OWL.Class,
-                    "OBJECT": OWL.ObjectProperty,
-                    "ANNOTATION": OWL.AnnotationProperty,
-                }[role],
-            )
-        for item in nodes:
-            node = obj(item)
-            identifier = named(node["id"])
-            if "lbl" in node:
-                self.add(
-                    identifier, RDFS.label, Literal(text(node["lbl"]), normalize=False)
-                )
-            self.metadata(identifier, obj(node.get("meta", {})))
-        self.metadata(graph_id, obj(record.get("meta", {})))
-        for item in array_value(record.get("edges", [])):
-            edge = obj(item)
-            keys(edge, {"sub", "pred", "obj", "meta"})
-            subject = self.role(edge.get("sub"), "CLASS")
-            target: Node = self.role(edge.get("obj"), "CLASS")
-            if edge.get("pred") != "is_a":
-                target = self.restriction(
-                    {"propertyId": edge.get("pred"), "fillerId": str(target)}
-                )
-            self.annotation(
-                subject,
-                RDFS.subClassOf,
-                target,
-                {"meta": edge["meta"]} if "meta" in edge else {},
-            )
-        for item in array_value(record.get("logicalDefinitionAxioms", [])):
-            definition = obj(item)
-            keys(definition, {"definedClassId", "genusIds", "restrictions", "meta"})
-            owner = self.role(definition.get("definedClassId"), "CLASS")
-            parts: list[Node] = [
-                self.role(value, "CLASS")
-                for value in array_value(definition.get("genusIds", []))
-            ]
-            parts.extend(
-                self.restriction(obj(value))
-                for value in array_value(definition.get("restrictions", []))
-            )
-            if not parts:
-                raise InputError(
-                    "A supported logical definition requires actual operands"
-                )
-            expression = parts[0]
-            if len(parts) > 1:
-                expression = BNode()
-                self.add(expression, RDF.type, OWL.Class)
-                head: Node = BNode()
-                self.add(expression, OWL.intersectionOf, head)
-                for index, part in enumerate(parts):
-                    self.add(head, RDF.first, part)
-                    rest = BNode() if index + 1 < len(parts) else RDF.nil
-                    self.add(head, RDF.rest, rest)
-                    head = rest
-            self.annotation(
-                owner,
-                OWL.equivalentClass,
-                expression,
-                {"meta": definition["meta"]} if "meta" in definition else {},
-            )
-        return self.graph
+_ANNOTATION_ANCHORS = {
+    RDF.type,
+    OWL.annotatedSource,
+    OWL.annotatedProperty,
+    OWL.annotatedTarget,
+}
 
 
 @dataclass
@@ -457,7 +113,7 @@ class ExportProjection:
                     "cannot collapse into one metadata object"
                 )
             attachment = matched[0]
-            expected = OWL.Annotation if depth else OWL.Axiom
+            expected = annotation_kind(bool(depth))
             if attachment.status != "attached" or attachment.kind != expected:
                 raise UnsupportedProjection(
                     "The exact annotation kind has no selected JSON representation"
@@ -496,7 +152,7 @@ class ExportProjection:
                     )
                 used.update(child_used)
             for assertion in attachment.statements:
-                if assertion.predicate in _ANCHORS:
+                if assertion.predicate in _ANNOTATION_ANCHORS:
                     used.add((assertion.subject, assertion.predicate, assertion.value))
             if xrefs:
                 result["xrefs"] = xrefs
@@ -676,13 +332,8 @@ class ExportProjection:
 
     def convert(self, graph_id: URIRef) -> dict[str, object]:
         """Export supported statements and retain all unconsumed source assertions."""
-        kinds = {
-            "CLASS": OWL.Class,
-            "OBJECT": OWL.ObjectProperty,
-            "ANNOTATION": OWL.AnnotationProperty,
-        }
         roles: dict[URIRef, str] = {}
-        for role, kind in kinds.items():
+        for role, kind in NODE_KINDS.items():
             for subject in self.graph.subjects(RDF.type, kind):
                 self.budget.consume("work")
                 if isinstance(subject, URIRef):
@@ -719,7 +370,7 @@ class ExportProjection:
             }
             if role != "CLASS":
                 node["propertyType"] = role
-            self.represented.add((subject, RDF.type, kinds[role]))
+            self.represented.add((subject, RDF.type, NODE_KINDS[role]))
             metadata, label = self.metadata(subject, view)
             if metadata:
                 node["meta"] = metadata
