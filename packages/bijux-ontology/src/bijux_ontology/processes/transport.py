@@ -109,11 +109,14 @@ def exchange_worker(
     cap: int,
     timeout: float,
     cancel: Event | None = None,
+    completed: Callable[[bytes], None] | None = None,
 ) -> bytes:
     """Exchange opaque bounded bytes with one explicitly owned no-shell command.
 
     Protocols and runtime identity belong to callers. This transport owns bounded
     concurrent pipes, one deadline and descendant cleanup for every command.
+    An explicit terminal handoff receives complete successful bytes before a
+    later stop; its domain still qualifies and retains that bounded receipt.
     """
     if (
         not isinstance(command, list)
@@ -129,6 +132,8 @@ def exchange_worker(
         raise InputError("Worker timeout must be finite and positive")
     if cancel is not None and not isinstance(cancel, Event):
         raise InputError("Worker cancellation requires a Event")
+    if completed is not None and not callable(completed):
+        raise InputError("Completed worker receipts require a callable")
     deadline = time.monotonic() + timeout
     checkpoint(deadline, cancel)
     try:
@@ -147,8 +152,10 @@ def exchange_worker(
     )
     output, diagnostics = bytearray(), bytearray()
     overflow = Event()
+    delivered = Event()
+    stdout_done, stderr_done = Event(), Event()
 
-    def read(stream: BinaryIO, target: bytearray) -> None:
+    def read(stream: BinaryIO, target: bytearray, done: Event) -> None:
         """Drain without buffering more than the declared protocol bound."""
         try:
             while chunk := stream.read(8192):
@@ -159,20 +166,26 @@ def exchange_worker(
                     break
         finally:
             stream.close()
+        done.set()
 
     def write(stream: BinaryIO) -> None:
         """Write concurrently so a blocked input pipe cannot hide cancellation."""
+        written = False
         try:
-            stream.write(payload)
+            written = stream.write(payload) == len(payload)
         except (BrokenPipeError, OSError):
             pass
         finally:
             stream.close()
+            if written:
+                delivered.set()
 
     threads = (
         Thread(target=write, args=(process.stdin,), daemon=True),
-        Thread(target=read, args=(process.stdout, output), daemon=True),
-        Thread(target=read, args=(process.stderr, diagnostics), daemon=True),
+        Thread(target=read, args=(process.stdout, output, stdout_done), daemon=True),
+        Thread(
+            target=read, args=(process.stderr, diagnostics, stderr_done), daemon=True
+        ),
     )
     failure: BaseException | None = None
     cleanup_error: ResourceError | None = None
@@ -201,17 +214,31 @@ def exchange_worker(
             for thread in threads:
                 if thread.ident is not None:
                     thread.join(timeout=1)
+    response: bytes | None = None
     try:
-        checkpoint(deadline, cancel)
+        if completed is None:
+            checkpoint(deadline, cancel)
         if overflow.is_set():
             raise LimitExceeded("Worker output exceeds protocol byte bound")
         if process.returncode:
             detail = diagnostics.decode(errors="replace")[:2000]
             raise ResourceError(f"Worker exited {process.returncode}: {detail}")
+        if completed is not None:
+            if cleanup_error is not None:
+                raise cleanup_error
+            if (
+                not delivered.is_set()
+                or not stdout_done.is_set()
+                or not stderr_done.is_set()
+            ):
+                raise ResourceError("Worker did not finish its bounded byte exchange")
+            response = bytes(output)
+            completed(response)
+            checkpoint(deadline, cancel)
     except InputError as error:
-        if cleanup_error is not None:
+        if cleanup_error is not None and error is not cleanup_error:
             error.args = (f"{error}; {cleanup_error}",)
         raise
     if cleanup_error is not None:
         raise cleanup_error
-    return bytes(output)
+    return response if response is not None else bytes(output)

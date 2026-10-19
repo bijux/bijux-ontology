@@ -31,3 +31,7 @@ check: lock-check check-python-baseline check-make-layout check-config-layout bi
 api security sbom docs docs-check docs-serve:
 	@echo "The '$@' gate is not configured; make check runs the supported verification contract." >&2
 	@exit 2
+
+.PHONY: list-test-packages
+list-test-packages: ## List package owners selected by the canonical test gate
+	@printf '%s\n' $(ROOT_TARGET_PACKAGES_test)
