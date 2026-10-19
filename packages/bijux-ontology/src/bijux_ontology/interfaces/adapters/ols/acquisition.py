@@ -34,9 +34,9 @@ def acquire_ols_snapshot(
     """Acquire a finite query and fresh data identity observations around each page.
 
     Ordinary snapshot preparation/lookup stays offline. Origins, redirects,
-    transfer bounds and credentials policy are owned by HttpAcquisition. This
-    synchronous transport uses bounded socket timeouts and operation checkpoints;
-    it does not promise immediate cancellation inside a blocking socket read.
+    transfer bounds and credentials policy are owned by HttpAcquisition. Each
+    HTTP hop runs in an owned process under the inherited absolute deadline;
+    cancellation interrupts blocked network I/O and reaps that owned process.
     The deployed software release remains unknown unless independently supplied
     in captured page receipts; it is never substituted for ontology data identity.
     """
