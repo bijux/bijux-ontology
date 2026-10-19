@@ -371,7 +371,10 @@ def check_project_parallel(
                         # Adoption still runs after cancellation: already bounded
                         # receipts must remain paid and completed reports survive.
                         delegated = DelegatedAllowance(operation, grants[index])
-                        delegated.settle(dict(result.consumed))
+                        if result.state == "interrupted":
+                            delegated.forfeit()
+                        else:
+                            delegated.settle(dict(result.consumed))
                         try:
                             operation.shared._register_transferred_report(
                                 result.report,
