@@ -202,6 +202,15 @@ redundancy does not authorize the union. Choose retained annotations and read-on
 imports, and supply nonempty consumer entailments. Original inconsistency blocks
 proof; publish only verified candidates with `axioms.changes.write_axiom_change`.
 
+`repairs.propose_repairs` checks finite alternatives from one established native
+inconsistency justification. Supply nonempty consumer entailments, exact protected
+source axioms and any caller-authored `AllowedReplacement` meanings. Imports stay
+read-only. Each proposal independently needs native consistency and all selected
+consumer proofs; rejected candidates and original inconsistency remain visible.
+`search_complete` covers only the configured support/edit frontier;
+`enumeration_complete` stays false and minimality is unclaimed. Choose an accepted
+sealed candidate explicitly before using the ordinary axiom publication API.
+
 `upgrades.assess_logical_upgrade` compares explicit stable consumer IDs across
 owned before/after logical snapshots: entailments, satisfiability, model contracts
 and selected role-separation groups. Inspect `.transitions` and finite

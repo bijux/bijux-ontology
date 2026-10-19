@@ -391,6 +391,7 @@ _CODES = {
         "locality_source_unrepresented locality_selection_failed "
         "locality_unverified locality_input_error "
         "reduction_unverified reduction_input_error "
+        "repairs_unverified repairs_input_error "
         "upgrade_regression upgrade_unverified upgrade_unmatched_consumer "
         "upgrade_explanation_unverified upgrade_input_error "
         "reasoning_session_unverified reasoning_session_input_error "
