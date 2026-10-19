@@ -5,7 +5,8 @@ from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from ..errors import InputError
+from ..errors import InputError, LimitExceeded
+from ..limits import Budget
 from .identifiers import absolute_iri, language_tag
 
 
@@ -62,6 +63,33 @@ def validate_node(node: Node) -> None:
             language_tag(node.language)
     elif not isinstance(node, BNode):
         raise InputError("Unsupported RDF term shape")
+
+
+def bound_text(text: str, budget: Budget) -> None:
+    """Qualify text before encoding, formatting, hashing or diagnostic retention."""
+    if not isinstance(text, str):
+        raise InputError("Role metadata must be text")
+    if len(text) > budget.limits.max_bytes:
+        raise LimitExceeded("Role metadata exceeds max_bytes")
+    budget.consume("work", len(text) + 1)
+    try:
+        size = len(text.encode("utf-8"))
+    except UnicodeEncodeError as error:
+        raise InputError("Role metadata requires valid Unicode") from error
+    if size > budget.limits.max_bytes:
+        raise LimitExceeded("Role metadata exceeds max_bytes")
+    budget.consume("bytes", size)
+
+
+def bound_node(node: Node, budget: Budget) -> None:
+    """Bound existing RDF scalars without constructing a serialized statement."""
+    if not isinstance(node, URIRef | BNode | Literal):
+        raise InputError("Roles require RDF term inputs")
+    bound_text(node, budget)
+    if isinstance(node, Literal):
+        bound_text(node.datatype or "", budget)
+        bound_text(node.language or "", budget)
+    validate_node(node)
 
 
 def validate_triple(subject: Node, predicate: Node, value: Node) -> None:

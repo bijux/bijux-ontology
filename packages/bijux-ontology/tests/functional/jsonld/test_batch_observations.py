@@ -10,7 +10,7 @@ from bijux_ontology.jsonld import checking
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.observations import SourcePath
+from bijux_ontology.jsonld.paths import SourcePath
 from bijux_ontology.limits import Budget, Limits
 
 EX = "https://example.org/"

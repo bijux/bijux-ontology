@@ -275,9 +275,10 @@ def test_actual_fields_native_and_once_serializer_keep_alternatives_local() -> N
         ModelDeclaration,
         ValueDeclaration,
     )
-    from bijux_ontology.models.emission import ModelUsage, check_emission
-    from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
-    from bijux_ontology.models.serialization import check_instance
+    from bijux_ontology.models.emission.checking import check_emission
+    from bijux_ontology.models.emission.rdf import check_rdf_emission
+    from bijux_ontology.models.emission.serialization import check_instance
+    from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 
     class Reference(BaseModel):
         identifier: str = Field(serialization_alias="@id")
@@ -520,8 +521,9 @@ def test_actual_bridge_preserves_independent_source_type_obligations() -> None:
         ModelDeclaration,
         ValueDeclaration,
     )
-    from bijux_ontology.models.emission import ModelUsage, check_emission
-    from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
+    from bijux_ontology.models.emission.checking import check_emission
+    from bijux_ontology.models.emission.rdf import check_rdf_emission
+    from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 
     vocabulary = (
         Graph()
@@ -599,8 +601,9 @@ def test_actual_type_positions_supply_source_facets_without_inventing_instances(
         ModelDeclaration,
         ValueDeclaration,
     )
-    from bijux_ontology.models.emission import ModelUsage, check_emission
-    from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
+    from bijux_ontology.models.emission.checking import check_emission
+    from bijux_ontology.models.emission.rdf import check_rdf_emission
+    from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 
     vocabulary = (
         Graph()

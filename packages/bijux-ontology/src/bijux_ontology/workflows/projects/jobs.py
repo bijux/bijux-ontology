@@ -16,7 +16,12 @@ CheckKind = Literal[
     "shacl",
     "skos",
     "query-rules",
+    "emission",
+    "context-corpus",
+    "upgrade",
 ]
+
+APPLICATION_KINDS = frozenset(("emission", "context-corpus", "upgrade"))
 
 
 def strings(value: object) -> tuple[str, ...]:
@@ -36,10 +41,26 @@ def boolean(value: object) -> bool:
 def check_kind(job: Mapping[str, object]) -> CheckKind:
     """Validate the selected operation and reject ignored check options lazily."""
     kind = text_value(job.get("kind"), location="kind")
-    common = {"name", "kind"}
-    if kind not in ("context", "shacl", "query-rules"):
+    common = {"name", "kind", "depends_on"}
+    if kind not in ("context", "shacl", "query-rules", "context-corpus", "upgrade"):
         common |= {"source", "lookup", "graph_name", "union"}
     options = {
+        "emission": {
+            "declarations",
+            "document",
+            "usages",
+            "base",
+            "allowed_drops",
+            "rdf_direction",
+        },
+        "context-corpus": {
+            "documents",
+            "branches",
+            "before_contexts",
+            "after_contexts",
+            "rdf_direction",
+        },
+        "upgrade": {"before", "after", "scopes"},
         "query-rules": {"source", "rules", "timeout", "max_rows", "allow_empty"},
         "vocabulary": {
             "inventory",
@@ -113,6 +134,75 @@ def check_kind(job: Mapping[str, object]) -> CheckKind:
         raise InputError("Unsupported project check kind", location=kind)
     known_keys(job, common | options[kind], location=str(job.get("name", kind)))
     return cast(CheckKind, kind)
+
+
+def dependencies(job: Mapping[str, object]) -> tuple[str, ...]:
+    """Decode explicit required earlier jobs, without inferring execution order."""
+    selected = strings(job.get("depends_on", []))
+    if len(set(selected)) != len(selected):
+        raise InputError("Job dependencies must be unique")
+    for name in selected:
+        text_value(name, location="depends_on")
+    return selected
+
+
+def input_paths(
+    job: Mapping[str, object],
+) -> tuple[tuple[tuple[str | int, ...], object], ...]:
+    """Locate direct configured filenames without opening any selected input.
+
+    Application files contain owned inline outputs/resources, never further
+    filenames. Unusable slots cannot be opened by their runner and are left to
+    that runner's per-job diagnostics; discovery must not erase sibling results.
+    """
+    kind = job.get("kind")
+    paths: list[tuple[tuple[str | int, ...], object]] = []
+    keys = {
+        "vocabulary": ("inventory",),
+        "models": ("declarations",),
+        "context": ("document", "expectations"),
+        "query-rules": ("rules",),
+        "emission": ("declarations", "document", "usages"),
+    }
+    for key in keys.get(str(kind), ()):
+        if key in job:
+            paths.append(((key,), job[key]))
+    if kind in ("context", "context-corpus"):
+        members = job.get("documents", [])
+        if not isinstance(members, list):
+            members = []
+        selected_keys = (
+            ("document", "expectations")
+            if kind == "context"
+            else ("before", "after", "expectations")
+        )
+        for index, raw in enumerate(members):
+            if not isinstance(raw, dict):
+                continue
+            member = raw
+            for key in selected_keys:
+                if key in member:
+                    paths.append((("documents", index, key), member[key]))
+    if kind == "context-corpus":
+        for role in ("before_contexts", "after_contexts"):
+            contexts = job.get(role, {})
+            if not isinstance(contexts, dict):
+                continue
+            for iri, value in contexts.items():
+                paths.append(((role, iri), value))
+    if kind == "upgrade":
+        for side in ("before", "after"):
+            if side in job:
+                side_entry = job[side]
+                if not isinstance(side_entry, dict):
+                    continue
+                if "application" in side_entry:
+                    paths.append(((side, "application"), side_entry["application"]))
+    return tuple(
+        (path, value)
+        for path, value in paths
+        if isinstance(value, str) and value.strip()
+    )
 
 
 @dataclass(frozen=True)

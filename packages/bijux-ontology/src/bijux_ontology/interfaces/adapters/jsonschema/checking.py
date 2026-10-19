@@ -17,11 +17,11 @@ from bijux_ontology.interfaces.adapters.jsonschema.extraction import (
 )
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.observations import SourcePath, location
+from bijux_ontology.jsonld.paths import SourcePath, location
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.models.emission import ModelUsage
-from bijux_ontology.models.serialization import InstanceCheck, check_serialized
+from bijux_ontology.models.emission.serialization import InstanceCheck, check_serialized
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.view import Vocabulary
 

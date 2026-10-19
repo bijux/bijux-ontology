@@ -93,6 +93,14 @@ _CODES = {
         "query_violation query_empty_scope".split()
     ),
     "contract": frozenset("coverage_missing unavailable".split()),
+    "project": frozenset(("dependency_unverified",)),
+    "profile": frozenset(
+        "instantiation_unverified "
+        "routing_unverified record_unverified declaration_missing "
+        "declaration_ambiguous declaration_unknown "
+        "composition_unverified description_unverified shape_unverified "
+        "shape_conflict".split()
+    ),
     "emission": frozenset(
         "path_mapping_unverified path_intermediate_count_mismatch "
         "path_intermediate_mismatch path_ownership_mismatch "
@@ -171,6 +179,7 @@ _CODES = {
         "analysis_metadata_unverified analysis_profile_unverified "
         "analysis_qualification_unverified analysis_recursion_unverified "
         "static_incompatibility "
+        "profile_weakening profile_refinement_unverified "
         "shape_projection_unverified shape_edit_unverified "
         "profile_dependency_unverified profile_behavior_unverified "
         "profile_behavior_changed "
@@ -247,6 +256,20 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "profile": (
+        "explicit offline validation profiles",
+        "Selected profile resources or obligations conflict or lack qualification.",
+        "Inspect required parents, exact resource identities and named shape "
+        "definitions; retain every mandatory validation when resolving conflicts.",
+        "compose_profile(domain, {base.iri: base})",
+    ),
+    "project": (
+        "required earlier project checks",
+        "A required earlier check did not verify, so its dependent was not started.",
+        "Inspect the named prerequisite reports and resolve their failures or "
+        "missing coverage before rerunning the dependent check.",
+        '{"name": "output", "kind": "emission", "depends_on": ["models"]}',
+    ),
     "documents": (
         "selected JSON-LD source representation",
         "A selected source occurrence violates its explicit form or lacks a binding.",

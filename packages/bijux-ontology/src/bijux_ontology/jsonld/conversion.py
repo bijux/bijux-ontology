@@ -8,13 +8,14 @@ from typing import Literal, cast
 from pyoxigraph import Literal as RdfLiteral
 from pyoxigraph import RdfFormat, parse
 
+from bijux_ontology.jsonld.observations import occurrences
+from bijux_ontology.jsonld.paths import location
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report
 from .expansion import _drop_issues, _validate_allowed_drops, expand_document
-from .observations import location, occurrences
 from .resources import (
     ContextInputError,
     DocumentLoader,

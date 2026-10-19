@@ -86,7 +86,7 @@ from bijux_ontology.jsonld.resources import (
     OfflineDocumentLoader,
     context_document_loader,
 )
-from bijux_ontology.jsonld.selectors import (
+from bijux_ontology.jsonld.selectors.types import (
     ArrayItems,
     EntitySelector,
     KeyedItems,
@@ -107,12 +107,13 @@ from bijux_ontology.models.corpus import (
     SerializerCase,
     check_serializer_corpus,
 )
-from bijux_ontology.models.emission import ModelUsage, check_emission
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.serialization import InstanceCheck, check_instance
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
 from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
 from bijux_ontology.models.resource_roles import RoleUse, check_resource_roles
-from bijux_ontology.models.serialization import InstanceCheck, check_instance
 from bijux_ontology.owl.obligations import (
     ObligationResult,
     OntologyObligation,
@@ -262,6 +263,11 @@ from bijux_ontology.vocabulary.templates import (
 )
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
+from bijux_ontology.workflows.projects.building import (
+    ApplicationInput,
+    CorpusDocumentInput,
+    ProjectBuilder,
+)
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig, load_project
 from bijux_ontology.workflows.projects.contracts import (
@@ -319,6 +325,7 @@ __all__ = [
     "plan_rdf_patch",
     "ApplicationDeclarationChange",
     "ApplicationField",
+    "ApplicationInput",
     "ApplicationOutput",
     "ApplicationSampleComparison",
     "ApplicationUpgrade",
@@ -362,6 +369,7 @@ __all__ = [
     "ContractObligation",
     "ContractResult",
     "CorpusBranch",
+    "CorpusDocumentInput",
     "CorpusCheck",
     "CorpusWitness",
     "DataView",
@@ -423,6 +431,7 @@ __all__ = [
     "PreparedUsages",
     "ProbeSample",
     "ProjectConfig",
+    "ProjectBuilder",
     "Property",
     "QueryResult",
     "QueryAnswers",

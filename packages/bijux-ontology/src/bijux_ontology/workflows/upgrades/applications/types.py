@@ -16,15 +16,15 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.observations import ObservedUsage, SourcePath
-from bijux_ontology.jsonld.selectors import _path_metadata
+from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.paths import SourcePath, bound_path
 from bijux_ontology.limits import Budget
 from bijux_ontology.models.corpus.checking import SerializerCase
-from bijux_ontology.models.emission import ModelUsage
+from bijux_ontology.models.emission.serialization import InstanceCheck
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
-from bijux_ontology.models.serialization import InstanceCheck
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.roles.classification import bound_text
+from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.comparison import VocabularyChanges
 from bijux_ontology.workflows.upgrades.anonymous import AnonymousAffectedUse
@@ -123,7 +123,7 @@ class ApplicationField:
                 raise InputError(
                     "Application field samples require nonempty source paths"
                 )
-            _path_metadata(path, budget)
+            bound_path(path, budget)
         object.__setattr__(self, "model", str(self.model))
         object.__setattr__(self, "field", str(self.field))
         object.__setattr__(self, "samples", captured)

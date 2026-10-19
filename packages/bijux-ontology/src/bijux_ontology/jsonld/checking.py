@@ -4,6 +4,19 @@ from collections.abc import Sequence
 from typing import cast
 
 from bijux_ontology._json import own_json
+from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
+from bijux_ontology.jsonld.paths import (
+    SourcePath,
+    bound_path,
+    bounded_location,
+    location,
+)
+from bijux_ontology.jsonld.selectors.checking import resolve_selection
+from bijux_ontology.jsonld.selectors.types import (
+    EntitySelector,
+    Selection,
+    SourceSelector,
+)
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 
 from ..errors import InputError, LimitExceeded
@@ -11,7 +24,6 @@ from ..reports import Issue, Report
 from .entities import EntityInventory
 from .expansion import _drop_issues, _validate_allowed_drops, expand_document
 from .expectations import ContextExpectation, compare_usage
-from .observations import ObservedOccurrence, ObservedUsage, SourcePath, location
 from .omissions import project_omissions
 from .resources import (
     ContextInputError,
@@ -19,14 +31,6 @@ from .resources import (
     context_resources,
 )
 from .selection import UsageIndex
-from .selectors import (
-    EntitySelector,
-    Selection,
-    SourceSelector,
-    _bounded_location,
-    _path_metadata,
-    resolve_selection,
-)
 from .values import ValueTraits, value_traits
 
 
@@ -151,7 +155,7 @@ class PreparedUsages:
         ):
             raise ContextInputError("Expected a nonempty key/index usage selector")
         operation = budget if budget is not None else self._budget
-        _path_metadata(path, operation)
+        bound_path(path, operation)
         if operation is not self._budget:
             cached = self._index._cache.get(path)
             if cached is None:
@@ -164,7 +168,7 @@ class PreparedUsages:
             return self._index.select(path)
         except (KeyError, IndexError) as error:
             raise ContextInputError(
-                "No supplied usage", location=_bounded_location(path, self._budget)
+                "No supplied usage", location=bounded_location(path, self._budget)
             ) from error
 
     def observe_many(self, paths: Sequence[SourcePath]) -> tuple[ObservedUsage, ...]:
@@ -186,7 +190,7 @@ class PreparedUsages:
                 )
             ):
                 raise ContextInputError("Expected nonempty key/index usage selectors")
-            _path_metadata(path, self._budget)
+            bound_path(path, self._budget)
         self._index.prepare_many(selected)
         return tuple(self.observe(path) for path in selected)
 
@@ -227,7 +231,7 @@ class PreparedUsages:
             issues.extend(self._omission_issues)
             issues.extend(_drop_issues(self._dropped, self._allowed_drops))
             for expectation in expectations:
-                _path_metadata(expectation.path, self._budget)
+                bound_path(expectation.path, self._budget)
             self._index.prepare_many(
                 tuple(
                     expectation.path
@@ -246,7 +250,7 @@ class PreparedUsages:
                     excluded += 1
                     requested -= 1
                     continue
-                where = _bounded_location(expectation.path, self._budget)
+                where = bounded_location(expectation.path, self._budget)
                 if expectation.predicate.startswith(
                     "@"
                 ) and expectation.predicate not in {

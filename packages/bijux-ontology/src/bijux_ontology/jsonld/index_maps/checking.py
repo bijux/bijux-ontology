@@ -8,17 +8,10 @@ from typing import cast
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.expectations import compare_usage
-from bijux_ontology.jsonld.observations import (
-    ObservedOccurrence,
-    ObservedUsage,
-    location,
-)
-from bijux_ontology.jsonld.selectors import (
-    KeyedItems,
-    SourceSelector,
-    _bounded_location,
-    resolve_selection,
-)
+from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
+from bijux_ontology.jsonld.paths import bounded_location, location
+from bijux_ontology.jsonld.selectors.checking import resolve_selection
+from bijux_ontology.jsonld.selectors.types import KeyedItems, SourceSelector
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.reports import Issue, Report
@@ -306,7 +299,7 @@ def check_index_maps(
                 for binding_text in (binding.key, binding.identifier, binding.graph):
                     if binding_text is not None:
                         _text(binding_text, budget)
-            where = _bounded_location(rule.mapping.path, budget)
+            where = bounded_location(rule.mapping.path, budget)
             parent = prepared.observe(rule.mapping.path)
             if not parent.limitation:
                 issues.extend(compare_usage(rule.mapping, parent, budget=budget))

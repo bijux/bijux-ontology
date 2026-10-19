@@ -7,7 +7,9 @@ from rdflib.namespace import XSD
 
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.comparison import compare_rdf
+from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources import RdfSource
 
 EX = Namespace("https://example.org/")
 
@@ -149,3 +151,40 @@ def test_incomplete_empty_graph_scope_needs_an_explicit_comparison_exclusion() -
     narrowed = compare_rdf(parsed, actual, ignore_empty_graphs=True)
     assert narrowed.verified and narrowed.exclusions == ("empty-named-graphs",)
     assert narrowed.regime == "rdf-nonempty-graph-structure"
+
+
+def test_prepared_graph_selection_excludes_hidden_data_and_union_is_explicit() -> None:
+    left = Dataset()
+    left.graph(EX.selected).add((EX.A, EX.p, EX.B))
+    left.graph(EX.hidden).add((EX.A, EX.p, EX.C))
+    right = Dataset()
+    right.graph(EX.selected).add((EX.A, EX.p, EX.B))
+    right.graph(EX.hidden).add((EX.A, EX.p, EX.D))
+    selected = prepare_rdf(RdfSource(left, graph_name=str(EX.selected)))
+    same = prepare_rdf(RdfSource(right, graph_name=str(EX.selected)))
+    different = prepare_rdf(RdfSource(left, graph_name=str(EX.hidden)))
+    assert compare_rdf(selected, same).verified
+    assert compare_rdf(selected, different).outcome == "disagreement"
+    assert compare_rdf(selected, selected).verified
+    assert compare_rdf(selected, left).outcome == "disagreement"
+    projected = prepare_rdf(RdfSource(left, union=True))
+    flat = Graph().add((EX.A, EX.p, EX.B)).add((EX.A, EX.p, EX.C))
+    assert compare_rdf(projected, flat).verified
+    default = prepare_rdf(RdfSource(left, graph_name="@default"))
+    assert compare_rdf(default, Graph()).verified
+    assert compare_rdf(projected, default).outcome == "disagreement"
+
+
+def test_intrinsic_literal_aliases_have_set_semantics_without_lexical_coercion() -> (
+    None
+):
+    for subject in (EX.A, BNode()):
+        aliases = Graph().add((subject, EX.p, Literal("same")))
+        aliases.add((subject, EX.p, Literal("same", datatype=XSD.string)))
+        single = Graph().add((subject, EX.p, Literal("same", datatype=XSD.string)))
+        assert compare_rdf(aliases, single).verified
+        aliases.add(
+            (subject, EX.p, Literal("01", datatype=XSD.integer, normalize=False))
+        )
+        single.add((subject, EX.p, Literal("1", datatype=XSD.integer, normalize=False)))
+        assert compare_rdf(aliases, single).outcome == "disagreement"

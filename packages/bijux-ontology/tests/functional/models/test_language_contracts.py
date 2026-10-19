@@ -23,9 +23,10 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.models.checking import check_models
-from bijux_ontology.models.emission import ModelUsage, check_emission
-from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
-from bijux_ontology.models.serialization import check_instance
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.serialization import check_instance
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 
 EX = Namespace("https://language.example/")
 DIRECTION = URIRef(str(RDF) + "direction")
@@ -349,7 +350,11 @@ def test_native_named_scope_and_physical_counts_preserve_opposite_directions() -
 def test_selected_map_keys_require_explicit_coverage() -> None:
     from bijux_ontology.jsonld.checking import prepare_usages
     from bijux_ontology.jsonld.expectations import ContextExpectation
-    from bijux_ontology.jsonld.selectors import KeyedItems, Property, SourceSelector
+    from bijux_ontology.jsonld.selectors.types import (
+        KeyedItems,
+        Property,
+        SourceSelector,
+    )
 
     context = {"label": {"@id": str(EX.label), "@container": "@language"}}
     selector = SourceSelector(

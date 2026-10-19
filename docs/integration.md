@@ -318,6 +318,15 @@ subject-occurrence evidence; naming a SHACL focus node does not supply a record.
 
 Author reusable parameterized checks with `ShaclComponent`, `ShaclParameter`,
 `ComponentValidator` and `ComponentUse` from `bijux_ontology.shacl`.
+`compare_shape_refinement(parent, child)` from `bijux_ontology.shacl` compares
+`RefinementContract(source, root, data_graph=...)` under aligned declared targets
+and graph scopes. The finite fragment covers counts, exact fixed/enumerated terms,
+datatypes, node kinds and acyclic node conjunction/disjunction. Refinement requires
+a universal supported implication proof plus actual compatible data; weakening
+requires a witness passing the child's complete target scope and failing the
+parent's. Unsupported constraints or unsuccessful finite witness construction
+remain unknown. Witness literals must pass the maintained lexical checker.
+
 `compile_components(shapes, components, uses)` returns ordinary owned SHACL RDF.
 The supported forms are generic ASK and node/property SELECT; required parameters,
 query forms, pre-bound variables and offline prefixes are qualified explicitly.
@@ -403,6 +412,57 @@ and `bundle.document_loader` reuse owned offline resources; `materialize(new_pat
 returns a project configuration. The CLI accepts `project BUNDLE --bundle`.
 Completeness covers the selected RDF closure and exercised context positions;
 it does not establish semantic acceptance or coverage of future scoped contexts.
+
+`bijux_ontology.workflows.projects.profiles` provides `load_profile`,
+`compose_profile`, `profile_to_prof` and `read_prof`. A `profile.json` sidecar names
+required parents from an explicit offline registry beside ordinary `project.json`.
+`compose_profile(domain, registry).check(new_directory)` retains every selected
+layer's jobs and raw reports. Optionality applies only to declared parent layers;
+conflicting named shapes require an explicit policy retaining both checks.
+Composition and materialization inventories are bounded; execution and report
+limits apply separately per project. PROF interchange describes resources and
+parents without manufacturing executable checks.
+
+`bijux_ontology.workflows.projects.routing.check_profile_routes` reads configured
+declaration predicates from actual selected records and dispatches a closed
+`ProfilePlan` registry. Every record retains the caller's mandatory baseline,
+including missing, unknown or weaker declarations. Multiple declarations require
+an explicit `multiple="all"` policy. `ProfileJobBinding` binds every selected
+SHACL job's complete named shape set to the supplied snapshot; completed named
+shape/focus coverage is required. Unsupported data jobs and blank focus coverage
+remain unknown. Whole selected graphs retain shared nodes. Pass actual JSON-LD
+conversion evidence as `input_report`; no re-expansion or remote discovery occurs.
+Routing capture and report adoption are bounded separately from each project's
+backend limits.
+
+`bijux_ontology.workflows.projects.instantiation` provides `ParameterizedProfile`
+and `instantiate_profile`. Explicit `ConstraintSlot`, `InventorySlot` and
+`ResourceSlot` bindings compile typed RDF terms, integers, enum choices and owned
+vocabulary resources into an ordinary profile in a new directory. A `ProfileShape`
+uses the existing typed SHACL authoring records. The supported baseline is a
+complete ordinary graph with named authored shapes; opaque or unqualified
+representations remain unknown. Parameters retain exact RDF terms and resource
+identities. `instance.report` describes preparation; run `instance.effective.check`
+for actual validation, including every required parent layer.
+
+`load_bundle(..., dependencies=(parent,))` retains owned parent RDF and context
+resources separately from local files. Dependent bundles require explicit
+`materialize(path, local_only=True)` and cannot be exported as standalone archives.
+
+Project version 2 adds file-backed `emission`, `context-corpus` and `upgrade`
+jobs. `ProjectBuilder(directory=path)` builds the same `ProjectConfig` consumed by
+`bijux-ontology project project.json`; its `emission`, `context_corpus` and
+`upgrade` methods accept explicit input filenames. `CorpusDocumentInput` names
+actual before/after documents and expectations; `ApplicationInput` selects a
+vocabulary and a data-only application record. Emission jobs check supplied
+serialized output through `check_emission`; serializer callbacks stay in ordinary
+Python APIs. Application records use version 1 with `terms`, `models`, `fields`,
+`outputs` and optional context/resources, reusing declaration and usage codecs.
+
+Every job can name earlier required jobs with `depends_on`. A failed or
+unverified prerequisite blocks its dependents while independent jobs retain their
+results. Acceptance exceptions do not turn an unverified prerequisite into truth.
+Version 1 projects retain their existing job schema.
 
 `prove_obligations` answers typed `OntologyObligation` questions independently,
 retaining established, contradicted or unknown status and compact witnesses.

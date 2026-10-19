@@ -10,10 +10,10 @@ from rdflib.store import Store
 from rdflib.term import Node
 
 from bijux_ontology.limits import Budget
+from bijux_ontology.rdf.terms import bound_node, bound_text
 
 from ..errors import InputError, LimitExceeded
 from .identifiers import absolute_iri
-from .roles.classification import bound_node, bound_text
 from .terms import validate_node, validate_triple
 
 GraphSelection = URIRef | BNode | str

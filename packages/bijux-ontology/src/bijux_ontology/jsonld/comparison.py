@@ -10,17 +10,18 @@ from typing import cast
 from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.term import Node
 
+from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
+from bijux_ontology.jsonld.paths import SourcePath, location
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.roles.classification import bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_text
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report, combine_reports
 from .checking import PreparedUsages, prepare_usages
 from .conversion import DirectionPolicy, convert_to_rdf
-from .observations import ObservedOccurrence, ObservedUsage, SourcePath, location
 from .resources import DocumentLoader
 
 

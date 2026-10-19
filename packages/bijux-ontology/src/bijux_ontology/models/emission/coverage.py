@@ -1,20 +1,21 @@
 """Closed application-field coverage over proven source and RDF owner scopes."""
 
+from __future__ import annotations
+
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from rdflib.namespace import RDF
 
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.jsonld.entities import EntityKey, subject_key
-from bijux_ontology.jsonld.observations import (
-    ObservedOccurrence,
-    ObservedUsage,
-    SourcePath,
-    location,
-)
+from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
+from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.limits import Budget
+from bijux_ontology.models.emission.counts import check_occurrences
 from bijux_ontology.reports import Issue
+
+from .context import EmissionContext
 
 
 @dataclass(frozen=True)
@@ -204,3 +205,103 @@ def source_issues(
         )
     )
     return tuple(result)
+
+
+def check_coverage(state: EmissionContext) -> None:
+    """Check source-key ownership and aggregate aliased predicate contributions."""
+    for binding in state.bindings:
+        model = state.registry.get(binding.model)
+        if model is None or model.coverage is None:
+            continue
+        state.budget.consume("work")
+        state.checked += 1
+        if binding.reference is not None or binding.entity:
+            key = state.entity_for(binding)
+            description = state.prepared.entities.get(key) if key is not None else None
+            state.issues.append(
+                Issue(
+                    "emission.source_coverage_unverified",
+                    "Entity facts do not establish original source-key coverage",
+                    f"entity[{binding.reference}]"
+                    if binding.reference
+                    else location(binding.path),
+                    kind="unverified",
+                )
+            )
+            if description is not None:
+                state.issues.extend(
+                    predicate_issues(
+                        model,
+                        ((item.predicate, item.reverse) for item in description.facts),
+                        where=f"entity[{description.key.identifier}]",
+                        budget=state.budget,
+                    )
+                )
+            continue
+        node = at_path(state.snapshot, binding.path)
+        if not isinstance(node, dict):
+            continue
+        owner = state.entity_for(binding)
+        properties = source_properties(node, binding.path, state.budget)
+        state.checked += len(properties)
+        state.issues.extend(
+            source_issues(
+                model,
+                properties,
+                owner,
+                state.prepared.observe,
+                where=location(binding.path),
+                budget=state.budget,
+            )
+        )
+        aliases = dict(model.coverage.aliases)
+        for field in model.fields:
+            if field.output is None:
+                continue
+            state.budget.consume("work", len(properties))
+            paths = [
+                prop.path
+                for prop in properties
+                if aliases.get(prop.key) == field.name
+                or prop.key == (field.key or field.name)
+            ]
+            if not any(
+                path != (*binding.path, field.key or field.name) for path in paths
+            ):
+                continue
+            facts: list[ObservedOccurrence] = []
+            resolved = owner is not None
+            for path in paths:
+                usage = state.prepared.observe(path)
+                if usage.limitation:
+                    resolved = False
+                facts.extend(
+                    item
+                    for item in usage.occurrences
+                    if owner is not None
+                    and owns(item, owner)
+                    and (item.predicate == field.predicate)
+                    and (item.reverse == field.reverse)
+                )
+            if not resolved:
+                state.issues.append(
+                    Issue(
+                        "emission.cardinality_unverified",
+                        (
+                            "Shared alias contributions could not be "
+                            "associated with one source owner"
+                        ),
+                        location(binding.path),
+                        kind="unverified",
+                    )
+                )
+                continue
+            state.issues.extend(
+                check_occurrences(
+                    replace(field.output, require_property=False),
+                    tuple(dict.fromkeys(facts)),
+                    where=f"{location(binding.path).rstrip('/')}/{field.name}",
+                    budget=state.budget,
+                    native_literals=state.native_literals,
+                )
+            )

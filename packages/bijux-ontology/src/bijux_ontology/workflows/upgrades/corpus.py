@@ -10,7 +10,8 @@ from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.comparison import compare_context_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.observations import ObservedUsage, SourcePath
+from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.paths import SourcePath
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
 from bijux_ontology.limits import Budget, Limits

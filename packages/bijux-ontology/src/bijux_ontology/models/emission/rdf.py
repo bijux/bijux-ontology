@@ -1,7 +1,6 @@
 """Model output contracts over explicitly selected owned RDF subjects."""
 
 from collections.abc import Sequence
-from dataclasses import KW_ONLY, dataclass
 from itertools import chain
 from typing import cast
 
@@ -14,51 +13,26 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.models.emission.application import (
+    application_matches,
+    retain_enumeration_report,
+)
+from bijux_ontology.models.emission.counts import check_output_counts
+from bijux_ontology.models.emission.coverage import predicate_issues
+from bijux_ontology.models.emission.direction import project_direction
+from bijux_ontology.models.emission.groups import TermKey, check_groups
+from bijux_ontology.models.emission.matching import identity_matches, matches_value
+from bijux_ontology.models.emission.types import RdfModelUsage
+from bijux_ontology.models.registry import index_models
+from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.roles.classification import bound_node
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import read_rdf_list
-from bijux_ontology.rdf.terms import term_key
+from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.view import Vocabulary
-
-from .application_values import application_matches, retain_enumeration_report
-from .coverage import predicate_issues
-from .direction import project_direction
-from .emission_groups import TermKey, check_groups
-from .occurrences import check_output_counts
-from .registry import index_models
-from .resource_roles.checking import _RoleChecks
-from .value_matching import identity_matches, matches_value
-
-
-@dataclass(frozen=True)
-class RdfModelUsage:
-    """Bind a model to an IRI or an exact owned snapshot blank subject.
-
-    IRIs identify resources by name. Blank subjects must be immutable term objects
-    obtained from this PreparedSource's graph/dataset exports; matching labels
-    from another source never establish correspondence. location is a caller
-    diagnostic anchor and has no effect on RDF identity or source selection.
-    """
-
-    model: str
-    subject: URIRef | BNode
-    _: KW_ONLY
-    location: str = ""
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.model, str) or not self.model.strip():
-            raise InputError("RDF model usage requires a model identifier")
-        if not isinstance(self.subject, URIRef | BNode):
-            raise InputError("RDF model subjects must be URIRef or owned BNode terms")
-        if isinstance(self.subject, URIRef):
-            absolute_iri(str(self.subject))
-        if not isinstance(self.location, str):
-            raise InputError("RDF model usage location must be a string")
 
 
 def _traits(graph: Graph, node: Node, budget: Budget) -> ValueTraits:

@@ -20,22 +20,18 @@ from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import object_key
-from bijux_ontology.jsonld.observations import (
-    ObservedOccurrence,
-    SourcePath,
-    at_path,
-    location,
-)
+from bijux_ontology.jsonld.observations import ObservedOccurrence
+from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.models.bindings import (
+from bijux_ontology.models.emission.bindings import (
     candidate_paths,
     source_entity,
     source_node_traits,
 )
-from bijux_ontology.models.emission import ModelUsage
-from bijux_ontology.models.occurrences import check_occurrences
-from bijux_ontology.models.serialization import InstanceCheck, check_serialized
+from bijux_ontology.models.emission.counts import check_occurrences
+from bijux_ontology.models.emission.serialization import InstanceCheck, check_serialized
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary

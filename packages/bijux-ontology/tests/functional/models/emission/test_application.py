@@ -19,10 +19,11 @@ from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.application_values import application_matches
-from bijux_ontology.models.emission import ModelUsage, check_emission
-from bijux_ontology.models.rdf_emission import RdfModelUsage, check_rdf_emission
-from bijux_ontology.models.serialization import check_instance
+from bijux_ontology.models.emission.application import application_matches
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.serialization import check_instance
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.terms import literal_term
 
 EX = Namespace("https://example.org/")

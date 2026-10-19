@@ -6,29 +6,8 @@ from typing import cast
 
 from bijux_ontology.limits import Budget
 
+from .paths import SourcePath
 from .values import ValueTraits, value_traits
-
-SourcePath = tuple[str | int, ...]
-
-
-def location(path: SourcePath) -> str:
-    """Render the selected input occurrence as an escaped JSON Pointer."""
-    return "/" + "/".join(
-        str(key).replace("~", "~0").replace("/", "~1") for key in path
-    )
-
-
-def at_path(document: object, path: SourcePath) -> object:
-    """Follow concrete keys and nonnegative array indexes."""
-    current = document
-    for key in path:
-        if isinstance(key, str) and isinstance(current, dict):
-            current = cast(dict[str, object], current)[key]
-        elif type(key) is int and key >= 0 and isinstance(current, list):
-            current = cast(list[object], current)[key]
-        else:
-            raise KeyError(key)
-    return current
 
 
 def _json(value: object) -> str:

@@ -10,7 +10,7 @@ from rdflib.namespace import RDF
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.rdf.roles.classification import bound_text
+from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 
 

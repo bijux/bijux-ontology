@@ -23,7 +23,7 @@ from bijux_ontology.models.corpus import (
     SerializerCase,
     check_serializer_corpus,
 )
-from bijux_ontology.models.emission import ModelUsage
+from bijux_ontology.models.emission.types import ModelUsage
 
 EX = Namespace("https://example.org/corpus/")
 

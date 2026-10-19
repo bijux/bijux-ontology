@@ -1,216 +1,37 @@
-"""Finite typed source traversal and graph-qualified asserted entity selection."""
+"""Resolve declared source traversals and exact asserted entity selections."""
 
 from collections.abc import Callable
-from dataclasses import KW_ONLY, dataclass
-from typing import Literal, cast
+from typing import cast
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.jsonld.entities import (
+    EntityInventory,
+    EntityKey,
+    object_key,
+    source_entity,
+    subject_key,
+)
+from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.paths import (
+    SourcePath,
+    at_path,
+    bound_index,
+    bound_path,
+    bound_pointer_text,
+    bounded_location,
+)
+from bijux_ontology.jsonld.selectors.types import (
+    ArrayItems,
+    CoverageUnit,
+    EntitySelector,
+    KeyedItems,
+    Property,
+    Selection,
+    SourceSelector,
+    Step,
+)
 from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.reports import Issue, Report
-
-from .entities import EntityInventory, EntityKey, object_key, source_entity, subject_key
-from .observations import ObservedUsage, SourcePath, at_path, location
-
-CoverageUnit = Literal["source_occurrence", "rdf_entity"]
-
-
-def _bounds(minimum: int, maximum: int | None) -> None:
-    if (
-        type(minimum) is not int
-        or minimum < 0
-        or maximum is not None
-        and (type(maximum) is not int or maximum < minimum)
-    ):
-        raise InputError("Selector bounds require 0 <= minimum <= maximum")
-
-
-def _path(path: SourcePath) -> None:
-    if not isinstance(path, tuple) or any(
-        type(key) not in (str, int) or isinstance(key, int) and key < 0 for key in path
-    ):
-        raise InputError("Expected a concrete key/index path")
-
-
-@dataclass(frozen=True)
-class Property:
-    """Select a concrete property, bounding matches separately for each parent."""
-
-    key: str
-    minimum: int = 0
-    maximum: int | None = 1
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.key, str):
-            raise InputError("A property selector requires a string key")
-        _bounds(self.minimum, self.maximum)
-
-
-@dataclass(frozen=True)
-class ArrayItems:
-    """Select each actual array member, without treating objects as arrays."""
-
-    minimum: int = 0
-    maximum: int | None = None
-
-    def __post_init__(self) -> None:
-        _bounds(self.minimum, self.maximum)
-
-
-@dataclass(frozen=True)
-class KeyedItems:
-    """Select members of an explicitly declared keyed source container.
-
-    None selects all supplied keys. A finite tuple selects only those exact keys;
-    these keys are source syntax, not inferred language/index/identity semantics.
-    """
-
-    keys: tuple[str, ...] | None = None
-    minimum: int = 0
-    maximum: int | None = None
-
-    def __post_init__(self) -> None:
-        if self.keys is not None and (
-            not isinstance(self.keys, tuple)
-            or any(not isinstance(key, str) for key in self.keys)
-        ):
-            raise InputError("Keyed containers require a tuple of string keys")
-        _bounds(self.minimum, self.maximum)
-
-
-Step = Property | ArrayItems | KeyedItems
-
-
-def _steps(steps: tuple[Step, ...]) -> None:
-    if not isinstance(steps, tuple) or any(
-        not isinstance(step, (Property, ArrayItems, KeyedItems)) for step in steps
-    ):
-        raise InputError("Expected typed finite selector steps")
-
-
-@dataclass(frozen=True)
-class SourceSelector:
-    """Traverse source occurrences with aggregate and per-parent bounds.
-
-    Each step's bounds apply universally to its selected parents. Selector bounds
-    apply to the final aggregate. minimum=0 explicitly permits an empty selection.
-    """
-
-    steps: tuple[Step, ...]
-    start: SourcePath = ()
-    _: KW_ONLY
-    minimum: int = 1
-    maximum: int | None = None
-
-    def __post_init__(self) -> None:
-        _steps(self.steps)
-        _path(self.start)
-        _bounds(self.minimum, self.maximum)
-
-
-@dataclass(frozen=True)
-class EntitySelector:
-    """Select finite expanded identities/asserted types in exactly one graph.
-
-    Types match asserted membership, never entailed classification. exact_types
-    additionally rejects other asserted types. Source coverage selects each actual
-    describing object separately before following steps; pure references count
-    only when include_references=True. Entity coverage joins all its descriptions
-    and returns EntityKeys, with no fabricated source pointer.
-    """
-
-    identifiers: tuple[str, ...] = ()
-    types: tuple[str, ...] = ()
-    _: KW_ONLY
-    graph: str | None
-    coverage_unit: CoverageUnit = "rdf_entity"
-    exact_types: bool = False
-    include_references: bool = False
-    steps: tuple[Step, ...] = ()
-    minimum: int = 1
-    maximum: int | None = None
-
-    def __post_init__(self) -> None:
-        for values in (self.identifiers, self.types):
-            if not isinstance(values, tuple):
-                raise InputError("Identity and asserted-type filters require tuples")
-            for value in values:
-                absolute_iri(value)
-        if self.graph is not None:
-            absolute_iri(self.graph)
-        if self.coverage_unit not in ("source_occurrence", "rdf_entity"):
-            raise InputError("Unknown selector coverage unit")
-        if (
-            type(self.exact_types) is not bool
-            or type(self.include_references) is not bool
-        ):
-            raise InputError("Selector policies must be booleans")
-        _steps(self.steps)
-        if self.coverage_unit == "rdf_entity" and self.steps:
-            raise InputError(
-                "Source traversal steps require source occurrence coverage"
-            )
-        _bounds(self.minimum, self.maximum)
-
-
-def _text_metadata(value: str, budget: Budget) -> int:
-    """Bound text and reserve its escaped pointer storage before diagnostics."""
-    if not isinstance(value, str):
-        raise InputError("Selector metadata requires text")
-    if len(value) > budget.limits.max_bytes:
-        raise LimitExceeded("Selector text exceeds max_bytes")
-    budget.consume("work", len(value) + 1)
-    try:
-        size = len(value.encode("utf-8"))
-    except UnicodeEncodeError as error:
-        raise InputError("Selector metadata requires valid Unicode") from error
-    escaped = size + value.count("~") + value.count("/")
-    if size > budget.limits.max_bytes or escaped > budget.limits.max_bytes:
-        raise LimitExceeded("Selector text exceeds max_bytes")
-    budget.consume("bytes", 64 + size + 2 * escaped)
-    return escaped
-
-
-def _number_metadata(value: int, budget: Budget) -> int:
-    """Bound decimal indexes/counts before Python or diagnostics format them."""
-    digits = max(1, (value.bit_length() * 30103) // 100000 + 1)
-    if digits > budget.limits.max_bytes:
-        raise LimitExceeded("Selector number exceeds max_bytes")
-    budget.consume("work", digits)
-    budget.consume("bytes", 64 + digits)
-    try:
-        text = str(value)
-    except ValueError as error:
-        raise LimitExceeded("Selector number exceeds runtime text bounds") from error
-    return _text_metadata(text, budget)
-
-
-def _path_metadata(path: SourcePath, budget: Budget) -> None:
-    """Charge finite path components and pointer bounds before source lookup."""
-    if not isinstance(path, tuple):
-        raise InputError("Expected a concrete key/index path")
-    if len(path) > budget.limits.max_states:
-        raise LimitExceeded("Selector path exceeds max_states")
-    budget.consume("work", len(path))
-    budget.consume("bytes", 64 + 16 * len(path))
-    _path(path)
-    size = 1
-    for part in path:
-        size += (
-            _number_metadata(part, budget)
-            if isinstance(part, int)
-            else _text_metadata(part, budget)
-        ) + 1
-    if size > budget.limits.max_bytes:
-        raise LimitExceeded("Selector pointer exceeds max_bytes")
-    budget.consume("work", size)
-    budget.consume("bytes", 64 + size)
-
-
-def _bounded_location(path: SourcePath, budget: Budget) -> str:
-    """Render diagnostic text only after charging its actual source path."""
-    _path_metadata(path, budget)
-    return location(path)
 
 
 def _selector_metadata(
@@ -218,49 +39,30 @@ def _selector_metadata(
 ) -> None:
     """Bound immutable selector declarations without traversing source data."""
     if isinstance(selector, SourceSelector):
-        _path_metadata(selector.start, budget)
+        bound_path(selector.start, budget)
     elif isinstance(selector, EntitySelector):
         budget.consume("states", len(selector.identifiers) + len(selector.types))
         for value in (*selector.identifiers, *selector.types):
-            _text_metadata(value, budget)
+            bound_pointer_text(value, budget)
         if selector.graph is not None:
-            _text_metadata(selector.graph, budget)
+            bound_pointer_text(selector.graph, budget)
     else:
         raise InputError("Expected a typed JSON-LD selector")
-    _number_metadata(selector.minimum, budget)
+    bound_index(selector.minimum, budget)
     if selector.maximum is not None:
-        _number_metadata(selector.maximum, budget)
+        bound_index(selector.maximum, budget)
     budget.consume("states", len(selector.steps))
     budget.consume("work", len(selector.steps))
     for step in selector.steps:
-        _number_metadata(step.minimum, budget)
+        bound_index(step.minimum, budget)
         if step.maximum is not None:
-            _number_metadata(step.maximum, budget)
+            bound_index(step.maximum, budget)
         if isinstance(step, Property):
-            _text_metadata(step.key, budget)
+            bound_pointer_text(step.key, budget)
         elif isinstance(step, KeyedItems) and step.keys is not None:
             budget.consume("states", len(step.keys))
             for key in step.keys:
-                _text_metadata(key, budget)
-
-
-@dataclass(frozen=True)
-class Selection:
-    """Concrete matches and truthful coverage, separate from semantic checking."""
-
-    coverage_unit: CoverageUnit
-    paths: tuple[SourcePath, ...]
-    entities: tuple[EntityKey, ...]
-    report: Report
-
-    @property
-    def count(self) -> int:
-        """Count the explicitly chosen coverage unit, not RDF/source interchangeably."""
-        return (
-            len(self.paths)
-            if self.coverage_unit == "source_occurrence"
-            else len(self.entities)
-        )
+                bound_pointer_text(key, budget)
 
 
 def resolve_selection(
@@ -342,7 +144,7 @@ def resolve_selection(
                         Issue(
                             "selector.structure_mismatch",
                             "Selected parent has the wrong source container kind",
-                            _bounded_location(parent, budget),
+                            bounded_location(parent, budget),
                             actual=type(value).__name__,
                         )
                     )
@@ -353,7 +155,7 @@ def resolve_selection(
                     len(children),
                     step.minimum,
                     step.maximum,
-                    _bounded_location(parent, budget),
+                    bounded_location(parent, budget),
                     parent=f"property {step.key!r}"
                     if isinstance(step, Property)
                     else "array members"
@@ -430,7 +232,7 @@ def resolve_selection(
                             Issue(
                                 "selector.binding_unverified",
                                 usage.limitation,
-                                _bounded_location(path, budget),
+                                bounded_location(path, budget),
                                 kind="unverified",
                             )
                         )
@@ -466,7 +268,7 @@ def resolve_selection(
                 paths = ()
             else:
                 paths = traverse((selector.start,), selector.steps)
-            where = _bounded_location(selector.start, budget)
+            where = bounded_location(selector.start, budget)
         elif isinstance(selector, EntitySelector):
             unit = selector.coverage_unit
             matching = []
@@ -523,7 +325,7 @@ def resolve_selection(
                         Issue(
                             "selector.binding_unverified",
                             str(error),
-                            _bounded_location(path, budget),
+                            bounded_location(path, budget),
                             kind="unverified",
                         )
                     )
@@ -533,7 +335,7 @@ def resolve_selection(
                         Issue(
                             "selector.binding_unverified",
                             usage.limitation,
-                            _bounded_location(path, budget),
+                            bounded_location(path, budget),
                             kind="unverified",
                         )
                     )

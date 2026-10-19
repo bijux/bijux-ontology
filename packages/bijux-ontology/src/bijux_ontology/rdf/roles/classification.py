@@ -4,9 +4,14 @@ from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import literal_datatype, validate_node, validate_triple
+from bijux_ontology.rdf.terms import (
+    bound_node,
+    bound_text,
+    literal_datatype,
+    validate_triple,
+)
 
 from .types import Statement, TermPosition, TermRole, TermRoleOccurrence
 
@@ -64,33 +69,6 @@ _CONCEPT_RELATIONS = frozenset(
         SKOS.exactMatch,
     )
 )
-
-
-def bound_text(text: str, budget: Budget) -> None:
-    """Qualify text before encoding, formatting, hashing or diagnostic retention."""
-    if not isinstance(text, str):
-        raise InputError("Role metadata must be text")
-    if len(text) > budget.limits.max_bytes:
-        raise LimitExceeded("Role metadata exceeds max_bytes")
-    budget.consume("work", len(text) + 1)
-    try:
-        size = len(text.encode("utf-8"))
-    except UnicodeEncodeError as error:
-        raise InputError("Role metadata requires valid Unicode") from error
-    if size > budget.limits.max_bytes:
-        raise LimitExceeded("Role metadata exceeds max_bytes")
-    budget.consume("bytes", size)
-
-
-def bound_node(node: Node, budget: Budget) -> None:
-    """Bound existing RDF scalars without constructing a serialized statement."""
-    if not isinstance(node, URIRef | BNode | Literal):
-        raise InputError("Roles require RDF term inputs")
-    bound_text(node, budget)
-    if isinstance(node, Literal):
-        bound_text(node.datatype or "", budget)
-        bound_text(node.language or "", budget)
-    validate_node(node)
 
 
 def declaration_role(node: Node) -> TermRole | None:

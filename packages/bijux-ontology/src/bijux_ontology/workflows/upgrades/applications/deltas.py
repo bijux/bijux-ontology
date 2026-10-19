@@ -14,15 +14,13 @@ from bijux_ontology.jsonld.comparison import (
     _associated_occurrences,
     compare_observed_usages,
 )
-from bijux_ontology.jsonld.observations import ObservedUsage, at_path
-from bijux_ontology.jsonld.selectors import (
-    _bounded_location,
-)
+from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.paths import at_path, bounded_location
 from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.models.coverage import source_properties
+from bijux_ontology.models.emission.coverage import source_properties
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.roles.classification import bound_text
+from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.workflows.upgrades.assessment import (
     ContractChange,
@@ -158,7 +156,7 @@ def _anchors(
         retain(field.location or f"{binding.model}.{field.name}", "field/" + identifier)
         if sample is not None and sample in binding.samples:
             retain(
-                _bounded_location(binding.samples[sample], budget),
+                bounded_location(binding.samples[sample], budget),
                 "field/" + identifier,
             )
     return {raw: stable for raw, stable in result.items() if raw not in ambiguous}

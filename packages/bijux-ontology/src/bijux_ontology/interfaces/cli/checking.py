@@ -78,21 +78,7 @@ def project(options: argparse.Namespace) -> ProjectConfig:
             ]
         data["policy"] = policy
     config = ProjectConfig(data, directory=config.directory, source=config.source)
-    paths = [cast(Path, source.content) for source in config.rdf.values()]
-    paths.extend(config.contexts.values())
-    for check in config.checks():
-        members = check.get("documents", [])
-        if not isinstance(members, list):
-            raise InputError("Context batch documents must be an array")
-        jobs = [
-            check,
-            *(object_value(member, location="documents") for member in members),
-        ]
-        for job in jobs:
-            for key in ("inventory", "declarations", "document", "expectations"):
-                if check["kind"] in ("vocabulary", "models", "context") and key in job:
-                    paths.append(config.path(job[key]))
-    protect_inputs(options, tuple(paths))
+    protect_inputs(options, config.input_paths())
     return config
 
 

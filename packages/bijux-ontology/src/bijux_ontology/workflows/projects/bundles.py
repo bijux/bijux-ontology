@@ -1,7 +1,7 @@
 """Portable project resources with explicit logical identities and checked closure."""
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from importlib.resources.abc import Traversable
 from pathlib import Path
 from types import MappingProxyType
@@ -16,11 +16,13 @@ from bijux_ontology.jsonld.resources import (
     context_resources,
 )
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
-from bijux_ontology.workflows.projects.jobs import check_kind
+from bijux_ontology.workflows.projects.jobs import check_kind, input_paths
 
 
 class PreparedBundle:
@@ -40,22 +42,45 @@ class PreparedBundle:
         rdf: Mapping[str, RdfSource],
         contexts: Mapping[str, object],
         context_documents: tuple[str, ...],
+        *,
+        imports: Mapping[str, RdfSource] | None = None,
+        context_payloads: Mapping[str, bytes] | None = None,
+        context_scope: tuple[str, ...] | None = None,
+        has_dependencies: bool = False,
     ) -> None:
         self._configuration = configuration
         self._files = MappingProxyType(dict(files))
         self.rdf: Mapping[str, RdfSource] = MappingProxyType(dict(rdf))
         self.imports: Mapping[str, RdfSource] = MappingProxyType(
-            {
+            dict(imports)
+            if imports is not None
+            else {
                 source.document_iri: source
                 for source in rdf.values()
                 if source.document_iri is not None
             }
         )
+        self._context_payloads = MappingProxyType(dict(context_payloads or {}))
+        self._has_dependencies = has_dependencies
         self._contexts = OfflineDocumentLoader(contexts, limits=configuration.limits)
         self.rdf_scope = tuple(rdf)
-        self.context_scope = tuple(contexts)
+        self.context_scope = tuple(contexts) if context_scope is None else context_scope
         self.context_documents = context_documents
         self.resource_paths = tuple(files)
+
+    @property
+    def configuration(self) -> ProjectConfig:
+        """Inspect a fresh configuration without changing this owned bundle."""
+        return ProjectConfig(
+            self._configuration.to_dict(),
+            directory=self._configuration.directory,
+            source=self._configuration.source,
+        )
+
+    @property
+    def files(self) -> Mapping[str, bytes]:
+        """Inspect immutable owned payloads without acquiring external inputs."""
+        return self._files
 
     @property
     def document_loader(self) -> DocumentLoader:
@@ -74,8 +99,16 @@ class PreparedBundle:
             limits=self._configuration.limits,
         )
 
-    def materialize(self, destination: Path) -> ProjectConfig:
-        """Write the owned portable files into a new directory without overwrites."""
+    def materialize(
+        self, destination: Path, *, local_only: bool = False
+    ) -> ProjectConfig:
+        """Write local owned files, explicitly acknowledging external dependencies."""
+        if type(local_only) is not bool:
+            raise InputError("Local-only materialization requires a boolean")
+        if self._has_dependencies and not local_only:
+            raise InputError(
+                "Dependent bundles require explicit local_only materialization"
+            )
         destination = destination.resolve()
         if destination.exists():
             raise InputError("Bundle destination must be a new directory")
@@ -92,7 +125,9 @@ class PreparedBundle:
         )
 
     def write_archive(self, destination: Path) -> None:
-        """Package exactly the owned declared files into a portable ZIP artifact."""
+        """Package a locally closed bundle without hiding external dependencies."""
+        if self._has_dependencies:
+            raise InputError("A dependent bundle is not a standalone archive")
         with (
             destination.open("xb") as handle,
             ZipFile(handle, "w", ZIP_DEFLATED) as archive,
@@ -101,8 +136,106 @@ class PreparedBundle:
                 archive.writestr(resource_path(name), payload)
 
 
+class _Availability:
+    """Own finite logical bindings independently of package-local filenames."""
+
+    def __init__(self, budget: Budget) -> None:
+        self.budget = budget
+        self.imports: dict[str, RdfSource] = {}
+        self.contexts: dict[str, bytes] = {}
+
+    def payload(self, iri: str, payload: object) -> bytes:
+        """Bound logical metadata and raw bytes before comparing or retaining."""
+        bound_text(iri, self.budget)
+        absolute_iri(iri)
+        if not isinstance(payload, bytes):
+            raise InputError("Bundle dependencies require owned byte payloads")
+        if len(payload) > self.budget.limits.max_bytes:
+            raise LimitExceeded("Dependency payload exceeds max_bytes")
+        return payload
+
+    def equal_bytes(self, left: bytes, right: bytes) -> bool:
+        """Pay for actual content comparison without rehashing shared snapshots."""
+        if left is right:
+            return True
+        if len(left) != len(right):
+            return False
+        self.budget.consume("work", len(left))
+        return left == right
+
+    def dual_role(self, iri: str, source: RdfSource, payload: bytes) -> None:
+        """Allow only exact bytes and the same effective base across RDF/JSON roles."""
+        if (
+            source.compression is not None
+            or (source.effective_url or source.document_iri) != iri
+            or not isinstance(source.content, bytes)
+            or not self.equal_bytes(source.content, payload)
+        ):
+            raise InputError("Conflicting bundle logical binding", location=iri)
+
+    def retain(self, payload: bytes) -> None:
+        """Charge a new logical resource before retaining its immutable payload."""
+        self.budget.consume("resources")
+        self.budget.consume("states")
+        self.budget.consume("bytes", len(payload))
+
+    def rdf(self, iri: str, source: RdfSource) -> None:
+        """Keep exact syntax, bases and graph selection when registering an alias."""
+        if not isinstance(source, RdfSource):
+            raise InputError("Bundle dependencies require RDF descriptors")
+        payload = self.payload(iri, source.content)
+        for value in (
+            source.format,
+            source.document_iri,
+            source.effective_url,
+            source.graph_name,
+            source.compression,
+        ):
+            if value is not None:
+                bound_text(value, self.budget)
+        if iri not in (source.document_iri, source.effective_url):
+            raise InputError("Dependency RDF aliases require exact document identities")
+        if iri in self.contexts:
+            self.dual_role(iri, source, self.contexts[iri])
+        before = self.imports.get(iri)
+        if before is not None:
+            fields = (
+                "format",
+                "document_iri",
+                "effective_url",
+                "graph_name",
+                "union",
+                "compression",
+            )
+            if any(
+                getattr(before, field) != getattr(source, field) for field in fields
+            ):
+                raise InputError("Conflicting bundle logical binding", location=iri)
+            assert isinstance(before.content, bytes)
+            if not self.equal_bytes(before.content, payload):
+                raise InputError("Conflicting bundle logical binding", location=iri)
+            return
+        self.retain(payload)
+        self.imports[iri] = source
+
+    def context(self, iri: str, raw: bytes) -> None:
+        """Retain exact context payloads by their logical document identity."""
+        payload = self.payload(iri, raw)
+        if iri in self.imports:
+            self.dual_role(iri, self.imports[iri], payload)
+        if iri in self.contexts:
+            if not self.equal_bytes(self.contexts[iri], payload):
+                raise InputError("Conflicting bundle logical binding", location=iri)
+            return
+        self.retain(payload)
+        self.contexts[iri] = payload
+
+
 def load_bundle(
-    source: Path | Traversable, *, limits: Limits | None = None
+    source: Path | Traversable,
+    *,
+    dependencies: Sequence[PreparedBundle] = (),
+    limits: Limits | None = None,
 ) -> PreparedBundle:
     """Prepare a directory, packaged resource or bounded ZIP project bundle.
 
@@ -111,6 +244,8 @@ def load_bundle(
     change their base. Every path is portable and local. Context availability is
     checked for declared entry contexts and actual context-check inputs, without
     claiming all possible future scoped-context applications were exercised.
+    Dependencies contribute owned offline resources, never inherited jobs or policy.
+    Local files/configuration remain separate from the combined availability closure.
     """
     selected = limits or Limits()
     with bundle_reader(source, limits=selected) as read:
@@ -144,6 +279,41 @@ def load_bundle(
         ownership = Budget(capped)
         ownership.consume("resources")
         ownership.consume("bytes", len(files["project.json"]))
+        supplied_dependencies: object = dependencies
+        if not isinstance(supplied_dependencies, Sequence) or isinstance(
+            supplied_dependencies, str | bytes
+        ):
+            raise InputError("Bundle dependencies require a finite typed sequence")
+        dependency_count = len(dependencies)
+        ownership.consume("states", dependency_count)
+        ownership.consume("resources", dependency_count)
+        ownership.consume("bytes", 64 + 16 * dependency_count)
+        availability = _Availability(ownership)
+        for index in range(dependency_count):
+            ownership.consume("work")
+            try:
+                dependency = dependencies[index]
+            except IndexError as error:
+                raise InputError(
+                    "Bundle dependency sequence changed during capture"
+                ) from error
+            if not isinstance(dependency, PreparedBundle):
+                raise InputError("Bundle dependencies require prepared bundles")
+            ownership.consume(
+                "states", len(dependency.imports) + len(dependency._context_payloads)
+            )
+            ownership.consume("states", len(dependency.context_scope))
+            for context_iri in dependency.context_scope:
+                ownership.consume("work")
+                bound_text(context_iri, ownership)
+                if context_iri not in dependency._context_payloads:
+                    raise InputError("Dependency contexts require owned raw snapshots")
+            for dependency_iri, descriptor in dependency.imports.items():
+                ownership.consume("work")
+                availability.rdf(dependency_iri, descriptor)
+            for dependency_iri, raw in dependency._context_payloads.items():
+                ownership.consume("work")
+                availability.context(dependency_iri, raw)
         rdf = {}
         logical: dict[str, str] = {}
         rdf_bindings: dict[str, tuple[str, str | None, str | None, bool]] = {}
@@ -193,21 +363,23 @@ def load_bundle(
                 graph_name=descriptor.graph_name,
                 union=descriptor.union,
             )
-        contexts = {}
+        for descriptor in rdf.values():
+            for iri in (descriptor.document_iri, descriptor.effective_url):
+                if iri is not None:
+                    availability.rdf(iri, descriptor)
+        local_contexts = {}
         for iri, value in object_value(
             manifest.get("contexts", {}), location="contexts"
         ).items():
             path, payload = member(value)
             bind(iri, path)
-            contexts[iri] = decode_json(
-                payload,
-                source=iri,
-                max_bytes=capped.max_bytes,
-                max_depth=capped.max_depth,
-            )
+            availability.context(iri, payload)
+            local_contexts[iri] = payload
         context_inputs: list[tuple[str, object, str | None]] = []
         for job in config.checks():
             kind = check_kind(job)
+            for _, value in input_paths(job):
+                member(value)
             members = job.get("documents", [])
             if not isinstance(members, list):
                 raise InputError("Context batch documents must be an array")
@@ -240,10 +412,24 @@ def load_bundle(
                                 base,
                             )
                         )
+    contexts = {
+        iri: decode_json(
+            payload, source=iri, max_bytes=capped.max_bytes, max_depth=capped.max_depth
+        )
+        for iri, payload in availability.contexts.items()
+    }
     bundle = PreparedBundle(
-        config, files, rdf, contexts, tuple(path for path, _, _ in context_inputs)
+        config,
+        files,
+        rdf,
+        contexts,
+        tuple(path for path, _, _ in context_inputs),
+        imports=availability.imports,
+        context_payloads=availability.contexts,
+        context_scope=tuple(local_contexts),
+        has_dependencies=dependency_count > 0,
     )
-    resources = context_resources(bundle.document_loader, limits=capped)
+    resources = context_resources(bundle.document_loader, budget=ownership)
     for name in bundle.rdf_scope:
         load_vocabulary(
             bundle.rdf[name],
@@ -260,7 +446,7 @@ def load_bundle(
             expand_document(
                 document,
                 base=base,
-                document_loader=bundle.document_loader,
+                document_loader=resources,
                 limits=capped,
             )
     return bundle

@@ -9,15 +9,16 @@ from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import source_entity
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.observations import SourcePath, at_path
+from bijux_ontology.jsonld.paths import (
+    SourcePath,
+    at_path,
+    bound_pointer_text,
+    bounded_location,
+)
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader
-from bijux_ontology.jsonld.selectors import (
-    SourceSelector,
-    _bounded_location,
-    _text_metadata,
-    resolve_selection,
-)
+from bijux_ontology.jsonld.selectors.checking import resolve_selection
+from bijux_ontology.jsonld.selectors.types import SourceSelector
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.reports import Issue, Report, combine_reports
 
@@ -79,7 +80,7 @@ def _failure(error: InputError, scope: str) -> Report:
 
 def _where(path: SourcePath, budget: Budget) -> str:
     """Charge escaped diagnostic pointer text before materializing it."""
-    return _bounded_location(path, budget)
+    return bounded_location(path, budget)
 
 
 def _form(
@@ -95,10 +96,10 @@ def _form(
         for requirement in requirements:
             budget.consume("work")
             for key in requirement.required_keys:
-                _text_metadata(key, budget)
+                bound_pointer_text(key, budget)
             if requirement.allowed_keys is not None:
                 for key in requirement.allowed_keys:
-                    _text_metadata(key, budget)
+                    bound_pointer_text(key, budget)
             selected = (
                 resolve_selection(
                     requirement.selector,

@@ -6,7 +6,7 @@ from rdflib import URIRef
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.roles.classification import bound_text
+from bijux_ontology.rdf.terms import bound_text
 
 from .types import (
     DatasetPatch,

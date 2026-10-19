@@ -9,23 +9,20 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.paths import bound_index, bound_path
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.jsonld.selectors import (
-    _number_metadata,
-    _path_metadata,
-)
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.models.checking import check_models
-from bijux_ontology.models.emission import ModelUsage
-from bijux_ontology.models.resource_roles.checking import check_resource_roles
-from bijux_ontology.models.serialization import (
+from bijux_ontology.models.emission.serialization import (
     InstanceCheck,
     check_instance,
     check_serialized,
 )
-from bijux_ontology.rdf.roles.classification import bound_node, bound_text
+from bijux_ontology.models.emission.types import ModelUsage
+from bijux_ontology.models.resource_roles.checking import check_resource_roles
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
@@ -73,7 +70,7 @@ def _stopped(report: Report) -> None:
 def _bound_usage(usage: ModelUsage, budget: Budget) -> None:
     """Requalify caller binding metadata against the operation's actual limits."""
     bound_text(usage.model, budget)
-    _path_metadata(usage.path, budget)
+    bound_path(usage.path, budget)
     for value in (usage.reference, usage.graph):
         if isinstance(value, str):
             bound_text(value, budget)
@@ -114,7 +111,7 @@ def _bound_model(model: ModelDeclaration, budget: Budget) -> None:
             ):
                 value = getattr(field.output, name)
                 if value is not None:
-                    _number_metadata(value, budget)
+                    bound_index(value, budget)
     if model.coverage is not None:
         policy = model.coverage
         budget.consume(
@@ -170,7 +167,7 @@ def _preflight(version: ApplicationVersion, budget: Budget) -> None:
         budget.consume("states", len(binding.samples))
         for sample, path in binding.samples.items():
             bound_text(sample, budget)
-            _path_metadata(path, budget)
+            bound_path(path, budget)
     budget.consume("resources", len(version.cases) + len(version.outputs))
     for case in version.cases:
         bound_text(case.identifier, budget)

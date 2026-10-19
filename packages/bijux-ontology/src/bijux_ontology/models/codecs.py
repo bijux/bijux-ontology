@@ -12,8 +12,7 @@ from bijux_ontology._json import (
 )
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import SubjectIdentity
-
-from .emission import ModelUsage
+from bijux_ontology.models.emission.types import ModelUsage
 
 
 def usages_from_data(value: object) -> tuple[ModelUsage, ...]:

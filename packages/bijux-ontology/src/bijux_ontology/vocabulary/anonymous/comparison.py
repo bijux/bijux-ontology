@@ -10,7 +10,7 @@ from rdflib import BNode, Graph, URIRef
 from bijux_ontology.errors import LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.roles.classification import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.facts.projection import FactProjection
 from bijux_ontology.vocabulary.facts.types import FactGraph, SelectedFact

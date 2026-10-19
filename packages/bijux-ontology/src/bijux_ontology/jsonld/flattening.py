@@ -8,13 +8,13 @@ from typing import cast
 
 from bijux_ontology._json import own_json
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.jsonld.paths import SourcePath, location
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.reports import Issue, Report, combine_reports
 
 from .conversion import DirectionPolicy
 from .expansion import _drop_issues, expand_document
-from .observations import SourcePath, location
 from .preparation import prepare_jsonld
 from .resources import DocumentLoader, _consume_work, _json_size, context_resources
 from .runtime import processor
