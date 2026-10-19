@@ -1680,3 +1680,12 @@ value regimes require explicit row and blank correspondence. CSV output needs
 explicit lossy opt-in. A valid supplied artifact does not establish external
 query completeness; require that separate caller evidence when necessary.
 XML-inexpressible RDF literal characters withhold output as unsupported.
+
+`data.query_usage.read_query_usage(text, source=...)` uses maintained SPARQL
+query/update translation to resolve class, predicate, datatype, graph, function
+and data references. Locations identify algebra positions, without source-span
+claims. `check_query_usage` checks actual vocabulary roles and deprecation. Pass
+`query_usages=(usage,)` to `index_uses` or `assess_upgrade` to expose those consumer
+dependencies. Dynamic vocabulary positions, unsupported composite class paths
+and unestablished binding scopes retain required unknowns beside known constants;
+comments and string contents do not become predicate declarations.

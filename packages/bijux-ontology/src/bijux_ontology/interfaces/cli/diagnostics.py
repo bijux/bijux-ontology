@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "query": frozenset(
+        "dependencies_unverified usage_input vocabulary_deprecated "
+        "deprecation_unverified".split()
+    ),
     "rdfa": frozenset(
         "expansion_unverified empty_extraction extraction_unverified".split()
     ),
@@ -428,6 +432,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "query": (
+        "parsed SPARQL program vocabulary dependencies",
+        "A program dependency fails its inventory or remains unresolved.",
+        "Inspect resolved roles and algebra positions; supply finite required "
+        "bindings and explicit vocabulary inventories for supported terms.",
+        "check_query_usage(read_query_usage(text), vocabulary)",
+    ),
     "rdfa": (
         "explicit supplied HTML5 and optional maintained RDFa processor",
         "The requested RDFa extraction lacks complete qualified assertions.",
