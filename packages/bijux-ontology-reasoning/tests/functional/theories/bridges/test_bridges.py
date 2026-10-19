@@ -8,13 +8,13 @@ from typing import cast
 import pytest
 from bijux_ontology_reasoning.axioms import NamedEntity, SubClassOf
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.bridges import (
+from bijux_ontology_reasoning.documents import prepare_owl_document
+from bijux_ontology_reasoning.theories.bridges import (
     BridgeInterpretation,
     BridgeKind,
     check_mapping_bridges,
 )
-from bijux_ontology_reasoning.documents import prepare_owl_document
-from bijux_ontology_reasoning.integration import TheoryComponent
+from bijux_ontology_reasoning.theories.integration import TheoryComponent
 from rdflib import URIRef
 
 from bijux_ontology.limits import Budget, Limits

@@ -26,7 +26,10 @@ from bijux_ontology_reasoning.editing.modules import (
     NamespaceTransfer,
     prepare_module_refactor,
 )
-from bijux_ontology_reasoning.integration import TheoryCombination, TheoryComponent
+from bijux_ontology_reasoning.theories.integration import (
+    TheoryCombination,
+    TheoryComponent,
+)
 
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.limits import Budget

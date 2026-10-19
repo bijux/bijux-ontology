@@ -8,7 +8,7 @@ import pytest
 from bijux_ontology_reasoning.axioms import NamedEntity, SubClassOf
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import prepare_owl_document
-from bijux_ontology_reasoning.integration import (
+from bijux_ontology_reasoning.theories.integration import (
     TheoryCombination,
     TheoryComponent,
     check_integration,

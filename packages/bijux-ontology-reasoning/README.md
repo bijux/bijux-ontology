@@ -188,7 +188,7 @@ proved logical findings. Smallest size, subset minimality and complete enumerati
 are not claimed. Anonymous support and unavailable tautology justifications remain
 unknown; generated signature declarations are separate replay scaffolding.
 
-`integration.check_integration` compares explicitly selected `TheoryCombination`
+`theories.integration.check_integration` compares explicitly selected `TheoryCombination`
 deployments from separately owned `TheoryComponent` originals. Supply the named
 classes and consumer entailments that must hold. Original modules retain their
 native import identities; conflicting versions cannot overwrite one another.
@@ -198,7 +198,7 @@ and exact source owners; pre-existing failures are preserved without new blame.
 Completion covers the selected combinations and obligations only; unselected
 subsets, absent imports or exhausted explanation work receive no certificate.
 
-`bridges.check_mapping_bridges` checks explicit `BridgeInterpretation` approvals
+`theories.bridges.check_mapping_bridges` checks explicit `BridgeInterpretation` approvals
 of original SSSOM `MappingOccurrence` rows. Choose declared class/property facets
 and nonempty protected entailments; an exactMatch relation or confidence never
 supplies an OWL interpretation. Original source and unbridged union baselines stay
