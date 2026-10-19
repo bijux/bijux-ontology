@@ -227,6 +227,17 @@ def test_shared_limits_cancel_and_missing_optional_backend_preserve_truth() -> N
         _status(), EX.R, EX.focus, seed=_seed(), values=(), cancel=cancel
     )
     assert stopped.status == "exhausted" and stopped.positive is None
+    cancel.clear()
+    available = generate_examples(
+        _status(),
+        EX.R,
+        EX.focus,
+        seed=_seed(),
+        values=(EX.ready, Literal("label")),
+        cancel=cancel,
+    )
+    assert available.status == "found" and available.positive is not None
+    assert available.positive.validation.report.verified
     if importlib.util.find_spec("pyshacl") is None:
         absent = generate_examples(
             _status(), EX.R, EX.focus, seed=_seed(), values=(EX.ready, Literal("label"))

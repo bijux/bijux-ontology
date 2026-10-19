@@ -30,23 +30,6 @@ class _SearchCap(ResourceError):
     """The caller's finite native-trial window ended, not a satisfiability proof."""
 
 
-class _Cancellation(threading.Event):
-    """Combine original deadline/cancellation without mutating the caller's event."""
-
-    def __init__(self, operation: Operation) -> None:
-        """Retain the original deadline and cancellation owner without resetting it."""
-        super().__init__()
-        self.operation = operation
-
-    def is_set(self) -> bool:
-        """Let the existing native-session supervisor enforce the original deadline."""
-        return (
-            time.monotonic() >= self.operation.deadline
-            or self.operation.cancel is not None
-            and self.operation.cancel.is_set()
-        )
-
-
 def _candidate(
     prepared: PreparedExamples, state: State, budget: Budget
 ) -> PreparedSource:
@@ -150,7 +133,6 @@ def generate_examples(
         selected_reports.extend(
             (prepared.inspection.profile.structural_report, prepared.analysis.report)
         )
-        guard = _Cancellation(current)
         with ExitStack() as stack:
             sessions: dict[URIRef | BNode, ShaclSession] = {}
 
@@ -187,7 +169,7 @@ def generate_examples(
                 reserve(current)
                 current.consume("resources")
                 actual = session(selected).validate(
-                    data, focus_nodes=(focus,), cancel=guard
+                    data, focus_nodes=(focus,), cancel=current.cancel
                 )
                 actual = _retained_result(actual, current)
                 trials.append(actual)
