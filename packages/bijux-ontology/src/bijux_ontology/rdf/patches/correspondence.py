@@ -14,8 +14,8 @@ from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import ControlBudget, Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.records.codecs import read_witness, term_data, witness_data
 from bijux_ontology.rdf.records.types import (

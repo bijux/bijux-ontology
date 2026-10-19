@@ -20,8 +20,8 @@ from bijux_ontology.execution.limits import (
     bound_text,
 )
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.rdf.sources.types import RdfSource
 
 from .protocol import decode_quads, encode_quads, occurrences

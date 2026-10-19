@@ -13,8 +13,8 @@ from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, IssueCollector
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import term_data
 from bijux_ontology.rdf.sources.snapshots import owned_graph_name

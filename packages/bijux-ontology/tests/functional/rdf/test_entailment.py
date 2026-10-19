@@ -18,8 +18,8 @@ from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
-from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.entailment import preparation, prepare_entailment

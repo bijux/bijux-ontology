@@ -16,8 +16,8 @@ from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.json.values import object_value
 from bijux_ontology.vocabulary.relation_paths.automaton import named
 

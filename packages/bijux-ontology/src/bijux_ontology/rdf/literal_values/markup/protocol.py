@@ -10,8 +10,8 @@ from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, bound_text
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 
 
 def run_markup(

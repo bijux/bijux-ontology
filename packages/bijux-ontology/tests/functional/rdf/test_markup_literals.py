@@ -18,8 +18,8 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.execution.processes import transport
 from bijux_ontology.execution.processes.ownership import spawn_owned_process
-from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.rdf.literal_values.markup import (
     MarkupCanonicalization,
     compare_markup_values,

@@ -22,8 +22,8 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCandidate,
     MigrationCheck,

@@ -9,7 +9,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
-from bijux_ontology.execution.receipts import TerminalResponse
+from bijux_ontology.json.receipts import TerminalResponse
 
 
 @pytest.mark.parametrize("completion", ("complete", "malformed", "missing"))
