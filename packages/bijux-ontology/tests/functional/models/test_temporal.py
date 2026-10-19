@@ -1,13 +1,16 @@
 """Actual emitted intervals retain calendar uncertainty and an explicit clock."""
 
+import sys
 import threading
 from dataclasses import replace
 from decimal import Inexact, getcontext, localcontext
+from types import FrameType
 
 import pytest
 from rdflib import Literal
 from rdflib.namespace import XSD
 
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.temporal import (
     RelativeTemporal,
@@ -16,6 +19,7 @@ from bijux_ontology.models.temporal import (
     TemporalOrder,
     check_temporal,
 )
+from bijux_ontology.rdf.literals.checking import check_literal
 
 START = TemporalField(("start",), XSD.dateTime)
 END = TemporalField(("end",), XSD.dateTime)
@@ -206,3 +210,43 @@ def test_budget_cancellation_paid_findings_and_optional_absence() -> None:
         check_temporal(DOCUMENT, intervals=[INTERVAL], budget=repeated).report.outcome
         == "exhausted"
     )
+
+
+def test_temporal_scalar_validation_uses_the_parent_allowance() -> None:
+    pytest.importorskip("elementpath")
+    record = {"start": "2024-01-01T00:00:00Z", "end": "2024-01-02T00:00:00Z"}
+    interval = TemporalInterval(
+        TemporalField(("start",), XSD.dateTime),
+        TemporalField(("end",), XSD.dateTime),
+        minimum_duration=Literal("P1D", datatype=XSD.dayTimeDuration),
+    )
+    assert check_temporal(record, intervals=[interval]).report.verified
+    parent = Budget()
+    observed: list[object] = []
+    duration_owners: list[object] = []
+
+    def stop_at_duration_scalar(frame: FrameType, event: str, argument: object) -> None:
+        """Exhaust the supplied allowance at the actual duration-validation boundary."""
+        if event != "call" or frame.f_code is not check_literal.__code__:
+            return
+        owner = frame.f_locals.get("budget")
+        while isinstance(owner, Operation):
+            owner = owner.shared
+        observed.append(owner)
+        if frame.f_locals.get("value") == interval.minimum_duration:
+            duration_owners.append(owner)
+            parent.consume("states", parent.remaining("states"))
+
+    previous_profile = sys.getprofile()
+    sys.setprofile(stop_at_duration_scalar)
+    try:
+        tight = check_temporal(record, intervals=[interval], budget=parent)
+    finally:
+        sys.setprofile(previous_profile)
+    assert observed and all(owner is parent for owner in observed)
+    assert duration_owners == [parent]
+    assert tight.report.outcome == "exhausted"
+    assert not tight.report.verified
+    invalid = check_temporal({**record, "start": "invalid"}, intervals=[interval])
+    assert any(issue.code == "literal.lexical_invalid" for issue in invalid.report)
+    assert not invalid.report.verified

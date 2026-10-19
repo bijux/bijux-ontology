@@ -592,15 +592,16 @@ def _emission_issues(
                     "work", 1 + len(fields_by_name[condition.field].values)
                 )
                 term = condition.equals
+                lexical_valid = None
                 if isinstance(term, Literal):
-                    group_issues.extend(
-                        check_literal(
-                            term,
-                            location=f"{where}/groups/{group.identifier}/{scenario.identifier}",
-                            datatype_registry=contracts.datatype_registry,
-                            budget=contracts.budget,
-                        ).issues
+                    literal_report = check_literal(
+                        term,
+                        location=f"{where}/groups/{group.identifier}/{scenario.identifier}",
+                        datatype_registry=contracts.datatype_registry,
+                        budget=contracts.budget,
                     )
+                    group_issues.extend(literal_report.issues)
+                    lexical_valid = literal_report.verified
                 traits = (
                     ValueTraits(
                         "literal",
@@ -626,7 +627,10 @@ def _emission_issues(
                         constrained.append(matched)
                         continue
                     application = application_matches(
-                        value.constraints, term, budget=contracts.budget
+                        value.constraints,
+                        term,
+                        budget=contracts.budget,
+                        lexical_valid=lexical_valid,
                     )
                     constrained.append(
                         False

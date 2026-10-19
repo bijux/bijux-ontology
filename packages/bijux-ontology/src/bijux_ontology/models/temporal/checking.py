@@ -66,7 +66,7 @@ class _Check:
     def literal(self, value: Literal, where: str) -> Date | DateTime | None:
         """Keep actual lexical validation required before maintained value parsing."""
         bound_node(value, self.operation)
-        report = check_literal(value, location=where)
+        report = check_literal(value, location=where, budget=self.operation)
         retain_report(report, self.operation, self.issues)
         self.children.append(report)
         if not report.verified:
@@ -150,7 +150,7 @@ class _Check:
         if not isinstance(duration, Literal):
             raise InputError("Temporal offsets require explicit RDF duration literals")
         bound_node(duration, self.operation)
-        report = check_literal(duration, location=where)
+        report = check_literal(duration, location=where, budget=self.operation)
         retain_report(report, self.operation, self.issues)
         self.children.append(report)
         if not report.verified or start.value is None:

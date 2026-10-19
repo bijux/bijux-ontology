@@ -34,6 +34,19 @@ def _term(term: Node, budget: Budget) -> tuple[str | None, ...]:
     return term_key(term)
 
 
+def _valid_literal(term: Literal, budget: Budget, known: bool | None) -> bool:
+    """Reuse a supplied lexical proof or fund qualification on the same allowance."""
+    if known is not None:
+        return known
+    report = check_literal(term, budget=budget)
+    if report.outcome == "exhausted":
+        for issue in report.issues:
+            if issue.kind == "exhausted":
+                raise LimitExceeded(issue.message)
+        raise LimitExceeded("Application literal qualification exhausted its budget")
+    return report.verified
+
+
 def _number(term: Node, budget: Budget, lexical_valid: bool | None) -> Decimal | None:
     """Interpret only validated integer/decimal lexical forms exactly."""
     if not isinstance(term, Literal) or term.datatype is None:
@@ -42,7 +55,7 @@ def _number(term: Node, budget: Budget, lexical_valid: bool | None) -> Decimal |
         str(term.datatype), str(XSD.decimal), regime="application"
     ) not in ("equal", "subset"):
         return None
-    if not (check_literal(term).verified if lexical_valid is None else lexical_valid):
+    if not _valid_literal(term, budget, lexical_valid):
         return None
     budget.consume("work", len(str(term)) + 1)
     try:
@@ -52,7 +65,7 @@ def _number(term: Node, budget: Budget, lexical_valid: bool | None) -> Decimal |
     return value if value.is_finite() else None
 
 
-def _string(term: Node, lexical_valid: bool | None) -> str | None:
+def _string(term: Node, budget: Budget, lexical_valid: bool | None) -> str | None:
     """Use string value spelling without arbitrary typed-literal conversion."""
     if not isinstance(term, Literal):
         return None
@@ -61,7 +74,7 @@ def _string(term: Node, lexical_valid: bool | None) -> str | None:
         datatype, str(XSD.string)
     ) not in ("equal", "subset"):
         return None
-    valid = check_literal(term).verified if lexical_valid is None else lexical_valid
+    valid = _valid_literal(term, budget, lexical_valid)
     return str(term) if valid else None
 
 
@@ -151,7 +164,7 @@ def application_matches(
         or constraints.max_length is not None
         or constraints.pattern is not None
     ):
-        text = _string(actual, lexical_valid)
+        text = _string(actual, budget, lexical_valid)
         if text is None:
             results.append(None)
         else:

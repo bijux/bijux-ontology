@@ -1,8 +1,10 @@
 """Explicit native unit plans check real records without changing their originals."""
 
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from decimal import Context, Decimal, Inexact, Rounded, getcontext, localcontext
+from types import FrameType
 from typing import cast
 
 import pytest
@@ -25,6 +27,7 @@ from bijux_ontology.models.quantities import (
     UnitBinding,
     prepare_quantities,
 )
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = Namespace("urn:quantity:")
@@ -232,6 +235,41 @@ def test_cumulative_bounds_metadata_and_paid_finding_prefix() -> None:
             prepared.check(
                 cyclic, _contract(), limits=Limits(max_depth=depth)
             ).report.outcome
-            == "exhausted"
+            == "input_error"
         )
     assert prepared.check(_record(), _contract()).report.verified
+
+
+def test_quantity_scalar_validation_uses_the_parent_allowance() -> None:
+    pytest.importorskip("pint")
+    prepared = prepare_quantities((UnitBinding("m", "meter"),))
+    assert prepared.report.verified
+    record = {"value": "1", "unit": "m"}
+    contract = QuantityContract(
+        ("value",), ("unit",), "m", minimum=Decimal("0"), maximum=Decimal("2")
+    )
+    assert prepared.check(record, contract).report.verified
+    parent = Budget()
+    observed: list[object] = []
+
+    def stop_at_converted_scalar(
+        frame: FrameType, event: str, argument: object
+    ) -> None:
+        """Exhaust the actual parent when converted scalar validation begins."""
+        if event == "call" and frame.f_code is check_literal.__code__:
+            observed.append(frame.f_locals.get("budget"))
+            if len(observed) == 2:
+                parent.consume("states", parent.remaining("states"))
+
+    previous_profile = sys.getprofile()
+    sys.setprofile(stop_at_converted_scalar)
+    try:
+        tight = prepared.check(record, contract, budget=parent)
+    finally:
+        sys.setprofile(previous_profile)
+    assert len(observed) == 2 and all(owner is parent for owner in observed)
+    assert tight.report.outcome == "exhausted"
+    assert not tight.report.verified
+    invalid = prepared.check({**record, "value": "invalid"}, contract)
+    assert any(issue.code == "literal.lexical_invalid" for issue in invalid.report)
+    assert not invalid.report.verified
