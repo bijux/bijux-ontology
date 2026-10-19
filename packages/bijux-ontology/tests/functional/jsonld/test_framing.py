@@ -459,3 +459,30 @@ def test_inline_frame_and_document_keep_their_explicit_local_base() -> None:
             retained=EntitySelector(identifiers=(base + "subject",), graph=None),
             predicates=(base + "label",),
         )
+
+
+def test_retained_names_share_one_actual_source_association_walk() -> None:
+    """Measure actual source traversal without replacing framing or observations."""
+    import sys
+    from types import FrameType
+
+    roots: dict[int, FrameType] = {}
+
+    def recording(frame: FrameType, event: str, argument: object) -> None:
+        if (
+            event == "call"
+            and frame.f_code.co_name == "walk"
+            and "source_associations" in frame.f_code.co_qualname
+            and frame.f_locals.get("path") == ()
+        ):
+            roots[id(frame)] = frame
+
+    previous = sys.getprofile()
+    sys.setprofile(recording)
+    try:
+        result = project(*catalogue())
+    finally:
+        sys.setprofile(previous)
+    assert result.report.verified, result.report.to_dict()
+    assert len(result.nodes) == 3 and all(node.paths for node in result.nodes)
+    assert len(roots) == 1

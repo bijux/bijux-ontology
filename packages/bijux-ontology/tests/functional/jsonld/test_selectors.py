@@ -522,3 +522,122 @@ def test_entity_inventory_selection_streams_with_qualified_partial_coverage() ->
         for entity in partial.entities
     )
     assert prepared.select(selector).count == 32
+
+
+def test_joint_associations_keep_graph_reference_and_opaque_scope_separate() -> None:
+    from bijux_ontology.jsonld.selectors.checking import resolve_entity_associations
+
+    document = {
+        "@context": {
+            "@vocab": EX,
+            "payload": {"@id": EX + "payload", "@type": "@json"},
+        },
+        "@graph": [
+            {"@id": EX + "a", "@type": "Record", "label": "first"},
+            {"@id": EX + "a", "label": "second"},
+            {
+                "@id": EX + "other",
+                "link": {"@id": EX + "a"},
+                "payload": {"@id": EX + "a", "@type": "Record", "label": "opaque"},
+            },
+            {"@id": EX + "named", "@graph": [{"@id": EX + "a", "label": "named"}]},
+        ],
+    }
+    prepared = prepare_usages(document)
+    selectors = (
+        EntitySelector((EX + "a",), graph=None, coverage_unit="source_occurrence"),
+        EntitySelector(
+            (EX + "a",),
+            graph=None,
+            coverage_unit="source_occurrence",
+            include_references=True,
+        ),
+        EntitySelector(
+            (EX + "a",), graph=EX + "named", coverage_unit="source_occurrence"
+        ),
+        EntitySelector(
+            (EX + "missing",), graph=None, coverage_unit="source_occurrence", minimum=0
+        ),
+    )
+    separate = tuple(
+        resolve_selection(
+            selector,
+            document,
+            prepared.entities,
+            prepared.observe,
+            Budget(),
+            require_usage=False,
+            association_only=True,
+        )
+        for selector in selectors
+    )
+    joint = resolve_entity_associations(
+        selectors, document, prepared.entities, prepared.observe, Budget()
+    )
+    assert [selection.paths for selection in joint] == [
+        (("@graph", 0), ("@graph", 1)),
+        (("@graph", 0), ("@graph", 1), ("@graph", 2, "link")),
+        (("@graph", 3, "@graph", 0),),
+        (),
+    ]
+    assert [selection.report.to_dict() for selection in joint] == [
+        selection.report.to_dict() for selection in separate
+    ]
+
+
+def test_joint_association_limit_retains_completed_paths_without_absence_claims() -> (
+    None
+):
+    import sys
+    from types import FrameType
+
+    from bijux_ontology.jsonld.selectors.checking import (
+        _SourceMatches,
+        resolve_entity_associations,
+    )
+
+    document = {
+        "@context": {"@vocab": EX},
+        "@graph": [
+            {"@id": EX + "a", "label": "first"},
+            {"@id": EX + "b", "label": "second"},
+        ],
+    }
+    prepared = prepare_usages(document)
+    owner = Budget()
+    stopped = False
+
+    def stop_after_paid_path(frame: FrameType, event: str, argument: object) -> None:
+        nonlocal stopped
+        if (
+            not stopped
+            and event == "return"
+            and frame.f_code is _SourceMatches.adopt.__code__
+        ):
+            request = frame.f_locals["self"]
+            if request.paths:
+                stopped = True
+                owner.consume("work", owner.remaining("work"))
+
+    selectors = tuple(
+        EntitySelector((EX + name,), graph=None, coverage_unit="source_occurrence")
+        for name in ("a", "b")
+    )
+    previous = sys.getprofile()
+    sys.setprofile(stop_after_paid_path)
+    try:
+        partial = resolve_entity_associations(
+            selectors, document, prepared.entities, prepared.observe, owner
+        )
+    finally:
+        sys.setprofile(previous)
+    assert stopped and partial[0].paths == (("@graph", 0),) and not partial[1].paths
+    assert all(
+        selection.report.outcome == "exhausted" and not selection.report.complete
+        for selection in partial
+    )
+    assert all(
+        issue.code == "execution.limit_exceeded"
+        for selection in partial
+        for issue in selection.report.issues
+    )

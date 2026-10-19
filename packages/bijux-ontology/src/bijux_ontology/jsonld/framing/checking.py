@@ -24,7 +24,7 @@ from bijux_ontology.jsonld.processing.resources import (
     _json_size,
     context_resources,
 )
-from bijux_ontology.jsonld.selectors.checking import resolve_selection
+from bijux_ontology.jsonld.selectors.checking import resolve_entity_associations
 from bijux_ontology.jsonld.selectors.types import EntitySelector
 from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages
 from bijux_ontology.rdf.comparison import compare_rdf
@@ -361,26 +361,34 @@ def frame_document(
             adopt(comparison)
             if comparison.complete:
                 checked = len(names)
-        nodes = []
-        for name in names:
-            paths = resolve_selection(
+        operation.consume("states", len(names))
+        operation.reserve_storage(128 * len(names))
+        associations = resolve_entity_associations(
+            tuple(
                 EntitySelector(
                     identifiers=(name,),
                     graph=retained.graph,
                     coverage_unit="source_occurrence",
                     minimum=1,
-                ),
-                candidate,
-                after_view.entities,
-                after_view.observe,
-                operation,
-                require_usage=False,
-                association_only=True,
-            )
-            adopt(paths.report)
-            operation.consume("states")
-            operation.consume("bytes", 96 + 16 * len(paths.paths))
-            nodes.append(FrameNode(name, retained.graph, paths.paths))
+                )
+                for name in names
+            ),
+            candidate,
+            after_view.entities,
+            after_view.observe,
+            operation,
+        )
+        nodes = []
+        try:
+            for name, paths in zip(names, associations, strict=True):
+                adopt(paths.report)
+                operation.consume("states")
+                operation.consume("bytes", 96 + 16 * len(paths.paths))
+                nodes.append(FrameNode(name, retained.graph, paths.paths))
+        except LimitExceeded:
+            for selection in associations:
+                issues.retain_completed(selection.report)
+            raise
         result = report()
         if result.verified:
             encoded = json.dumps(candidate, ensure_ascii=False, separators=(",", ":"))
