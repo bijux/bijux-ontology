@@ -37,44 +37,6 @@ if TYPE_CHECKING:
     from bijux_ontology.models.corpus.types import _CorpusEvidence
 
 
-def same_context(actual: object, expected: object, budget: Budget) -> bool:
-    """Compare owned JSON without numeric coercion or changing context meaning."""
-    budget.consume("work")
-    if isinstance(actual, dict):
-        if not isinstance(expected, dict):
-            return False
-        other = cast(dict[str, object], expected)
-        if len(actual) != len(other):
-            return False
-        budget.reserve_storage(256)
-        for key, value in actual.items():
-            budget.consume("work", len(key) + 1)
-            if key not in other or not same_context(value, other[key], budget):
-                return False
-        return True
-    if isinstance(actual, list):
-        if not isinstance(expected, list):
-            return False
-        items = cast(list[object], expected)
-        if len(actual) != len(items):
-            return False
-        budget.reserve_storage(256)
-        return all(
-            same_context(value, items[index], budget)
-            for index, value in enumerate(actual)
-        )
-    if isinstance(actual, str):
-        if not isinstance(expected, str):
-            return False
-        budget.consume("work", len(actual) + len(expected) + 1)
-        return bool(str.__eq__(actual, expected))
-    if type(actual) is not type(expected):
-        return False
-    if type(actual) is int:
-        budget.consume("work", actual.bit_length() // 8 + 1)
-    return bool(actual == expected)
-
-
 @dataclass
 class EmissionContext:
     """One operation's binding discovery, shared evidence and cumulative counts."""

@@ -6,9 +6,11 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.compaction import export_jsonld
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Limits
+from bijux_ontology.jsonld.processing.expansion import expand_document
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 
 EX = "https://example.org/"
@@ -131,3 +133,23 @@ def test_compaction_respects_local_context_base_without_application_base() -> No
     with pytest.raises(ValueError) as captured:
         export_jsonld(source, context=EX + "context", document_loader=fail)
     assert captured.value is callback_error
+
+
+def test_frame_context_cannot_repair_a_different_json_scalar_kind() -> None:
+    """A supplied context cannot overwrite a frame's invalid numeric boolean."""
+    source = prepare_source(Graph().add((S, P, Literal("Kept"))))
+    context = {"p": str(P), "@propagate": True}
+    valid = export_jsonld(
+        source,
+        context=context,
+        frame={"@context": {"@propagate": True, "p": str(P)}, "@id": str(S)},
+    )
+    assert valid.content is not None and valid.report.verified
+    for value in (1, 1.0):
+        selected = {"@propagate": value, "p": str(P)}
+        frame: dict[str, object] = {"@context": selected, "@id": str(S)}
+        with pytest.raises(InputError):
+            expand_document({"@context": selected, "@id": str(S), "p": "Kept"})
+        rejected = export_jsonld(source, context=context, frame=frame)
+        assert rejected.content is None and rejected.report.outcome == "input_error"
+        assert type(selected["@propagate"]) is type(value)
