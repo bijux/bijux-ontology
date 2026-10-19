@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "r2rml": frozenset(
+        "source_population_unverified emitted_key_mismatch "
+        "emitted_population_unverified unverified input_error".split()
+    ),
     "biolink": frozenset(
         "unverified input_error preparation_unverified unknown_element "
         "abstract_element mixin_element association_role category_role "
@@ -575,6 +579,15 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "r2rml": (
+        "explicit SQLite table populations and owned native R2RML output",
+        "A source row, emitted key or join fails or lacks complete scoped evidence.",
+        "Inspect original mapping, exact row keys and physical output graph; "
+        "supply complete populations and closed foreign-reference obligations "
+        "for every parent join, with a qualified isolated Morph-KGC interpreter.",
+        "check_r2rml(backend, snapshot, mapping, populations=populations, "
+        "models=models, foreign_checks=foreign_checks, graph_name=graph)",
+    ),
     "biolink": (
         "explicit local Biolink category, predicate and qualifier contracts",
         "A selected association fails or its native interpretation is unverified.",

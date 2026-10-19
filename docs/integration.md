@@ -1900,3 +1900,26 @@ The official model needs an explicit measured profile, for example
 Preparation owns resource bytes; each checked batch builds its toolkit in an
 owned process. These application contracts do not prove external identifier
 membership or OWL contradictions and do not validate unrelated payload slots.
+
+`interfaces.adapters.r2rml` runs actual Morph-KGC against an owned, quiescent
+SQLite snapshot. Install its qualified runtime in a separate environment:
+
+```sh
+python3 -m venv artifacts/morph-runtime
+artifacts/morph-runtime/bin/python -m pip install 'morph-kgc[sqlite]==2.10.0' \
+  'rdflib==7.2.1' 'pyoxigraph==0.3.22' 'pandas==2.3.3' 'sqlalchemy==2.1.5'
+artifacts/morph-runtime/bin/python -m pip check
+```
+
+Call `prepare_sqlite_snapshot(path, artifacts=directory)` and
+`prepare_morph_backend(interpreter, artifacts=directory)`, then `check_r2rml`
+with every `R2rmlPopulation`, emitted model and required `R2rmlForeignCheck`.
+The finite profile supports actual INTEGER/TEXT table columns, explicit IRI
+templates, constant predicates, default or named graphs and single-column parent
+joins. Complete source keys and exact emitted keys establish row coverage;
+independent closed foreign-reference corpora check the actual joined endpoints.
+SQL queries, extensions, live database journals and unsupported mapping structure
+remain unverified. The isolated POSIX worker bounds native output files and
+retains native, model and relationship reports separately. Its pinned RDF
+dependencies belong to that environment; the ordinary core installation stays
+independently usable.
