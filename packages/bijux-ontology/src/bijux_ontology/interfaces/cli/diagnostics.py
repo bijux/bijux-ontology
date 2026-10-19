@@ -28,10 +28,14 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "selector": frozenset(
+        "parent_count_mismatch count_mismatch "
+        "structure_mismatch binding_unverified".split()
+    ),
     "adapter": frozenset(
         "alias_unverified class_mapping_unverified computed_output_unverified "
         "emission_unverified excluded_emission_conflict mapping_conflict "
-        "mapping_unverified "
+        "mapping_unverified field_contract_conflict alias_contract_conflict "
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
@@ -40,6 +44,7 @@ _CODES = {
         "flatten_correspondence_unverified flatten_input_error "
         "direction_mismatch identifier_kind_mismatch identifier_mismatch "
         "input_error invalid_path language_mismatch mapping_mismatch "
+        "omission_invalid omission_unverified required_scope_excluded "
         "order_mismatch order_unverified property_dropped property_omitted "
         "rdf_direction_loss rdf_empty_graph_loss rdf_identifier_loss "
         "rdf_interoperability_unverified rdf_language_invalid rdf_literal_loss "
@@ -132,6 +137,8 @@ _CODES = {
     ),
     "upgrade": frozenset(
         "child_model_unavailable usage_unavailable deprecation_unverified "
+        "corpus_baseline_missing corpus_candidate_missing "
+        "corpus_comparison_unverified corpus_coverage_missing "
         "newly_deprecated contract_unverified anonymous_impact_unverified "
         "no_contracts contract_persistent contract_resolved contract_introduced".split()
     ),
@@ -144,6 +151,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "selector": (
+        "explicit JSON-LD match coverage",
+        "Selected parents lack required matches or actual bindings are ambiguous.",
+        "Inspect each selected parent, concrete source path and effective graph; "
+        "retain incomplete identity associations and check each parent independently.",
+        'SourceSelector((Property("records"), ArrayItems(), '
+        'Property("title", minimum=1)))',
+    ),
     "contract": (
         "named required consumer obligations",
         "Required comparison or binding coverage is missing, or a selected "

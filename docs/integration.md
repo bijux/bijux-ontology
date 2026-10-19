@@ -120,3 +120,33 @@ owned `output`, the contextual `document`, and combined declaration/output check
 Pass an adapter’s `declaration_report` to retain extraction limitations. This is
 sampled evidence; it does not prove every possible serializer output. Callbacks
 execute in-process.
+
+Resolve finite selectors through `prepared.select(...)`. `SourceSelector` composes
+`Property`, `ArrayItems` and `KeyedItems`; each step’s bounds apply to every selected
+parent, independently of aggregate bounds. Check the returned concrete `paths`
+with existing expectations. Required missing children name their selected parent.
+`EntitySelector(types=(class_iri,), graph=None, coverage_unit="rdf_entity")` selects
+joined asserted entities; `coverage_unit="source_occurrence"` instead retains each
+describing object’s obligations. IDs/types are expanded identities, graph scope
+is explicit, and optional zero matches remain non-applicable.
+
+For context releases, `assess_context_corpus` compares explicit
+`ContextCorpusDocument` outputs under separate before/after resource loaders.
+Declare required `CorpusBranch` witnesses by document name and concrete usage
+path. Inspect baseline, candidate, selected usages, RDF preservation and exercised
+coverage separately; unchanged failures stay visible, and candidate success
+cannot establish a missing baseline. `compatible` is true only for verified
+scoped preservation, false for a demonstrated counterexample, otherwise unknown.
+
+Use `allowed_omissions=(("records", 0, "label"),)` for exact whole-property
+exclusions before checking retained usages. Excluded paths are reported and do
+not satisfy required coverage. Invalid, overlapping or ambiguous paths apply no
+exclusions; context definitions, keyword aliases and opaque value interiors
+remain protected. `allowed_drops` still applies to every matching term spelling.
+
+Dataclass and TypedDict integrations use the corresponding
+`bijux_ontology.interfaces.adapters` modules’ `model_declarations`. Supply a
+finite registry and explicit `RdfField` metadata: dataclasses use the `rdf`
+field metadata key, while TypedDict fields use `Annotated`. Serializer sidecars
+can describe output aliases and contracts; conflicting metadata remains visible.
+Python field types, defaults and required keys do not imply RDF emission.
