@@ -33,7 +33,12 @@ _CODES = {
         "data_unversioned page_incomplete hierarchy_unverified "
         "no_selected_entities membership_unverified".split()
     ),
-    "go": frozenset("taxon_disallowed taxon_unverified".split()),
+    "go": frozenset(
+        "taxon_disallowed taxon_unverified input_invalid input_unverified "
+        "required_annotations_empty gpi_subject_missing gpi_subject_ambiguous "
+        "gpi_subject_unverified reference_kind_mismatch reference_missing "
+        "reference_unverified term_retired export_unverified".split()
+    ),
     "shape-interchange": frozenset("unsupported unverified behavior_changed".split()),
     "pattern": frozenset("expected_missing unexpected_binding unverified".split()),
     "biosamples": frozenset(
@@ -516,9 +521,10 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
     ),
     "go": (
         "explicit GO annotation and supplied taxon-constraint release",
-        "A selected taxon restriction fails or its resource evidence is incomplete.",
-        "Inspect exact resource pins, independent restrictions, selected is_a "
-        "or part_of paths, union definitions and declared complete ancestry.",
+        "A selected annotation, reference or taxon contract fails or is unverified.",
+        "Inspect the located original assertion and exact GPI join, selected "
+        "vocabulary roles and lifecycle policy; for taxa also inspect resource "
+        "pins, independent restrictions, paths, unions and complete ancestry.",
         "check_go_taxa(release, annotations, policy=policy)",
     ),
     "shape-interchange": (
