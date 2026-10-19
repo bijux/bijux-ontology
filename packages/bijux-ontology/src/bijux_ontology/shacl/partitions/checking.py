@@ -19,13 +19,13 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.analysis.checking import analyze_shape_profile
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.paths import decode_path
 from bijux_ontology.shacl.profiles.execution import remaining_deadline
 from bijux_ontology.shacl.profiles.extraction import extract_profile
 from bijux_ontology.shacl.profiles.types import ShapeDependency, ShapeProfile
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 from .preparation import PartitionUnavailable, prepare_inputs
 from .types import (

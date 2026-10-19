@@ -14,9 +14,6 @@ from bijux_ontology.shacl.bindings import TermSelection, transport_roles
 from bijux_ontology.shacl.capabilities import (
     ShaclConstraintRequirement,
 )
-from bijux_ontology.shacl.coverage import (
-    ShaclCoverageContract,
-)
 from bijux_ontology.shacl.execution.planning import (
     _metadata,
     _options,
@@ -34,6 +31,7 @@ from bijux_ontology.shacl.execution.transport import execute_backend
 from bijux_ontology.shacl.findings import ShaclFinding as ShaclFinding
 from bijux_ontology.shacl.findings import ShaclSource
 from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 
 def validate_shapes(

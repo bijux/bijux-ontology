@@ -12,13 +12,13 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.sparql.functions import (
     ShaclFunctionCatalog,
     ShaclFunctionParameter,
     ShaclSparqlFunction,
 )
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.targets.execution import materialize_targets
 from bijux_ontology.shacl.targets.preparation import prepare_targets
 

@@ -16,10 +16,10 @@ from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.projection import _retained_result
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.execution.session import ShaclSession
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 from .construction import Candidates, State
 from .profile import PreparedExamples, UnsupportedExample, prepare, reserve

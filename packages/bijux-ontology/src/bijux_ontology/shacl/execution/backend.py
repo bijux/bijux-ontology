@@ -11,8 +11,8 @@ from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.shacl.bindings import read_bindings
-from bijux_ontology.shacl.coverage import TARGET
 from bijux_ontology.shacl.sparql.functions import register_functions
+from bijux_ontology.shacl.targets.coverage import TARGET
 from bijux_ontology.shacl.targets.execution import materialize_targets
 
 

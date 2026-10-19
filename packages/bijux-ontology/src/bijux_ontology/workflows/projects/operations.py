@@ -82,7 +82,7 @@ def run_check(
         from rdflib import URIRef
 
         from bijux_ontology.shacl.checking import validate_shapes
-        from bijux_ontology.shacl.coverage import ShaclCoverageContract
+        from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
         coverage = None
         if shacl_input is not None:

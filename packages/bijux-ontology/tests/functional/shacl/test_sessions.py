@@ -17,8 +17,8 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.session import ShaclSession
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 EX = Namespace("https://session.example/")
 

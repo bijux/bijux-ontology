@@ -24,7 +24,6 @@ from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.bindings import StaticBindings, TermSelection, transport_roles
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.planning import (
     _metadata,
     _options,
@@ -41,6 +40,7 @@ from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.execution.transport import SessionBackend
 from bijux_ontology.shacl.findings import ShaclSource
 from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 
 def _prepay_graph(graph: Graph, budget: Budget) -> None:

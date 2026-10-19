@@ -22,7 +22,7 @@ from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 from .compiling import _DEFAULT_PROFILE, DCAT, prepare_catalog_profile, shape_iri
 from .types import (
