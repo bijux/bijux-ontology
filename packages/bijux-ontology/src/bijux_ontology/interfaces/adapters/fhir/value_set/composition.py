@@ -24,9 +24,9 @@ from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.types imp
 )
 from bijux_ontology.json.values import array_value
 
+from ..catalogue import CodeSystemCatalogue, prepare_code_systems
 from ..code_system.checking import check_code_membership
 from ..code_system.reading import _operation as operation
-from ..code_system.reading import read_code_system
 from ..code_system.types import FhirCodeSystem
 from ..identity import FhirCodeBinding, FhirCodeIdentity, capture_code_bindings
 from ..json import UnsupportedJsonNumber, decode_fhir_json
@@ -47,8 +47,8 @@ class _Selection:
     budget: Budget
     issues: IssueCollector
     bindings: dict[FhirCodeIdentity, URIRef]
-    systems: tuple[FhirCodeSystem, ...]
     policy: FhirValueSetPolicy
+    catalogue: CodeSystemCatalogue | None = None
     reports: list[Report] = field(default_factory=list)
 
     def adopt(self, report: Report) -> None:
@@ -80,19 +80,19 @@ class _Selection:
                 "The selected version contract requires explicit business versions"
             )
             return None, False, False
-        self.budget.consume("work", len(self.systems))
-        systems = [
-            system
-            for system in self.systems
-            if system.system == identity.system and system.version == identity.version
-        ]
-        if len(systems) != 1:
+        if self.catalogue is None:
+            raise InputError("ValueSet terminology catalogue was not prepared")
+        resolution = self.catalogue.resolve(
+            identity.system, identity.version, budget=self.budget
+        )
+        system = resolution.code_system
+        if system is None:
             self.unknown(
                 "Exactly one qualified local "
                 "system/version must supply each selected code"
             )
             return None, False, False
-        result = check_code_membership(systems[0], identity, budget=self.budget)
+        result = check_code_membership(system, identity, budget=self.budget)
         self.adopt(result.report)
         if result.status == "unknown":
             return None, False, False
@@ -116,7 +116,7 @@ class _Selection:
             raise InputError("CodeSystem and ValueSet RDF bindings disagree")
         meanings = {
             definition.code: definition.uri
-            for definition in systems[0].property_definitions
+            for definition in system.property_definitions
         }
         nonselectable = abstract
         is_inactive = inactive is True
@@ -167,17 +167,17 @@ def _clause(clause: FhirSelectionClause, state: _Selection) -> ValueEnumeration:
         return ValueEnumeration((), closed=False)
     codes = clause.codes
     if codes is None:
-        supplied = [
-            system
-            for system in state.systems
-            if system.system == clause.system and system.version == clause.version
-        ]
-        if len(supplied) != 1:
+        if state.catalogue is None:
+            raise InputError("ValueSet terminology catalogue was not prepared")
+        resolution = state.catalogue.resolve(
+            clause.system, clause.version, budget=state.budget
+        )
+        if resolution.code_system is None:
             state.unknown(
                 "Whole-system selection requires one exact supplied system/version"
             )
             return ValueEnumeration((), closed=False)
-        system = supplied[0]
+        system = resolution.code_system
         state.adopt(system.report)
         complete = system.report.verified and system.content == "complete"
         if not complete:
@@ -310,13 +310,43 @@ def compile_value_set(
     no paging or unsupported restricting parameters. Both are scoped to supplied
     exact systems/versions; no terminology endpoint or implicit page is fetched.
     """
+    return _compile_value_set(
+        value_set,
+        mode=mode,
+        systems=systems,
+        bindings=bindings,
+        policy=policy,
+        limits=limits,
+        budget=budget,
+        catalogue=None,
+    )
+
+
+def _compile_value_set(
+    value_set: FhirValueSet,
+    *,
+    mode: Literal["compose", "expansion"],
+    systems: tuple[FhirCodeSystem, ...],
+    bindings: tuple[FhirCodeBinding, ...],
+    policy: FhirValueSetPolicy | None = None,
+    limits: Limits | None = None,
+    budget: Budget | None = None,
+    catalogue: CodeSystemCatalogue | None,
+) -> FhirValueSetSelection:
+    """Compile the original resource with independently admitted selection policy."""
     owned_budget = operation(limits, budget)
     issues = IssueCollector(owned_budget)
     selected_policy = policy if policy is not None else FhirValueSetPolicy()
-    state = _Selection(owned_budget, issues, {}, (), selected_policy)
+    state = _Selection(owned_budget, issues, {}, selected_policy)
     enumeration = ValueEnumeration((), closed=False)
     checked = 0
     try:
+        if catalogue is not None:
+            if type(catalogue) is not CodeSystemCatalogue:
+                raise InputError(
+                    "ValueSet reuse requires an owned terminology catalogue"
+                )
+            catalogue.require_owner(owned_budget, systems)
         if not isinstance(value_set, FhirValueSet) or mode not in {
             "compose",
             "expansion",
@@ -338,23 +368,20 @@ def compile_value_set(
             state.bindings = {
                 binding.identity: binding.iri for binding in owned_bindings
             }
-            supplied = capture(systems, owned_budget)
-            if any(not isinstance(system, FhirCodeSystem) for system in supplied):
-                raise InputError("Local systems require owned CodeSystem records")
-            # Reacquire actual original metadata before any key comparison or
-            # semantic use; public report metadata is bounded before attachment.
-            captured_systems = []
-            for system in supplied:
-                state.adopt(system.report)
-                captured = read_code_system(
-                    system.payload,
-                    bindings=system.bindings,
-                    case_comparison=system.case_comparison,
-                    budget=owned_budget,
+            if catalogue is None:
+                supplied = capture(systems, owned_budget)
+                if any(not isinstance(system, FhirCodeSystem) for system in supplied):
+                    raise InputError("Local systems require owned CodeSystem records")
+                catalogue = prepare_code_systems(
+                    supplied,
+                    owned_budget,
+                    on_original=lambda original: state.adopt(original.report),
+                    on_captured=lambda captured: state.adopt(captured.report),
                 )
-                state.adopt(captured.report)
-                captured_systems.append(captured)
-            state.systems = tuple(captured_systems)
+            else:
+                for system in catalogue.systems:
+                    state.adopt(system.report)
+            state.catalogue = catalogue
             if len(value_set.payload) > owned_budget.limits.max_bytes:
                 raise LimitExceeded("ValueSet exceeds the current source allowance")
             owned_budget.consume("bytes", 4 * len(value_set.payload))

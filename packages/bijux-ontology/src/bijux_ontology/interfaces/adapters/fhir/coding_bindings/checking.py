@@ -17,6 +17,7 @@ from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Annotation, Selection
 from bijux_ontology.vocabulary.languages.selection import negotiate_annotations
 
+from ..catalogue import CodeSystemCatalogue, prepare_code_systems
 from ..code_system.checking import check_code_membership
 from ..code_system.types import FhirCodeMembership, FhirCodeSystem
 from ..identity import FhirCodeIdentity
@@ -27,7 +28,6 @@ from .preparation import (
     binding_contract,
     diagnostic,
     encode,
-    local_systems,
     native_types,
     native_value,
     occurrences,
@@ -266,7 +266,7 @@ def _display(
 def _coding(
     raw: dict[str, object],
     path: SourcePath,
-    systems: tuple[FhirCodeSystem, ...],
+    catalogue: CodeSystemCatalogue,
     policy: FhirValueSetPolicy,
     display_policy: FhirDisplayPolicy,
     operation: Operation,
@@ -310,8 +310,7 @@ def _coding(
             )
         else:
             identity = FhirCodeIdentity(uri, version, code)
-            operation.consume("work", len(systems) + 1)
-            candidates = [s for s in systems if (s.system, s.version) == (uri, version)]
+            resolved = catalogue.resolve(uri, version, budget=operation)
             if version is None and not policy.allow_unversioned:
                 diagnostic(
                     issues,
@@ -320,7 +319,7 @@ def _coding(
                     path,
                     unknown=True,
                 )
-            elif len(candidates) != 1:
+            elif resolved.code_system is None:
                 diagnostic(
                     issues,
                     "identity_unverified",
@@ -329,7 +328,7 @@ def _coding(
                     unknown=True,
                 )
             else:
-                system = candidates[0]
+                system = resolved.code_system
                 reserve(operation)
                 membership = check_code_membership(system, identity, budget=operation)
                 completed.append(membership.report)
@@ -537,11 +536,27 @@ def check_coding_bindings(
             binding_contract(contract, operation)
         native = native_types()
         selected_decisions = _decisions(decisions, operation)
-        prepared_systems = local_systems(systems, operation, completed)
+        if type(systems) is not tuple:
+            raise InputError("Local CodeSystems require an immutable finite tuple")
+        reserve(operation, len(systems))
+
+        def original_system(system: FhirCodeSystem) -> None:
+            """Keep this consumer's ordinary-resource check before reacquisition."""
+            if type(system) is not FhirCodeSystem:
+                raise InputError("Local terminology requires owned CodeSystems")
+            reserve(operation)
+
+        catalogue = prepare_code_systems(
+            systems,
+            operation,
+            on_original=original_system,
+            on_captured=lambda captured: completed.append(captured.report),
+        )
+        prepared_systems = catalogue.systems
         for contract in bindings:
             reserve(operation, 3)
             selected, reference_matches = selection(
-                contract, prepared_systems, selected_policy, operation
+                contract, catalogue, selected_policy, operation
             )
             completed.append(selected.report)
             profile = _profile(
@@ -649,7 +664,7 @@ def check_coding_bindings(
                             coding = _coding(
                                 item,
                                 cp,
-                                prepared_systems,
+                                catalogue,
                                 selected_policy,
                                 contract.display,
                                 operation,
