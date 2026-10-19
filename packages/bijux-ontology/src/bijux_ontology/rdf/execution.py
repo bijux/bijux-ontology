@@ -31,6 +31,7 @@ WorkerModule = Literal[
     "bijux_ontology.rdf.workloads.worker",
     "bijux_ontology.rdf.containment.worker",
     "bijux_ontology.data.query_usage.worker",
+    "bijux_ontology.interfaces.adapters.biolink.worker",
 ]
 
 
@@ -70,6 +71,7 @@ def execute_worker(
         "bijux_ontology.rdf.workloads.worker",
         "bijux_ontology.rdf.containment.worker",
         "bijux_ontology.data.query_usage.worker",
+        "bijux_ontology.interfaces.adapters.biolink.worker",
     ):
         raise InputError("Unsupported RDF worker module")
     if type(cap) is not int or cap <= 0:

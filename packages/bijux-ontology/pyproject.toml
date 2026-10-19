@@ -19,6 +19,10 @@ dependencies = [
 bijux-ontology = "bijux_ontology.interfaces.cli:main"
 
 [project.optional-dependencies]
+biolink = [
+    "bmt==1.5.0",
+    "linkml-runtime==1.12.1",
+]
 analysis = [
     "scipy==1.17.1",
 ]

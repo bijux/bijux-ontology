@@ -285,6 +285,10 @@ dependencies = [
 analysis = [
     { name = "scipy" },
 ]
+biolink = [
+    { name = "bmt" },
+    { name = "linkml-runtime" },
+]
 biosamples = [
     { name = "jsonschema", extra = ["format-nongpl"] },
     { name = "referencing" },
@@ -354,6 +358,7 @@ xsd = [
 
 [package.metadata]
 requires-dist = [
+    { name = "bmt", marker = "extra == 'biolink'", specifier = "==1.5.0" },
     { name = "csvw", marker = "extra == 'csvw'", specifier = ">=4.1.0,<5" },
     { name = "elementpath", marker = "extra == 'xsd'", specifier = ">=5.1.4,<6" },
     { name = "fhir-resources", marker = "extra == 'fhir'", specifier = "==8.3.0" },
@@ -363,6 +368,7 @@ requires-dist = [
     { name = "jsonpointer", marker = "extra == 'jsonpatch'", specifier = ">=3,<4" },
     { name = "jsonschema", marker = "extra == 'jsonschema'", specifier = ">=4.26,<5" },
     { name = "jsonschema", extras = ["format-nongpl"], marker = "extra == 'biosamples'", specifier = ">=4.26,<5" },
+    { name = "linkml-runtime", marker = "extra == 'biolink'", specifier = "==1.12.1" },
     { name = "linkml-runtime", marker = "extra == 'linkml'", specifier = ">=1.12.1,<2" },
     { name = "lxml", marker = "extra == 'jsonld'", specifier = ">=6,<7" },
     { name = "lxml", marker = "extra == 'markup'", specifier = ">=6,<7" },
@@ -386,7 +392,7 @@ requires-dist = [
     { name = "sssom-schema", marker = "extra == 'sssom'", specifier = "==1.1.0a5" },
     { name = "uri-template", marker = "extra == 'templates'", specifier = ">=1.3,<2" },
 ]
-provides-extras = ["analysis", "oak", "fhir", "shex", "quantities", "csvw", "frictionless", "jsonpatch", "markup", "biosamples", "jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
+provides-extras = ["biolink", "analysis", "oak", "fhir", "shex", "quantities", "csvw", "frictionless", "jsonpatch", "markup", "biosamples", "jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
 
 [[package]]
 name = "bijux-ontology-dev"
@@ -415,7 +421,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
-    { name = "bijux-ontology", extra = ["analysis", "biosamples", "checksums", "csvw", "fhir", "jsonld", "jsonpatch", "linkml", "patterns", "pydantic", "quantities", "shacl", "shex", "sssom", "templates", "xsd"] },
+    { name = "bijux-ontology", extra = ["analysis", "biolink", "biosamples", "checksums", "csvw", "fhir", "jsonld", "jsonpatch", "linkml", "patterns", "pydantic", "quantities", "shacl", "shex", "sssom", "templates", "xsd"] },
     { name = "bijux-ontology", extra = ["oak"], marker = "extra == 'extra-14-bijux-ontology-oak'" },
     { name = "bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning" },
@@ -438,7 +444,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bijux-ontology", extras = ["biosamples", "analysis", "oak", "fhir", "shex", "quantities", "csvw", "jsonpatch", "jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology", extras = ["biolink", "biosamples", "analysis", "oak", "fhir", "shex", "quantities", "csvw", "jsonpatch", "jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
     { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning", editable = "packages/bijux-ontology-reasoning" },
     { name = "build", specifier = ">=1.2,<2" },
@@ -454,6 +460,35 @@ dev = [
     { name = "ruff", specifier = ">=0.6,<1" },
     { name = "twine", specifier = ">=6,<7" },
     { name = "vulture", specifier = ">=2.13,<3" },
+]
+
+[[package]]
+name = "biolink-model"
+version = "4.4.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "linkml-runtime" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1f/e7/3726cdfd6fe1e56b36166f520627fe5cdf503a891407ddb55e7e90bdb2c2/biolink_model-4.4.6.tar.gz", hash = "sha256:9fec7249cfbc19a6a3a1ddd2757a9f86fd893b50210a47847364255ddd919946", size = 4125333, upload-time = "2026-10-09T23:09:44.525Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/de/36/d352b574c274d8098ae6e7d3ddddd24f3f23f68345d659a4e52056e27d38/biolink_model-4.4.6-py3-none-any.whl", hash = "sha256:22359ced4f7f6f8a335000584bbf619d3596ff691b8b0f41aa852360b41cfc3c", size = 371561, upload-time = "2026-10-09T23:09:42.634Z" },
+]
+
+[[package]]
+name = "bmt"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "biolink-model" },
+    { name = "casefy" },
+    { name = "deprecation" },
+    { name = "pyyaml" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/16/11/34a9aa62262bd46a05fcdea9fcb27d81d7c7f650986f2f8bd3379f76850b/bmt-1.5.0.tar.gz", hash = "sha256:f053e83897c8e4d11a5499ff7de3cd1b66b59cd28562ebddf88cb60ad4cec862", size = 137094, upload-time = "2026-08-11T01:07:44.092Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/13/49/fdf58fd9d5ebbc9970656e2129270fce8aee987bab814662a1179d8cde23/bmt-1.5.0-py3-none-any.whl", hash = "sha256:2a9ca7b3b31102911d3b5e2c5973cb3c8a06334d4ac4ae0afb9df1990622db7c", size = 20429, upload-time = "2026-08-11T01:07:43.214Z" },
 ]
 
 [[package]]
@@ -477,6 +512,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/85/e0/27b467a38de29583a68973edbf99eeeee5b105567bdbd7d208e5b07525a7/cachetools-7.2.2.tar.gz", hash = "sha256:d521dc98d501ba9efd8d2b1663bbf88163509c0c0a090eea6dc154b421ec5410", size = 42916, upload-time = "2026-10-15T20:46:15.833Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/eb/d1/15cc3b3c07cfe11bf6fbe81a4a92ebb9d202d7d903aaa36b713c8f6eabda/cachetools-7.2.2-py3-none-any.whl", hash = "sha256:39b6c9291adde28c5de6622d25329375fadf3e8a678226e7872e2e72854e4549", size = 17819, upload-time = "2026-10-15T20:46:14.069Z" },
+]
+
+[[package]]
+name = "casefy"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/24/9c732e8e3585a1dc621c9c1349e55e87070c95d3c2d57bd8c5083ec8d731/casefy-1.1.0.tar.gz", hash = "sha256:849d6e0f80506fac70ab8e18999a4ca1eb7d8f70941682383d64aa22a7497f8f", size = 123884, upload-time = "2025-03-07T14:36:44.897Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/6a/1766f8c163951a3c9aeb30a4e6f5de9b2eed8389e3906c4cf30fcb475be6/casefy-1.1.0-py3-none-any.whl", hash = "sha256:a3dfcb14d85902d90702db1e9835760237f6a73ec0ae3b7e991ad767513a3cbc", size = 6539, upload-time = "2025-03-07T14:36:37.546Z" },
 ]
 
 [[package]]

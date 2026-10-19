@@ -1869,3 +1869,16 @@ relation labels need an explicit mapping for reference checks or RDF export.
 it does not assert the quoted positive edge or an OWL negative assertion.
 The supported field grammar and selected vocabulary checks are separate from
 GO editorial quality control; permitted retirement retains its raw evidence.
+
+Install `bijux-ontology[biolink]` for the qualified BMT 1.5.0/LinkML 1.12.1
+profile. `interfaces.adapters.biolink.prepare_biolink` requires explicit local
+`BiolinkResource` bytes, SHA256 pins, model version, predicate map and every
+schema import, including `linkml:types`. `check_biolink` takes oriented
+`BiolinkAssociation` records with ordered qualifiers and explicit
+`BiolinkPolicy` for submitted abstract/mixin terms. Effective native slots and
+raw outcomes remain inspectable; unsupported relevant rules remain unverified.
+The official model needs an explicit measured profile, for example
+`Limits(max_work=8_000_000, max_total_bytes=200_000_000, max_states=1_000_000)`.
+Preparation owns resource bytes; each checked batch builds its toolkit in an
+owned process. These application contracts do not prove external identifier
+membership or OWL contradictions and do not validate unrelated payload slots.

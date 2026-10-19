@@ -28,6 +28,15 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "biolink": frozenset(
+        "unverified input_error preparation_unverified unknown_element "
+        "abstract_element mixin_element association_role category_role "
+        "predicate_role range_unverified mixin_range_unverified endpoint_range "
+        "slot_unverified predicate_context predicate_unverified "
+        "predicate_endpoints qualifier_unverified qualifier_policy "
+        "qualifier_context qualified_predicate qualifier_value "
+        "qualifier_cardinality required_qualifier rule_unverified".split()
+    ),
     "ols": frozenset(
         "acquisition_unverified input_error unverified data_changed "
         "data_unversioned page_incomplete hierarchy_unverified "
@@ -517,6 +526,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "biolink": (
+        "explicit local Biolink category, predicate and qualifier contracts",
+        "A selected association fails or its native interpretation is unverified.",
+        "Inspect the retained statement, exact local model release, effective "
+        "context and qualifier location; supply every import and select explicit "
+        "abstract/mixin policies and sufficient measured execution limits.",
+        "check_biolink(prepared_model, associations, policy=policy, limits=limits)",
+    ),
     "ols": (
         "one versioned ontology-scoped OLS entity query",
         "Captured service evidence is incomplete or outside the selected query.",
