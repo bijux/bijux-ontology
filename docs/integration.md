@@ -1718,3 +1718,14 @@ the qualified observed envelope an explicit application policy; `check_contract`
 then checks held-out records without retraining it. Empty, unsupported, incomplete
 or invalid observations cannot authorize that policy. Samples establish no
 universal requiredness or maxima, and optional SHACL absence remains unverified.
+
+`rdf.reification.conversion.convert_reifications(source, selections, contract=...)`
+maps selected complete RDF 1.1 statement descriptions to actual RDF 1.2 reifiers.
+Choose the explicit qualified Pyoxigraph 0.5.11 or 0.5.12 contract. Distinct reifier
+resources, annotations, graph inventory, shared blanks and separately asserted
+triples remain distinct; conversion never asserts a described triple. The owned
+candidate accompanies native N-Quads with empty-graph inventory and established
+blank correspondence. `restore_reifications(candidate)` derives and checks its
+inverse. Independently parsed modern datasets, nested triple terms and ambiguous
+descriptions remain outside this reversible profile; it makes no OWL equivalence
+claim.
