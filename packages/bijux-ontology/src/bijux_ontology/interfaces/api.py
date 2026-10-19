@@ -8,6 +8,9 @@ from bijux_ontology.declarations.codecs import (
     terms_from_data,
 )
 from bijux_ontology.declarations.types import (
+    EmissionCondition,
+    EmissionGroup,
+    EmissionScenario,
     FieldDeclaration,
     ModelDeclaration,
     OutputRequirement,
@@ -130,6 +133,9 @@ __all__ = [
     "DataView",
     "EntitySelector",
     "ExecutionResult",
+    "EmissionCondition",
+    "EmissionGroup",
+    "EmissionScenario",
     "FieldDeclaration",
     "FlatNode",
     "FlattenedDocument",

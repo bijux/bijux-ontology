@@ -42,10 +42,10 @@ class ShaclConstraintRequirement:
 
 
 def _selected(
-    graph: Graph, discovered: dict[Node, "Shape"], roots: Sequence[str], budget: Budget
+    graph: Graph, discovered: dict[Node, "Shape"], roots: Sequence[Node], budget: Budget
 ) -> dict[Node, "Shape"]:
     """Retain selected roots and all statically referenced constraint shapes."""
-    pending: list[Node] = [URIRef(iri) for iri in roots] if roots else list(discovered)
+    pending: list[Node] = list(roots) if roots else list(discovered)
     result = {}
     while pending:
         node = pending.pop()
@@ -125,18 +125,20 @@ class CapabilityPlan:
 
     nodes: frozenset[Node] | None
     issues: tuple[Issue, ...] = ()
+    queries: tuple[tuple[Node, URIRef, Literal], ...] = ()
 
 
 def prepare_capabilities(
     graph: Graph,
-    roots: Sequence[str],
+    roots: Sequence[Node],
     requirements: Sequence[ShaclConstraintRequirement],
     *,
     trusted_sparql: bool,
     limits: Limits,
+    enabled_functions: frozenset[URIRef] = frozenset(),
 ) -> CapabilityPlan:
     """Resolve selected queries and explicitly required parameter bindings."""
-    if not trusted_sparql and not requirements and not roots:
+    if not trusted_sparql and not requirements and not roots and not enabled_functions:
         return CapabilityPlan(None)
     try:
         from pyshacl.errors import (
@@ -159,6 +161,7 @@ def prepare_capabilities(
     budget = Budget(limits)
     issues = IssueCollector(budget)
     definitions: set[Node] = set()
+    normalized: list[tuple[Node, URIRef, Literal]] = []
     location = "shapes"
     try:
         supplied = ShapesGraph(copy_graph(graph, standardize_apart=False))
@@ -203,7 +206,14 @@ def prepare_capabilities(
                 nodes.update(_validators(component, shape))
             definitions.update(nodes)
             if trusted_sparql:
-                check_function_dependencies(shape, nodes, budget, issues)
+                check_function_dependencies(
+                    shape,
+                    nodes,
+                    budget,
+                    issues,
+                    enabled_functions,
+                    normalized if enabled_functions else None,
+                )
     except (
         ConstraintLoadError,
         ConstraintLoadWarning,
@@ -220,7 +230,7 @@ def prepare_capabilities(
         )
     except LimitExceeded as error:
         issues.exhausted(str(error), location="shapes")
-    return CapabilityPlan(frozenset(definitions), tuple(issues))
+    return CapabilityPlan(frozenset(definitions), tuple(issues), tuple(normalized))
 
 
 def constraint_execution(

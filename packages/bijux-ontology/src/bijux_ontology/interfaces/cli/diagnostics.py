@@ -55,6 +55,8 @@ _CODES = {
     "data": frozenset("type_unverified".split()),
     "contract": frozenset("coverage_missing unavailable".split()),
     "emission": frozenset(
+        "group_unverified group_count_mismatch scenario_unverified "
+        "scenario_mismatch "
         "cardinality_unverified empty_forbidden list_length_mismatch list_required "
         "null_forbidden source_presence_unverified value_count_mismatch "
         "binding_conflict nested_scope_unverified node_kind_mismatch node_unverified "
@@ -76,6 +78,9 @@ _CODES = {
         "datatype_unverified lexical_invalid lexical_unverified".split()
     ),
     "models": frozenset(
+        "emission_group_conflict emission_group_unverified "
+        "scenario_coverage_unverified emission_scenario_conflict "
+        "scenario_condition_conflict scenario_condition_unverified "
         "bottom_property_conflict conditional_emission_unverified "
         "container_unverified datatype_conflict datatype_unverified "
         "disjoint_conflict disjoint_group_unverified expression_unverified "
@@ -109,7 +114,8 @@ _CODES = {
     "shacl": frozenset(
         "backend_warning execution_incomplete feature_unverified "
         "path_unverified finding_unverified "
-        "function_unavailable function_malformed capability_unavailable "
+        "function_unavailable function_malformed function_untrusted "
+        "function_recursive capability_unavailable "
         "constraint_unavailable constraint_malformed constraint_not_evaluated "
         "coverage_minimum coverage_missing coverage_pair_missing coverage_incomplete "
         "shapes_invalid unavailable "
@@ -287,6 +293,17 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "shacl.function_untrusted": (
+        "Selected function definitions have not been explicitly trusted.",
+        "Review the supplied catalog and set trusted=True only for approved bodies.",
+        'ShaclFunctionCatalog(graph, selected=["https://example.org/double"], '
+        "trusted=True)",
+    ),
+    "shacl.function_recursive": (
+        "The selected function dependency closure contains unsupported recursion.",
+        "Supply an acyclic supported catalog; do not bypass dependency checking.",
+        "double(x) calls multiply(x, 2), with no dependency back to double.",
+    ),
     "vocabulary.term_missing": (
         "The exact declared term is absent from the selected vocabulary evidence.",
         "Correct the IRI or source selection; add a declaration only when "

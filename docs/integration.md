@@ -47,6 +47,12 @@ property paths in `result.findings` and each generic issue’s `evidence`.
 Supply `ShaclSource(prepared_usages, paths, source=...)` through `source_usages=`
 to correlate actual JSON-LD selections. Multiple or unsupported locations remain
 explicit; the full RDF report stays available through `report_graph()`.
+`validate_shapes(..., focus_nodes=(rdf_term,), use_shapes=(authored_shape,),
+mode="pairs")` accepts literal focus values and owned blank focus/shape terms.
+Obtain blank terms from the corresponding `PreparedSource.graph()` export;
+equal labels from other snapshots are rejected. Transport keeps independent
+role scopes separate and preserves blank node kinds. Literal and blank focus
+selection requires explicit pair mode; findings retain report-local identities.
 
 For supplied SHACL shapes, `ShaclCoverageContract(minimum_focus=1,
 focus_nodes=record_iris, pairs=shape_focus_pairs)` from `bijux_ontology.shacl`
@@ -98,6 +104,12 @@ address-space limit and fails explicitly when unavailable; cancellation accepts 
 `threading.Event`. Worker crashes, protocol failures and limits never verify.
 Synchronous calls keep their existing execution behavior.
 
+`PreparedChecks(config).replace_resources(rdf={name: descriptor},
+contexts={url: document})` returns an independent revision with acquired
+replacements and fresh bounds. Unaffected owned resources are reused; dependent
+preparation is invalidated. The old session retains its snapshots. Unread original
+paths remain lazy, and per-call documents/declarations are checked afresh.
+
 Use `load_bundle` from `bijux_ontology.workflows.projects.bundles` for a directory,
 packaged resource or ZIP containing `project.json` and its declared files. Logical
 IRIs and graph selections survive moving the bundle. `bundle.vocabulary(name)`
@@ -120,6 +132,40 @@ owned `output`, the contextual `document`, and combined declaration/output check
 Pass an adapter’s `declaration_report` to retain extraction limitations. This is
 sampled evidence; it does not prove every possible serializer output. Callbacks
 execute in-process.
+
+For ordinary nested Pydantic models, an authoritative context can supply the RDF
+mappings without duplicate primitive declarations:
+
+```python
+from bijux_ontology import OutputRequirement
+from bijux_ontology.interfaces.adapters.pydantic import check_instance
+
+checked = check_instance(
+    catalogue,
+    vocabulary=ontology,
+    context=context,
+    options={"mode": "json", "by_alias": True, "exclude_none": True},
+    requirements={(Item, "label"): OutputRequirement(require_property=True)},
+)
+output = checked.output
+```
+
+Actual output must assert model types. The profile observes real serializer
+output, including aliases and annotated serializers, and checks supported nested
+children automatically. An optional independent `inventory` retains its own
+mappings and requirements. Unresolved/custom output shapes remain unverified;
+absent optional fields are explicit sample exclusions. Preparation and checking
+share one operation budget. Success qualifies this output and these options.
+
+For LinkML, `interfaces.adapters.linkml.model_declarations(view,
+serializer="rdflib")` qualifies the maintained schema-driven RDFLib dumper.
+The view must be import-free or contain a fully resolved local import closure.
+Identifier slots define subjects and enum meanings can emit IRIs. Use
+`interfaces.adapters.linkml_rdf.check_instance(instance, view=view,
+vocabulary=ontology, options={}, class_name="Catalogue")` to retain the exact
+checked `source` and combined `report`. `RdfSerializer(view, options={})` reuses
+owned schema preparation for repeated `.check(...)` calls. Unsupported serializer
+features remain unverified; the adapter retrieves no missing imports.
 
 Resolve finite selectors through `prepared.select(...)`. `SourceSelector` composes
 `Property`, `ArrayItems` and `KeyedItems`; each step’s bounds apply to every selected
@@ -179,3 +225,13 @@ primitive fields on uniquely named subjects. Scoped contexts, anonymous subjects
 lists and ambiguous correspondences retain conservative individual observation.
 The same owned preparation can serve repeated checks within its cumulative
 budget. Worker calls still start separate processes; this API adds no session.
+
+
+`ModelDeclaration(..., emission_groups=(EmissionGroup("name", ("a", "b"),
+minimum=1, maximum=1),))` declares an exactly-one group over emitted RDF
+predicates. Explicit `EmissionScenario` cases describe whole field combinations;
+`closed=True` excludes unlisted cases, while open uncovered cases remain
+unverified. `EmissionCondition(field, equals=literal_or_iri)` compares one exact
+RDF discriminator. Missing, multiple or unresolved terms remain unknown.
+Source presence/null requirements remain separate. Declaration compatibility and
+actual source/entity/native RDF checking preserve their respective scopes.

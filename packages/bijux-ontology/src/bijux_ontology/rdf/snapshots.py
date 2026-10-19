@@ -291,6 +291,10 @@ class PreparedSource:
         """Export an independent dataset, retaining graph and blank-node relations."""
         return copy_dataset(self._dataset, self._max_triples, standardize_apart=False)
 
+    def _quad_count(self) -> int:
+        """Count owned records across graph contexts without exporting a copy."""
+        return sum(len(graph) for graph in self._dataset.graphs())
+
     def graph(
         self, graph_name: GraphSelection | None = None, *, union: bool = False
     ) -> Graph:
