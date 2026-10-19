@@ -10,7 +10,10 @@ from bijux_ontology.documents.forms.types import FormRequirement
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.values import owned_json
-from bijux_ontology.jsonld.contexts.processing import _data, _preflight
+from bijux_ontology.jsonld.contexts.preparation import (
+    context_data,
+    preflight_context_json,
+)
 from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
@@ -35,7 +38,7 @@ def declarations(
     for requirement in capture(requirements, budget):
         if not isinstance(requirement, FormRequirement):
             raise InputError("Relocation needs typed source-form requirements")
-        _data(requirement, budget)
+        context_data(requirement, budget)
         forms.append(replace(requirement))
     if not forms:
         raise _Unsupported("Relocation requires selected source-form obligations")
@@ -43,7 +46,7 @@ def declarations(
     for expectation in capture(expectations, budget):
         if not isinstance(expectation, ContextExpectation):
             raise InputError("Relocation needs typed occurrence expectations")
-        _data(expectation, budget)
+        context_data(expectation, budget)
         selected.append(replace(expectation))
     return tuple(forms), tuple(selected)
 
@@ -84,7 +87,7 @@ def candidate(
         budget.consume("work")
         if context is None or not isinstance(context, (str, dict)):
             raise _Unsupported("Only non-null root context entries can be relocated")
-        _preflight(context, budget)
+        preflight_context_json(context, budget)
         if not context_is_unscoped(context):
             raise _Unsupported("Scoped or aliased context relocation is not qualified")
         if isinstance(context, str):
@@ -116,7 +119,7 @@ def resources(loader: DocumentLoader | None, budget: Budget) -> ContextResources
         except InputError as error:
             bound_text(str(error), budget)
             raise
-        _preflight(response, budget)
+        preflight_context_json(response, budget)
         return response
 
     return context_resources(qualified, budget=budget)

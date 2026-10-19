@@ -9,7 +9,10 @@ from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json import snapshots
-from bijux_ontology.jsonld.contexts.processing import _data, _preflight
+from bijux_ontology.jsonld.contexts.preparation import (
+    context_data,
+    preflight_context_json,
+)
 from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,
@@ -33,7 +36,7 @@ def declarations(
     for value in capture(values, budget):
         if not isinstance(value, kind):
             raise InputError("Source patches require typed form/usage declarations")
-        _data(value, budget)
+        context_data(value, budget)
         result.append(replace(value))
     return tuple(result)
 
@@ -50,7 +53,7 @@ def loader_resources(loader: DocumentLoader | None, budget: Budget) -> ContextRe
         except InputError as error:
             bound_text(str(error), budget)
             raise
-        _preflight(response, budget)
+        preflight_context_json(response, budget)
         return response
 
     return context_resources(qualified, budget=budget)
