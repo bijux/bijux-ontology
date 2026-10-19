@@ -16,7 +16,7 @@ from bijux_ontology.declarations import (
 )
 from bijux_ontology.declarations.resource_roles import ResourceRole
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
@@ -27,6 +27,19 @@ from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.vocabulary.loading import load_vocabulary
 
 EX = Namespace("https://example.org/catalogue/")
+
+
+def test_enclosing_preparation_allowance_does_not_replace_fresh_output_checks() -> None:
+    allowance = Budget()
+    allowance.consume("bytes", allowance.limits.max_total_bytes - 32)
+    with pytest.raises(LimitExceeded):
+        PreparedModels(declarations(), vocabulary(), budget=allowance)
+    prepared = PreparedModels(declarations(), vocabulary(), budget=Budget())
+    results = [
+        prepared.check(document(invalid=invalid), (ModelUsage("node"),))
+        for invalid in (False, True, False)
+    ]
+    assert [report.verified for report in results] == [True, False, True]
 
 
 def declarations() -> tuple[ModelDeclaration, ...]:

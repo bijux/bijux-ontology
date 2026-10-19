@@ -277,6 +277,8 @@ def bound_text(text: str, budget: Budget) -> None:
     if len(text) > budget.limits.max_bytes:
         raise LimitExceeded("Role metadata exceeds max_bytes")
     budget.consume("work", len(text) + 1)
+    if len(text) > budget.remaining("bytes"):
+        raise LimitExceeded("Exceeded max_total_bytes")
     try:
         size = len(text.encode("utf-8"))
     except UnicodeEncodeError as error:
