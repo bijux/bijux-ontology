@@ -22,7 +22,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.json.values import _measure, decode_json, object_value
+from bijux_ontology.json.values import decode_json, measure_json, object_value
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.browsing.inspection import (
@@ -136,16 +136,15 @@ def _decode(raw: bytes, budget: Budget) -> dict[str, object]:
     if len(raw) > budget.limits.max_bytes:
         raise LimitExceeded("OLS response exceeds max_bytes")
     budget.consume("work", len(raw) + 1)
-    budget.consume("states", len(raw))
-    budget.consume("bytes", (128 + 4 * budget.limits.max_depth) * len(raw))
-    result = object_value(
+    return object_value(
         decode_json(
-            raw, max_bytes=budget.limits.max_bytes, max_depth=budget.limits.max_depth
+            raw,
+            max_bytes=budget.limits.max_bytes,
+            max_depth=budget.limits.max_depth,
+            budget=budget,
         ),
         location="OLS",
     )
-    _measure(result, budget)
-    return result
 
 
 def _same_request(actual: str, expected: str, budget: Budget) -> bool:
@@ -170,7 +169,16 @@ def _same_request(actual: str, expected: str, budget: Budget) -> bool:
 
 def _dump(value: object, budget: Budget) -> bytes:
     """Retain exact qualified JSON structure with bounded serializer workspace."""
-    amount = 128 + 12 * _measure(value, budget)
+    amount = (
+        128
+        + 12
+        * measure_json(
+            value,
+            budget=budget,
+            max_bytes=budget.limits.max_bytes,
+            max_depth=budget.limits.max_depth,
+        ).weight
+    )
     budget.consume("bytes", 4 * amount + 256)
     budget.consume("work", amount + 1)
     return json.dumps(value, ensure_ascii=True, separators=(",", ":")).encode("ascii")

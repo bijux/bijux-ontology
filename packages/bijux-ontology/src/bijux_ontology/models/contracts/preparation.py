@@ -16,7 +16,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.json.comparison import same_json
-from bijux_ontology.json.values import _measure, own_json
+from bijux_ontology.json.values import capture_json, encode_json
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.contracts.checking import check_models
@@ -31,15 +31,14 @@ from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 
 def _prepared_json(value: object, operation: Budget) -> object:
-    """Prepay closed JSON snapshots and serialization before allocating copies."""
-    count = _measure(value, operation)
-    operation.consume("work", 12 * count + 1)
-    operation.consume("bytes", 128 + 64 * count)
-    return own_json(
+    """Own and qualify closed JSON snapshots in one bounded traversal."""
+    captured = capture_json(
         value,
         max_bytes=operation.limits.max_bytes,
         max_depth=operation.limits.max_depth,
+        budget=operation,
     )
+    return captured.value
 
 
 @dataclass(frozen=True, init=False)
@@ -112,7 +111,7 @@ class PreparedModels:
         context_json = None
         if context is not ABSENT:
             owned_context = _prepared_json(context, operation)
-            context_json = json.dumps(owned_context, ensure_ascii=False)
+            context_json = encode_json(owned_context, budget=operation)
         owned = (
             vocabulary
             if isinstance(vocabulary, Vocabulary)

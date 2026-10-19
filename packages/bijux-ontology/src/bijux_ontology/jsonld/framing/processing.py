@@ -2,7 +2,7 @@
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import bound_text
-from bijux_ontology.json.values import _capture_json
+from bijux_ontology.json.values import capture_json
 from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
     ContextResources,
@@ -14,7 +14,7 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 def own_document(value: object, resources: ContextResources) -> object:
     """Bound mutable input and count its semantic payload before processor use."""
     budget = resources.budget
-    owned, size = _capture_json(
+    captured = capture_json(
         value,
         max_bytes=budget.limits.max_bytes,
         max_depth=budget.limits.max_depth,
@@ -22,8 +22,8 @@ def own_document(value: object, resources: ContextResources) -> object:
     )
     # PyLD may allocate new scalar representations even though the ownership
     # snapshot legitimately shares immutable Python strings.
-    budget.consume("bytes", size)
-    return owned
+    budget.consume("bytes", captured.measurement.size)
+    return captured.value
 
 
 def process_frame(

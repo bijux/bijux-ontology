@@ -12,9 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn, cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.execution.inputs import capture
-from bijux_ontology.execution.limits import Limits, bound_text
-from bijux_ontology.json.paths import bound_index
+from bijux_ontology.execution.limits import Limits
 
 if TYPE_CHECKING:
     from bijux_ontology.execution.limits import Budget
@@ -70,21 +68,45 @@ def own_json(
     scalar serialization workspace before allocating them. Its limits remain
     independent of any narrower explicit input-size/depth policy.
     """
-    return _capture_json(
+    return capture_json(
         value, source=source, max_bytes=max_bytes, max_depth=max_depth, budget=budget
-    )[0]
+    ).value
 
 
-def _capture_json(
+@dataclass(frozen=True)
+class JsonMeasurement:
+    """Qualified wire size and traversal weight for the value at measurement time.
+
+    Facts describe the inspected value; they are not a reusable authorization to
+    skip validation after mutation. No API accepts a receipt instead of a value.
+    Size excludes ordinary encoder separator spaces. Weight counts nodes,
+    key/string lengths and numeric magnitude estimates for workspace bounds.
+    """
+
+    size: int
+    ascii_only: bool
+    separating_spaces: int
+    weight: int
+
+
+@dataclass(frozen=True)
+class JsonCapture:
+    """One independent JSON value and the facts established during its capture."""
+
+    value: object
+    measurement: JsonMeasurement
+
+
+def capture_json(
     value: object,
     *,
     source: str = "",
     max_bytes: int = 5_000_000,
     max_depth: int = 128,
     budget: Budget | None = None,
-) -> tuple[object, int]:
-    """Retain the exact qualified size alongside one independently owned snapshot."""
-    size = _measure_json(
+) -> JsonCapture:
+    """Validate and measure once, then defensively own mutable caller containers."""
+    measurement, memo = _inspect_json(
         value,
         source=source,
         max_bytes=max_bytes,
@@ -93,21 +115,25 @@ def _capture_json(
         copy_workspace=True,
     )
     try:
-        return deepcopy(value, size.string_memo), size.size
+        return JsonCapture(deepcopy(value, memo), measurement)
     except RecursionError as error:
         raise LimitExceeded(
             "JSON copy exceeds the Python runtime nesting limit", location=source
         ) from error
 
 
-@dataclass(frozen=True)
-class _JsonMeasurement:
-    """Exact wire size, separator spaces, storage kind and bounded string copies."""
-
-    size: int
-    ascii_only: bool
-    separating_spaces: int
-    string_memo: dict[int, object] | None = None
+def measure_json(
+    value: object,
+    *,
+    source: str = "",
+    max_bytes: int = 5_000_000,
+    max_depth: int = 128,
+    budget: Budget | None = None,
+) -> JsonMeasurement:
+    """Validate current JSON and return facts without retaining a copy of the value."""
+    return _inspect_json(
+        value, source=source, max_bytes=max_bytes, max_depth=max_depth, budget=budget
+    )[0]
 
 
 def encode_json(value: object, *, budget: Budget) -> str:
@@ -116,7 +142,7 @@ def encode_json(value: object, *, budget: Budget) -> str:
 
     if not isinstance(budget, RuntimeBudget):
         raise InputError("JSON encoding requires a Budget")
-    measurement = _measure_json(
+    measurement = measure_json(
         value,
         max_bytes=budget.limits.max_bytes,
         max_depth=budget.limits.max_depth,
@@ -132,7 +158,7 @@ def encode_json(value: object, *, budget: Budget) -> str:
     return json.dumps(value, ensure_ascii=False, allow_nan=False)
 
 
-def _measure_json(
+def _inspect_json(
     value: object,
     *,
     source: str = "",
@@ -140,7 +166,7 @@ def _measure_json(
     max_depth: int = 128,
     budget: Budget | None = None,
     copy_workspace: bool = False,
-) -> _JsonMeasurement:
+) -> tuple[JsonMeasurement, dict[int, object] | None]:
     """Validate original JSON and measure bytes without making a redundant snapshot."""
     if type(max_bytes) is not int or max_bytes <= 0:
         raise InputError("max_bytes must be a positive integer")
@@ -160,6 +186,7 @@ def _measure_json(
     stack: list[tuple[Iterator[object], int, int | None]] = [(iter((value,)), 0, None)]
     active: set[int] = set()
     size = 0
+    weight = 0
     ascii_only = True
     separating_spaces = 0
     string_memo: dict[int, object] | None = None
@@ -191,6 +218,7 @@ def _measure_json(
                 continue
             if budget is not None:
                 budget.consume("states")
+            weight += 1
             if depth > max_depth:
                 raise LimitExceeded("JSON nesting exceeds max_depth", location=source)
             if isinstance(item, (dict, list)):
@@ -224,6 +252,7 @@ def _measure_json(
                                 "JSON input exceeds max_bytes", location=source
                             )
                         subclass_names |= type(key) is not str
+                        weight += len(key)
                         ascii_only &= key.isascii()
                         size += _string_bytes(key, budget, workspace) + 1
                         if size > max_bytes:
@@ -252,6 +281,7 @@ def _measure_json(
             elif isinstance(item, str):
                 if len(item) > max_bytes:
                     raise LimitExceeded("JSON input exceeds max_bytes", location=source)
+                weight += len(item)
                 ascii_only &= item.isascii()
                 size += _string_bytes(item, budget, workspace)
                 if copy_workspace and type(item) is not str:
@@ -270,7 +300,13 @@ def _measure_json(
                     )
                     budget.consume("work", digits)
                     budget.reserve_storage(64 + 16 * digits)
-                size += len(json.dumps(item))
+                spelling = json.dumps(item)
+                size += len(spelling)
+                weight += (
+                    max(1, (item.bit_length() * 30103) // 100000 + 1)
+                    if type(item) is int
+                    else len(spelling)
+                )
             else:
                 raise InputError("Expected only JSON values", location=source)
             if size > max_bytes:
@@ -279,61 +315,18 @@ def _measure_json(
         if isinstance(error, InputError):
             raise
         raise InputError(str(error), location=source) from error
-    return _JsonMeasurement(size, ascii_only, separating_spaces, string_memo)
-
-
-def _measure(value: object, budget: Budget) -> int:
-    """Bound JSON nodes and scalar comparison payloads before owned processing."""
-    count = 0
-
-    def visit(item: object, depth: int) -> None:
-        """Charge each actual JSON node before the maintained ownership copy."""
-        nonlocal count
-        budget.consume("work")
-        budget.consume("states")
-        count += 1
-        if depth > budget.limits.max_depth:
-            raise LimitExceeded("JSON output exceeds max_depth")
-        if isinstance(item, str):
-            bound_text(item, budget)
-            count += len(item)
-        elif item is None or type(item) is bool:
-            return
-        elif type(item) is int:
-            bound_index(item, budget)
-            count += max(1, (item.bit_length() * 30103) // 100000 + 1)
-        elif type(item) is float:
-            if not math.isfinite(item):
-                raise InputError("JSON output numbers must be finite")
-            bound_text(repr(item), budget)
-            count += len(repr(item))
-        elif type(item) is list:
-            for child in capture(item, budget):
-                visit(child, depth + 1)
-        elif type(item) is dict:
-            budget.consume("states", len(item))
-            for key, child in item.items():
-                if not isinstance(key, str):
-                    raise InputError("JSON output object keys require text")
-                bound_text(key, budget)
-                count += len(key)
-                visit(child, depth + 1)
-        else:
-            raise InputError("Expected finite JSON output values")
-
-    visit(value, 0)
-    return count
+    return JsonMeasurement(size, ascii_only, separating_spaces, weight), string_memo
 
 
 def owned_json(value: object, budget: Budget) -> tuple[object, int]:
-    """Qualify finite JSON metadata before producing its independent snapshot."""
-    count = _measure(value, budget)
-    return own_json(
+    """Return an independently owned snapshot and its single-pass traversal weight."""
+    captured = capture_json(
         value,
         max_bytes=budget.limits.max_bytes,
         max_depth=budget.limits.max_depth,
         budget=budget,
-    ), count
+    )
+    return captured.value, captured.measurement.weight
 
 
 class _ObjectPairs(list[tuple[str, object]]):
@@ -352,7 +345,7 @@ class _RawNumber:
     integer: bool
 
 
-_NumberHook = Callable[[str, tuple[str | int, ...], bool], object]
+JsonNumberHook = Callable[[str, tuple[str | int, ...], bool], object]
 
 
 def decode_json(
@@ -361,35 +354,62 @@ def decode_json(
     source: str = "",
     max_bytes: int = 5_000_000,
     max_depth: int = 128,
+    budget: Budget | None = None,
 ) -> object:
     """Decode owned JSON text, rejecting ambiguous names at every object depth."""
-    return _decode_json(
-        payload, source=source, max_bytes=max_bytes, max_depth=max_depth
-    )
+    return decode_owned_json(
+        payload, source=source, max_bytes=max_bytes, max_depth=max_depth, budget=budget
+    ).value
 
 
-def _decode_json(
+def decode_owned_json(
     payload: str | bytes,
     *,
     source: str = "",
     max_bytes: int = 5_000_000,
     max_depth: int = 128,
-    number_hook: _NumberHook | None = None,
+    number_hook: JsonNumberHook | None = None,
     key_hook: Callable[[str], None] | None = None,
     budget: Budget | None = None,
-) -> object:
-    """Decode through shared syntax and optional private scalar/key observation."""
+) -> JsonCapture:
+    """Decode and qualify one owned tree with optional source-token observations.
+
+    Maintained JSON parsing and duplicate resolution own their workspace here.
+    Plain parsed containers are already private and need no second deep copy.
+    Numeric hooks may return caller aliases, so that profile receives one final
+    defensive capture. Hooks own their scalar policy; returned values must still
+    be finite JSON. A receipt never authorizes later reuse after value mutation.
+    """
+    if type(max_bytes) is not int or max_bytes <= 0:
+        raise InputError("max_bytes must be a positive integer")
+    if type(max_depth) is not int or max_depth <= 0:
+        raise InputError("max_depth must be a positive integer")
+    if budget is not None:
+        from bijux_ontology.execution.limits import Budget as RuntimeBudget
+
+        if not isinstance(budget, RuntimeBudget):
+            raise InputError("JSON decoding requires a Budget")
+        max_bytes = min(max_bytes, budget.limits.max_bytes)
+        max_depth = min(max_depth, budget.limits.max_depth)
     if not isinstance(payload, (str, bytes)):
         raise InputError("Expected JSON text or bytes", location=source)
     # UTF-8 cannot be shorter than the original Unicode character inventory.
     if len(payload) > max_bytes:
         raise LimitExceeded("JSON input exceeds max_bytes", location=source)
     try:
+        if budget is not None and isinstance(payload, str):
+            budget.consume("work", len(payload) + 1)
+            budget.reserve_storage(128 + 4 * len(payload))
         size = (
             len(payload) if isinstance(payload, bytes) else len(payload.encode("utf-8"))
         )
         if size > max_bytes:
             raise LimitExceeded("JSON input exceeds max_bytes", location=source)
+        if budget is not None:
+            # Pairs and resolved containers coexist during native decoding.
+            # Reserve their bounded inventory before the parser allocates it.
+            budget.reserve_storage(128 + 96 * size)
+            budget.consume("work", size + 1)
         data = cast(
             object,
             json.loads(
@@ -413,8 +433,16 @@ def _decode_json(
             raise
         raise InputError(str(error), location=source) from error
 
+    def child_parts(
+        parts: tuple[str | int, ...], child: str | int
+    ) -> tuple[str | int, ...]:
+        """Reserve path storage without repeatedly copying escaped source strings."""
+        if budget is not None:
+            budget.reserve_storage(48 + 8 * (len(parts) + 1))
+        return (*parts, child)
+
     def pointer(parts: tuple[str | int, ...]) -> str:
-        """Bound numeric-hook error pointers before escaping their components."""
+        """Format the real JSON pointer only when a failing location is needed."""
         size = 1
         for part in parts:
             text = str(part)
@@ -423,51 +451,36 @@ def _decode_json(
                 raise LimitExceeded("JSON location exceeds max_bytes", location=source)
         if budget is not None:
             budget.consume("work", size)
-            budget.consume("bytes", size)
+            budget.reserve_storage(128 + 8 * size)
         return "/" + "/".join(
             str(part).replace("~", "~0").replace("/", "~1") for part in parts
         )
 
-    def objects(
-        value: object, path: str, depth: int, parts: tuple[str | int, ...] = ()
-    ) -> object:
-        """Resolve object pairs with their original source paths."""
+    def objects(value: object, depth: int, parts: tuple[str | int, ...]) -> object:
+        """Resolve native object pairs and retain exact hook source positions."""
         if budget is not None:
             budget.consume("work")
             budget.consume("states")
         if depth > max_depth:
             raise LimitExceeded(
-                "JSON nesting exceeds max_depth",
-                location=source + (path if number_hook is None else pointer(parts)),
+                "JSON nesting exceeds max_depth", location=source + pointer(parts)
             )
         if isinstance(value, _ObjectPairs):
             result: dict[str, object] = {}
             for key, child in value:
                 if key_hook is not None:
                     key_hook(key)
-                child_parts = (*parts, key) if number_hook is not None else ()
-                child_path = (
-                    path + "/" + key.replace("~", "~0").replace("/", "~1")
-                    if number_hook is None
-                    else ""
-                )
+                selected = child_parts(parts, key)
                 if key in result:
                     cause = ValueError(f"Duplicate JSON object name: {key}")
                     raise InputError(
-                        str(cause),
-                        location=source
-                        + (child_path if number_hook is None else pointer(child_parts)),
+                        str(cause), location=source + pointer(selected)
                     ) from cause
-                result[key] = objects(child, child_path, depth + 1, child_parts)
+                result[key] = objects(child, depth + 1, selected)
             return result
         if isinstance(value, list):
             return [
-                objects(
-                    child,
-                    f"{path}/{index}" if number_hook is None else "",
-                    depth + 1,
-                    (*parts, index) if number_hook is not None else (),
-                )
+                objects(child, depth + 1, child_parts(parts, index))
                 for index, child in enumerate(value)
             ]
         if isinstance(value, _RawNumber):
@@ -475,8 +488,29 @@ def _decode_json(
             return number_hook(value.token, parts, value.integer)
         return value
 
-    return own_json(
-        objects(data, "", 0), source=source, max_bytes=max_bytes, max_depth=max_depth
+    try:
+        resolved = objects(data, 0, ())
+    except RecursionError as error:
+        raise LimitExceeded(
+            "JSON nesting exceeds decoder limit", location=source
+        ) from error
+    if number_hook is not None:
+        return capture_json(
+            resolved,
+            source=source,
+            max_bytes=max_bytes,
+            max_depth=max_depth,
+            budget=budget,
+        )
+    return JsonCapture(
+        resolved,
+        measure_json(
+            resolved,
+            source=source,
+            max_bytes=max_bytes,
+            max_depth=max_depth,
+            budget=budget,
+        ),
     )
 
 

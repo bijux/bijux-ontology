@@ -15,7 +15,7 @@ from rdflib import ConjunctiveGraph, Dataset, Graph
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, bound_text
-from bijux_ontology.json.values import _decode_json, own_json
+from bijux_ontology.json.values import decode_json, own_json
 from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,
@@ -153,7 +153,7 @@ class _ContextDocuments:
                 )(url, {})["document"]
             else:
                 payload = _captured_bytes(document, self.captured)
-                document = _decode_json(
+                document = decode_json(
                     payload,
                     source=str(document),
                     max_bytes=self.storage.limits.max_bytes,
@@ -441,7 +441,7 @@ class ProjectResources:
                 payload = handle.read(self._storage.limits.max_bytes + 1)
         else:
             payload = _captured_bytes(path, self._captured)
-        return _decode_json(
+        return decode_json(
             payload,
             source=str(path),
             max_bytes=self._storage.limits.max_bytes,

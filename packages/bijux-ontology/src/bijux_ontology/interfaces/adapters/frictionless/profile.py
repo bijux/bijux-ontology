@@ -6,7 +6,7 @@ from typing import cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget, bound_text
-from bijux_ontology.json.values import _measure, own_json
+from bijux_ontology.json.values import capture_json
 
 
 class UnsupportedPackage(ResourceError):
@@ -113,15 +113,14 @@ def capture(
     description: object, resources: Mapping[str, bytes], budget: Budget
 ) -> tuple[dict[str, object], dict[str, bytes], tuple[dict[str, object], ...]]:
     """Own original JSON and supplied bytes before staging or invoking native code."""
-    size = _measure(description, budget)
-    budget.consume("bytes", 64 * size + 1024)
-    descriptor = object_value(
-        own_json(
-            description,
-            max_bytes=budget.limits.max_bytes,
-            max_depth=budget.limits.max_depth,
-        )
+    captured = capture_json(
+        description,
+        max_bytes=budget.limits.max_bytes,
+        max_depth=budget.limits.max_depth,
+        budget=budget,
     )
+    budget.consume("bytes", 64 * captured.measurement.weight + 1024)
+    descriptor = object_value(captured.value)
     keys(descriptor, {"name", "profile", "resources"})
     if descriptor.get("profile", "tabular-data-package") != "tabular-data-package":
         raise UnsupportedPackage(

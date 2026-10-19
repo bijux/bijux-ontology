@@ -11,7 +11,7 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.archive import bundle_reader, resource_path
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.json.values import _decode_json, own_json
+from bijux_ontology.json.values import decode_json, own_json
 from bijux_ontology.vocabulary.accessions.types import AccessionRule
 from bijux_ontology.vocabulary.registry.types import _prefix
 
@@ -94,7 +94,7 @@ def read_bioregistry(
                 )
             by_prefix[captured.prefix] = captured
             local.append(captured)
-        decoded = _decode_json(
+        decoded = decode_json(
             payload,
             max_bytes=operation.limits.max_bytes,
             max_depth=operation.limits.max_depth,

@@ -24,7 +24,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
 )
 from bijux_ontology.execution.processes.transport import checkpoint, exchange_worker
-from bijux_ontology.json.values import _measure, decode_json
+from bijux_ontology.json.values import decode_json, measure_json
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
@@ -61,7 +61,12 @@ def _run(
         "max_errors": max(1, budget.remaining("issues")),
         "output_cap": 1,
     }
-    size = _measure(request, budget)
+    size = measure_json(
+        request,
+        budget=budget,
+        max_bytes=budget.limits.max_bytes,
+        max_depth=budget.limits.max_depth,
+    ).weight
     budget.consume("bytes", 32 * size + 8192)
     cap = min(
         budget.limits.max_bytes,

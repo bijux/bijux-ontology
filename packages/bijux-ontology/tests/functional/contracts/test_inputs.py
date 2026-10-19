@@ -6,7 +6,15 @@ from rdflib import URIRef
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.json.values import decode_json, encode_json, own_json
+from bijux_ontology.json.values import (
+    capture_json,
+    decode_json,
+    decode_owned_json,
+    encode_json,
+    measure_json,
+    own_json,
+    owned_json,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 
 
@@ -193,3 +201,65 @@ def test_string_subclass_value_storage_is_paid_before_copying() -> None:
     assert peak - current < 100_000
     ordinary = str.__str__(value)
     assert own_json({"value": ordinary}, budget=Budget(limits)) == {"value": ordinary}
+
+
+def test_capture_receipts_describe_one_owned_exact_json_snapshot() -> None:
+    """One inspection establishes size and weight without caching future validity."""
+    import json
+
+    supplied: dict[str, object] = {"Å": [True, 1, 1.0, -0.0, None]}
+    captured = capture_json(supplied, budget=Budget())
+    assert captured.measurement.size == len(
+        json.dumps(supplied, ensure_ascii=False, separators=(",", ":")).encode()
+    )
+    assert captured.measurement.weight == measure_json(supplied).weight
+    assert owned_json(supplied, Budget()) == (
+        captured.value,
+        captured.measurement.weight,
+    )
+    values = supplied["Å"]
+    assert isinstance(values, list)
+    values.append(values)
+    assert captured.value == {"Å": [True, 1, 1.0, -0.0, None]}
+    with pytest.raises(InputError, match="Cyclic"):
+        measure_json(supplied)
+    with pytest.raises(InputError, match="Cyclic"):
+        capture_json(supplied)
+
+
+def test_decoder_capture_preserves_source_hooks_and_prepays_native_workspace() -> None:
+    """Hooks keep exact tokens/paths and cannot lend mutable aliases to a capture."""
+    import tracemalloc
+
+    tokens: list[tuple[str, tuple[str | int, ...], bool]] = []
+    alias: dict[str, object] = {"original": ["value"]}
+
+    def number(token: str, path: tuple[str | int, ...], integer: bool) -> object:
+        tokens.append((token, path, integer))
+        return alias
+
+    captured = decode_owned_json(
+        '{"x/y":[1,-0.0]}', number_hook=number, budget=Budget()
+    )
+    assert tokens == [("1", ("x/y", 0), True), ("-0.0", ("x/y", 1), False)]
+    alias["original"] = []
+    assert captured.value == {"x/y": [{"original": ["value"]}, {"original": ["value"]}]}
+    decoded = decode_json("[true,1,1.0,-0.0]", budget=Budget())
+    assert isinstance(decoded, list)
+    assert [type(value) for value in decoded] == [bool, int, float, float]
+    payload = b"[" + b"0," * 50_000 + b"0]"
+    limits = Limits(max_bytes=len(payload), max_total_bytes=1024)
+    tracing = tracemalloc.is_tracing()
+    if not tracing:
+        tracemalloc.start()
+    current, _ = tracemalloc.get_traced_memory()
+    tracemalloc.reset_peak()
+    try:
+        with pytest.raises(LimitExceeded):
+            decode_json(payload, budget=Budget(limits))
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        if not tracing:
+            tracemalloc.stop()
+    assert peak - current < 100_000
+    assert decode_json(b"[0]", budget=Budget()) == [0]

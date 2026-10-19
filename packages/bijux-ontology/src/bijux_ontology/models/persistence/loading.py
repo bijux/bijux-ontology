@@ -16,8 +16,8 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.values import (
-    _decode_json,
     array_value,
+    decode_json,
     object_value,
     optional_string_value,
     string_value,
@@ -268,9 +268,6 @@ def load_model_artifact(
             raise InputError("Preparation loading requires immutable bytes")
         if len(content) > allowance.limits.max_bytes:
             raise LimitExceeded("Preparation artifact exceeds max_bytes")
-        # Reserve maintained decoder pairs, owned containers and traversal
-        # workspace before the native JSON decoder allocates any records.
-        allowance.consume("bytes", 96 * len(content))
         allowance.consume("work", 1 + len(content) // 4096)
         if hashlib.sha256(content).hexdigest() != trusted_sha256:
             raise _Incompatible(
@@ -280,7 +277,7 @@ def load_model_artifact(
             raise _Incompatible(
                 "Current semantic engine differs from preparation identity"
             )
-        value = _decode_json(
+        value = decode_json(
             content,
             max_bytes=allowance.limits.max_bytes,
             max_depth=allowance.limits.max_depth,
