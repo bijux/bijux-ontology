@@ -508,3 +508,45 @@ def test_private_prepared_output_preserves_exact_document_and_resource_owner() -
         assert result.report.verified is (changed == "none"), result.report.to_dict()
         if changed != "none":
             assert result.report.outcome == "input_error"
+
+
+def test_actual_long_abstract_serialization_verifies_within_ordinary_limits() -> None:
+    """An actual multi-kilobyte string abstract uses the ordinary sampled route."""
+
+    @dataclass
+    class Article:
+        abstract: str
+
+    model = ModelDeclaration(
+        "article",
+        (str(EX.Record),),
+        (
+            FieldDeclaration(
+                "abstract",
+                str(EX.note),
+                (ValueDeclaration("literal", str(XSD.string)),),
+                emission="guaranteed",
+            ),
+        ),
+    )
+    calls: list[dict[str, object]] = []
+
+    def serialize(article: Article, *, include_type: bool) -> object:
+        calls.append({"include_type": include_type})
+        return {"@type": str(EX.Record), "abstract": article.abstract}
+
+    text = "A substantial abstract with Unicode é. " * 200
+    article = Article(text)
+    result = check_instance(
+        article,
+        serialize,
+        (model,),
+        (ModelUsage("article"),),
+        vocabulary=vocabulary(),
+        options={"include_type": True},
+        context={"abstract": str(EX.note)},
+    )
+    assert result.report.verified, result.report.to_dict()
+    assert calls == [{"include_type": True}]
+    assert result.output == {"@type": str(EX.Record), "abstract": text}
+    assert article.abstract == text

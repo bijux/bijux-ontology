@@ -1,7 +1,7 @@
 """Explicit caller capabilities over exact custom datatype IRIs and RDF terms."""
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Literal as Choice
 
@@ -45,12 +45,16 @@ class DatatypeEvaluator:
     Validators are conjoined; an empty tuple supplies no validity capability.
     Callables retain their ordinary mutable state and in-process lifetime. The
     catalog never freezes their behavior or caches a successful invocation.
+    max_lexical_chars is an additional caller-capability ceiling; None uses only
+    the operation's byte/work admission. It does not relax limits of parsers a
+    callback itself invokes or promise preemption of ordinary caller code.
     """
 
     iri: str
     validators: tuple[Validator, ...] = ()
     converter: Converter | None = None
     relation: RelationEvaluator | None = None
+    max_lexical_chars: int | None = field(default=4096, kw_only=True)
 
     def __post_init__(self) -> None:
         """Require named custom identifiers and finite explicit callable tuples."""
@@ -61,6 +65,10 @@ class DatatypeEvaluator:
         absolute_iri(self.iri)
         if self.iri.startswith(tuple(map(str, (XSD, RDF, RDFS, OWL)))):
             raise InputError("Custom evaluators cannot replace standard datatype IRIs")
+        if self.max_lexical_chars is not None and (
+            type(self.max_lexical_chars) is not int or self.max_lexical_chars <= 0
+        ):
+            raise InputError("Custom lexical limits require a positive integer or None")
         if (
             type(self.validators) is not tuple
             or len(self.validators) > Limits().max_states

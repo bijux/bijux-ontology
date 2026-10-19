@@ -57,6 +57,9 @@ _INTEGER_BOUNDS: dict[str, tuple[int | None, int | None]] = {
 }
 _ROOTS = {"string", "boolean", "decimal", "float", "double", "date", "dateTime", "time"}
 _NUMERIC = {"decimal", "float", "double"}
+_CALLER_BOUNDED_TEXT = frozenset(
+    str(datatype) for datatype in (XSD.string, XSD.normalizedString, XSD.token)
+)
 _DATE = re.compile(r"(?P<year>-?[0-9]{4,})-(?P<month>[0-9]{2})-(?P<day>[0-9]{2})")
 _TIME = re.compile(
     r"(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})(?P<fraction>\.[0-9]+)?"
@@ -236,6 +239,9 @@ def check_literal(
 
     Unsupported datatypes stay unverified. Inputs are not normalised, rewritten
     or converted to Python values, preserving lexical and language identity.
+    Ordinary string, normalizedString and token scans use caller byte/work
+    limits. Numeric, calendar, regex and maintained parser families retain the
+    explicit 4096-character supported lexical boundary.
     """
     if not isinstance(value, Literal):
         raise InputError("Expected an RDF literal", location=location)
@@ -279,11 +285,12 @@ def check_literal(
             valid = datatype == str(RDF.langString)
         elif datatype == str(RDF.langString):
             valid = False
-        elif len(value) > 4096:
+        elif len(value) > 4096 and datatype not in _CALLER_BOUNDED_TEXT:
             issues.append(
                 Issue(
                     "literal.lexical_unverified",
-                    "Literal exceeds supported lexical comparison size",
+                    "Datatype validation exceeds its supported "
+                    "4096-character lexical bound",
                     anchor,
                     kind="unverified",
                 )

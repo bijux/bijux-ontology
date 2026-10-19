@@ -13,7 +13,7 @@ from rdflib.namespace import RDF, XSD
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .types import (
@@ -90,17 +90,19 @@ class DatatypeRegistry:
         """Bound the original RDF term before invoking caller code."""
         if not isinstance(value, Literal):
             raise InputError("Datatype evaluation requires an RDF literal")
-        if len(value) > 4096:
-            raise LimitExceeded(
-                "Custom datatype lexical evaluation exceeds 4096 characters"
-            )
-        _text(str(value), budget)
-        if value.language:
-            _text(value.language, budget)
         datatype = str(
             value.datatype or (RDF.langString if value.language else XSD.string)
         )
-        return self.lookup(datatype, budget=budget)
+        evaluator = self.lookup(datatype, budget=budget)
+        maximum = evaluator.max_lexical_chars if evaluator is not None else 4096
+        if maximum is not None and len(value) > maximum:
+            raise LimitExceeded("Custom datatype exceeds its declared lexical limit")
+        # Fund original UTF-8 text and its linear scan before invoking caller
+        # code. The RDF Literal itself is passed through without a text copy.
+        bound_text(value, budget)
+        if value.language:
+            bound_text(value.language, budget)
+        return evaluator
 
     def check(
         self, value: Literal, *, location: str = "", budget: Budget | None = None

@@ -374,3 +374,40 @@ def test_shared_limits_preserve_findings_without_retaining_unqualified_anchors()
     )
     assert actual.outcome == "exhausted"
     assert any(issue.code == "literal.lexical_invalid" for issue in actual.issues)
+
+
+def test_custom_text_lexical_policy_is_explicit_and_budgeted_before_callbacks() -> None:
+    """A supplied text capability never widens builtin or native parser limits."""
+    calls: list[Literal] = []
+
+    def text_valid(value: Literal) -> bool:
+        calls.append(value)
+        return value.isascii()
+
+    term = Literal("a" * 8000, datatype=EX.Text, normalize=False)
+    before = term_key(term)
+    default = DatatypeRegistry((DatatypeEvaluator(str(EX.Text), (text_valid,)),))
+    assert default.check(term).outcome == "exhausted" and calls == []
+    for maximum in (8192, None):
+        calls.clear()
+        registry = DatatypeRegistry(
+            (
+                DatatypeEvaluator(
+                    str(EX.Text),
+                    (text_valid,),
+                    max_lexical_chars=maximum,
+                ),
+            )
+        )
+        assert check_literal(term, datatype_registry=registry).verified
+        assert calls == [term] and calls[0] is term
+        calls.clear()
+        for limits in (Limits(max_bytes=1024), Limits(max_work=100)):
+            stopped = registry.check(term, budget=Budget(limits))
+            assert stopped.outcome == "exhausted" and calls == []
+        assert registry.check(term).verified and term_key(term) == before
+    for invalid in (0, -1, True, "8192"):
+        with pytest.raises(InputError, match="lexical limits"):
+            DatatypeEvaluator(str(EX.Text), max_lexical_chars=cast(Any, invalid))
+    with pytest.raises(InputError, match="standard datatype"):
+        DatatypeEvaluator(str(XSD.string), (text_valid,), max_lexical_chars=None)

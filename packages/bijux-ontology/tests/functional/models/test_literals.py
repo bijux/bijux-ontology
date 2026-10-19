@@ -7,6 +7,7 @@ from rdflib.namespace import RDF, XSD
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
+from bijux_ontology.rdf.terms import literal_term, term_key
 
 
 def test_value_space_relations_are_directional_and_regime_explicit() -> None:
@@ -98,3 +99,43 @@ def test_sample_bounds_precede_validation_and_share_the_callers_allowance() -> N
     )
     assert invalid.outcome == "disagreement"
     assert unsupported.outcome == "unverified"
+
+
+def test_long_text_uses_caller_bounds_without_expanding_parser_profiles() -> None:
+    """Cheap lexical scans preserve long text; costly families retain their caps."""
+    for datatype, text in (
+        (XSD.string, "An abstract with Unicode é and line breaks.\n" * 200),
+        (XSD.normalizedString, "A long normalized abstract " * 300),
+        (XSD.token, "word " * 1500 + "word"),
+    ):
+        term = literal_term(text, datatype=str(datatype))
+        identity = term_key(term)
+        assert check_literal(term).verified
+        assert (
+            check_literal(term, budget=Budget(Limits(max_bytes=1024))).outcome
+            == "exhausted"
+        )
+        assert (
+            check_literal(term, budget=Budget(Limits(max_work=100))).outcome
+            == "exhausted"
+        )
+        assert term_key(term) == identity
+    tagged = Literal("Un résumé original. " * 400, lang="FR", normalize=False)
+    assert check_literal(tagged).verified and tagged.language == "FR"
+    for datatype, text in (
+        (XSD.normalizedString, "x" * 5000 + "\t"),
+        (XSD.token, "x" * 5000 + "  word"),
+    ):
+        term = literal_term(text, datatype=str(datatype))
+        before = term_key(term)
+        assert check_literal(term).issues[0].code == "literal.lexical_invalid"
+        assert term_key(term) == before
+    for datatype, text in (
+        (XSD.integer, "0" * 4097),
+        (XSD.decimal, "0" * 4097 + ".0"),
+        (XSD.language, "en" + "-abcdefgh" * 600),
+        (XSD.anyURI, "urn:long:" + "x" * 5000),
+        (XSD.hexBinary, "00" * 2500),
+    ):
+        term = Literal(text, datatype=datatype, normalize=False)
+        assert check_literal(term).issues[0].code == "literal.lexical_unverified"
