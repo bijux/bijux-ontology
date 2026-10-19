@@ -5,6 +5,8 @@ import threading
 import time
 from contextlib import suppress
 from dataclasses import dataclass, field
+from io import BufferedReader
+from typing import cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget
@@ -204,6 +206,11 @@ class FramedSession:
                     self.checkpoint(deadline, cancel)
                     worker, retiring = self._worker, self._retiring
                     if worker is not None and worker.process.poll() is None:
+                        if worker.stderr_overflow.is_set():
+                            raise LimitExceeded(
+                                f"{self._label} process diagnostics exceed "
+                                "protocol byte bound"
+                            )
                         return worker.token
                     if worker is None and retiring is None:
                         worker = self._start_locked()
@@ -255,7 +262,10 @@ class FramedSession:
             assert process.stderr is not None
             size = 0
             try:
-                while chunk := process.stderr.read(8192):
+                # A reusable worker need not close diagnostics after a frame.
+                # Read available bytes without waiting for a full buffered block.
+                stream = cast(BufferedReader, process.stderr)
+                while chunk := stream.read1(min(8192, self._cap - size + 1)):
                     size += len(chunk)
                     if size > self._cap:
                         worker.stderr_overflow.set()
@@ -355,6 +365,10 @@ class FramedSession:
         try:
             with self._guard:
                 self._require_generation(generation, deadline, cancel)
+                if worker.stderr_overflow.is_set():
+                    raise LimitExceeded(
+                        f"{self._label} process diagnostics exceed protocol byte bound"
+                    )
                 if (
                     worker.exchange_thread is not None
                     and worker.exchange_thread.is_alive()
@@ -395,7 +409,7 @@ class FramedSession:
                 self._require_generation(generation, deadline, cancel)
                 return output[0]
         except BaseException as error:
-            if registered:
+            if registered or worker.stderr_overflow.is_set():
                 self.reset(generation=generation, failure=error)
             raise
         finally:
