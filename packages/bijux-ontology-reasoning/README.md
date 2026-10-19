@@ -122,3 +122,14 @@ Class satisfiability is independent of successful enumeration. Complete results
 cover the selected named-signature query, not every possible expression; result
 caps, unsupported data-property ranges/inverses and unqualified inputs remain
 incomplete. The original source and selected physical graph stay unchanged.
+
+`entities.renaming.prepare_role_rename` checks one explicit structural-role rename
+across a supplied, connected native module closure. Supply exact `AxiomBase`
+preconditions, owned document identities and selected `RoleRename` roles; `all`
+is an explicit separate choice. Required annotation IRI positions use
+`AnnotationRole` preserve/rename policies. Existing or built-in targets and
+required edits in unowned modules refuse the whole transaction. Explicit
+`ModuleInterfaceChange` records replace only selected caller-owned interfaces.
+Nonempty `ModuleCheck` postconditions receive the complete candidate module set
+and shared budget. Returned checked bytes form a reviewable transaction;
+publication across multiple destinations remains the caller's responsibility.
