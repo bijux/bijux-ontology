@@ -27,6 +27,7 @@ WorkerModule = Literal[
     "bijux_ontology.shacl.rules.worker",
     "bijux_ontology.rdf.entailment.worker",
     "bijux_ontology.rdf.answers.worker",
+    "bijux_ontology.rdf.containment.worker",
     "bijux_ontology.data.query_usage.worker",
 ]
 
@@ -63,6 +64,7 @@ def execute_worker(
         "bijux_ontology.shacl.rules.worker",
         "bijux_ontology.rdf.entailment.worker",
         "bijux_ontology.rdf.answers.worker",
+        "bijux_ontology.rdf.containment.worker",
         "bijux_ontology.data.query_usage.worker",
     ):
         raise InputError("Unsupported RDF worker module")

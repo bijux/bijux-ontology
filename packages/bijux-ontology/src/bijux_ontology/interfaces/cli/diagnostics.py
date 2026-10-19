@@ -287,6 +287,7 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "template_not_entailed containment_unverified "
         "answer_changed answer_correspondence_unverified answer_external_unverified "
         "answer_input answer_source_unverified answer_identity_lost "
         "answer_output_unverified "

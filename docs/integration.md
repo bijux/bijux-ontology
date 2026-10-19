@@ -1689,3 +1689,12 @@ claims. `check_query_usage` checks actual vocabulary roles and deprecation. Pass
 dependencies. Dynamic vocabulary positions, unsupported composite class paths
 and unestablished binding scopes retain required unknowns beside known constants;
 comments and string contents do not become predicate declarations.
+
+`rdf.containment.check_simple_entailment(data, template, data_graph=...)` checks
+a finite graph template against one complete selected physical graph using
+maintained SPARQL basic graph matching. Template blanks are existential variables:
+repeated occurrences share a binding, and distinct variables may coalesce.
+The returned substitution refers to actual template and data-owned terms. Ground
+literals retain exact RDF lexical identity; extra data is allowed, without RDFS,
+datatype or OWL inference. Exhaustion leaves entailment unknown. An empty template
+is mathematically entailed and makes no nonempty coverage claim.
