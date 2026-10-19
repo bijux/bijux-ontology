@@ -10,8 +10,8 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.reports import Issue, Report
 
 from ...axioms.types import ProjectedAxiom
-from ...backend.owlapi.execution import result_counter, result_text
-from ...backend.owlapi.receipts import QualifiedReceipt, _records
+from ...backend.owlapi.protocol import result_counter, result_records, result_text
+from ...backend.owlapi.receipts import QualifiedReceipt
 from ..sessions.types import PreparedReasoningTheory
 from .encoding import UnsupportedQuery, capture_obligations, encode_axiom
 from .types import EntailmentAnswer, EntailmentCheck
@@ -68,7 +68,7 @@ def check_entailments(
             if receipt.raw_consistent is not True:
                 raise ResourceError("Ordinary entailment requires a consistent theory")
             seen = set()
-            for raw in _records(data.get("answers"), operation):
+            for raw in result_records(data.get("answers"), operation):
                 item = object_value(raw, location="prepared entailment answer")
                 index = result_counter(item.get("index"), operation, len(requests) - 1)
                 if index in seen:

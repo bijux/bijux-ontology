@@ -17,17 +17,9 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import Issue, Report
 
-from ...backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
-    result_counter,
-    result_text,
-)
-from ...backend.owlapi.receipts import (
-    _records,
-    qualify_reasoning_result,
-    reasoning_header,
-)
+from ...backend.owlapi.execution import invoke_worker, qualify_capability
+from ...backend.owlapi.protocol import result_counter, result_records, result_text
+from ...backend.owlapi.receipts import qualify_reasoning_result, reasoning_header
 from ...backend.types import OwlProfileBackend
 from ...documents.sources.capture import capture_document, capture_imports
 from ...documents.sources.native import prepare_owl_document, stage_native_documents
@@ -127,7 +119,7 @@ def _justification(
         raise ResourceError(
             "Native explanation lacks its exact replay and search boundary"
         )
-    records = _records(data.get("support"), operation)
+    records = result_records(data.get("support"), operation)
     if len(records) > maximum:
         raise LimitExceeded("Explanation exceeds the selected axiom allowance")
     operation.consume("states", 3)
@@ -142,7 +134,7 @@ def _justification(
         seen.add(digest)
         origins = []
         origin_keys = set()
-        for entry in _records(item.get("origins"), operation):
+        for entry in result_records(item.get("origins"), operation):
             original = object_value(entry, location="explanation source structure")
             index = result_counter(
                 original.get("document"), operation, len(documents) - 1
@@ -163,7 +155,7 @@ def _justification(
         operation.consume("bytes", 128)
         axioms.append(AxiomSupport(text, digest, tuple(origins)))
     declarations = []
-    for value in _records(data.get("declarations"), operation):
+    for value in result_records(data.get("declarations"), operation):
         declaration = result_text(value, operation)
         assert declaration is not None
         declarations.append(declaration)

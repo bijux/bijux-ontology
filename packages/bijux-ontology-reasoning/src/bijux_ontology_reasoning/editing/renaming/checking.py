@@ -20,11 +20,8 @@ from ...axioms.changes.preconditions import qualify_base, source_base
 from ...axioms.changes.types import AxiomBase
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...backend.owlapi.bundles import PROFILES, qualify_backend
-from ...backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
-    result_counter,
-)
+from ...backend.owlapi.execution import invoke_worker, qualify_capability
+from ...backend.owlapi.protocol import result_counter
 from ...backend.types import OwlProfile, OwlProfileBackend
 from ...documents.conversion import _profiles
 from ...documents.sources.capture import capture_document, capture_imports

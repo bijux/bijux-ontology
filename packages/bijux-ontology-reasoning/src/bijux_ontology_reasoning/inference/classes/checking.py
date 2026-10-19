@@ -11,8 +11,8 @@ from bijux_ontology.reports import Report
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.codec.encoding import ConstructionEncoder
 from ...axioms.types import ClassExpression, NamedEntity, SubClassOf
-from ...backend.owlapi.execution import result_text
-from ...backend.owlapi.receipts import QualifiedReceipt, _boolean, _records
+from ...backend.owlapi.protocol import result_boolean, result_records, result_text
+from ...backend.owlapi.receipts import QualifiedReceipt
 from ..entailment.encoding import UnsupportedQuery, encode_axiom
 from ..sessions.types import PreparedReasoningTheory
 from .types import ClassQueryGroup, ClassQueryResult
@@ -32,16 +32,16 @@ def _groups(
 ) -> None:
     """Adopt paid native nodes incrementally, retaining an honest partial prefix."""
     decoder = ProjectionDecoder(operation)
-    for value in _records(raw, operation):
+    for value in result_records(raw, operation):
         item = object_value(value, location="native class equivalence node")
         operation.consume("states", 2)
         operation.consume("bytes", 256)
         top, bottom, complete = (
-            _boolean(item.get(name)) for name in ("top", "bottom", "complete")
+            result_boolean(item.get(name)) for name in ("top", "bottom", "complete")
         )
         members = []
         try:
-            for encoded in _records(item.get("members"), operation):
+            for encoded in result_records(item.get("members"), operation):
                 operation.consume("states", 3)
                 operation.consume("bytes", 192)
                 member = decoder.entity(encoded, 1, ("class",))
@@ -131,12 +131,12 @@ def query_classes(
                     "Ordinary class retrieval requires a consistent theory"
                 )
             value = object_value(data.get("class_query"), location="native class query")
-            complete = _boolean(value.get("complete"))
+            complete = result_boolean(value.get("complete"))
             native_error = result_text(value.get("error"), operation, optional=True)
             satisfiable = (
                 None
                 if value.get("satisfiable") is None
-                else _boolean(value["satisfiable"])
+                else result_boolean(value["satisfiable"])
             )
             seen: set[NamedEntity] = set()
             _groups(value.get("groups"), subclasses, seen, operation)

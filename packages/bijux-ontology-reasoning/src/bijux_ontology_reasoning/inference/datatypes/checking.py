@@ -21,17 +21,9 @@ from bijux_ontology.reports import Issue, Location, Report
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.types import DataProperty, DataRange, PropertyDomainRange
 from ...backend.owlapi.bundles import qualify_backend
-from ...backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
-    result_counter,
-    result_text,
-)
-from ...backend.owlapi.receipts import (
-    _records,
-    qualify_reasoning_result,
-    reasoning_header,
-)
+from ...backend.owlapi.execution import invoke_worker, qualify_capability
+from ...backend.owlapi.protocol import result_counter, result_records, result_text
+from ...backend.owlapi.receipts import qualify_reasoning_result, reasoning_header
 from ...backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
 from ...documents.sources.native import stage_native_documents
 from ...documents.sources.rdf import stage_documents
@@ -50,10 +42,10 @@ from .types import (
 def _ranges(raw: object, operation: Budget) -> tuple[PropertyDomainRange, ...]:
     """Retain actual range projections and every unsupported-node boundary."""
     item = object_value(raw, location="datatype range projection")
-    if _records(item.get("unsupported"), operation):
+    if result_records(item.get("unsupported"), operation):
         raise ResourceError("A required global range has unsupported OWL projection")
     decoder = ProjectionDecoder(operation)
-    records = _records(item.get("axioms"), operation)
+    records = result_records(item.get("axioms"), operation)
     operation.consume("bytes", 64 + 128 * len(records))
     result = []
     for record in records:
@@ -235,7 +227,7 @@ def _check(
                     )
                 raise ResourceError("Datatype temporary theory is not qualified")
             seen = set()
-            for raw_answer in _records(data.get("answers"), operation):
+            for raw_answer in result_records(data.get("answers"), operation):
                 item = object_value(raw_answer, location="datatype answer")
                 index = result_counter(item.get("index"), operation, len(requests) - 1)
                 if index in seen:

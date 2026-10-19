@@ -22,15 +22,10 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
 from ...backend.owlapi.bundles import qualify_backend
-from ...backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
-    result_text,
-)
-from ...backend.owlapi.receipts import _boolean as _boolean
-from ...backend.owlapi.receipts import _loaders as _loaders
-from ...backend.owlapi.receipts import _reasoner as _reasoner
-from ...backend.owlapi.receipts import _records as _records
+from ...backend.owlapi.execution import invoke_worker, qualify_capability
+from ...backend.owlapi.protocol import result_boolean as _boolean
+from ...backend.owlapi.protocol import result_records as _records
+from ...backend.owlapi.protocol import result_text
 from ...backend.owlapi.receipts import qualify_reasoning_result, reasoning_header
 from ...backend.types import OwlProfileBackend, ProfileDocument
 from ...documents.sources.native import stage_native_documents

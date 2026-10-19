@@ -9,8 +9,12 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_text
 
 from ...axioms.types import DataProperty, NamedEntity, ObjectProperty
-from ...backend.owlapi.execution import result_counter, result_text
-from ...backend.owlapi.receipts import _boolean, _records
+from ...backend.owlapi.protocol import (
+    result_boolean,
+    result_counter,
+    result_records,
+    result_text,
+)
 from ...backend.types import ProfileDocument
 from ...documents.types import OwlDocument
 from .types import (
@@ -97,7 +101,7 @@ def _value(raw: object, budget: Budget) -> RelationshipValue:
     if kind == "class":
         return NamedEntity("class", iri)
     if kind == "object_property":
-        return ObjectProperty(iri, _boolean(item.get("inverse")))
+        return ObjectProperty(iri, result_boolean(item.get("inverse")))
     if kind == "data_property":
         return DataProperty(iri)
     raise ResourceError("Native relationship member has an unknown role")
@@ -116,16 +120,16 @@ def _groups(
         "domain",
         "range",
     )
-    for raw_group in _records(raw, budget):
+    for raw_group in result_records(raw, budget):
         item = object_value(raw_group, location="native relationship equivalence node")
         budget.consume("states", 2)
         budget.consume("bytes", 192)
         top, bottom, complete = (
-            _boolean(item.get(name)) for name in ("top", "bottom", "complete")
+            result_boolean(item.get(name)) for name in ("top", "bottom", "complete")
         )
         members = []
         try:
-            for raw_member in _records(item.get("members"), budget):
+            for raw_member in result_records(item.get("members"), budget):
                 member = object_value(raw_member, location="native relationship member")
                 value = _value(member.get("value"), budget)
                 if (
@@ -141,7 +145,7 @@ def _groups(
                 seen.add(value)
                 owners = []
                 owned = set()
-                for raw_owner in _records(member.get("asserted_in"), budget):
+                for raw_owner in result_records(member.get("asserted_in"), budget):
                     index = result_counter(raw_owner, budget, len(documents) - 1)
                     if index in owned:
                         raise ResourceError("Duplicate asserted relationship owner")

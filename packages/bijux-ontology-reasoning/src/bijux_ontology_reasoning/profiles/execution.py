@@ -20,8 +20,8 @@ from ..backend.owlapi.bundles import PROFILES, qualify_backend
 from ..backend.owlapi.execution import backend_capability as backend_capability
 from ..backend.owlapi.execution import invoke_worker as _invoke
 from ..backend.owlapi.execution import qualify_capability as _capability
-from ..backend.owlapi.execution import result_counter as _integer
-from ..backend.owlapi.execution import result_text as _text
+from ..backend.owlapi.protocol import result_counter as _integer
+from ..backend.owlapi.protocol import result_text as _text
 from ..documents.sources.rdf import stage_documents
 from .types import (
     LoaderQualification,

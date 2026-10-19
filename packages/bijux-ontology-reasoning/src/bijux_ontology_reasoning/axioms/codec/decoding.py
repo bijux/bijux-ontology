@@ -9,7 +9,7 @@ from bijux_ontology.errors import LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 
-from ...backend.owlapi.execution import result_counter, result_text
+from ...backend.owlapi.protocol import result_counter, result_text
 from .. import types as t
 
 

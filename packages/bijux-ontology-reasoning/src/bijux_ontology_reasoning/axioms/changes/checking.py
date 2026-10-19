@@ -15,11 +15,8 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
 from ...backend.owlapi.bundles import PROFILES, qualify_backend
-from ...backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
-    result_counter,
-)
+from ...backend.owlapi.execution import invoke_worker, qualify_capability
+from ...backend.owlapi.protocol import result_counter
 from ...backend.types import OwlProfile, OwlProfileBackend
 from ...documents.conversion import _profiles
 from ...documents.sources.capture import (

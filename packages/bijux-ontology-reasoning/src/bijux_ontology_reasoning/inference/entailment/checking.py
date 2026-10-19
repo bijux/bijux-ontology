@@ -19,17 +19,9 @@ from bijux_ontology.reports import Issue, Report
 
 from ...axioms.types import ProjectedAxiom
 from ...backend.owlapi.bundles import qualify_backend
-from ...backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
-    result_counter,
-    result_text,
-)
-from ...backend.owlapi.receipts import (
-    _records,
-    qualify_reasoning_result,
-    reasoning_header,
-)
+from ...backend.owlapi.execution import invoke_worker, qualify_capability
+from ...backend.owlapi.protocol import result_counter, result_records, result_text
+from ...backend.owlapi.receipts import qualify_reasoning_result, reasoning_header
 from ...backend.types import OwlProfileBackend, ProfileDocument
 from ...documents.sources.native import stage_native_documents
 from ...documents.sources.rdf import stage_documents
@@ -193,7 +185,7 @@ def check_entailments(
                     )
             else:
                 seen = set()
-                for raw in _records(data.get("answers"), operation):
+                for raw in result_records(data.get("answers"), operation):
                     item = object_value(raw, location="native entailment answer")
                     index = result_counter(
                         item.get("index"), operation, len(requests) - 1

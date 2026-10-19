@@ -32,11 +32,8 @@ from ...axioms.changes.types import AxiomBase
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.types import ProjectedAxiom
 from ...backend.owlapi.bundles import qualify_backend
-from ...backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
-    result_counter,
-)
+from ...backend.owlapi.execution import invoke_worker, qualify_capability
+from ...backend.owlapi.protocol import result_counter
 from ...backend.types import OwlProfileBackend
 from ...documents.sources.native import prepare_owl_document, stage_native_documents
 from ...documents.types import OwlDocument

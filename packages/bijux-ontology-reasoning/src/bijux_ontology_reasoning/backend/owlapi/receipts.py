@@ -11,24 +11,7 @@ from bijux_ontology.reports import Issue
 
 from ...documents.types import OwlDocument
 from ..types import LoaderQualification, ProfileDocument, ReasonerIdentity
-from .execution import result_counter, result_text
-
-
-def _records(raw: object, budget: Budget) -> list[object]:
-    """Prepay native inventory iteration and retained references."""
-    if type(raw) is not list:
-        raise ResourceError("Diagnosis omitted a required finite inventory")
-    budget.consume("work", len(raw))
-    budget.consume("states", len(raw))
-    budget.consume("bytes", 64 + 16 * len(raw))
-    return cast(list[object], raw)
-
-
-def _boolean(raw: object) -> bool:
-    """Preserve exact native booleans without accepting integer substitutes."""
-    if type(raw) is not bool:
-        raise ResourceError("Diagnosis omitted a required boolean")
-    return raw
+from .protocol import result_boolean, result_counter, result_records, result_text
 
 
 def _reasoner(raw: object, budget: Budget) -> ReasonerIdentity:
@@ -37,7 +20,7 @@ def _reasoner(raw: object, budget: Budget) -> ReasonerIdentity:
     name = result_text(item.get("name"), budget)
     artifact = result_text(item.get("artifact_version"), budget)
     native = result_text(item.get("native_version"), budget)
-    ignored = _boolean(item.get("ignore_unsupported_datatypes"))
+    ignored = result_boolean(item.get("ignore_unsupported_datatypes"))
     if (name, artifact, native, ignored) != ("HermiT", "1.4.5.519", "1.4.1.513", False):
         raise ResourceError("DL reasoner differs from the qualified pinned profile")
     budget.consume("states")
@@ -54,14 +37,14 @@ def _loaders(
     """Adopt owned RDF parser receipts and retain every actual interpretation gap."""
     result = []
     seen = set()
-    for record in _records(raw, budget):
+    for record in result_records(raw, budget):
         item = object_value(record, location="DL RDF loader receipt")
         index = result_counter(item.get("document"), budget, len(originals) - 1)
         original = originals[index]
         if index in seen or not isinstance(original, ProfileDocument):
             raise ResourceError("DL loader receipt has ambiguous original ownership")
         seen.add(index)
-        present = _boolean(item.get("present"))
+        present = result_boolean(item.get("present"))
         counts = tuple(
             result_counter(item.get(name), budget, budget.limits.max_triples)
             if present
@@ -106,7 +89,7 @@ def reasoning_header(data: Mapping[str, object], operation: Budget) -> Qualified
         raise ResourceError("DL operation returned an invalid consistency value")
     raw_consistent = cast(bool | None, data["consistent"])
     in_profile = (
-        None if data.get("dl_profile") is None else _boolean(data["dl_profile"])
+        None if data.get("dl_profile") is None else result_boolean(data["dl_profile"])
     )
     native_error = result_text(data.get("error"), operation, optional=True)
     return QualifiedReceipt(raw_consistent, in_profile, native_error, (), None)
@@ -133,7 +116,7 @@ def qualify_reasoning_result(
     if data.get("input_kind") != kind:
         raise ResourceError("DL operation omitted its exact input interpretation")
     observed = set()
-    for raw in _records(data.get("documents"), operation):
+    for raw in result_records(data.get("documents"), operation):
         record = object_value(raw, location="DL loaded document")
         index = result_counter(record.get("document"), operation, len(originals) - 1)
         if index in observed:
@@ -142,7 +125,7 @@ def qualify_reasoning_result(
         for name in ("ontology_iri", "version_iri"):
             result_text(record.get(name), operation, optional=True)
         result_counter(record.get("axioms"), operation, 2**31 - 1)
-        for iri in _records(record.get("imports"), operation):
+        for iri in result_records(record.get("imports"), operation):
             result_text(iri, operation)
     if len(observed) != len(originals):
         raise ResourceError("DL operation did not load every required document")
@@ -151,7 +134,7 @@ def qualify_reasoning_result(
         kind == "native" and loaders
     ):
         raise ResourceError("DL operation omitted exact RDF loader scope")
-    for raw in _records(data.get("changes"), operation):
+    for raw in result_records(data.get("changes"), operation):
         record = object_value(raw, location="DL native input loss")
         loss_kind = result_text(record.get("kind"), operation)
         value = result_text(record.get("value"), operation)
@@ -164,7 +147,7 @@ def qualify_reasoning_result(
                 kind="unverified",
             )
         )
-    for raw in _records(data.get("violations"), operation):
+    for raw in result_records(data.get("violations"), operation):
         text = result_text(raw, operation)
         issues.append(
             Issue(

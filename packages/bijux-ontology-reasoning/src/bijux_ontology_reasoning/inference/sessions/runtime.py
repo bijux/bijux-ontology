@@ -19,7 +19,8 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
 from ...backend.owlapi.bundles import qualify_backend
-from ...backend.owlapi.execution import qualify_capability, result_counter, result_text
+from ...backend.owlapi.execution import qualify_capability
+from ...backend.owlapi.protocol import result_counter, result_text
 from ...backend.owlapi.receipts import (
     QualifiedReceipt,
     qualify_reasoning_result,

@@ -20,18 +20,14 @@ from bijux_ontology.reports import Issue, Report
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.types import ClassExpression, SubClassOf
 from ...backend.owlapi.bundles import qualify_backend
-from ...backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
+from ...backend.owlapi.execution import invoke_worker, qualify_capability
+from ...backend.owlapi.protocol import (
+    result_boolean,
     result_counter,
+    result_records,
     result_text,
 )
-from ...backend.owlapi.receipts import (
-    _boolean,
-    _records,
-    qualify_reasoning_result,
-    reasoning_header,
-)
+from ...backend.owlapi.receipts import qualify_reasoning_result, reasoning_header
 from ...backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
 from ...documents.sources.capture import capture_document, capture_imports
 from ...documents.sources.native import stage_native_documents
@@ -50,10 +46,10 @@ def _expressions(
     if value is None:
         return None, None
     record = object_value(value, location="model native question")
-    unsupported = _records(record.get("unsupported"), decoder.budget)
+    unsupported = result_records(record.get("unsupported"), decoder.budget)
     for kind in unsupported:
         decoder.text(kind)
-    axioms = _records(record.get("axioms"), decoder.budget)
+    axioms = result_records(record.get("axioms"), decoder.budget)
     if unsupported:
         return None, None
     if len(axioms) != 1:
@@ -75,9 +71,11 @@ def _answer(
     budget.consume("states", 3)
     budget.consume("bytes", 512)
     error = result_text(item.get("error"), budget, optional=True)
-    entailed = None if item.get("entailed") is None else _boolean(item["entailed"])
+    entailed = (
+        None if item.get("entailed") is None else result_boolean(item["entailed"])
+    )
     satisfiable = (
-        None if item.get("satisfiable") is None else _boolean(item["satisfiable"])
+        None if item.get("satisfiable") is None else result_boolean(item["satisfiable"])
     )
     required_question = question.kind == "required_subsumption"
     if (required_question and satisfiable is not None) or (
@@ -323,7 +321,7 @@ def check_model_compatibility(
                 )
             else:
                 seen: set[int] = set()
-                for raw in _records(data.get("answers"), operation):
+                for raw in result_records(data.get("answers"), operation):
                     item = object_value(raw, location="native model logical answer")
                     index = result_counter(
                         item.get("index"), operation, len(questions) - 1

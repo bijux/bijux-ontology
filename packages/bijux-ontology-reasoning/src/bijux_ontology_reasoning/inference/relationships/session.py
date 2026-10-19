@@ -11,8 +11,13 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.reports import Issue, Report
 
 from ...axioms.types import NamedEntity
-from ...backend.owlapi.execution import result_counter, result_text
-from ...backend.owlapi.receipts import QualifiedReceipt, _boolean, _records
+from ...backend.owlapi.protocol import (
+    result_boolean,
+    result_counter,
+    result_records,
+    result_text,
+)
+from ...backend.owlapi.receipts import QualifiedReceipt
 from ..sessions.types import PreparedReasoningTheory
 from .codec import _groups, _query
 from .types import InferredAnswer, InferredContracts, InferredQuery, RelationshipGroup
@@ -74,7 +79,7 @@ def query_inferred_contracts(
                     "Ordinary inferred views require a consistent theory"
                 )
             seen = set()
-            for raw in _records(data.get("answers"), operation):
+            for raw in result_records(data.get("answers"), operation):
                 item = object_value(raw, location="prepared inferred answer")
                 index = result_counter(item.get("index"), operation, len(requests) - 1)
                 if index in seen:
@@ -82,12 +87,12 @@ def query_inferred_contracts(
                 operation.consume("states", 4)
                 operation.consume("bytes", 512)
                 seen.add(index)
-                complete = _boolean(item.get("complete"))
+                complete = result_boolean(item.get("complete"))
                 error = result_text(item.get("error"), operation, optional=True)
                 satisfiable = (
                     None
                     if item.get("satisfiable") is None
-                    else _boolean(item["satisfiable"])
+                    else result_boolean(item["satisfiable"])
                 )
                 if (
                     type(requests[index].focus) is not NamedEntity

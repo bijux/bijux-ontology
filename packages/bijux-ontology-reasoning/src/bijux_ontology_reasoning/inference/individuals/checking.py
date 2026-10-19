@@ -11,8 +11,13 @@ from bijux_ontology.reports import Issue, Report
 
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.types import NamedEntity, NativeLiteral
-from ...backend.owlapi.execution import result_counter, result_text
-from ...backend.owlapi.receipts import QualifiedReceipt, _boolean, _records
+from ...backend.owlapi.protocol import (
+    result_boolean,
+    result_counter,
+    result_records,
+    result_text,
+)
+from ...backend.owlapi.receipts import QualifiedReceipt
 from ..sessions.types import PreparedReasoningTheory
 from .preparation import capture_queries
 from .types import (
@@ -36,14 +41,14 @@ def _groups(
     decoder = ProjectionDecoder(operation)
     role = "class" if query.family == "types" else "named_individual"
     seen: set[NamedEntity] = set()
-    for raw_group in _records(raw, operation):
+    for raw_group in result_records(raw, operation):
         item = object_value(raw_group, location="native realization node")
         operation.consume("states", 2)
         operation.consume("bytes", 256)
-        complete = _boolean(item.get("complete"))
+        complete = result_boolean(item.get("complete"))
         members = []
         try:
-            for value in _records(item.get("members"), operation):
+            for value in result_records(item.get("members"), operation):
                 operation.consume("states", 3)
                 operation.consume("bytes", 192)
                 member = decoder.entity(value, 1, (role,))
@@ -75,13 +80,13 @@ def _answer(
         policy = result_text(item.get("node_policy"), operation)
         if policy not in ("BY_NAME", "BY_SAME_AS"):
             raise ResourceError("Unknown native individual node policy")
-        complete = _boolean(item.get("complete"))
-        exhausted = _boolean(item.get("exhausted"))
+        complete = result_boolean(item.get("complete"))
+        exhausted = result_boolean(item.get("exhausted"))
         error_text = result_text(item.get("error"), operation, optional=True)
         _groups(item.get("groups"), groups, query, operation)
         decoder = ProjectionDecoder(operation)
         seen: set[NativeLiteral] = set()
-        for encoded in _records(item.get("values"), operation):
+        for encoded in result_records(item.get("values"), operation):
             operation.consume("states", 3)
             operation.consume("bytes", 192)
             value = decoder.literal(encoded, 1)
@@ -192,7 +197,7 @@ def realize(
             )
             if receipt.raw_consistent is not True:
                 raise ResourceError("Ordinary realization requires a consistent theory")
-            records = _records(data.get("individual_queries"), operation)
+            records = result_records(data.get("individual_queries"), operation)
             if len(records) > len(requests):
                 raise ResourceError("Native realization returned unrequested answers")
             for index, raw in enumerate(records):

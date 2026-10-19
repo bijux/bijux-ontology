@@ -18,18 +18,14 @@ from bijux_ontology.reports import Issue, Report
 
 from ...axioms.types import NamedEntity
 from ...backend.owlapi.bundles import qualify_backend
-from ...backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
+from ...backend.owlapi.execution import invoke_worker, qualify_capability
+from ...backend.owlapi.protocol import (
+    result_boolean,
     result_counter,
+    result_records,
     result_text,
 )
-from ...backend.owlapi.receipts import (
-    _boolean,
-    _records,
-    qualify_reasoning_result,
-    reasoning_header,
-)
+from ...backend.owlapi.receipts import qualify_reasoning_result, reasoning_header
 from ...backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
 from ...documents.sources.native import stage_native_documents
 from ...documents.sources.rdf import stage_documents
@@ -194,7 +190,7 @@ def query_inferred_contracts(
                 )
             else:
                 seen = set()
-                for raw in _records(data.get("answers"), operation):
+                for raw in result_records(data.get("answers"), operation):
                     item = object_value(
                         raw, location="native relationship query answer"
                     )
@@ -206,12 +202,12 @@ def query_inferred_contracts(
                     operation.consume("states", 4)
                     operation.consume("bytes", 512)
                     seen.add(index)
-                    complete = _boolean(item.get("complete"))
+                    complete = result_boolean(item.get("complete"))
                     error = result_text(item.get("error"), operation, optional=True)
                     satisfiable = (
                         None
                         if item.get("satisfiable") is None
-                        else _boolean(item["satisfiable"])
+                        else result_boolean(item["satisfiable"])
                     )
                     if (
                         type(requests[index].focus) is not NamedEntity

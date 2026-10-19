@@ -18,12 +18,8 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
 from ..backend.owlapi.bundles import qualify_backend
-from ..backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
-    result_counter,
-    result_text,
-)
+from ..backend.owlapi.execution import invoke_worker, qualify_capability
+from ..backend.owlapi.protocol import result_counter, result_text
 from ..backend.types import OwlProfileBackend, ProfileDocument
 from ..documents.sources.native import stage_native_documents
 from ..documents.sources.rdf import stage_documents
