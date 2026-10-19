@@ -192,14 +192,39 @@ def test_explicit_bridge_can_introduce_a_real_new_interaction(
     } == {"urn:left", "urn:right", "urn:bridge"}
 
 
+@pytest.mark.parametrize(
+    ("ontology_iri", "document_iri"),
+    (
+        ("urn:left", "urn:left"),
+        ("urn:bijux:ontology:joint", "urn:left"),
+        ("urn:left", "urn:bijux:ontology:joint"),
+    ),
+)
 def test_component_nonentailment_does_not_replace_the_joint_consumer_answer(
     backend: OwlProfileBackend,
+    ontology_iri: str,
+    document_iri: str,
 ) -> None:
-    """The joint really entails a selected consequence absent from one component."""
+    """A joint consumer proof preserves originals even at synthetic identity names."""
     query = SubClassOf(NamedEntity("class", "urn:A"), NamedEntity("class", "urn:B"), ())
+    source = prepare_owl_document(
+        "Ontology(<"
+        + ontology_iri
+        + "> "
+        + DECLARATIONS
+        + " SubClassOf(<urn:A> <urn:B>))",
+        format="functional",
+        document_iri=document_iri,
+    )
+    original = (
+        source.content,
+        source.sha256,
+        source.document_iri,
+        source.effective_url,
+    )
     result = check_integration(
         backend,
-        (component("left", "SubClassOf(<urn:A> <urn:B>)"), component("right")),
+        (TheoryComponent("left", source), component("right")),
         (TheoryCombination("deployment", ("left", "right")),),
         named_classes=(A,),
         consumer_entailments=(query,),
@@ -209,6 +234,12 @@ def test_component_nonentailment_does_not_replace_the_joint_consumer_answer(
     assert change.before == (True, False) and change.after is True
     right = next(value for value in result.observations if value.label == "right")
     assert right.entailments and right.entailments.answers[0].outcome == "not_entailed"
+    assert (
+        source.content,
+        source.sha256,
+        source.document_iri,
+        source.effective_url,
+    ) == original
 
 
 def test_joint_inconsistency_is_distinct_from_class_satisfiability(

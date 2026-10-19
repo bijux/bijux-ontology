@@ -109,8 +109,10 @@ def assemble_theory(
 
     Native OWLAPI supplies the actual imports-closure semantics. Alias/base
     conflicts are unsupported joint interpretations, never last-writer choices.
-    ElementTree only serializes escaped import identifiers; no new parser or
-    axiom representation is introduced.
+    The generated ontology is anonymous, so its ontology identity cannot collide
+    with an original named ontology. Its resolution identity avoids all supplied
+    aliases and bases. ElementTree only serializes escaped import identifiers;
+    no new parser or axiom representation is introduced.
     """
     label = _label(label, operation)
     chosen = capture_items(components, TheoryComponent, operation)
@@ -125,6 +127,7 @@ def assemble_theory(
         )
     aliases: dict[str, OwlDocument] = {}
     bases: dict[str, OwlDocument] = {}
+    identities: set[str] = set()
 
     def add(alias: str, document: OwlDocument) -> None:
         """Retain qualified aliases without changing any module's interpretation."""
@@ -141,11 +144,12 @@ def assemble_theory(
             )
         aliases[alias] = document
         bases[document.effective_url] = document
+        if document.document_iri not in identities:
+            operation.consume("states")
+            operation.consume("bytes", 128)
+            identities.add(document.document_iri)
 
-    root = Element(
-        "{http://www.w3.org/2002/07/owl#}Ontology",
-        {"ontologyIRI": "urn:bijux:ontology:joint"},
-    )
+    root = Element("{http://www.w3.org/2002/07/owl#}Ontology")
     for component in chosen:
         document = component.source
         add(document.effective_url, document)
@@ -158,17 +162,24 @@ def assemble_theory(
         SubElement(
             root, "{http://www.w3.org/2002/07/owl#}Import"
         ).text = document.effective_url
+    identity = "urn:bijux:ontology:joint"
+    for index in range(len(aliases) + len(bases) + len(identities) + 1):
+        bound_text(identity, operation)
+        if (
+            identity not in aliases
+            and identity not in bases
+            and identity not in identities
+        ):
+            break
+        reserve(operation)
+        identity = f"urn:bijux:ontology:joint:{index + 1}"
     content = tostring(root, encoding="utf-8", xml_declaration=True)
     prepared = prepare_owl_document(
         content,
         format="owlxml",
-        document_iri="urn:bijux:ontology:joint",
+        document_iri=identity,
         budget=operation,
     )
-    if prepared.effective_url in aliases:
-        raise ResourceError(
-            "An original source conflicts with the synthetic joint root"
-        )
     return TheoryComponent(label, prepared, aliases)
 
 
