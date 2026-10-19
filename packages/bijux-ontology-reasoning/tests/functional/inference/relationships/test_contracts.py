@@ -1,8 +1,12 @@
 """Native inferred contracts, asserted provenance and bounded query coverage."""
 
 import os
+import sys
+from contextlib import ExitStack
 from pathlib import Path
 from threading import Event
+from types import FrameType
+from typing import cast
 
 import pytest
 from bijux_ontology_reasoning.axioms.types import (
@@ -18,8 +22,14 @@ from bijux_ontology_reasoning.inference.consistency.types import (
 )
 from bijux_ontology_reasoning.inference.relationships import (
     InferredAnswer,
+    InferredContracts,
     InferredQuery,
     query_inferred_contracts,
+)
+from bijux_ontology_reasoning.inference.relationships.types import RelationshipGroup
+from bijux_ontology_reasoning.inference.sessions import (
+    ReasoningSession,
+    prepare_reasoning_theory,
 )
 from bijux_ontology_reasoning.profiles.types import LoaderQualification as PublicLoader
 from rdflib import Dataset, URIRef
@@ -322,3 +332,75 @@ def test_cumulative_cancellation_and_same_public_receipt_classes(
     assert bounded.report.requested == 2
     recovered = query_inferred_contracts(backend, source(), (query,))
     assert recovered.report.verified
+
+
+@pytest.mark.parametrize("prepared", (False, True))
+def test_host_exhaustion_retains_completed_native_relationship_nodes(
+    backend: OwlProfileBackend, prepared: bool
+) -> None:
+    """A genuine late host stop keeps its paid groups without certifying completion."""
+    original = source(
+        "Ontology(<urn:prefix> Declaration(Class(<urn:A>)) "
+        "Declaration(Class(<urn:B>)) Declaration(Class(<urn:C>)) "
+        "SubClassOf(<urn:C> <urn:B>) SubClassOf(<urn:B> <urn:A>))"
+    )
+    query = InferredQuery(NamedEntity("class", "urn:A"), "sub", False)
+    observed: list[tuple[int, tuple[RelationshipGroup, ...]]] = []
+
+    def observe(frame: FrameType, event: str, _: object) -> None:
+        """Measure an actual completed node before the next host charge."""
+        parent = frame.f_back
+        if (
+            not observed
+            and event == "call"
+            and frame.f_code.co_name == "consume"
+            and parent is not None
+            and parent.f_code.co_name == "_groups"
+            and parent.f_globals.get("__name__")
+            == "bijux_ontology_reasoning.inference.relationships.codec"
+        ):
+            groups = cast(list[RelationshipGroup], parent.f_locals["destination"])
+            current = cast(Budget, parent.f_locals["budget"])
+            if groups:
+                observed.append(
+                    (
+                        current.limits.max_states - current.remaining("states"),
+                        tuple(groups),
+                    )
+                )
+
+    with ExitStack() as stack:
+        session = (
+            stack.enter_context(
+                ReasoningSession(prepare_reasoning_theory(backend, original))
+            )
+            if prepared
+            else None
+        )
+
+        def run(budget: Budget) -> InferredContracts:
+            """Exercise the public native operation with its exact caller allowance."""
+            if session is not None:
+                return session.query_inferred_contracts((query,), budget=budget)
+            return query_inferred_contracts(backend, original, (query,), budget=budget)
+
+        previous = sys.getprofile()
+        sys.setprofile(observe)
+        try:
+            full = run(Budget())
+        finally:
+            sys.setprofile(previous)
+        assert full.report.verified and observed
+        cap, completed = observed[0]
+        assert completed and all(group.complete for group in completed)
+        observed.clear()
+        sys.setprofile(observe)
+        try:
+            stopped = run(Budget(Limits(max_states=cap)))
+        finally:
+            sys.setprofile(previous)
+        assert observed and observed[0][0] == cap
+        assert stopped.report.outcome == "exhausted" and not stopped.report.complete
+        assert stopped.answers[0].groups == observed[0][1]
+        assert not stopped.answers[0].report.complete
+        assert run(Budget()).report.verified

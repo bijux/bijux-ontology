@@ -15,7 +15,7 @@ from ...backend.owlapi.execution import result_counter, result_text
 from ...backend.owlapi.receipts import QualifiedReceipt, _boolean, _records
 from ..sessions.types import PreparedReasoningTheory
 from .codec import _groups, _query
-from .types import InferredAnswer, InferredContracts, InferredQuery
+from .types import InferredAnswer, InferredContracts, InferredQuery, RelationshipGroup
 
 if TYPE_CHECKING:
     from ..sessions.runtime import NativeSession
@@ -98,40 +98,52 @@ def query_inferred_contracts(
                     raise ResourceError(
                         "Prepared inferred answer changed its typed role"
                     )
-                groups = _groups(
-                    item.get("groups"),
-                    requests[index],
-                    bound_theory.documents if bound_theory is not None else (),
-                    operation,
-                )
-                if complete and (
-                    error is not None or any(not g.complete for g in groups)
-                ):
-                    raise ResourceError(
-                        "Prepared inferred completeness contradicts evidence"
+                groups: list[RelationshipGroup] = []
+                try:
+                    _groups(
+                        item.get("groups"),
+                        requests[index],
+                        bound_theory.documents if bound_theory is not None else (),
+                        operation,
+                        groups,
                     )
-                local = []
-                if not complete:
-                    issue = Issue(
-                        "owl.relationship_query_unverified",
-                        "Relationship enumeration is incomplete or unsupported",
-                        str(index),
-                        actual=error,
-                        kind="unverified",
+                    if complete and (
+                        error is not None or any(not g.complete for g in groups)
+                    ):
+                        raise ResourceError(
+                            "Prepared inferred completeness contradicts evidence"
+                        )
+                    local = []
+                    if not complete:
+                        issue = Issue(
+                            "owl.relationship_query_unverified",
+                            "Relationship enumeration is incomplete or unsupported",
+                            str(index),
+                            actual=error,
+                            kind="unverified",
+                        )
+                        issues.append(issue)
+                        local.append(issue)
+                    report = Report(
+                        "owl.inferred_query",
+                        int(complete),
+                        tuple(local),
+                        requested=1,
+                        complete=complete,
                     )
-                    issues.append(issue)
-                    local.append(issue)
-                report = Report(
-                    "owl.inferred_query",
-                    int(complete),
-                    tuple(local),
-                    requested=1,
-                    complete=complete,
-                )
-                answers[index] = InferredAnswer(
-                    requests[index], groups, satisfiable, error, report
-                )
-                children.append(report)
+                    answers[index] = InferredAnswer(
+                        requests[index], tuple(groups), satisfiable, error, report
+                    )
+                    children.append(report)
+                except LimitExceeded:
+                    answers[index] = InferredAnswer(
+                        requests[index],
+                        tuple(groups),
+                        satisfiable,
+                        error,
+                        Report("owl.inferred_query", requested=1, complete=False),
+                    )
+                    raise
             if data["status"] == "exhausted":
                 raise LimitExceeded(
                     "Native prepared relationship enumeration exhausted"

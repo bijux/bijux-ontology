@@ -39,6 +39,7 @@ from .types import (
     InferredAnswer,
     InferredContracts,
     InferredQuery,
+    RelationshipGroup,
 )
 
 
@@ -219,37 +220,53 @@ def query_inferred_contracts(
                         raise ResourceError(
                             "Native query answer contradicts its qualified role"
                         )
-                    groups = _groups(
-                        item.get("groups"), requests[index], originals, operation
-                    )
-                    if complete and (
-                        error is not None or any(not group.complete for group in groups)
-                    ):
-                        raise ResourceError(
-                            "Native relationship completeness contradicts evidence"
+                    groups: list[RelationshipGroup] = []
+                    try:
+                        _groups(
+                            item.get("groups"),
+                            requests[index],
+                            originals,
+                            operation,
+                            groups,
                         )
-                    local = []
-                    if not complete:
-                        issue = Issue(
-                            "owl.relationship_query_unverified",
-                            "Relationship enumeration is incomplete or unsupported",
-                            str(index),
-                            actual=error,
-                            kind="unverified",
+                        if complete and (
+                            error is not None
+                            or any(not group.complete for group in groups)
+                        ):
+                            raise ResourceError(
+                                "Native relationship completeness contradicts evidence"
+                            )
+                        local = []
+                        if not complete:
+                            issue = Issue(
+                                "owl.relationship_query_unverified",
+                                "Relationship enumeration is incomplete or unsupported",
+                                str(index),
+                                actual=error,
+                                kind="unverified",
+                            )
+                            issues.append(issue)
+                            local.append(issue)
+                        report = Report(
+                            "owl.inferred_query",
+                            int(complete),
+                            tuple(local),
+                            requested=1,
+                            complete=complete,
                         )
-                        issues.append(issue)
-                        local.append(issue)
-                    report = Report(
-                        "owl.inferred_query",
-                        int(complete),
-                        tuple(local),
-                        requested=1,
-                        complete=complete,
-                    )
-                    answers[index] = InferredAnswer(
-                        requests[index], groups, satisfiable, error, report
-                    )
-                    children.append(report)
+                        answers[index] = InferredAnswer(
+                            requests[index], tuple(groups), satisfiable, error, report
+                        )
+                        children.append(report)
+                    except LimitExceeded:
+                        answers[index] = InferredAnswer(
+                            requests[index],
+                            tuple(groups),
+                            satisfiable,
+                            error,
+                            Report("owl.inferred_query", requested=1, complete=False),
+                        )
+                        raise
                 if data["status"] == "exhausted":
                     raise LimitExceeded(
                         "Native relationship enumeration exhausted its bound"

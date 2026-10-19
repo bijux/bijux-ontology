@@ -3,7 +3,7 @@
 from typing import cast
 
 from bijux_ontology._json import object_value
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_text
@@ -108,9 +108,9 @@ def _groups(
     query: InferredQuery,
     documents: tuple[OwlDocument | ProfileDocument, ...],
     budget: Budget,
-) -> tuple[RelationshipGroup, ...]:
-    """Adopt partial native equivalence nodes and exact asserted ownership."""
-    groups = []
+    destination: list[RelationshipGroup],
+) -> None:
+    """Publish paid native nodes before later decoding can exhaust its allowance."""
     seen = set()
     class_results = type(query.focus) is NamedEntity or query.relation in (
         "domain",
@@ -124,32 +124,38 @@ def _groups(
             _boolean(item.get(name)) for name in ("top", "bottom", "complete")
         )
         members = []
-        for raw_member in _records(item.get("members"), budget):
-            member = object_value(raw_member, location="native relationship member")
-            value = _value(member.get("value"), budget)
-            if (
-                (class_results and type(value) is not NamedEntity)
-                or (not class_results and type(value) is not type(query.focus))
-                or value in seen
-            ):
-                raise ResourceError(
-                    "Native relationship node role or uniqueness is invalid"
+        try:
+            for raw_member in _records(item.get("members"), budget):
+                member = object_value(raw_member, location="native relationship member")
+                value = _value(member.get("value"), budget)
+                if (
+                    (class_results and type(value) is not NamedEntity)
+                    or (not class_results and type(value) is not type(query.focus))
+                    or value in seen
+                ):
+                    raise ResourceError(
+                        "Native relationship node role or uniqueness is invalid"
+                    )
+                budget.consume("states", 3)
+                budget.consume("bytes", 192)
+                seen.add(value)
+                owners = []
+                owned = set()
+                for raw_owner in _records(member.get("asserted_in"), budget):
+                    index = result_counter(raw_owner, budget, len(documents) - 1)
+                    if index in owned:
+                        raise ResourceError("Duplicate asserted relationship owner")
+                    budget.consume("bytes", 32)
+                    budget.consume("states")
+                    owned.add(index)
+                    owners.append(documents[index])
+                members.append(RelationshipMember(value, tuple(owners)))
+        except LimitExceeded:
+            if members:
+                destination.append(
+                    RelationshipGroup(tuple(members), top, bottom, False)
                 )
-            budget.consume("states", 3)
-            budget.consume("bytes", 192)
-            seen.add(value)
-            owners = []
-            owned = set()
-            for raw_owner in _records(member.get("asserted_in"), budget):
-                index = result_counter(raw_owner, budget, len(documents) - 1)
-                if index in owned:
-                    raise ResourceError("Duplicate asserted relationship owner")
-                budget.consume("bytes", 32)
-                budget.consume("states")
-                owned.add(index)
-                owners.append(documents[index])
-            members.append(RelationshipMember(value, tuple(owners)))
+            raise
         if complete and not members:
             raise ResourceError("Native complete equivalence node cannot be empty")
-        groups.append(RelationshipGroup(tuple(members), top, bottom, complete))
-    return tuple(groups)
+        destination.append(RelationshipGroup(tuple(members), top, bottom, complete))
