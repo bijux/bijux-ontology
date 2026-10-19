@@ -307,3 +307,24 @@ def test_import_alias_agreement_uses_selected_content_without_hidden_graphs() ->
     view = load_vocabulary(root, imports={str(EX.A): source, str(EX.B): changed_hidden})
     assert len(view.imports) == 1
     assert set(view.imports[0]) == {(EX.Image, EX.p, EX.o)}
+
+
+def test_import_qualification_retains_loader_provenance_and_actual_aliases() -> None:
+    root = Graph().add((EX.Root, OWL.imports, EX.Requested))
+    supplied = RdfSource(
+        "<urn:imported:Class> a <http://www.w3.org/2002/07/owl#Class> .",
+        format="turtle",
+        document_iri=str(EX.Logical),
+        effective_url=str(EX.Actual),
+    )
+    assert not Vocabulary(root).required_imports_qualified
+    assert not Vocabulary(root, imports=[Graph()]).required_imports_qualified
+    with pytest.raises(ResourceError):
+        load_vocabulary(root)
+    view = load_vocabulary(root, imports={str(EX.Requested): supplied})
+    assert view.required_imports_qualified
+    assert (URIRef("urn:imported:Class"), RDF.type, OWL.Class) in view.graph()
+    view.graph().remove((None, None, None))
+    assert view.required_imports_qualified
+    assert len(view.graph()) == 2
+    assert load_vocabulary(Graph()).required_imports_qualified

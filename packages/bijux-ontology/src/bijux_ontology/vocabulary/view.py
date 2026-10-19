@@ -204,9 +204,12 @@ class Vocabulary:
         imports: tuple[OwnedSource, ...],
         lookup: tuple[OwnedSource, ...],
         limits: Limits,
+        *,
+        required_imports_qualified: bool = False,
     ) -> None:
         """Retain only owned immutable graph handles before publishing readers."""
         self._limits = limits
+        self._required_imports_qualified = required_imports_qualified
         self._source_handles = (
             ("local", local),
             *((f"import[{index}]", source) for index, source in enumerate(imports)),
@@ -229,11 +232,28 @@ class Vocabulary:
         imports: tuple[OwnedSource, ...],
         lookup: tuple[OwnedSource, ...],
         limits: Limits,
+        *,
+        required_imports_qualified: bool = False,
     ) -> "Vocabulary":
         """Adopt internal readers prepared within the caller's shared budget."""
         result = cls.__new__(cls)
-        result._initialize(local, imports, lookup, limits)
+        result._initialize(
+            local,
+            imports,
+            lookup,
+            limits,
+            required_imports_qualified=required_imports_qualified,
+        )
         return result
+
+    @property
+    def required_imports_qualified(self) -> bool:
+        """Whether loading validated the local resource and required import closure.
+
+        Raw graph construction supplies ownership without import qualification.
+        Lookup resources are excluded. This records provenance, not consistency.
+        """
+        return self._required_imports_qualified
 
     def _read(
         self,

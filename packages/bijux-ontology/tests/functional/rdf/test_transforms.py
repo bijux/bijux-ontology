@@ -63,6 +63,8 @@ def test_remapping_preserves_positions_lexical_text_and_detects_collisions() -> 
     }
     changed = remap_iris(original, mapping)
     assert changed.source is not None
+    with pytest.raises(InputError):
+        remap_iris(original, {str(A): str(B), "not absolute": str(P)})
     graph = changed.source.graph(EX + "new-graph")
     assert (
         B,
@@ -118,7 +120,9 @@ def test_merging_separates_blanks_and_retains_explicit_dataset_semantics() -> No
     assert all(len(source.graph(G)) == 1 for source in snapshots)
 
 
-def test_merge_respects_declared_graph_views_and_retains_scope_failures() -> None:
+def test_transformations_respect_declared_graph_views_and_retain_scope_failures() -> (
+    None
+):
     dataset = Dataset()
     dataset.default_graph.add((A, P, Literal("default")))
     dataset.graph(G).add((A, P, Literal("selected")))
@@ -129,6 +133,35 @@ def test_merge_respects_declared_graph_views_and_retains_scope_failures() -> Non
     assert set(merged.source.graph(G)) == {(A, P, Literal("selected"))}
     assert not merged.source.graph("@default")
     assert set(merged.source._graph_names()) == {G}
+    extracted = extract_neighbourhood(pinned, (str(A),), predicates=(str(P),))
+    assert extracted.source is not None and extracted.report.verified
+    assert extracted.source.graph_name == str(G)
+    assert set(extracted.source.graph()) == {(A, P, Literal("selected"))}
+    assert set(extracted.source._graph_names()) == {G}
+    renamed_graph = URIRef(EX + "renamed")
+    # B appears only outside the authorized view and cannot create a collision.
+    rewritten = remap_iris(pinned, {str(A): str(B), str(G): str(renamed_graph)})
+    assert rewritten.source is not None and rewritten.report.verified
+    assert rewritten.source.graph_name == str(renamed_graph)
+    assert set(rewritten.source.graph()) == {(B, P, Literal("selected"))}
+    assert set(rewritten.source._graph_names()) == {renamed_graph}
+    observed = []
+
+    def selected_only(source: PreparedSource) -> Report:
+        """A trusted check must receive only its source's authorized snapshot."""
+        observed.append(source.graph_name)
+        assert len(source.dataset()) == 1
+        assert set(source.graph().objects()) == {Literal("selected")}
+        return Report("selected", 1)
+
+    rechecked = recheck_transformation(
+        pinned, rewritten.source, {"selected": selected_only}
+    )
+    assert rechecked.verified and observed == [str(G), str(renamed_graph)]
+    empty = extract_neighbourhood(pinned, (str(B),), predicates=(str(P),))
+    assert empty.source is not None and not empty.source.graph()
+    assert empty.report.outcome == "not_applicable" and empty.report.exit_code() == 0
+    assert empty.source.graph_name == str(G) and set(empty.source._graph_names()) == {G}
     default = merge_sources(
         (prepare_source(RdfSource(dataset, graph_name="@default")),)
     )
@@ -140,6 +173,11 @@ def test_merge_respects_declared_graph_views_and_retains_scope_failures() -> Non
     assert (
         not declared_union.source.is_dataset and len(declared_union.source.graph()) == 3
     )
+    union_source = prepare_source(RdfSource(dataset, union=True))
+    union_rewritten = remap_iris(union_source, {str(P): EX + "replacement"})
+    assert union_rewritten.source is not None and union_rewritten.report.verified
+    assert union_rewritten.source.union and len(union_rewritten.source.graph()) == 3
+    assert not tuple(union_rewritten.source._graph_names())
     unknown = merge_sources(
         (
             PreparedSource(

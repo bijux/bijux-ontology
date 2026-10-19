@@ -4,7 +4,7 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.navigation import (
     collection_members,
@@ -111,3 +111,17 @@ def test_anonymous_branches_do_not_invalidate_an_existing_named_path() -> None:
     view = inspect_vocabulary(graph)
     assert traverse(view, str(EX.A)).report.outcome == "unverified"
     assert shortest_path(view, str(EX.A), str(EX.B)).report.verified
+
+
+def test_embedded_traversals_share_work_and_respect_tighter_depth_bounds() -> None:
+    view = inspect_vocabulary(
+        Graph().add((EX.A, RDFS.subClassOf, EX.B)).add((EX.B, RDFS.subClassOf, EX.C))
+    )
+    shared = Budget(Limits(max_work=100))
+    assert traverse(view, str(EX.A), budget=shared).report.verified
+    results = [traverse(view, str(EX.A), budget=shared) for _ in range(100)]
+    assert results[-1].report.outcome == "exhausted"
+    assert not results[-1].report.verified
+    limited = traverse(view, str(EX.A), budget=Budget(Limits(max_depth=1)))
+    assert [visit.iri for visit in limited.items] == [str(EX.B)]
+    assert limited.report.outcome == "exhausted"

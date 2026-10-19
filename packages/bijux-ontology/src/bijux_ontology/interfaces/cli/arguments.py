@@ -182,8 +182,19 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
             metavar=("CODE", "LOCATION"),
             help="Permit one exact finding identity; never waive an input failure",
         )
-        action.add_argument(
+        presentation = action.add_mutually_exclusive_group()
+        presentation.add_argument(
             "--json", action="store_true", help="Print complete structured results"
+        )
+        presentation.add_argument(
+            "--sarif",
+            action="store_true",
+            help="Export native results as local SARIF 2.1.0",
+        )
+        action.add_argument(
+            "--artifact-root",
+            type=Path,
+            help="SARIF base for relative artifact references",
         )
         action.add_argument(
             "--output", type=Path, help="Write output without overwriting an input"
@@ -318,7 +329,12 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
             action.add_argument("--language", action="append", default=[])
             action.add_argument("--used-term", action="append", default=[])
             action.add_argument("--replacement-predicate", action="append", default=[])
-    return parser.parse_args(argv)
+    options = parser.parse_args(argv)
+    if options.artifact_root is not None and not options.sarif:
+        parser.error("--artifact-root requires --sarif")
+    if options.sarif and getattr(options, "explain", False):
+        parser.error("--sarif cannot be combined with --explain")
+    return options
 
 
 def vocabulary_input(options: argparse.Namespace) -> VocabularyInput:

@@ -99,6 +99,7 @@ def _walk(
     include_self: bool = False,
     max_depth: int | None = None,
     stop_at: str | None = None,
+    budget: Budget | None = None,
 ) -> Selection[Visit]:
     """Traverse named asserted edges breadth-first, preserving finite incompleteness."""
     absolute_iri(iri)
@@ -109,7 +110,11 @@ def _walk(
     if type(include_self) is not bool:
         raise InputError("include_self must be a boolean")
     maximum = _depth(view, max_depth)
-    budget = Budget(view.limits)
+    if budget is not None and not isinstance(budget, Budget):
+        raise InputError("Navigation budget requires a Budget")
+    if budget is not None:
+        maximum = min(maximum, budget.limits.max_depth)
+    budget = budget if budget is not None else Budget(view.limits)
     issues = IssueCollector(budget)
     items: list[Visit] = [Visit(iri, 0, None)] if include_self else []
     queue = deque([(iri, 0)])
@@ -172,8 +177,9 @@ def traverse(
     direction: Literal["outgoing", "incoming"] = "outgoing",
     include_self: bool = False,
     max_depth: int | None = None,
+    budget: Budget | None = None,
 ) -> Selection[Visit]:
-    """Visit reachable named resources once, retaining shortest asserted evidence."""
+    """Visit named resources with asserted evidence and an optional budget."""
     return _walk(
         view,
         iri,
@@ -181,6 +187,7 @@ def traverse(
         direction=direction,
         include_self=include_self,
         max_depth=max_depth,
+        budget=budget,
     )
 
 

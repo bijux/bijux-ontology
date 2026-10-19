@@ -48,9 +48,15 @@ _CODES = {
     ),
     "annotations": frozenset(
         "attachment_shape graph_unverified comparison_unverified "
+        "hygiene_violation hygiene_unverified "
         "minimum_missing maximum_exceeded language_minimum_missing "
         "language_maximum_exceeded value_kind datatype entity_unresolved".split()
     ),
+    "schemaorg": frozenset(
+        "expectation_mismatch expectation_unverified "
+        "selection_unverified superseded".split()
+    ),
+    "sdrf": frozenset("unverified semantic_mismatch consumer".split()),
     "serialization": frozenset(("coverage_missing",)),
     "selector": frozenset(
         "parent_count_mismatch count_mismatch "
@@ -253,6 +259,7 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "replacement_unverified replacement_kind_mismatch "
         "application_unverified application_declaration_changed "
         "application_value_changed "
         "fact_impact_unverified "
@@ -318,6 +325,20 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Inspect the entity, predicate, language mode and owned source scopes; "
         "select fallback explicitly and retain original attachment witnesses.",
         'AnnotationRequirement("urn:label", languages=(LanguageRequirement("en"),))',
+    ),
+    "schemaorg": (
+        "explicit supplied Schema.org vocabulary expectations",
+        "An actual selected value disagrees with guidance or application policy.",
+        "Inspect the pinned release, original includes alternatives and selected "
+        "sections; choose strict application and text fallback policy explicitly.",
+        "check_schemaorg(data, view, subjects=subjects, predicates=predicates)",
+    ),
+    "sdrf": (
+        "selected local SDRF ontology checks",
+        "The maintained consumer reports a mismatch or local evidence is incomplete.",
+        "Inspect original cells, effective schema obligations and qualified local "
+        "ontology resources; incomplete catalogues cannot prove absence.",
+        "check_sdrf(parsed_table, effective_schema, terminology)",
     ),
     "serialization": (
         "required representative serializer coverage",

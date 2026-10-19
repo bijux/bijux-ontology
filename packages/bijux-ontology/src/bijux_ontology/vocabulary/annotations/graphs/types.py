@@ -7,6 +7,7 @@ from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget
+from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, validate_triple
 from bijux_ontology.reports import Report
@@ -114,3 +115,46 @@ class AnnotationValueEdit:
                 raise InputError("Annotation paths require RDF resource terms")
             bound_node(node, budget)
         bound_node(self.replacement, budget)
+
+
+@dataclass(frozen=True)
+class AnnotationLiteralRepair:
+    """Replace an exact original literal and its actual reifier target anchors.
+
+    The original path is an owned source witness, never a label-based lookup.
+    Language and datatype must remain unchanged. Resource bodies are never edited.
+    """
+
+    path: AnnotationPath
+    replacement: Literal
+
+    def __post_init__(self) -> None:
+        """Require typed exact witnesses; the transaction rechecks their ownership."""
+        if (
+            not isinstance(self.path, AnnotationPath)
+            or not isinstance(self.path.statement, AnnotationStatement)
+            or not isinstance(self.path.root, AnnotationStatement)
+            or not isinstance(self.path.statement.value, Literal)
+        ):
+            raise InputError("Literal repairs require an original literal path")
+        if not isinstance(self.replacement, Literal):
+            raise InputError("Literal repairs require an RDF literal replacement")
+        budget = Budget()
+        bound_node(self.replacement, budget)
+        for statement in (self.path.root, self.path.statement):
+            for value in (statement.subject, statement.predicate, statement.value):
+                bound_node(value, budget)
+        nodes = capture_items(self.path.attachments, object, budget)
+        if len(nodes) > budget.limits.max_depth:
+            raise InputError("Literal repair attachment path exceeds max_depth")
+        owned_nodes: list[URIRef | BNode] = []
+        for node in nodes:
+            if not isinstance(node, URIRef | BNode):
+                raise InputError("Annotation paths require RDF resources")
+            bound_node(node, budget)
+            owned_nodes.append(node)
+        object.__setattr__(
+            self,
+            "path",
+            AnnotationPath(self.path.root, tuple(owned_nodes), self.path.statement),
+        )

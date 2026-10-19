@@ -151,8 +151,13 @@ class _Read:
     def exists(self, statement: AnnotationStatement) -> bool:
         """Require actual subject/object blank witnesses, never equal label guesses."""
         _bound(statement, self.budget)
+        # RDFLib echoes bound query terms; leave blank subjects unbound so
+        # identity checks inspect the stored witness rather than caller input.
+        subject_filter = (
+            None if isinstance(statement.subject, BNode) else statement.subject
+        )
         for subject, _, value in self.graph.triples(
-            (statement.subject, statement.predicate, None)
+            (subject_filter, statement.predicate, None)
         ):
             self.budget.consume("work")
             bound_node(subject, self.budget)

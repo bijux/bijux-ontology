@@ -748,6 +748,18 @@ be empty after the proposed moves. Exact terms, shared blanks and unrelated
 partitions remain intact. The same before/after contract and explicit export
 gate applies, including actual graph-local constraint failures.
 
+`bijux_ontology.workflows.upgrades.replacements.plan_replacements` accepts
+explicit `ApprovedReplacement` mappings, their entity roles and namespace owners.
+One-to-one changes rewrite selected declaration slots and actual RDF occurrences;
+joining identities requires `merge=True`. A split requires an explicit discriminator
+on the original snapshot. Multiple candidates, unknown roles and replacement hints
+alone leave the proposal unresolved. Generic property approvals preserve known
+object, datatype and annotation property kinds. Required `ReplacementCheck`
+callbacks inspect the updated declarations and fresh candidate data; missing,
+empty or failed after checks block acceptance and export. Existing exact patches,
+selected graph scope and `export_migration(..., accept=True)` remain the artifact
+boundary. Trusted callbacks retain their ordinary Python execution lifetime.
+
 Install `[jsonschema]` to import supported offline JSON Schema 2020-12 contracts.
 `bijux_ontology.interfaces.adapters.jsonschema` exposes `SchemaModel`,
 `model_declarations` and `check_instance`. Supply explicit RDF classes and
@@ -881,3 +893,78 @@ object fillers. Literal values use the selected supported OWL datatype map while
 preserving RDF lexical terms. Results distinguish `contradiction_found`,
 `no_witness_in_selected_scope` and `incomplete`; none is a general consistency
 verdict. Unsupported entailments and stopped work remain explicit.
+
+`to_sarif(report)` and `export_sarif(report, destination)` from
+`bijux_ontology.interfaces.exports.sarif` produce local SARIF 2.1.0 with Errata 01.
+Use `bijux-ontology project project.json --sarif --output findings.sarif` for the
+same report through the CLI; `--artifact-root` qualifies relative artifact paths.
+Native findings, unresolved obligations and failed execution retain separate
+meanings. Policy acceptance never changes invocation completion or raw findings.
+Parser regions retain their qualified column units; unsupported unit conversion
+uses line-only regions and preserves the original span in native properties.
+Actual `ShaclResult` findings and related locations retain their original report
+graph. Python file export requires a new destination; no export uploads data.
+
+RDF extraction, IRI remapping and transformation rechecks honor the prepared
+source's physical graph or explicit union. Hidden partitions cannot introduce
+mapping collisions or enter callback snapshots. Renamed graph selections and
+selected empty graphs remain explicit. Successful syntactic checks do not grant
+ontology or publication approval; required after checks remain separate.
+
+`check_annotation_hygiene` from `bijux_ontology.vocabulary.annotations.hygiene`
+checks explicit `HygieneRule` policies over inspected annotation paths. Whitespace,
+character categories and Unicode normalization are opt-in; findings retain
+half-open codepoint spans in original literal text and the actual Unicode version.
+An unavailable requested Unicode version or unexercised required policy stays
+unverified. No language, script or multiline restriction is imposed by default.
+
+`repair_annotation_hygiene` accepts exact `AnnotationLiteralRepair` witnesses and
+required caller-selected publication checks. It replaces the literal and its
+actual OWL target anchors while preserving reifiers, nested qualifiers, language
+and datatype. Attachment and lexical checks always rerun; collision, language
+and other publication obligations use ordinary `MigrationCheck` callbacks.
+Missing checks, shared ownership and anonymous identity correspondence that
+cannot be established prevent approval. Export requires explicit acceptance.
+
+`bijux_ontology.interfaces.adapters.sdrf` connects the maintained SDRF ontology
+validator to prepared local RDF terminology. Declare `SdrfOntology` resources with
+explicit accession and label/synonym predicates, then use
+`prepare_sdrf_terminology` and `check_sdrf(parsed_table, effective_schema, terminology)`.
+Inputs are actual `SDRFDataFrame` and effective `SchemaDefinition` instances,
+including ordinary registry composition. Native diagnostics retain original
+cells and physical ordinals. The local provider performs no network requests.
+
+Install the separately qualified optional consumer with all dependencies:
+
+```sh
+uv pip install 'sdrf-pipelines[ontology] @ git+https://github.com/bigbio/sdrf-pipelines.git@4ba20f5778b0b52055b71bad0a7654cc60dacbe6'
+```
+
+This qualifies version `0.1.7.dev72`; other versions remain unsupported. Core-only
+installations can prepare terminology; requesting the absent consumer raises a
+resource error with the installation requirement. No consumer runtime is mandatory.
+An explicitly closed, completely indexed catalogue can establish absence. Raw
+unqualified imports and imports in selected lookup resources retain uncertainty;
+observed positive ancestry remains usable. Partial indexes cannot establish
+unique accession identity. Custom ontology validators and unsupported policies
+stay unverified. Native in-process validators retain their ordinary execution
+boundary; adapter budgets do not preempt arbitrary consumer code.
+
+`bijux_ontology.vocabulary.schemaorg` provides an opt-in dialect over supplied
+release bytes. `prepare_schemaorg(RdfSource(...), release="30.1",
+namespace=URIRef("https://schema.org/"))` records the exact byte hash and owns the
+parsed release. Supply its logical document IRI and acquisition limits; no URL is
+fetched. `schemaorg_property` retains original includes, inverse and lifecycle
+assertions. Multiple includes targets are alternatives. Exact extension choices
+and finite IRI mappings remain explicit; HTTP and HTTPS names stay distinct.
+
+`check_schemaorg` checks selected actual subjects and predicates. Its default
+`published` report is advisory guidance. Choose `mode="application"` for required
+endpoint expectations, `text_fallback="allow"` to permit text explicitly, and
+`lifecycle="reject"` to diagnose a superseded property with its supplied replacement.
+The raw guidance report remains available when application fallback is allowed.
+Named class ancestry is supported. Native scalar bridges cover Text, Boolean,
+URL, Integer, Number and Float; unsupported datatype encodings, list/container
+expectations, inherited-only property hints and missing class proof stay unknown.
+These are selected application rules, with no OWL consistency claim. Anonymous
+subjects require actual witnesses from the supplied `PreparedSource`.

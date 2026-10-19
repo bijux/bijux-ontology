@@ -24,6 +24,7 @@ PACKAGES = {
     "interfaces.api",
     "interfaces.cli",
     "interfaces.execution",
+    "interfaces.exports",
     "interfaces.adapters",
     "workflows.projects",
     "workflows.ontology",
@@ -276,6 +277,13 @@ def test_narrow_imports_defer_convenience_exports_and_preserve_public_identity()
 import sys
 import bijux_ontology as ontology
 from bijux_ontology.errors import InputError
+from bijux_ontology.vocabulary.authoring import author_vocabulary
+from bijux_ontology.vocabulary.annotations.hygiene import AnnotationLiteralRepair
+from bijux_ontology.vocabulary.annotations.graphs import (
+    AnnotationLiteralRepair as GraphRepair,
+)
+assert AnnotationLiteralRepair is GraphRepair
+assert callable(author_vocabulary)
 assert 'bijux_ontology.interfaces.api' not in sys.modules
 assert 'bijux_ontology.models.checking' not in sys.modules
 assert set(ontology.__all__) <= set(dir(ontology))
