@@ -230,7 +230,7 @@ def test_failed_or_timed_out_dependencies_do_not_hide_siblings(tmp_path: Path) -
             rows = [
                 line.strip().split(None, 2)
                 for line in subprocess.check_output(
-                    ["ps", "-axo", "pid=,ppid=,command="], text=True
+                    ["ps", "-ww", "-axo", "pid=,ppid=,command="], text=True
                 ).splitlines()
             ]
             live = {
