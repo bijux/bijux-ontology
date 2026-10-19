@@ -46,33 +46,7 @@ def query_rdf(
         timeout=timeout,
         cancel=cancel,
         owned_worker=False,
-    )
-
-
-def _query_rdf_owned(
-    source: Graph | PreparedSource,
-    text: str,
-    *,
-    scope: query_types.QueryScope,
-    max_rows: int = 1000,
-    limits: Limits | None = None,
-    timeout: float = 10.0,
-    cancel: threading.Event | None = None,
-) -> query_types.QueryResult:
-    """Run the same query inside an already supervised disposable worker.
-
-    Its fixed caller owns opaque engine deadlines and cancellation; this entry
-    preserves the ordinary capture, syntax and answer qualification.
-    """
-    return _query_rdf(
-        source,
-        text,
-        scope=scope,
-        max_rows=max_rows,
-        limits=limits,
-        timeout=timeout,
-        cancel=cancel,
-        owned_worker=True,
+        deadline=None,
     )
 
 
@@ -86,8 +60,13 @@ def _query_rdf(
     timeout: float = 10.0,
     cancel: threading.Event | None = None,
     owned_worker: bool,
+    deadline: float | None,
 ) -> query_types.QueryResult:
-    """Share semantic admission and result handling for fixed owned routes."""
+    """Keep independent stage capacities inside the enclosing absolute deadline.
+
+    Only fixed worker dispatchers select inline native execution; their caller
+    owns opaque-engine cancellation and process cleanup.
+    """
     if not isinstance(scope, query_types.QueryScope):
         raise InputError("Queries require an explicit QueryScope")
     if not isinstance(text, str) or not text.strip():
@@ -99,7 +78,8 @@ def _query_rdf(
     if cancel is not None and not isinstance(cancel, threading.Event):
         raise InputError("Query cancellation requires a threading.Event")
     selected = limits if limits is not None else Limits()
-    deadline = time.monotonic() + timeout
+    local_deadline = time.monotonic() + timeout
+    deadline = local_deadline if deadline is None else min(deadline, local_deadline)
     budget = CaptureBudget(selected, deadline, cancel)
     try:
         checkpoint(deadline, cancel)

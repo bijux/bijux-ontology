@@ -14,7 +14,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Location, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.execution.processes.transport import checkpoint
-from bijux_ontology.rdf.queries.access import _query_rdf_owned, query_rdf
+from bijux_ontology.rdf.queries.access import _query_rdf
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
 from bijux_ontology.rdf.queries.types import QueryResult, QueryScope
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
@@ -217,8 +217,7 @@ def _query(
     remaining = deadline - time.monotonic()
     if remaining <= 0:
         raise LimitExceeded("Query rule suite exceeded its wall-clock deadline")
-    execute = _query_rdf_owned if owned_worker else query_rdf
-    result = execute(
+    result = _query_rdf(
         source,
         text,
         scope=scope,
@@ -226,6 +225,8 @@ def _query(
         limits=limits,
         timeout=remaining,
         cancel=cancel,
+        deadline=deadline,
+        owned_worker=owned_worker,
     )
     checkpoint(deadline, cancel)
     return result

@@ -280,7 +280,7 @@ def test_late_inventory_capture_exhausts_before_another_item_or_worker(
         raise AssertionError("Late declaration capture must never start a worker")
 
     monkeypatch.setattr(
-        "bijux_ontology.data.query_rules.checking.query_rdf", unexpected_query
+        "bijux_ontology.data.query_rules.checking._query_rdf", unexpected_query
     )
     result = run_query_rules(prepared, SlowRules(), timeout=0.005)
     assert result.report.outcome == "exhausted" and not result.report.complete
@@ -289,3 +289,52 @@ def test_late_inventory_capture_exhausts_before_another_item_or_worker(
     assert (
         "100 required query rules were not started" in result.report.issues[0].message
     )
+
+
+def test_expired_suite_does_not_restart_a_child_deadline_after_host_delay() -> None:
+    """A real host scheduling delay cannot admit native work on an expired suite."""
+    import subprocess
+    import sys
+    import time
+    from types import FrameType
+    from typing import Literal as EventKind
+
+    from bijux_ontology.rdf.queries import access
+
+    source = prepare_source(RdfSource("<urn:s> <urn:p> <urn:o>.", format="turtle"))
+    delayed: list[bool] = []
+    children: list[object] = []
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        returned: object,
+    ) -> None:
+        if previous is not None:
+            previous(frame, event, returned)
+        if (
+            event == "call"
+            and frame.f_code is access._query_rdf.__code__
+            and not delayed
+        ):
+            delayed.append(True)
+            time.sleep(0.15)
+        if event == "call" and frame.f_code is subprocess.Popen.__init__.__code__:
+            children.append(frame.f_locals.get("args"))
+
+    sys.setprofile(observe)
+    try:
+        result = run_query_rules(
+            source,
+            (QueryRule("answer", "ASK {}", QueryScope("default"), True),),
+            timeout=0.05,
+        )
+    finally:
+        sys.setprofile(previous)
+    assert delayed == [True] and children == []
+    assert result.report.outcome == "exhausted" and not result.report.complete
+    assert result.results == ()
+    assert run_query_rules(
+        source, (QueryRule("answer", "ASK {}", QueryScope("default"), True),)
+    ).report.verified
