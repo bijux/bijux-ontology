@@ -2,8 +2,8 @@
 
 from collections.abc import Mapping
 
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.reports import Report
 
 from ..axioms.changes.checking import _base, prepare_axiom_change

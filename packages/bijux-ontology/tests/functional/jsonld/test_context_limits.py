@@ -1,5 +1,6 @@
 """Real input, resource, work and retained-finding limits remain observable."""
 
+import tracemalloc
 from pathlib import Path
 
 import pytest
@@ -190,3 +191,62 @@ def test_resource_forks_bound_whole_responses_without_poisoning_shared_capture(
         == resources(EX + "context", {})["document"]
     )
     assert calls == [EX + "context"]
+
+
+def test_resource_copies_prepaid_before_initial_and_cached_allocation() -> None:
+    """Remote resource snapshots and public cache copies obey remaining bytes."""
+    response: dict[str, object] = {
+        "documentUrl": EX + "context",
+        "contextUrl": None,
+        "document": {"@context": {"p": EX + "x" * 500000}},
+    }
+
+    def load(url: str, options: dict[str, object]) -> dict[str, object]:
+        """Supply an ordinary closed response without an executing processor."""
+        return response
+
+    resources = ContextResources(load, budget=Budget(Limits(max_total_bytes=32768)))
+    tracemalloc.start()
+    try:
+        with pytest.raises(LimitExceeded):
+            resources(EX + "context", {})
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 100000
+
+    response["document"] = {"@context": [{f"p{i}": EX + f"p{i}"} for i in range(5000)]}
+    budget = Budget()
+    resources = ContextResources(load, budget=budget)
+    original = resources(EX + "context", {})
+    budget.consume("bytes", budget.remaining("bytes") - 128)
+    tracemalloc.start()
+    try:
+        with pytest.raises(LimitExceeded):
+            resources(EX + "context", {})
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 100000
+    # A deliberately independent child budget owns its copies of the same cache.
+    fork = resources.for_budget(Budget())
+    owned = fork(EX + "context", {})
+    assert owned == original and owned is not original
+
+
+def test_offline_file_capture_uses_the_enclosing_resource_allowance(
+    tmp_path: Path,
+) -> None:
+    """An owned offline loader cannot allocate a full file before shared bounds."""
+    path = tmp_path / "context.json"
+    path.write_text('{"@context":{"p":"' + EX + "x" * 500000 + '"}}')
+    loader = OfflineDocumentLoader({EX + "context": path})
+    resources = ContextResources(loader, budget=Budget(Limits(max_total_bytes=32768)))
+    tracemalloc.start()
+    try:
+        with pytest.raises(LimitExceeded):
+            resources(EX + "context", {})
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 100000

@@ -5,9 +5,10 @@ from collections.abc import Sequence
 from rdflib import BNode, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.planning import Captured, capture_items, capture_source
+from bijux_ontology.rdf.patches.planning import Captured, capture_source
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,
     PatchResource,

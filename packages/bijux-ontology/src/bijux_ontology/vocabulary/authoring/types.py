@@ -9,9 +9,9 @@ from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.planning import Captured
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,

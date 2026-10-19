@@ -3,8 +3,8 @@
 from collections.abc import Sequence
 
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.patches.planning import capture_items
 
 from ...documents.preparation import native_iri
 from .types import AnnotationRole

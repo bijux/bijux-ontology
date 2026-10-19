@@ -7,8 +7,8 @@ from pathlib import Path
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.patches.correspondence import _json_bound
 from bijux_ontology.rdf.stores.seals import seal_files, verify_files
 from bijux_ontology.rdf.terms import bound_text
 
@@ -71,7 +71,7 @@ def prepare_profile_backend(
         ),
         location="OWL bundle manifest",
     )
-    operation.consume("bytes", _json_bound(manifest, operation))
+    operation.consume("bytes", json_bound(manifest, operation))
     if set(manifest) != {
         "protocol",
         "owlapi",

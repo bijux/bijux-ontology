@@ -19,9 +19,10 @@ from rdflib.term import Node
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.processes.transport import run_worker
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
 
 from .types import MorphBackend, R2rmlJoin, SqliteSnapshot
@@ -80,7 +81,7 @@ def _call(
         )
     operation.consume("states", 4)
     operation.consume("resources")
-    operation.consume("bytes", 6 * cap + _json_bound(request, operation))
+    operation.consume("bytes", 6 * cap + json_bound(request, operation))
     payload = json.dumps(request, separators=(",", ":")).encode()
     if len(payload) > cap:
         raise LimitExceeded("Native control request exceeds its byte allowance")
@@ -113,7 +114,7 @@ def _call(
     data = object_value(
         decode_json(raw, max_bytes=cap, max_depth=16), location="Morph-KGC receipt"
     )
-    operation.consume("bytes", _json_bound(data, operation))
+    operation.consume("bytes", json_bound(data, operation))
     if data.get("versions") != REQUIRED:
         raise ResourceError(
             "Native interpreter differs from the qualified pinned profile"

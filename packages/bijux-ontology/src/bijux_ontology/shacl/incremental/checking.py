@@ -8,10 +8,10 @@ from rdflib import URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SH
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.loading import _charge_graph
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Report

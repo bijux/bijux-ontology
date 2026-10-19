@@ -9,8 +9,9 @@ import pyoxigraph as ox
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.triple_terms.protocol import decode_term, encode_term
 
 from .types import REIFIER_CONTRACTS
@@ -105,15 +106,15 @@ def process_request(payload: bytes, cap: int) -> bytes:
     }
     try:
         request = object_value(decode_json(payload, max_bytes=cap), location="reifiers")
-        budget = _ControlBudget(
+        budget = ControlBudget(
             Limits(**cast(dict[str, int], request["limits"])), request["allowances"]
         )
-        budget.consume("bytes", _json_bound(request, budget) * 2)
+        budget.consume("bytes", json_bound(request, budget) * 2)
         content = _evaluate(request, budget)
         budget.consume("bytes", len(content) * 2)
         budget.consume("work", len(content) * 2 + 1)
         reply.update(status="result", content=content.hex())
-        budget.consume("bytes", _json_bound(reply, budget) * 2)
+        budget.consume("bytes", json_bound(reply, budget) * 2)
     except Exception as error:
         reply.update(
             status="exhausted"

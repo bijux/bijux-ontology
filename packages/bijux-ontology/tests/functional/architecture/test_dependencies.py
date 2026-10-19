@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 FOUNDATION = {
+    "execution",
     "absence",
     "errors",
     "limits",
@@ -289,6 +290,11 @@ def test_narrow_imports_defer_convenience_exports_and_preserve_public_identity()
             "-c",
             """
 import sys
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.protocol import json_bound
+assert not any(name.startswith("rdflib") for name in sys.modules)
+assert not any(name.startswith("bijux_ontology.rdf") for name in sys.modules)
 import bijux_ontology as ontology
 from bijux_ontology.errors import InputError
 from bijux_ontology.vocabulary.authoring import author_vocabulary

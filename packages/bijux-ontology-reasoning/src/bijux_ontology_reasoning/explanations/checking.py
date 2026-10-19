@@ -13,8 +13,8 @@ from rdflib import URIRef
 
 from bijux_ontology._json import object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.reports import Issue, Report
 
 from ..axioms.changes.checking import _imports, _owned

@@ -10,10 +10,10 @@ from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, bound_text, literal_datatype

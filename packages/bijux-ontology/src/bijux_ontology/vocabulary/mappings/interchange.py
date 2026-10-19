@@ -9,9 +9,10 @@ from pathlib import Path
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.execution import execute_worker
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
@@ -160,7 +161,7 @@ def read_sssom(
             "license": supplied_license,
             "limits": asdict(operation.limits),
         }
-        operation.consume("bytes", _json_bound(request, operation))
+        operation.consume("bytes", json_bound(request, operation))
         request["timeout"] = max(0.001, operation.deadline - time.monotonic())
         payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
         cap = 4 * operation.limits.max_total_bytes + 8192

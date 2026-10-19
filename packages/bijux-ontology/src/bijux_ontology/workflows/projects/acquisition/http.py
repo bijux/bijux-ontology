@@ -13,8 +13,8 @@ from urllib.request import (
 )
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.rdf.compression import decode_gzip
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.terms import bound_text
 
 from .types import AcquiredResource, AcquisitionPolicy, _http_url

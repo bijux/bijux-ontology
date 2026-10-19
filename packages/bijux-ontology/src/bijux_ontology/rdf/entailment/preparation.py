@@ -10,11 +10,18 @@ from rdflib import BNode, Dataset, Graph, Literal, URIRef
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.limits import (
+    BUDGET_KINDS,
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.execution import execute_worker
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.patches.correspondence import _KINDS, Operation, _json_bound
 from bijux_ontology.rdf.queries.protocol import QueryTerm
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
@@ -171,10 +178,10 @@ def prepare_entailment(
             "selection": encode_term(selection, operation),
             "asserted": rows,
             "limits": asdict(operation.limits),
-            "allowances": {kind: operation.remaining(kind) for kind in _KINDS},
+            "allowances": {kind: operation.remaining(kind) for kind in BUDGET_KINDS},
         }
-        operation.consume("bytes", _json_bound(request, operation))
-        allowances = {kind: operation.remaining(kind) for kind in _KINDS}
+        operation.consume("bytes", json_bound(request, operation))
+        allowances = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
         request["allowances"] = allowances
         payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
         raw = execute_worker(
@@ -195,9 +202,9 @@ def prepare_entailment(
             raise ResourceError("Invalid entailment worker response")
         if response["status"] != "unavailable":
             consumed = response.get("consumed")
-            if not isinstance(consumed, dict) or set(consumed) != set(_KINDS):
+            if not isinstance(consumed, dict) or set(consumed) != set(BUDGET_KINDS):
                 raise ResourceError("Entailment worker omitted cumulative counters")
-            for kind in _KINDS:
+            for kind in BUDGET_KINDS:
                 amount = consumed[kind]
                 if type(amount) is not int or not 0 <= amount <= allowances[kind]:
                     raise ResourceError("Invalid entailment worker counter")

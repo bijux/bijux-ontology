@@ -2,13 +2,20 @@
 
 import gc
 import json
+import tracemalloc
 import weakref
 
 import pytest
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.patches.correspondence import Operation
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.reports import Issue, Location, Report, report_from_data
 
 
@@ -131,3 +138,56 @@ def test_invalid_worker_receipt_cannot_authorize_a_finding() -> None:
             )
         with pytest.raises(LimitExceeded):
             IssueCollector(host).append(report.issues[0])
+
+
+@pytest.mark.parametrize("boundary", ["issue", "term"])
+def test_unicode_metadata_stops_before_allocating_its_full_encoding(
+    boundary: str,
+) -> None:
+    """A depleted operation cannot allocate an oversized diagnostic or RDF term."""
+    text = "🧬" * 400000
+    finding = Issue("literal.invalid", text)
+    budget = Budget(Limits(max_total_bytes=32768 if boundary == "issue" else 500000))
+    tracemalloc.start()
+    try:
+        with pytest.raises(LimitExceeded):
+            if boundary == "issue":
+                IssueCollector(budget).append(finding)
+            else:
+                bound_text(text, budget)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 100000
+    valid = Budget(Limits(max_bytes=4, max_total_bytes=4))
+    bound_text("🧬", valid)
+    assert valid.remaining("bytes") == 0
+
+
+def test_nested_storage_reservations_preserve_total_and_wire_evidence_bounds() -> None:
+    """Unexported copies cannot evade total bytes or spend diagnostic headroom."""
+    from bijux_ontology.workflows.projects.representations.worker import (
+        _PublicationBudget,
+    )
+
+    limits = Limits(max_total_bytes=128)
+    host = Budget(limits)
+    allowances = {
+        kind: host.remaining(kind)
+        for kind in ("bytes", "work", "states", "issues", "resources", "triples")
+    }
+    worker = _PublicationBudget(limits, allowances, 8)
+    outer = Operation(None, worker, 10, None)
+    nested = Operation(None, outer, 10, None)
+    nested.reserve_storage(100)
+    nested.consume("bytes", 8)
+    assert worker.consumed()["bytes"] == 108
+    assert nested.remaining("bytes") == 20
+    with pytest.raises(LimitExceeded, match="evidence allowance"):
+        nested.consume("bytes")
+    with pytest.raises(LimitExceeded, match="shared allowance"):
+        nested.reserve_storage(21)
+    with pytest.raises(InputError):
+        nested.reserve_storage(-1)
+    nested.reserve_storage(20)
+    assert worker.consumed()["bytes"] == 128

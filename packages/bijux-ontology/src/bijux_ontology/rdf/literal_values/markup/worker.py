@@ -6,8 +6,9 @@ from typing import Any
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.terms import bound_text
 
 _START = b"<bijux-fragment>"
@@ -153,7 +154,7 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
         from lxml import etree
     except ImportError:
         return {"status": "unavailable"}
-    budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
     backend = "lxml " + ".".join(map(str, etree.LXML_VERSION))
     backend += "; libxml2 " + ".".join(map(str, etree.LIBXML_VERSION))
     try:
@@ -177,10 +178,8 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
             status="result",
             canonical=_canonical(root, budget) if canonicalization else None,
         )
-        budget.consume("bytes", _json_bound(result, budget))
-        budget.consume(
-            "bytes", _json_bound({"consumed": request["allowances"]}, budget)
-        )
+        budget.consume("bytes", json_bound(result, budget))
+        budget.consume("bytes", json_bound({"consumed": request["allowances"]}, budget))
     except (LimitExceeded, MemoryError, RecursionError):
         result = {"status": "exhausted"}
     except etree.XMLSyntaxError:

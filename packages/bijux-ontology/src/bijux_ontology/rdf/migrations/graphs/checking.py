@@ -10,6 +10,8 @@ from typing import cast
 from rdflib import BNode, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCandidate,
@@ -17,11 +19,9 @@ from bijux_ontology.rdf.migrations.candidates import (
     finish_migration,
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.planning import (
     Captured,
     Rejected,
-    capture_items,
     capture_source,
     report,
 )

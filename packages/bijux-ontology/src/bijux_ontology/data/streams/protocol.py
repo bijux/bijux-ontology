@@ -8,8 +8,9 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology._json import object_value
 from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import read_term, term_data
 from bijux_ontology.rdf.stores.preparation import _adopt
@@ -35,7 +36,7 @@ def stored_data(
         bound_text(item.name, budget)
         bound_text(item.sha256, budget)
         record = asdict(item)
-        budget.consume("bytes", _json_bound(record, budget))
+        budget.consume("bytes", json_bound(record, budget))
         files.append(record)
     names = []
     for name in snapshot.graph_names:
@@ -49,7 +50,7 @@ def stored_data(
         "backend": snapshot.backend_version,
         "files": files,
     }
-    budget.consume("bytes", _json_bound(metadata, budget))
+    budget.consume("bytes", json_bound(metadata, budget))
     bound_text(snapshot.revision, budget)
     return {
         "directory": str(snapshot.directory),

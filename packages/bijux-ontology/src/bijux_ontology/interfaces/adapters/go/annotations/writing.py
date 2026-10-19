@@ -11,8 +11,9 @@ from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
@@ -193,7 +194,7 @@ def annotations_to_rdf(
                     "line": annotation.entity.line,
                     "fields": annotation.entity.fields,
                 }
-            size = _json_bound(payload, operation)
+            size = json_bound(payload, operation)
             if size > operation.limits.max_bytes:
                 raise LimitExceeded("GO assertion payload exceeds max_bytes")
             operation.consume("bytes", 2 * size + 128)

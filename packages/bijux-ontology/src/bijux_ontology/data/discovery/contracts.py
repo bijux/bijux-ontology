@@ -12,10 +12,10 @@ from bijux_ontology.data.projection.reading import project_records
 from bijux_ontology.data.projection.types import ReadBinding, ReadField
 from bijux_ontology.declarations.path_fields import PathFieldDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.models.path_fields.checking import check_path_fields
 from bijux_ontology.models.path_fields.types import PathFieldUsage
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Report

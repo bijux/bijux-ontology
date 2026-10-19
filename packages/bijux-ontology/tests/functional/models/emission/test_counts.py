@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict, replace
 
 import pytest
-from rdflib import RDF
+from rdflib import RDF, BNode, Graph, Literal, URIRef
 
 from bijux_ontology import OutputRequirement, models_from_data
 from bijux_ontology.declarations import (
@@ -14,6 +14,10 @@ from bijux_ontology.declarations import (
 )
 from bijux_ontology.errors import InputError
 from bijux_ontology.models import ModelUsage, check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import RdfModelUsage
+from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources import RdfSource
 
 EX = "https://example.org/"
 
@@ -141,6 +145,42 @@ def test_each_actual_list_has_its_own_member_bounds() -> None:
         for issue in result.issues
         if issue.code == "emission.list_length_mismatch"
     ] == ["1", "3"]
+
+
+def test_optional_list_member_bounds_do_not_require_an_occurrence() -> None:
+    expected = model(OutputRequirement(maximum_list_members=1), listed=True)
+    expected = replace(expected, fields=(replace(expected.fields[0], optional=True),))
+    subject = URIRef(EX + "record")
+    predicate = URIRef(EX + "values")
+    for values in (None, (), (1,), (1, 2), "scalar"):
+        data = document(
+            list(values) if isinstance(values, tuple) else values, listed=True
+        )
+        data["@id"] = str(subject)
+        graph = Graph().add((subject, RDF.type, URIRef(EX + "Record")))
+        if values is None:
+            data.pop("values")
+        elif values == "scalar":
+            data["values"] = "scalar"
+            graph.add((subject, predicate, Literal("scalar")))
+        else:
+            assert isinstance(values, tuple)
+            head = BNode() if values else RDF.nil
+            graph.add((subject, predicate, head))
+            current = head
+            for index, value in enumerate(values):
+                following = BNode() if index + 1 < len(values) else RDF.nil
+                graph.add((current, RDF.first, Literal(value)))
+                graph.add((current, RDF.rest, following))
+                current = following
+        source = check_emission(data, (expected,), (ModelUsage("record"),))
+        native = check_rdf_emission(
+            prepare_rdf(RdfSource(graph)),
+            (expected,),
+            (RdfModelUsage("record", subject),),
+        )
+        for result in (source, native):
+            assert result.verified is (values in (None, (), (1,))), result.to_dict()
 
 
 def test_legacy_optional_is_an_optional_emission_alias_and_counts_roundtrip() -> None:

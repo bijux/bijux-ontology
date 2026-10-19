@@ -1,9 +1,7 @@
 """Owned maintained isomorphism with uniquely qualified blank-reference bindings."""
 
 import json
-import math
 import sys
-import threading
 import time
 from dataclasses import asdict
 
@@ -13,120 +11,15 @@ from rdflib.term import Node
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, BudgetKind, Limits
-from bijux_ontology.rdf.execution import checkpoint, execute_worker
+from bijux_ontology.execution.budgets import ControlBudget, Operation
+from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.limits import BUDGET_KINDS, Budget, Limits
 
 from .codecs import read_witness, term_data, witness_data
 from .types import PatchBlank, PatchUnavailable, PatchValue, SnapshotWitness
 
 _BASE = "urn:bijux:ontology:patch:"
-_KINDS: tuple[BudgetKind, ...] = (
-    "bytes",
-    "resources",
-    "triples",
-    "work",
-    "issues",
-    "states",
-)
-
-
-class Operation(Budget):
-    """Share host counters while qualifying every stage with one absolute deadline."""
-
-    def __init__(
-        self,
-        limits: Limits | None,
-        budget: Budget | None,
-        timeout: float,
-        cancel: threading.Event | None,
-    ) -> None:
-        """Validate execution ownership before reading any caller inventory."""
-        if (
-            limits is not None
-            and not isinstance(limits, Limits)
-            or budget is not None
-            and not isinstance(budget, Budget)
-        ):
-            raise InputError("RDF patch operations require Limits and Budget objects")
-        if limits is not None and budget is not None and limits != budget.limits:
-            raise InputError("RDF patch limits conflict with the shared budget")
-        if (
-            type(timeout) not in (float, int)
-            or not math.isfinite(timeout)
-            or timeout <= 0
-        ):
-            raise InputError("RDF patch timeout must be finite and positive")
-        if cancel is not None and not isinstance(cancel, threading.Event):
-            raise InputError("RDF patch cancellation requires threading.Event")
-        shared = budget if budget is not None else Budget(limits)
-        if (
-            isinstance(shared, Operation)
-            and shared.cancel is not None
-            and cancel is not None
-            and cancel is not shared.cancel
-        ):
-            raise InputError("Nested RDF patch cancellation requires the same Event")
-        super().__init__(shared.limits)
-        self.shared = shared
-        self.cancel: threading.Event | None = cancel
-        self._counts = shared._counts
-        self._retained_issues = shared._retained_issues
-        self.deadline = time.monotonic() + timeout
-        if isinstance(shared, Operation):
-            self.deadline = min(self.deadline, shared.deadline)
-            if cancel is None:
-                self.cancel = shared.cancel
-
-    def consume(self, kind: BudgetKind, amount: int = 1) -> None:
-        """Charge the original operation counters without restarting its allowance."""
-        checkpoint(self.deadline, self.cancel)
-        self.shared.consume(kind, amount)
-
-    def remaining(self, kind: BudgetKind) -> int:
-        """Read the actual shared allowance, including any enclosing operation."""
-        return self.shared.remaining(kind)
-
-
-class _ControlBudget(Budget):
-    """Bound worker-owned preparation to the caller's remaining allowances.
-
-    Maintained isomorphism internals expose no work counter and remain bounded
-    by the enclosing owned process deadline. These counters cover our explicit
-    decoding, projection and correspondence-control operations only.
-    """
-
-    def __init__(self, limits: Limits, allowances: object) -> None:
-        """Accept only complete finite nonnegative per-kind allowances."""
-        super().__init__(limits)
-        if not isinstance(allowances, dict) or set(allowances) != set(_KINDS):
-            raise InputError("Malformed RDF patch worker allowances")
-        self.allowances: dict[BudgetKind, int] = {}
-        for kind in _KINDS:
-            amount = allowances[kind]
-            if type(amount) is not int or not 0 <= amount <= super().remaining(kind):
-                raise InputError("Invalid RDF patch worker allowance")
-            self.allowances[kind] = amount
-
-    def remaining(self, kind: BudgetKind) -> int:
-        """Subtract completed worker work from this request's initial allowance."""
-        capacity = (
-            self.limits.max_total_bytes
-            if kind == "bytes"
-            else getattr(self.limits, f"max_{kind}")
-        )
-        return self.allowances[kind] - (capacity - super().remaining(kind))
-
-    def consume(self, kind: BudgetKind, amount: int = 1) -> None:
-        """Refuse work before it exceeds the caller's available cumulative bound."""
-        if type(amount) is not int or amount < 0:
-            raise InputError("Budget consumption must be a nonnegative integer")
-        if amount > self.remaining(kind):
-            raise LimitExceeded("RDF patch worker exhausted its shared allowance")
-        super().consume(kind, amount)
-
-    def consumed(self) -> dict[BudgetKind, int]:
-        """Return exact completed owned work for validated host adoption."""
-        return {kind: self.allowances[kind] - self.remaining(kind) for kind in _KINDS}
 
 
 def blank_tokens(witness: SnapshotWitness, budget: Budget) -> set[str]:
@@ -150,28 +43,6 @@ def blank_tokens(witness: SnapshotWitness, budget: Budget) -> set[str]:
     return tokens
 
 
-def _json_bound(value: object, budget: Budget) -> int:
-    """Reserve a conservative JSON encoding before allocating its byte payload."""
-    budget.consume("work")
-    if isinstance(value, str):
-        budget.consume("work", len(value))
-        return 2 + 12 * len(value)
-    if value is None or type(value) is bool:
-        return 5
-    if type(value) is int:
-        if value.bit_length() > min(14000, 3 * budget.limits.max_bytes):
-            raise LimitExceeded("RDF patch integer metadata exceeds its byte bound")
-        return 4 + value.bit_length()
-    if isinstance(value, list | tuple):
-        return 2 + sum(1 + _json_bound(item, budget) for item in value)
-    if isinstance(value, dict):
-        return 2 + sum(
-            2 + _json_bound(key, budget) + _json_bound(item, budget)
-            for key, item in value.items()
-        )
-    raise InputError("Unexpected RDF patch protocol value")
-
-
 def compare_witnesses(
     left: SnapshotWitness,
     right: SnapshotWitness,
@@ -188,13 +59,13 @@ def compare_witnesses(
         "required": list(required),
         "fixed": [list(pair) for pair in fixed],
         "limits": asdict(operation.limits),
-        "allowances": {kind: operation.remaining(kind) for kind in _KINDS},
+        "allowances": {kind: operation.remaining(kind) for kind in BUDGET_KINDS},
     }
-    size = _json_bound(request, operation)
+    size = json_bound(request, operation)
     if size > operation.limits.max_bytes:
         raise LimitExceeded("RDF patch protocol exceeds max_bytes")
     operation.consume("bytes", size)
-    allowances = {kind: operation.remaining(kind) for kind in _KINDS}
+    allowances = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
     request["allowances"] = allowances
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
@@ -220,15 +91,15 @@ def compare_witnesses(
     consumed = response.get("consumed")
     if (
         not isinstance(consumed, dict)
-        or set(consumed) != set(_KINDS)
+        or set(consumed) != set(BUDGET_KINDS)
         or any(
             type(consumed[kind]) is not int
             or not 0 <= consumed[kind] <= allowances[kind]
-            for kind in _KINDS
+            for kind in BUDGET_KINDS
         )
     ):
         raise ResourceError("Malformed RDF patch worker accounting completion")
-    for kind in _KINDS:
+    for kind in BUDGET_KINDS:
         operation.consume(kind, consumed[kind])
     if response["status"] == "exhausted":
         raise LimitExceeded("RDF patch comparison exhausted its allowance")
@@ -435,7 +306,7 @@ def main() -> int:
             or not isinstance(request["limits"], dict)
         ):
             return 2
-        budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+        budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
         try:
             result = _execute(request, budget)
         except (LimitExceeded, MemoryError):

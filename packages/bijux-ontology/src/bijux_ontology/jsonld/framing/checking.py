@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import EntityKey
@@ -21,7 +22,6 @@ from bijux_ontology.jsonld.selectors.types import EntitySelector
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.rdf.transforms import extract_neighbourhood
 from bijux_ontology.reports import Issue, Location, Report

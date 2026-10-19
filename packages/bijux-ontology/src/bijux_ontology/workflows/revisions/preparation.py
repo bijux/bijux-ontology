@@ -18,6 +18,8 @@ from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
@@ -38,8 +40,6 @@ from bijux_ontology.models.persistence.loading import (
 from bijux_ontology.models.persistence.types import PreparationIdentity
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import Regime
-from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.coverage import ShaclCoverageContract

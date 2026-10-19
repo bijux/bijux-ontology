@@ -12,9 +12,10 @@ from typing import Any, cast
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.processes.transport import run_worker
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.stores.seals import verify_files
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
@@ -100,7 +101,7 @@ def invoke_worker(
         raise InputError("OWL heap_mb must be an integer between 32 and 4096")
     operation.consume("work")
     request.update(protocol=1, manifest_sha256=backend.manifest_sha256)
-    operation.consume("bytes", _json_bound(request, operation))
+    operation.consume("bytes", json_bound(request, operation))
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
     if len(payload) > operation.limits.max_bytes:
         raise LimitExceeded("OWL worker request exceeds max_bytes")

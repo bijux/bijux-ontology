@@ -1,12 +1,10 @@
 """Maintained framing with owned JSON and one offline resource operation."""
 
-from bijux_ontology._json import own_json
+from bijux_ontology._json import _capture_json
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.resources import (
     ContextInputError,
     ContextResources,
-    _consume_work,
-    _json_size,
 )
 from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -16,11 +14,15 @@ from bijux_ontology.rdf.terms import bound_text
 def own_document(value: object, resources: ContextResources) -> object:
     """Bound mutable input and count its semantic payload before processor use."""
     budget = resources.budget
-    owned = own_json(
-        value, max_bytes=budget.limits.max_bytes, max_depth=budget.limits.max_depth
+    owned, size = _capture_json(
+        value,
+        max_bytes=budget.limits.max_bytes,
+        max_depth=budget.limits.max_depth,
+        budget=budget,
     )
-    budget.consume("bytes", _json_size(owned))
-    _consume_work(owned, budget)
+    # PyLD may allocate new scalar representations even though the ownership
+    # snapshot legitimately shares immutable Python strings.
+    budget.consume("bytes", size)
     return owned
 
 

@@ -10,8 +10,8 @@ from typing import Any, Literal, cast
 
 from bijux_ontology._json import object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.reports import Issue, Report
 
 from ..backend.bundles import PROFILES, qualify_backend

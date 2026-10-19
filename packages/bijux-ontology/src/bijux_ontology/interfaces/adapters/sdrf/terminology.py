@@ -8,8 +8,8 @@ from rdflib import Literal, URIRef
 from rdflib.namespace import OWL, RDFS
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary

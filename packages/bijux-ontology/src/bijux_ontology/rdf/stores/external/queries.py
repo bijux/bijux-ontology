@@ -6,8 +6,8 @@ from dataclasses import replace
 from rdflib import URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.correspondence import _json_bound
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, _result
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import term_data
@@ -81,7 +81,7 @@ def query_external(
             source._store,
             operation,
         )
-        operation.consume("bytes", _json_bound(response, operation))
+        operation.consume("bytes", json_bound(response, operation))
         raw = json.dumps(response, ensure_ascii=True, separators=(",", ":")).encode()
         result = _result(raw, scope, operation.limits, max_rows, budget=operation)
         return replace(

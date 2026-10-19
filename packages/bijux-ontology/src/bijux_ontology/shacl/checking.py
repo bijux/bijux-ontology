@@ -160,12 +160,12 @@ def validate_shapes(
         # The caller already owns a disposable worker and its outer deadline.
         # Execute the same backend there; a nested isolated process would escape
         # the outer POSIX process group when its owner is terminated.
-        from bijux_ontology.rdf.patches.correspondence import _json_bound
+        from bijux_ontology.execution.protocol import json_bound
         from bijux_ontology.shacl.worker import execute
 
         response = execute(_options(plan, focus), supplied=roles, budget=budget)
         if budget is not None:
-            budget.consume("bytes", _json_bound(response, budget))
+            budget.consume("bytes", json_bound(response, budget))
         raw = json.dumps(response, ensure_ascii=True).encode()
         if len(raw) > plan.limits.max_total_bytes:
             raise LimitExceeded("SHACL response exceeds max_total_bytes")

@@ -10,10 +10,10 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 from rdflib.term import Node
 
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import IssueCollector, retain_report
 from bijux_ontology.owl.obligations import OntologyObligation, _NativeProofs
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.roles.classification import declaration_role
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
 from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values

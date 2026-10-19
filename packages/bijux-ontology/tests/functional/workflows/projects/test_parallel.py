@@ -14,6 +14,7 @@ import pytest
 
 import bijux_ontology.workflows.projects.parallel.checking as parallel_checks
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import (
     Budget,
     BudgetKind,
@@ -21,7 +22,6 @@ from bijux_ontology.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.rdf.execution import WorkerModule, execute_worker
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.parallel.checking import check_project_parallel
@@ -502,7 +502,7 @@ def test_completed_native_receipt_survives_late_stop_and_preserves_counters(
     receipts: list[bytes] = []
 
     def exchange(
-        module: WorkerModule,
+        module: str,
         payload: bytes,
         *,
         cap: int,

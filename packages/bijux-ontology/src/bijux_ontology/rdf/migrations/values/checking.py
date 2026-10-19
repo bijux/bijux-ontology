@@ -10,8 +10,10 @@ from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.execution import checkpoint
+from bijux_ontology.processes.transport import checkpoint
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCheck,
@@ -19,7 +21,6 @@ from bijux_ontology.rdf.migrations.candidates import (
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.codecs import quad_data
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
 from bijux_ontology.rdf.patches.types import (
     DatasetPatch,
@@ -112,7 +113,7 @@ def _supported(action: LiteralConversion, budget: Budget) -> bool:
 def _evidence(quad: PatchQuad, budget: Budget) -> str:
     """Bound exact source-quad evidence before canonical ASCII JSON allocation."""
     data = {"quad": quad_data(quad, budget)}
-    size = _json_bound(data, budget)
+    size = json_bound(data, budget)
     if size > budget.limits.max_bytes:
         raise LimitExceeded("Migration sample evidence exceeds max_bytes")
     budget.consume("bytes", size)

@@ -10,8 +10,17 @@ from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.execution import execute_worker
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.limits import (
+    BUDGET_KINDS,
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCandidate,
     MigrationCheck,
@@ -19,8 +28,7 @@ from bijux_ontology.rdf.migrations.candidates import (
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.codecs import read_witness, term_data, witness_data
-from bijux_ontology.rdf.patches.correspondence import _KINDS, Operation, _json_bound
-from bijux_ontology.rdf.patches.planning import Captured, capture_items, capture_source
+from bijux_ontology.rdf.patches.planning import Captured, capture_source
 from bijux_ontology.rdf.patches.types import (
     DatasetPatch,
     PatchBlankBinding,
@@ -75,13 +83,13 @@ def _native(
         "text": program.text,
         "bindings": _bindings(program, source, operation),
         "limits": asdict(operation.limits),
-        "allowances": {kind: operation.remaining(kind) for kind in _KINDS},
+        "allowances": {kind: operation.remaining(kind) for kind in BUDGET_KINDS},
     }
-    size = _json_bound(request, operation)
+    size = json_bound(request, operation)
     if size > operation.limits.max_bytes:
         raise LimitExceeded("SPARQL transformation request exceeds max_bytes")
     operation.consume("bytes", size)
-    allowances = {kind: operation.remaining(kind) for kind in _KINDS}
+    allowances = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
     request["allowances"] = allowances
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
@@ -105,15 +113,15 @@ def _native(
     consumed = response.get("consumed")
     if (
         not isinstance(consumed, dict)
-        or set(consumed) != set(_KINDS)
+        or set(consumed) != set(BUDGET_KINDS)
         or any(
             type(consumed[kind]) is not int
             or not 0 <= consumed[kind] <= allowances[kind]
-            for kind in _KINDS
+            for kind in BUDGET_KINDS
         )
     ):
         raise ResourceError("Malformed transformation worker accounting")
-    for kind in _KINDS:
+    for kind in BUDGET_KINDS:
         operation.consume(kind, consumed[kind])
     status = response.get("status")
     if status == "exhausted":

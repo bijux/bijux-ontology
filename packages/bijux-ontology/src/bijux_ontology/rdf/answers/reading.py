@@ -10,9 +10,10 @@ from rdflib import BNode
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, Limits, bound_text
-from bijux_ontology.rdf.execution import execute_worker
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.queries.access import QueryResult
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
 from bijux_ontology.rdf.terms import bound_node
@@ -237,7 +238,7 @@ def _dispatch(
         "allowances": {k: operation.remaining(k) for k in _KINDS},
         "cap": min(operation.limits.max_bytes, len(text) * 16 + 4096),
     }
-    size = _json_bound(envelope, operation)
+    size = json_bound(envelope, operation)
     operation.consume("bytes", 2 * size)
     cap = cast(int, envelope["cap"])
     # Pay retained peer bytes, decoded objects and term references before

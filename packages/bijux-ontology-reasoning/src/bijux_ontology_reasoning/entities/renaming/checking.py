@@ -10,10 +10,10 @@ from typing import cast
 from bijux_ontology._json import object_value
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.owl.obligations import OntologyObligation
-from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.workflows.ontology.modules.checking import _exports, _requirement

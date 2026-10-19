@@ -9,10 +9,10 @@ from rdflib import URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.terms import bound_node, bound_text
 
 from .types import ArrowColumn, ArrowContract

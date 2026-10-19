@@ -10,8 +10,9 @@ from typing import cast
 from rdflib import BNode, Graph, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.execution import checkpoint, execute_worker
+from bijux_ontology.processes.transport import checkpoint
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key

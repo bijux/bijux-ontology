@@ -7,13 +7,14 @@ from itertools import chain
 from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.patches.correspondence import Operation, compare_witnesses
+from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import (
     Captured,
     _plan_captured_patch,
     anonymous,
-    capture_items,
     capture_source,
     replace_witness,
 )

@@ -10,6 +10,15 @@ from bijux_ontology.reports import Issue, Report
 
 BudgetKind = Literal["bytes", "resources", "triples", "work", "issues", "states"]
 
+BUDGET_KINDS: tuple[BudgetKind, ...] = (
+    "bytes",
+    "resources",
+    "triples",
+    "work",
+    "issues",
+    "states",
+)
+
 
 @dataclass(frozen=True)
 class Limits:
@@ -50,6 +59,10 @@ class Budget:
         if count > getattr(self.limits, name):
             raise LimitExceeded(f"Exceeded {name}")
         self._counts[kind] = count
+
+    def reserve_storage(self, amount: int) -> None:
+        """Prepay internal allocation under the same cumulative byte limit."""
+        self.consume("bytes", amount)
 
     def remaining(self, kind: BudgetKind) -> int:
         """Expose the cumulative allowance available to a bounded owned worker."""
@@ -162,16 +175,7 @@ class IssueCollector(list[Issue]):
 
 def _report_text(value: str, budget: Budget) -> None:
     """Bound inherited report text before allocating its UTF-8 representation."""
-    if len(value) > budget.limits.max_bytes:
-        raise LimitExceeded("Adopted report metadata exceeds max_bytes")
-    budget.consume("work", len(value) + 1)
-    try:
-        size = len(value.encode("utf-8"))
-    except UnicodeEncodeError as error:
-        raise InputError("Adopted report metadata requires valid Unicode") from error
-    if size > budget.limits.max_bytes:
-        raise LimitExceeded("Adopted report metadata exceeds max_bytes")
-    budget.consume("bytes", size)
+    bound_text(value, budget)
 
 
 def _issue_metadata(issue: Issue, budget: Budget) -> None:
@@ -279,10 +283,13 @@ def bound_text(text: str, budget: Budget) -> None:
     budget.consume("work", len(text) + 1)
     if len(text) > budget.remaining("bytes"):
         raise LimitExceeded("Exceeded max_total_bytes")
+    size = 0
     try:
-        size = len(text.encode("utf-8"))
+        for offset in range(0, len(text), 1024):
+            chunk_size = len(text[offset : offset + 1024].encode("utf-8"))
+            size += chunk_size
+            if size > budget.limits.max_bytes:
+                raise LimitExceeded("Role metadata exceeds max_bytes")
+            budget.consume("bytes", chunk_size)
     except UnicodeEncodeError as error:
         raise InputError("Role metadata requires valid Unicode") from error
-    if size > budget.limits.max_bytes:
-        raise LimitExceeded("Role metadata exceeds max_bytes")
-    budget.consume("bytes", size)

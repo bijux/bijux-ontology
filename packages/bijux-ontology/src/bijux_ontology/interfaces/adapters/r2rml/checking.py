@@ -24,14 +24,14 @@ from bijux_ontology.declarations.keys import KeyContract
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.path_traversal import finite_path_steps
 from bijux_ontology.rdf.paths import capture_path
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource

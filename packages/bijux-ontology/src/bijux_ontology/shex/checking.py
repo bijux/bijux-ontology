@@ -13,9 +13,10 @@ from rdflib import Graph, URIRef
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.processes.transport import run_worker
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.reports import Issue, Report
 
@@ -146,7 +147,7 @@ def validate_shex(
             "limits": vars(operation.limits),
             "allowances": grant,
         }
-        size = _json_bound(request, operation)
+        size = json_bound(request, operation)
         operation.consume("bytes", size)
         if size > cap:
             raise LimitExceeded("ShEx request exceeds the bounded protocol capacity")

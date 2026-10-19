@@ -11,9 +11,10 @@ from rdflib.namespace import RDF, RDFS, SKOS
 from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, MigrationCheck
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.patches.planning import capture_source, plan_rdf_patch
 from bijux_ontology.rdf.patches.types import BlankNodePair, PatchUnavailable
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
@@ -163,7 +164,7 @@ class _Projection:
                 term_key(node) for node in (edge.subject, edge.predicate, edge.object)
             ],
         }
-        size = _json_bound(data, self.budget)
+        size = json_bound(data, self.budget)
         if size > self.budget.limits.max_bytes:
             raise LimitExceeded("Publication boundary evidence exceeds max_bytes")
         self.budget.consume("bytes", size)

@@ -15,8 +15,7 @@ from bijux_ontology._json import decode_json
 from bijux_ontology._jsonschema import _measure, operation
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, Limits, bound_text
-from bijux_ontology.processes.transport import exchange_worker
-from bijux_ontology.rdf.execution import checkpoint
+from bijux_ontology.processes.transport import checkpoint, exchange_worker
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource

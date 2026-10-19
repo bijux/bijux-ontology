@@ -13,8 +13,9 @@ from rdflib.plugins.sparql.parserutils import CompValue
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import term_data
 from bijux_ontology.rdf.queries.worker import _checked_query
@@ -108,7 +109,7 @@ def _query(
                 term_data(rdf_term(value)) if value is not None else None
                 for value in solution
             ]
-            budget.consume("bytes", _json_bound(row, budget))
+            budget.consume("bytes", json_bound(row, budget))
             rows.append(row)
     except LimitExceeded as error:
         complete, message = False, str(error)
@@ -148,7 +149,7 @@ def evaluate(request: dict[str, Any], budget: Budget) -> dict[str, object]:
                     quad.graph_name,
                 ):
                     term = term_data(rdf_term(value))
-                    budget.consume("bytes", _json_bound(term, budget))
+                    budget.consume("bytes", json_bound(term, budget))
                     if isinstance(value, ox.Literal):
                         qualify_literal(value, probe)
                 yield quad
@@ -198,7 +199,7 @@ def evaluate(request: dict[str, Any], budget: Budget) -> dict[str, object]:
                     quad.graph_name,
                 )
             ]
-            budget.consume("bytes", _json_bound(row, budget))
+            budget.consume("bytes", json_bound(row, budget))
             rows.append(row)
         return {"status": "materialized", "rows": rows}
     raise InputError("Unsupported native database operation")
@@ -212,7 +213,7 @@ def main() -> int:
         request = decode_json(sys.stdin.buffer.read(cap + 1), max_bytes=cap)
         if not isinstance(request, dict):
             raise InputError("Expected disk operation object")
-        budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+        budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
         response = evaluate(request, budget)
     except Exception as error:  # noqa: BLE001 - typed isolated native boundary
         response = {

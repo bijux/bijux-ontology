@@ -76,6 +76,7 @@ The uv workspace contains the public library in `packages/bijux-ontology` and in
 ## Package ownership
 
 - `interfaces/api.py` defines the Python surface; `interfaces/cli` owns commands and execution, and `interfaces/adapters` owns framework extraction.
+- `execution` owns shared operation budgets, deadlines and finite input capture; `processes` owns operating-system worker lifetimes.
 - `rdf` owns native graph primitives and transformations; `jsonld` owns context processing and conversion; `owl` owns finite construct interpretation. These engines do not depend on one another's higher-level checks.
 - `documents` composes RDF and JSON-LD preparation and verified export. `vocabulary`, `models`, `skos`, `data` and `shacl` own their respective checks; `declarations` owns application contracts.
 - `workflows` composes project jobs, ontology checks and consumer upgrade assessments. Semantic engines do not import workflows or interfaces.

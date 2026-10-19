@@ -13,13 +13,10 @@ from rdflib.term import Identifier, Node
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.rdf.patches.codecs import read_term, read_witness, witness_data
-from bijux_ontology.rdf.patches.correspondence import (
-    _KINDS,
-    _ControlBudget,
-    _json_bound,
-)
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,
     PatchLiteral,
@@ -152,7 +149,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
         request = decode_json(payload, max_bytes=cap)
         if not isinstance(request, dict):
             raise InputError("Malformed SPARQL transformation protocol")
-        budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+        budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
         rdflib.NORMALIZE_LITERALS = False
         sparql.SPARQL_DEFAULT_GRAPH_UNION = False
         sparql.SPARQL_LOAD_GRAPHS = False
@@ -172,7 +169,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
         ) = previous
     if budget is not None:
         try:
-            size = _json_bound(response, budget)
+            size = json_bound(response, budget)
             if size > cap:
                 raise LimitExceeded("Transformation result exceeds protocol bound")
             budget.consume("bytes", size)
@@ -180,7 +177,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
             response = {"status": "exhausted"}
         response["consumed"] = budget.consumed()
     else:
-        response["consumed"] = dict.fromkeys(_KINDS, 0)
+        response["consumed"] = dict.fromkeys(BUDGET_KINDS, 0)
     encoded = json.dumps(response, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
@@ -189,7 +186,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
             "status": "exhausted",
             "consumed": budget.consumed()
             if budget is not None
-            else dict.fromkeys(_KINDS, 0),
+            else dict.fromkeys(BUDGET_KINDS, 0),
         }
         encoded = json.dumps(response, separators=(",", ":")).encode("ascii")
     return encoded

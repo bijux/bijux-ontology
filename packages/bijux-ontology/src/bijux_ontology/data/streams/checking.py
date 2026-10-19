@@ -12,12 +12,13 @@ from rdflib import BNode, Graph
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.execution import execute_worker
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.limits import BUDGET_KINDS, Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.loading import prepare_input
-from bijux_ontology.rdf.patches.correspondence import _KINDS, Operation, _json_bound
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.stores.seals import verify_files
@@ -173,15 +174,16 @@ def check_rdf_stream(
             "max_stream_bytes": maximum,
             "limits": asdict(operation.limits),
         }
-        operation.consume("bytes", _json_bound(request, operation))
+        operation.consume("bytes", json_bound(request, operation))
         envelope = {
             "output_cap": operation.limits.max_total_bytes,
-            "allowances": {kind: operation.remaining(kind) for kind in _KINDS},
+            "allowances": {kind: operation.remaining(kind) for kind in BUDGET_KINDS},
         }
-        operation.consume("bytes", _json_bound(envelope, operation))
+        operation.consume("bytes", json_bound(envelope, operation))
         output_cap, reserves = _reserve(operation)
         allowances = {
-            kind: operation.remaining(kind) - reserves.get(kind, 0) for kind in _KINDS
+            kind: operation.remaining(kind) - reserves.get(kind, 0)
+            for kind in BUDGET_KINDS
         }
         request.update(output_cap=output_cap, allowances=allowances)
         payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
@@ -205,15 +207,15 @@ def check_rdf_stream(
         if response.get("status") != "result":
             raise LimitExceeded("RDF stream worker could not complete its protocol")
         consumed = response.get("consumed")
-        if not isinstance(consumed, dict) or set(consumed) != set(_KINDS):
+        if not isinstance(consumed, dict) or set(consumed) != set(BUDGET_KINDS):
             raise ResourceError("RDF stream worker omitted cumulative counters")
-        for kind in _KINDS:
+        for kind in BUDGET_KINDS:
             amount = consumed[kind]
             if type(amount) is not int or not 0 <= amount <= allowances[kind]:
                 raise ResourceError("Invalid RDF stream worker counters")
             if kind != "issues":
                 operation.consume(kind, amount)
-        operation.consume("bytes", _json_bound(response, operation))
+        operation.consume("bytes", json_bound(response, operation))
         for key in ("statements", "selected", "checks", "bytes_read"):
             if type(response.get(key)) is not int or cast(int, response[key]) < 0:
                 raise ResourceError("Invalid stream completion counts")

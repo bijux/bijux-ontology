@@ -9,8 +9,9 @@ from threading import Event
 from typing import Any, cast
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_text
@@ -26,7 +27,7 @@ from .types import PreparedReasoningTheory, TheoryDocument
 
 def encode_request(value: dict[str, Any], budget: Budget) -> bytes:
     """Prepay actual finite JSON serialization before constructing the payload."""
-    budget.consume("bytes", _json_bound(value, budget))
+    budget.consume("bytes", json_bound(value, budget))
     encoded = json.dumps(value, ensure_ascii=True, separators=(",", ":")).encode()
     if len(encoded) > budget.limits.max_bytes:
         raise LimitExceeded("Reasoning session request exceeds max_bytes")

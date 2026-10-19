@@ -7,8 +7,8 @@ from collections.abc import Sequence
 from rdflib import Literal
 
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.patches.correspondence import _json_bound
 from bijux_ontology.rdf.terms import bound_node, bound_text
 
 from .types import GeometryValue, SpatialDistance, SpatialRelation
@@ -126,7 +126,7 @@ def prepare_request(
         "relations": relation_data,
         "distances": distance_data,
     }
-    size = _json_bound(request_data, budget)
+    size = json_bound(request_data, budget)
     budget.consume("bytes", 2 * size)
     payload = json.dumps(request_data, ensure_ascii=True, separators=(",", ":")).encode(
         "utf-8"

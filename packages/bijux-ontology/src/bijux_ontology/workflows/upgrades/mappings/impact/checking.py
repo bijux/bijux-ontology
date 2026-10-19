@@ -7,6 +7,7 @@ from typing import Literal
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology._jsonschema import capture
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,
@@ -14,7 +15,6 @@ from bijux_ontology.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.mappings.checking import check_mappings

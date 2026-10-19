@@ -8,9 +8,9 @@ from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.patches.types import BlankNodePair
 from bijux_ontology.rdf.skolem.types import (
     SkolemBinding,

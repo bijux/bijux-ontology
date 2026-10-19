@@ -1,8 +1,8 @@
 """Bounded owned worker lifetime and process-group cancellation."""
 
 import contextlib
-import math
 import subprocess
+import sys
 import time
 from collections.abc import Callable
 from threading import Event, Thread
@@ -14,6 +14,41 @@ from .ownership import spawn_owned_process
 from .ownership import stop_owned_process as stop_process
 
 __all__ = ["checkpoint", "exchange_worker", "run_worker", "stop_process"]
+
+
+def _validate_worker(
+    command: list[str], cap: int, timeout: float, cancel: Event | None
+) -> None:
+    """Qualify supervision policy before creating an owned process or pipe."""
+    if (
+        not isinstance(command, list)
+        or not command
+        or any(not isinstance(value, str) or "\x00" in value for value in command)
+    ):
+        raise InputError("Worker commands require a nonempty argument list")
+    if type(cap) is not int or cap <= 0:
+        raise InputError("Workers require a positive output cap")
+    if type(timeout) not in (int, float) or not 0 < timeout <= sys.float_info.max:
+        raise InputError("Worker timeout must be finite and positive")
+    if cancel is not None and not isinstance(cancel, Event):
+        raise InputError("Worker cancellation requires an Event")
+
+
+def _deadline_reached(probe: Callable[[], float | None] | None) -> bool:
+    """Accept only finite current host deadlines from a trusted bounded probe."""
+    if probe is None:
+        return False
+    if not callable(probe):
+        raise InputError("Worker deadline requires a callable probe")
+    value = probe()
+    if value is None:
+        return False
+    if (
+        type(value) not in (int, float)
+        or not -sys.float_info.max <= value <= sys.float_info.max
+    ):
+        raise InputError("Worker deadline probe must return a finite time or None")
+    return time.monotonic() >= value
 
 
 def run_worker(
@@ -29,11 +64,20 @@ def run_worker(
     An optional trusted host probe supplies the current inner-operation deadline;
     it must perform only bounded local work so supervision remains responsive.
     """
-    process = spawn_owned_process(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
+    _validate_worker(command, cap, timeout, cancellation)
+    if cancellation is not None and cancellation.is_set():
+        return None, "execution.cancelled", ""
+    if _deadline_reached(deadline):
+        return None, "execution.deadline", ""
+    started = time.monotonic()
+    try:
+        process = spawn_owned_process(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+    except OSError as error:
+        raise ResourceError("Worker could not be started") from error
     output = bytearray()
     overflow = Event()
 
@@ -49,7 +93,6 @@ def run_worker(
 
     reader = Thread(target=drain, daemon=True)
     reader.start()
-    started = time.monotonic()
     stopped = ""
     failure: BaseException | None = None
     cleanup_error: ResourceError | None = None
@@ -61,11 +104,7 @@ def run_worker(
             if overflow.is_set():
                 stopped = "execution.limit_exceeded"
                 break
-            operation_deadline = deadline() if deadline is not None else None
-            if time.monotonic() - started >= timeout or (
-                operation_deadline is not None
-                and time.monotonic() >= operation_deadline
-            ):
+            if time.monotonic() - started >= timeout or _deadline_reached(deadline):
                 stopped = "execution.deadline"
                 break
             with contextlib.suppress(subprocess.TimeoutExpired):
@@ -86,6 +125,11 @@ def run_worker(
                 process.stdout.close()
     if overflow.is_set():
         stopped = stopped or "execution.limit_exceeded"
+    if not stopped:
+        if cancellation is not None and cancellation.is_set():
+            stopped = "execution.cancelled"
+        elif time.monotonic() - started >= timeout or _deadline_reached(deadline):
+            stopped = "execution.deadline"
     detail = output.decode("utf-8", errors="replace")
     if cleanup_error is not None:
         if not stopped:
@@ -118,20 +162,11 @@ def exchange_worker(
     An explicit terminal handoff receives complete successful bytes before a
     later stop; its domain still qualifies and retains that bounded receipt.
     """
-    if (
-        not isinstance(command, list)
-        or not command
-        or any(not isinstance(value, str) or "\x00" in value for value in command)
-    ):
-        raise InputError("Worker commands require a nonempty argument list")
-    if not isinstance(payload, bytes) or type(cap) is not int or cap <= 0:
-        raise InputError("Workers require bytes and a positive output cap")
+    _validate_worker(command, cap, timeout, cancel)
+    if not isinstance(payload, bytes):
+        raise InputError("Workers require a bytes request")
     if len(payload) > cap:
         raise LimitExceeded("Worker input exceeds protocol byte bound")
-    if type(timeout) not in (int, float) or not math.isfinite(timeout) or timeout <= 0:
-        raise InputError("Worker timeout must be finite and positive")
-    if cancel is not None and not isinstance(cancel, Event):
-        raise InputError("Worker cancellation requires a Event")
     if completed is not None and not callable(completed):
         raise InputError("Completed worker receipts require a callable")
     deadline = time.monotonic() + timeout
@@ -152,6 +187,7 @@ def exchange_worker(
     )
     output, diagnostics = bytearray(), bytearray()
     overflow = Event()
+    input_failed = Event()
     delivered = Event()
     stdout_done, stderr_done = Event(), Event()
 
@@ -170,15 +206,19 @@ def exchange_worker(
 
     def write(stream: BinaryIO) -> None:
         """Write concurrently so a blocked input pipe cannot hide cancellation."""
-        written = False
         try:
-            written = stream.write(payload) == len(payload)
-        except (BrokenPipeError, OSError):
-            pass
+            if stream.write(payload) != len(payload):
+                input_failed.set()
+            stream.flush()
+        except OSError:
+            input_failed.set()
         finally:
-            stream.close()
-            if written:
-                delivered.set()
+            try:
+                stream.close()
+            except OSError:
+                input_failed.set()
+        if not input_failed.is_set():
+            delivered.set()
 
     threads = (
         Thread(target=write, args=(process.stdin,), daemon=True),
@@ -223,6 +263,8 @@ def exchange_worker(
         if process.returncode:
             detail = diagnostics.decode(errors="replace")[:2000]
             raise ResourceError(f"Worker exited {process.returncode}: {detail}")
+        if input_failed.is_set():
+            raise ResourceError("Worker closed its request pipe before delivery")
         if completed is not None:
             if cleanup_error is not None:
                 raise cleanup_error

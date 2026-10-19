@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from bijux_ontology.rdf.patches.correspondence import Operation
+from bijux_ontology.execution.budgets import Operation
 
 from ..robot.runtime import _verify, prepare_robot_backend, run_robot
 from .types import TemplateBackend

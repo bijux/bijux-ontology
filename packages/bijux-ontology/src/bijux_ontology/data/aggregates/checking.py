@@ -12,9 +12,9 @@ from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.aggregates import AggregateContract
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.paths import RdfPath, capture_path
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, bound_text, term_key

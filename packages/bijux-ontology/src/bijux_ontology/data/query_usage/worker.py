@@ -17,9 +17,9 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.documents.patches.operations import serialized
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.limits import IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget
 from bijux_ontology.rdf.terms import bound_text, literal_datatype
 from bijux_ontology.reports import Issue, Report
 
@@ -101,7 +101,7 @@ def field(value: CompValue, key: str) -> object:
 class Inventory:
     """One owned traversal over native syntax positions and finite binding domains."""
 
-    def __init__(self, source: str, budget: _ControlBudget) -> None:
+    def __init__(self, source: str, budget: ControlBudget) -> None:
         """Own one supplied program inventory and its cumulative controls."""
         self.source, self.budget = source, budget
         self.references: list[QueryReference] = []
@@ -497,7 +497,7 @@ def main() -> None:
     limits = Limits(
         **cast(dict[str, int], object_value(request["limits"], location="limits"))
     )
-    budget = _ControlBudget(limits, request["allowances"])
+    budget = ControlBudget(limits, request["allowances"])
     inventory = Inventory(cast(str, request["source"]), budget)
     complete = False
     try:

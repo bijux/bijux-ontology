@@ -17,8 +17,9 @@ from rdflib.plugins.sparql.sparql import Query
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits, bound_text
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
 from bijux_ontology.rdf.queries.worker import _checked_query
 from bijux_ontology.rdf.terms import (
@@ -137,7 +138,7 @@ def _rows(
             if term is not None:
                 bound_node(term, budget)
             row.append(term_data(term))
-        wire_size += _json_bound(row, budget)
+        wire_size += json_bound(row, budget)
         if wire_size > cap:
             raise LimitExceeded("Workload SELECT exceeds its response cap")
         rows.append(row)
@@ -309,8 +310,8 @@ def process_request(payload: bytes, cap: int) -> bytes:
         limits = Limits(
             **cast(dict[str, int], object_value(request["limits"], location="limits"))
         )
-        budget = _ControlBudget(limits, request["allowances"])
-        _measure = _json_bound(request, budget)
+        budget = ControlBudget(limits, request["allowances"])
+        _measure = json_bound(request, budget)
         budget.consume("bytes", _measure * 2)
         config = object_value(request["config"], location="config")
         if config.get("engine") not in ("rdflib", "pyoxigraph"):
@@ -318,7 +319,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
         reply["version"] = version(cast(str, config["engine"]))
         reply["result"] = evaluate(request, budget)
         reply["status"] = "completed"
-        size = _json_bound(reply, budget) + 1024
+        size = json_bound(reply, budget) + 1024
         if size > cast(int, request["output_cap"]):
             raise LimitExceeded("Workload reply exceeds its response cap")
         budget.consume("bytes", size * 2)
