@@ -12,6 +12,8 @@ from ...axioms.changes.types import AxiomBase
 from ...axioms.types import EntityKind
 from ...backend.types import BackendCapability
 from ...documents.types import NativeProfile, OwlDocument
+from ...theories.interfaces import ModuleInterfaceChange as ModuleInterfaceChange
+from ...theories.interfaces import ModuleSet as ModuleSet
 
 EntityRole: TypeAlias = EntityKind | Literal["all"]
 AnnotationPosition = Literal["subject", "value", "domain", "range"]
@@ -36,15 +38,6 @@ class AnnotationRole:
 
 
 @dataclass(frozen=True)
-class ModuleInterfaceChange:
-    """Caller-authored interface replacement for one selected effective document."""
-
-    document: str
-    before: ModuleContract
-    after: ModuleContract
-
-
-@dataclass(frozen=True)
 class RenamedModule:
     """Original raw precondition, checked native bytes and actual local edits."""
 
@@ -54,14 +47,6 @@ class RenamedModule:
     additions: tuple[str, ...]
     removals: tuple[str, ...]
     profiles: tuple[NativeProfile, ...]
-
-
-@dataclass(frozen=True)
-class ModuleSet:
-    """Finite document and interface inventory supplied to trusted after checks."""
-
-    documents: tuple[OwlDocument, ...]
-    interfaces: tuple[tuple[str, ModuleContract], ...]
 
 
 @dataclass(frozen=True)

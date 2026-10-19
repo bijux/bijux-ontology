@@ -38,11 +38,10 @@ from ..diagnosis.checking import _classes
 from ..documents.sources.native import prepare_owl_document, stage_native_documents
 from ..documents.types import OwlDocument
 from ..entailment.checking import check_entailments
-from ..entities.renaming.checking import _interfaces
-from ..entities.renaming.types import ModuleInterfaceChange, ModuleSet
 from ..integration.checking import _logical_report
 from ..integration.preparation import assemble_theory, observe_theory, reserve
 from ..integration.types import TheoryCombination, TheoryComponent, TheoryObservation
+from ..theories.interfaces import ModuleInterfaceChange, ModuleSet, capture_interfaces
 from .preparation import (
     CapturedModules,
     capture_consumers,
@@ -400,7 +399,7 @@ def prepare_module_refactor(
         else:
             identities = {value.effective_url for value in captured.originals}
             selected_consumers = capture_consumers(consumers, identities, operation)
-            original_interfaces, updated_interfaces = _interfaces(
+            original_interfaces, updated_interfaces = capture_interfaces(
                 interfaces,
                 interface_changes,
                 identities,
