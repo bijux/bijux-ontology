@@ -1368,6 +1368,40 @@ unselected metadata remain informational; incomplete baseline or consumer scope
 stays unknown. Selected identifier qualifiers need qualified prefix interpretation;
 selected `curie_map` metadata compares the actual retained prefix maps.
 
+`documents.patches.rdf.project_rdf_patch` turns explicitly paired ground RDF
+replacements into checked compact-source edits. Supply the exact original base,
+form and retained-use contracts and a unique or explicit source-occurrence policy.
+Typed lexical strings and named forward/reverse references preserve their compact
+structure. A complete RDF re-expansion must prove the requested delta and all
+unedited assertions before a `DocumentPatch` or operations are returned. Ambiguous
+aliases, stale bases and unsupported anonymous correspondence withhold output.
+
+`workflows.reproductions` captures runnable context, emission, SKOS and supported
+SHACL Core requests using ordinary public declaration formats. Run the request,
+bind `failure_signature` to an actual complete nonempty finding, then call
+`reduce_failure`. Bounded structural deletion retains the same required scope and
+native contradiction. Inspect the best verified runnable request separately from
+search completion; interrupted searches make no global-minimum claim. Missing
+worker receipts forfeit delegated allowances and stop further attempts. Anonymous
+SHACL finding correspondence and composite paths remain unsupported.
+
+`bijux_ontology.data.cube.check_cube` checks supplied Data Cube structures,
+observations, slices and code lists in one physical graph. `complete=True`
+declares the supplied observation inventory; named code-list closure is separate.
+Its owned normalized view preserves the asserted input. Inspect all IC0–IC21
+coverage receipts: IC0 supports builtin literals and direct datatype ranges;
+unsupported entailment or comparisons, missing DSDs and open code lists remain
+unknown. Coordinate checks reuse native compound keys and literal comparison.
+
+`workflows.upgrades.instances.compare_instance_releases` compares selected
+instance records independently of schema changes. Supply physical entity scopes,
+explicit identity pairs and `InstanceFieldPolicy` paths for immutable, append-only
+or permitted changes. The reusable exact dataset patch retains lexical changes
+even when a selected literal-value regime accepts them. Ordered lists and shared
+blank support remain significant; ambiguous anonymous identity stays unknown.
+Append-only protects selected roots and reachable blank support in their graphs;
+named child descriptions need their own entity or path selection.
+
 `bijux_ontology.data.projection.project_records` reads explicit `ReadBinding`
 subjects and `ReadField` paths in one selected physical graph. Immutable records
 retain exact terms, ordered list members and source-qualified reference handles.
@@ -1376,6 +1410,14 @@ conversion. Unsupported conversions retain their terms with an unknown report.
 Use `construct_projected(result, factory)` for trusted application construction
 only after every declared check succeeds. The factory owns its runtime and output;
 this read contract makes no serializer inversion or ORM promise.
+
+`bijux_ontology.data.extraction.extract_records` copies finite selected paths,
+actual ordered-list structure and explicitly requested child descriptions.
+`RecordField` wraps a raw `ReadField`; endpoints without children stay
+reference-only. Graph selection remains physical, sharing survives in the owned
+output, and receipts retain input ownership. `record_plan_from_shape` supports
+finite property/node path plans; recursive and other unsupported obligations
+withhold a complete plan. Extraction does not establish SHACL conformance.
 
 `workflows.ontology.modules.check_module_wiring` checks named public exports and
 selected class/property/datatype obligations against explicitly bound provider

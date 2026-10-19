@@ -34,6 +34,23 @@ _CODES = {
         "family_unknown native_capacity backend_unavailable backend_unsupported "
         "backend_failed".split()
     ),
+    "cube": frozenset(
+        "constraint_unverified ic0_datatype_conflict "
+        "ic10_slice_dimension_missing ic11_dimension_missing "
+        "ic12_duplicate_coordinates ic13_attribute_missing "
+        "ic14_measure_missing ic15_measure_value_missing "
+        "ic16_multiple_measures ic17_measure_group_incomplete "
+        "ic18_slice_dataset_conflict ic19_code_not_member "
+        "ic1_dataset_cardinality ic20_code_not_reachable "
+        "ic21_code_not_reachable ic2_structure_cardinality "
+        "ic3_measure_undeclared ic4_dimension_range_missing "
+        "ic5_code_list_missing ic6_nonattribute_optional "
+        "ic7_slice_key_undeclared ic8_slice_key_inconsistent "
+        "ic9_slice_structure_cardinality input_error scope_unverified ".split()
+    ),
+    "extraction": frozenset(
+        "plan_unverified shape_unverified reference_invalid".split()
+    ),
     "projection": frozenset(
         "term_unverified value_invalid reference_unverified conversion_unverified "
         "path_unverified ambiguous cardinality list_invalid graph_unverified "
@@ -86,7 +103,8 @@ _CODES = {
         "relocation_unverified relocation_invalid "
         "patch_precondition_failed patch_invalid patch_unverified "
         "patch_retained_missing patch_retained_changed "
-        "patch_rebinding_unverified".split()
+        "patch_rebinding_unverified source_edit_base_failed "
+        "source_edit_ambiguous source_edit_unverified source_edit_invalid".split()
     ),
     "obo": frozenset(
         "xref_invalid xref_unverified xref_input_error "
@@ -359,6 +377,15 @@ _CODES = {
         "collection_list_ambiguous collection_list_malformed "
         "navigation_anonymous".split()
     ),
+    "reproduction": frozenset(
+        "candidate_unverified unavailable input worker_failed "
+        "shacl_identity_unverified".split()
+    ),
+    "instance": frozenset(
+        "entity_removal_forbidden record_change_forbidden field_change_forbidden "
+        "path_unverified change_unverified release_unverified "
+        "release_input_error".split()
+    ),
     "upgrade": frozenset(
         "mapping_obligation_changed mapping_cardinality_changed "
         "mapping_impact_unverified mapping_impact_input_error mapping_relation_changed "
@@ -402,6 +429,20 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "and actual method identity; retain missing terms and incomplete work "
         "rather than shrinking the population.",
         "resnik_similarity(population, left, right)",
+    ),
+    "cube": (
+        "selected RDF Data Cube structure and observation integrity",
+        "A Cube integrity obligation fails or cannot be established in scope.",
+        "Supply one physical graph, complete dataset and code-list inventories "
+        "and actual DSDs; inspect each constraint receipt and located observation.",
+        "check_cube(source, complete=True, code_lists_complete=code_lists)",
+    ),
+    "extraction": (
+        "explicit selected instance paths and reference descriptions",
+        "A requested extraction lacks a qualified finite path or description.",
+        "Select one physical graph, supply finite sequence/inverse paths and "
+        "explicit child fields; inspect required field and shape-plan coverage.",
+        "extract_records(source, (subject,), fields, graph_name=graph)",
     ),
     "projection": (
         "explicit graph-qualified RDF record projection",
@@ -671,6 +712,20 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "<https://example.org/list> "
         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> "
         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .",
+    ),
+    "reproduction": (
+        "bounded native failure reproduction with fixed required coverage",
+        "A runnable failure or a reduction candidate lacks complete native evidence.",
+        "Use owned public requests and an actual complete finding; inspect the "
+        "best verified request separately from reduction completion.",
+        "reduce_failure(request, failure_signature(request, result, finding))",
+    ),
+    "instance": (
+        "explicit instance-data release and path change policies",
+        "A selected record or field change violates policy or lacks evidence.",
+        "Supply physical entity selections and explicit correspondence; inspect "
+        "the exact patch and distinguish term identity from selected value equality.",
+        "compare_instance_releases(before, after, fields=fields, append_only=True)",
     ),
     "upgrade": (
         "selected application usage and upgrade impact",
