@@ -10,11 +10,12 @@ from typing import cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, report_from_data
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import (
+    BUDGET_KINDS,
     Budget,
-    BudgetKind,
     IssueCollector,
     Limits,
     bound_text,
@@ -24,15 +25,6 @@ from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json, object_value
 
 from .types import BiolinkIdentity, BiolinkModel, BiolinkResource
-
-KINDS: tuple[BudgetKind, ...] = (
-    "bytes",
-    "resources",
-    "triples",
-    "work",
-    "issues",
-    "states",
-)
 
 
 def reserve(budget: Budget, count: int = 1) -> None:
@@ -127,19 +119,21 @@ def dispatch(
     reply_cap = min(operation.limits.max_bytes, max(8192, expected))
     request.update(
         limits=asdict(operation.limits),
-        allowances=dict.fromkeys(KINDS, 0),
+        allowances=dict.fromkeys(BUDGET_KINDS, 0),
         output_cap=reply_cap,
     )
     size = json_bound(request, operation)
     operation.consume("bytes", 2 * size + 64 * reply_cap)
     operation.consume("states", 2 * reply_cap + 32)
     operation.consume("work", 4 * reply_cap + 1)
-    allowances = {key: operation.remaining(key) for key in KINDS}
-    request["allowances"] = allowances
+    delegated = DelegatedAllowance(
+        operation, {key: operation.remaining(key) for key in BUDGET_KINDS}
+    )
+    request["allowances"] = delegated.to_data()
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
-    consumed = False
+    adopted = False
     try:
         raw = execute_worker(
             "bijux_ontology.interfaces.adapters.biolink.worker",
@@ -158,38 +152,24 @@ def dispatch(
         )
         if set(data) != {"identity", "interpretations", "report", "consumed"}:
             raise ResourceError("Malformed Biolink worker response")
-        counts = object_value(data["consumed"], location="Biolink counters")
-        if set(counts) != set(KINDS) or any(
-            type(counts[k]) is not int or not 0 <= cast(int, counts[k]) <= allowances[k]
-            for k in KINDS
-        ):
-            raise ResourceError("Biolink worker omitted valid cumulative controls")
         report = report_from_data(data["report"])
         # This is adoption of completed prepaid work, not a new native operation.
         # Preserve its negative findings even if the caller's deadline just passed.
-        shared = operation.shared
-        while isinstance(shared, Operation):
-            shared = shared.shared
-        for key in KINDS:
-            shared.consume(key, cast(int, counts[key]))
-        shared._register_transferred_report(
+        counts = delegated.settle(data["consumed"])
+        operation._register_transferred_report(
             report,
-            paid_issues=cast(int, counts["issues"]),
+            paid_issues=counts["issues"],
             max_references=2 * reply_cap,
         )
-        consumed = True
+        adopted = True
         return data, report
     except InputError as error:
         raise LimitExceeded(
             "Biolink worker stopped without a qualified control receipt: " + str(error)
         ) from error
     finally:
-        if not consumed:
-            shared = operation.shared
-            while isinstance(shared, Operation):
-                shared = shared.shared
-            for key in KINDS:
-                shared.consume(key, shared.remaining(key))
+        if not adopted:
+            delegated.forfeit()
 
 
 def failure(error: InputError, issues: IssueCollector) -> None:
