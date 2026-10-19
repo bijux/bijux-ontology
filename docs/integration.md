@@ -589,6 +589,13 @@ remaining allowances. Omitting it keeps calls independent; each batch still has
 one cumulative budget. Late coverage exhaustion retains the qualified raw report
 and completed negative findings.
 
+`shacl.examples.generate_examples(shapes, root, focus, seed=seed, values=pool)`
+searches caller values for a finite acyclic direct-path contract. The nonempty
+seed and original explicit shape/focus binding remain fixed. An optional
+`MissingValueExample` requests an actual failing MinCount witness and checked
+preserved siblings. Inspect construction status separately from each native
+validation result; unsuccessful search is no general unsatisfiability proof.
+
 For checked RDF deltas, `prepare_incremental(data, shapes, use_shapes=(shape_iri,))`
 from `bijux_ontology.shacl.incremental` runs an actual baseline. Pass its owned
 `.state` and an exact `DatasetPatch` to `revalidate`. Complete passing local Core

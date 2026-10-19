@@ -361,6 +361,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "example_search_exhausted example_unsupported example_input_invalid "
         "remediation_unverified "
         "external_aggregate_empty external_nonconformance "
         "external_detail_unverified external_projection_incomplete "
