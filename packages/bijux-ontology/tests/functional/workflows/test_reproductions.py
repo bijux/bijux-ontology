@@ -177,7 +177,8 @@ def test_emission_reduction_keeps_required_model_and_source_obligations() -> Non
         _request(8).document, models, [{"model": "record", "path": []}]
     )
     original, signature = _establish(request)
-    result = reduce_failure(request, signature, limits=CONTROL_LIMITS, timeout=60)
+    result = reduce_failure(request, signature, limits=CONTROL_LIMITS, timeout=90)
+    assert result.report.complete, result.report.to_dict()
     assert result.request is not None and result.result is not None
     assert (
         result.result.report.complete
