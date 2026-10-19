@@ -5,20 +5,19 @@ from dataclasses import replace
 from rdflib import Dataset, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology import (
+from bijux_ontology.declarations.types import (
     EmissionCoverage,
     EmissionGroup,
     FieldDeclaration,
     ModelDeclaration,
-    ModelUsage,
     OutputRequirement,
-    RdfModelUsage,
     SubjectIdentity,
     ValueDeclaration,
-    check_emission,
-    check_models,
-    check_rdf_emission,
 )
+from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.reports import Report
 

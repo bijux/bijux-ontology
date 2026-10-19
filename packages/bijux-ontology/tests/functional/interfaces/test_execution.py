@@ -9,7 +9,10 @@ from typing import cast
 
 import pytest
 
-from bijux_ontology import Limits, WorkerExecutor, check_context, expectations_from_data
+from bijux_ontology.interfaces.execution.executor import WorkerExecutor
+from bijux_ontology.jsonld.checking import check_context
+from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.limits import Limits
 
 
 def test_supported_operations_agree_and_resources_stay_explicit(tmp_path: Path) -> None:

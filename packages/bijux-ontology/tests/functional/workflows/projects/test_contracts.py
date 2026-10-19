@@ -5,14 +5,16 @@ from dataclasses import replace
 
 import pytest
 
-from bijux_ontology import (
+from bijux_ontology.errors import InputError
+from bijux_ontology.reports import (
     AcceptancePolicy,
     CheckError,
-    ContractObligation,
-    InputError,
     Issue,
     IssueSelection,
     Report,
+)
+from bijux_ontology.workflows.projects.contracts import (
+    ContractObligation,
     check_contract,
 )
 

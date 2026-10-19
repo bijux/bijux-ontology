@@ -14,19 +14,20 @@ from rdflib import BNode, Graph, Namespace, URIRef
 from rdflib.namespace import XSD
 
 import bijux_ontology
-from bijux_ontology import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
-    RdfModelUsage,
-    RdfSource,
     ValueDeclaration,
-    check_models,
-    check_rdf_emission,
-    compare_rdf,
-    export_jsonld,
-    prepare_source,
 )
-from bijux_ontology.shacl import ShaclCoverageContract, validate_shapes
+from bijux_ontology.documents.compaction import export_jsonld
+from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import RdfModelUsage
+from bijux_ontology.rdf.comparison import compare_rdf
+from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.shacl.checking import validate_shapes
+from bijux_ontology.shacl.coverage import ShaclCoverageContract
 
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
 DCT = Namespace("http://purl.org/dc/terms/")

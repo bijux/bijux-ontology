@@ -2,7 +2,7 @@
 
 The package is still unpublished. These changes replace the initial local implementation; they are not a claim that a public release has migrated.
 
-- Root imports and CLI commands remain supported. Use the root API or `interfaces.api`; framework extraction lives under `interfaces.adapters`. Concrete owners are `rdf`, `jsonld`, `owl`, `documents`, `vocabulary`, `declarations`, `models`, `skos`, `data` and `shacl`. Composed checks live under `workflows`; former local module paths are not compatibility APIs.
+- CLI commands remain supported. Import Python symbols from their documented domain modules; root and `interfaces.api` convenience exports have been removed. SHACL symbols likewise live in their owning shape modules. Framework extraction lives under `interfaces.adapters`. Concrete owners are `rdf`, `jsonld`, `owl`, `documents`, `vocabulary`, `declarations`, `models`, `skos`, `data` and `shacl`. Composed checks live under `workflows`; former local module paths are not compatibility APIs.
 - Invalid declarations, duplicate JSON keys and conflicting model identities now fail before semantic shortcuts. Use `terms_from_data`, `models_from_data` and `expectations_from_data` for the same validated input shapes as the CLI.
 - `Report` records requested work, completion, regime and child scopes. Required empty checks fail; explicitly optional empty scopes are not applicable. Inspect `verified` for agreement and `exit_code(policy=...)` for process acceptance. A warning or permitted unknown remains visible and unverified.
 - A trait set to `None` is unchecked. Use `ABSENT` to require absence; JSON declaration codecs represent it as `{ "absent": true }`. Language, direction, datatype, identifier and ordered values are separate comparisons.
@@ -11,7 +11,9 @@ The package is still unpublished. These changes replace the initial local implem
 - Model field `emission="guaranteed"` is an explicit output contract, independent of constructor requirements. Unknown custom serializers remain unverified. Use `check_emission` for representative actual output.
 
 ```python
-from bijux_ontology import ABSENT, ContextExpectation, check_context
+from bijux_ontology.absence import ABSENT
+from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.checking import check_context
 
 report = check_context(
     {"@context": {"label": "https://example.org/label"}, "label": "Colour"},

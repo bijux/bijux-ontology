@@ -5,7 +5,9 @@ import json
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 
-from bijux_ontology import OfflineDocumentLoader, export_jsonld, prepare_source
+from bijux_ontology.documents.compaction import export_jsonld
+from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Limits
 
 EX = "https://example.org/"

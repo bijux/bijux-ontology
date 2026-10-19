@@ -8,7 +8,6 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import RDF, XSD
 
-from bijux_ontology import RdfModelUsage, check_rdf_emission
 from bijux_ontology.declarations.types import (
     FieldDeclaration as Field,
 )
@@ -30,6 +29,8 @@ from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.dataclasses import model_declarations
 from bijux_ontology.limits import Limits
 from bijux_ontology.models import ModelUsage, check_emission
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.sources import RdfSource
 
 EX = Namespace("https://output.example/")

@@ -7,20 +7,17 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import RDF, XSD
 from rdflib.paths import MulPath
 
-from bijux_ontology import (
-    Limits,
-    OutputRequirement,
-    RdfSource,
-    ValueConstraints,
-    ValueDeclaration,
-    prepare_jsonld,
-    prepare_source,
-)
 from bijux_ontology.declarations.path_fields import (
     IntermediateRequirement,
     PathFieldDeclaration,
 )
+from bijux_ontology.declarations.types import OutputRequirement, ValueDeclaration
+from bijux_ontology.declarations.value_constraints import ValueConstraints
+from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.jsonld.preparation import prepare_jsonld
+from bijux_ontology.limits import Limits
 from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
+from bijux_ontology.rdf.sources import RdfSource
 
 EX = Namespace("urn:path-field:")
 

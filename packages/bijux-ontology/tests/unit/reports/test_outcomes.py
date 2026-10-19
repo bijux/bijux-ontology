@@ -4,9 +4,15 @@ import json
 
 import pytest
 
-from bijux_ontology import Issue, Report, combine_reports
 from bijux_ontology.errors import InputError
-from bijux_ontology.reports import AcceptancePolicy, IssueSelection, Location
+from bijux_ontology.reports import (
+    AcceptancePolicy,
+    Issue,
+    IssueSelection,
+    Location,
+    Report,
+    combine_reports,
+)
 
 
 def test_unverified_child_remains_unverified_when_policy_allows_it() -> None:

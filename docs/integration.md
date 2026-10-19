@@ -649,7 +649,7 @@ provide its check callback and set `minimum_checked` or explicit
 `bindings`/`minimum_bindings` for extraction coverage. For example:
 
 ```python
-from bijux_ontology import ContractObligation, check_contract
+from bijux_ontology.workflows.projects.contracts import ContractObligation, check_contract
 
 result = check_contract([
     ContractObligation("mapping", lambda: extraction.report,
@@ -896,7 +896,7 @@ For ordinary nested Pydantic models, an authoritative context can supply the RDF
 mappings without duplicate primitive declarations:
 
 ```python
-from bijux_ontology import OutputRequirement
+from bijux_ontology.declarations.types import OutputRequirement
 from bijux_ontology.interfaces.adapters.pydantic import check_instance
 
 checked = check_instance(

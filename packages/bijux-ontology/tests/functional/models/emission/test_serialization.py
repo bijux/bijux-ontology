@@ -9,26 +9,25 @@ from pydantic import BaseModel, Field
 from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
-    Limits,
     ModelDeclaration,
-    ModelUsage,
     ValueDeclaration,
-    check_emission,
-    check_models,
-    load_vocabulary,
 )
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.serialization import (
     check_instance,
     check_serialized,
 )
+from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.preparation import PreparedModels
+from bijux_ontology.vocabulary.loading import load_vocabulary
 
 EX = Namespace("https://example.org/")
 
@@ -304,7 +303,15 @@ def test_serializer_checks_share_a_cumulative_operation_budget() -> None:
         limits=Limits(max_work=120),
     )
     assert fresh.report.outcome == "exhausted" and fresh.output_json is None
-    grant = Limits(max_work=256)
+    model_budget, emission_budget = Budget(), Budget()
+    assert check_models([model], owned, budget=model_budget).verified
+    assert check_emission(document, [model], usages, budget=emission_budget).verified
+    grant = Limits(
+        max_work=max(
+            current.limits.max_work - current.remaining("work")
+            for current in (model_budget, emission_budget)
+        )
+    )
     assert check_models([model], owned, limits=grant).verified
     assert check_emission(document, [model], usages, limits=grant).verified
     combined = check_instance(

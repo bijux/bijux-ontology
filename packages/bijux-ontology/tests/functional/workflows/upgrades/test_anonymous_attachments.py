@@ -3,13 +3,13 @@
 from rdflib import BNode, Dataset, Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
-    Limits,
     ModelDeclaration,
     TermDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.limits import Limits
 from bijux_ontology.vocabulary.comparison import compare_vocabularies
 from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 
@@ -136,7 +136,8 @@ def test_actual_named_graph_move_and_tiny_bounds_remain_visible() -> None:
         before.graph(E.G).add(triple)
     for triple in vocabulary("after", E.B):
         after.graph(E.H).add(triple)
-    from bijux_ontology import RdfSource, prepare_source
+    from bijux_ontology.documents.preparation import prepare_source
+    from bijux_ontology.rdf.sources import RdfSource
 
     left = prepare_source(RdfSource(before, union=True))
     right = prepare_source(RdfSource(after, union=True))
