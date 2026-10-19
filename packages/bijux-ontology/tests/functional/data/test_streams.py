@@ -2,6 +2,7 @@
 
 import hashlib
 import importlib.util
+import json
 import os
 import subprocess
 import sys
@@ -9,6 +10,7 @@ import time
 from pathlib import Path
 from threading import Event
 from types import FrameType
+from typing import Any
 from typing import Literal as ProfileLiteral
 
 import pytest
@@ -16,15 +18,19 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, SH
 
 from bijux_ontology.data.streams import check_rdf_stream
+from bijux_ontology.data.streams.protocol import read_completion
 from bijux_ontology.data.usage import check_data_usage
-from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import ResourceError
+from bijux_ontology.execution.budgets import ControlBudget, Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, IssueCollector, Limits
 from bijux_ontology.execution.processes.ownership import spawn_owned_process
 from bijux_ontology.execution.processes.transport import checkpoint, exchange_worker
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.stores.preparation import snapshot_rdf
+from bijux_ontology.resources.files import verify_files
 
 E = Namespace("urn:stream:")
 INTEGER = "http://www.w3.org/2001/XMLSchema#integer"
@@ -356,6 +362,8 @@ def test_inherited_cancellation_reaps_the_actual_stream_worker_and_recovers(
     parent = Operation(None, Budget(), 30, cancel)
     processes: list[subprocess.Popen[bytes]] = []
     interrupted: list[int] = []
+    native_allowances: list[dict[str, int]] = []
+    counters_before: dict[str, int] = {}
     previous = sys.getprofile()
 
     def observe(
@@ -366,6 +374,17 @@ def test_inherited_cancellation_reaps_the_actual_stream_worker_and_recovers(
         """Cancel at real supervision after the installed worker and pipes start."""
         if previous is not None:
             previous(frame, event, value)
+        if (
+            event == "call"
+            and frame.f_code is execute_worker.__code__
+            and not native_allowances
+        ):
+            native_allowances.append(
+                json.loads(frame.f_locals["payload"])["allowances"]
+            )
+            counters_before.update(
+                {kind: parent._counts.get(kind, 0) for kind in BUDGET_KINDS}
+            )
         if (
             event == "return"
             and frame.f_code is spawn_owned_process.__code__
@@ -392,6 +411,13 @@ def test_inherited_cancellation_reaps_the_actual_stream_worker_and_recovers(
         stopped = check_rdf_stream(source, _vocabulary(), budget=parent)
         assert stopped.report.outcome == "exhausted" and not stopped.report.complete
         assert len(processes) == 1 and interrupted == [processes[0].pid]
+        assert {
+            kind: parent._counts.get(kind, 0) - counters_before[kind]
+            for kind in BUDGET_KINDS
+        } == {
+            kind: native_allowances[0][kind] if kind != "issues" else 0
+            for kind in BUDGET_KINDS
+        }
         terminated = processes[0]
         assert terminated.poll() is not None and terminated.returncode != 0
         if os.name == "posix":
@@ -410,3 +436,258 @@ def test_inherited_cancellation_reaps_the_actual_stream_worker_and_recovers(
         assert processes[-1].poll() == 0
     finally:
         sys.setprofile(previous)
+
+
+def test_completed_native_finding_is_paid_once_through_inherited_cancellation(
+    tmp_path: Path,
+) -> None:
+    """The real returned prefix survives stop without renewing native permission."""
+    source = tmp_path / "completed.nt"
+    source.write_text("<urn:stream:s> <urn:stream:missing> <urn:stream:o> .\n")
+    base, cancel = Budget(), Event()
+    parent = Operation(None, base, 30, cancel)
+    native: list[dict[str, Any]] = []
+    before: dict[str, int] = {}
+    previous = sys.getprofile()
+
+    def observe(frame: FrameType, event: str, value: object) -> None:
+        if frame.f_code is execute_worker.__code__:
+            if event == "call":
+                before.update(
+                    {kind: base._counts.get(kind, 0) for kind in BUDGET_KINDS}
+                )
+            elif event == "return" and isinstance(value, bytes):
+                native.append(json.loads(value))
+                cancel.set()
+
+    sys.setprofile(observe)
+    try:
+        result = check_rdf_stream(source, _vocabulary(), budget=parent)
+    finally:
+        sys.setprofile(previous)
+    assert native and native[0]["consumed"]["work"] > 0
+    assert result.report.outcome == "exhausted" and not result.report.complete
+    assert len(result.findings) == 1 and result.findings[0].statement.index == 1
+    finding = result.findings[0].issue
+    assert finding.code == "vocabulary.term_missing"
+    assert base._counts["work"] - before["work"] >= native[0]["consumed"]["work"]
+    assert base._counts["issues"] - before["issues"] == 1
+    assert base._retained_issues[id(finding)] is finding
+    retained = IssueCollector(base)
+    retained.retain_completed(result.report)
+    assert any(issue is finding for issue in retained)
+    assert base._counts["issues"] - before["issues"] == 1
+
+
+def test_bounded_terminal_adoption_keeps_the_paid_prefix_and_wire_policy(
+    tmp_path: Path,
+) -> None:
+    """A real many-finding reply is funded; stopped adoption preserves occurrences."""
+    source = tmp_path / "findings.nt"
+    source.write_text("<urn:stream:s> <urn:stream:missing> <urn:stream:o> .\n" * 20)
+    complete = check_rdf_stream(source, _vocabulary())
+    assert complete.parse_report.verified and len(complete.findings) == 20
+    base = Budget()
+    cut: list[ControlBudget] = []
+    previous = sys.getprofile()
+
+    def observe(frame: FrameType, event: str, value: object) -> None:
+        if (
+            event == "return"
+            and frame.f_code is IssueCollector.append.__code__
+            and not cut
+        ):
+            collector = frame.f_locals["self"]
+            if isinstance(collector.budget, ControlBudget):
+                cut.append(collector.budget)
+                collector.budget.consume("states", collector.budget.remaining("states"))
+
+    sys.setprofile(observe)
+    try:
+        partial = check_rdf_stream(source, _vocabulary(), budget=base)
+    finally:
+        sys.setprofile(previous)
+    assert len(cut) == 1 and partial.report.outcome == "exhausted"
+    assert len(partial.findings) == 1 and partial.findings[0].statement.index == 1
+    assert base._counts["issues"] == 1
+    assert (
+        base._retained_issues[id(partial.findings[0].issue)]
+        is partial.findings[0].issue
+    )
+
+
+@pytest.mark.parametrize("failure", ("cancel", "revision"))
+def test_stored_native_costs_settle_before_live_identity_admission(
+    tmp_path: Path, failure: str
+) -> None:
+    """Completed costs survive when fresh store identity cannot be established."""
+    schema = tmp_path / "schema.nt"
+    schema.write_text(f"<urn:stream:p> <{RDF.type}> <{OWL.DatatypeProperty}> .\n")
+    prepared = snapshot_rdf(schema, tmp_path / "declarations", format="nt")
+    assert prepared.report.verified and prepared.snapshot is not None
+    snapshot = prepared.snapshot
+    source = tmp_path / "stored.nt"
+    source.write_text("<urn:stream:s> <urn:stream:missing> <urn:stream:o> .\n")
+    base, cancel = Budget(), Event()
+    parent = Operation(None, base, 30, cancel)
+    native: list[dict[str, Any]] = []
+    before: dict[str, int] = {}
+    previous = sys.getprofile()
+
+    def observe(frame: FrameType, event: str, value: object) -> None:
+        if frame.f_code is execute_worker.__code__:
+            if event == "call":
+                before.update(
+                    {kind: base._counts.get(kind, 0) for kind in BUDGET_KINDS}
+                )
+            elif event == "return" and isinstance(value, bytes):
+                native.append(json.loads(value))
+                if failure == "cancel":
+                    cancel.set()
+                else:
+                    (snapshot.directory / "unpublished-resource").write_text("changed")
+
+    sys.setprofile(observe)
+    try:
+        result = check_rdf_stream(
+            source, snapshot, vocabulary_scope=QueryScope("default"), budget=parent
+        )
+    finally:
+        sys.setprofile(previous)
+    assert native and native[0]["records"]
+    assert base._counts["work"] - before["work"] >= native[0]["consumed"]["work"]
+    assert not result.report.verified and not result.report.complete
+    assert result.findings == () and result.local_report.checked == 0
+    assert result.report.outcome == (
+        "exhausted" if failure == "cancel" else "unverified"
+    )
+
+
+def test_native_issue_counter_is_qualified_before_its_payment_projection(
+    tmp_path: Path,
+) -> None:
+    """Real receipt controls cannot hide an invalid producer issue bound behind zero."""
+    source = tmp_path / "native.nt"
+    source.write_text("<urn:stream:s> <urn:stream:missing> <urn:stream:o> .\n")
+    wire: list[dict[str, Any]] = []
+    replies: list[dict[str, Any]] = []
+    previous = sys.getprofile()
+
+    def observe(frame: FrameType, event: str, value: object) -> None:
+        if frame.f_code is execute_worker.__code__:
+            if event == "call":
+                wire.append(json.loads(frame.f_locals["payload"]))
+            elif event == "return" and isinstance(value, bytes):
+                replies.append(json.loads(value))
+
+    sys.setprofile(observe)
+    try:
+        actual = check_rdf_stream(source, _vocabulary())
+    finally:
+        sys.setprofile(previous)
+    assert len(actual.findings) == 1 and len(replies) == len(wire) == 1
+    receipt, request = replies[0], wire[0]
+    for kind in ("issues", "states"):
+        counters = dict(receipt["consumed"])
+        counters[kind] = request["allowances"][kind] + 1
+        invalid = dict(receipt, consumed=counters)
+        with pytest.raises(ResourceError, match="counters"):
+            read_completion(
+                invalid,
+                limits=Limits(),
+                allowances=request["allowances"],
+                maximum=Limits().max_total_bytes,
+                budget=Budget(),
+            )
+    missing = dict(receipt)
+    del missing["consumed"]
+    with pytest.raises(ResourceError, match="envelope"):
+        read_completion(
+            missing,
+            limits=Limits(),
+            allowances=request["allowances"],
+            maximum=Limits().max_total_bytes,
+            budget=Budget(),
+        )
+
+
+@pytest.mark.parametrize("prefix", (False, True))
+def test_syntax_failure_registers_only_the_actual_paid_diagnostic(
+    tmp_path: Path, prefix: bool
+) -> None:
+    """Report-generated absence/completeness issues are not native paid identities."""
+    source = tmp_path / "syntax.nt"
+    source.write_text(
+        ("<urn:stream:s> <urn:stream:p> <urn:stream:o> .\n" if prefix else "")
+        + "invalid RDF .\n"
+    )
+    base = Budget()
+    result = check_rdf_stream(source, _vocabulary(), budget=base)
+    assert result.parse_report.outcome == "input_error"
+    paid = next(
+        issue for issue in result.report.issues if issue.code == "input.invalid"
+    )
+    generated = next(
+        issue
+        for issue in result.local_report.issues
+        if issue.code == ("execution.incomplete" if prefix else "input.empty_scope")
+    )
+    assert base._counts["issues"] == 1
+    assert base._retained_issues.get(id(paid)) is paid
+    assert id(generated) not in base._retained_issues
+    retained = IssueCollector(base)
+    retained.retain_completed(result.report)
+    assert any(issue is paid for issue in retained)
+    assert all(issue is not generated for issue in retained)
+    assert base._counts["issues"] == 1
+
+
+def test_stored_guard_shrink_settles_typed_prefix_before_unused_native_forfeiture(
+    tmp_path: Path,
+) -> None:
+    """A valid receipt cannot lose paid host work to conservative native forfeiture."""
+    schema = tmp_path / "schema.nt"
+    schema.write_text(f"<urn:stream:p> <{RDF.type}> <{OWL.DatatypeProperty}> .\n")
+    prepared = snapshot_rdf(schema, tmp_path / "declarations", format="nt")
+    assert prepared.snapshot is not None and prepared.report.verified
+    source = tmp_path / "findings.nt"
+    source.write_text("<urn:stream:s> <urn:stream:missing> <urn:stream:o> .\n" * 2)
+    base = Budget()
+    guards = 0
+    native: list[dict[str, Any]] = []
+    previous = sys.getprofile()
+
+    def observe(frame: FrameType, event: str, value: object) -> None:
+        nonlocal guards
+        if (
+            event == "return"
+            and frame.f_code is execute_worker.__code__
+            and isinstance(value, bytes)
+        ):
+            native.append(json.loads(value))
+        if (
+            event == "return"
+            and frame.f_code is verify_files.__code__
+            and frame.f_back is not None
+            and frame.f_back.f_code is check_rdf_stream.__code__
+        ):
+            guards += 1
+            if guards == 2:
+                base.consume("work", base.remaining("work") - 600)
+
+    sys.setprofile(observe)
+    try:
+        result = check_rdf_stream(
+            source,
+            prepared.snapshot,
+            vocabulary_scope=QueryScope("default"),
+            budget=base,
+        )
+    finally:
+        sys.setprofile(previous)
+    assert guards == 2 and len(native) == 1 and len(native[0]["records"]) == 2
+    assert result.report.outcome == "exhausted" and not result.report.complete
+    assert len(result.findings) == 1 and result.findings[0].statement.index == 1
+    issue = result.findings[0].issue
+    assert base._counts["issues"] == 1 and base._retained_issues.get(id(issue)) is issue
+    assert base.remaining("work") == 0

@@ -81,6 +81,39 @@ class Budget:
         elif repeated:
             self.consume("issues")
 
+    def _validate_transferred_receipt(
+        self, paid_issues: int, max_references: int
+    ) -> None:
+        """Qualify the already-paid count and finite host handoff bound once."""
+        if (
+            type(paid_issues) is not int
+            or not 0 <= paid_issues <= self._counts.get("issues", 0)
+            or type(max_references) is not int
+            or max_references <= 0
+        ):
+            raise InputError("Invalid paid worker report receipt")
+
+    def _register_transferred_issues(
+        self, issues: tuple[Issue, ...], *, paid_issues: int, max_references: int
+    ) -> None:
+        """Retain exactly funded terminal identities without adopting a report.
+
+        Callers reserve reference storage before dispatch and settle the owned
+        issue receipt first. Automatic report diagnostics are separate policy;
+        they must not be presented as identities paid by a different collector.
+        """
+        self._validate_transferred_receipt(paid_issues, max_references)
+        if (
+            not isinstance(issues, tuple)
+            or len(issues) > max_references
+            or any(not isinstance(issue, Issue) for issue in issues)
+        ):
+            raise InputError("Invalid paid worker issue receipt")
+        owned = {id(issue): issue for issue in issues}
+        if len(owned) > paid_issues:
+            raise InputError("Worker identities exceed their paid issue receipt")
+        self._retained_issues.update(owned)
+
     def _register_transferred_report(
         self, report: Report, *, paid_issues: int, max_references: int
     ) -> None:
@@ -91,13 +124,7 @@ class Budget:
         terminal handoff adds no logical issue charge. It does not qualify an
         arbitrary report or reserve capacity on the caller's behalf.
         """
-        if (
-            type(paid_issues) is not int
-            or not 0 <= paid_issues <= self._counts.get("issues", 0)
-            or type(max_references) is not int
-            or max_references <= 0
-        ):
-            raise InputError("Invalid paid worker report receipt")
+        self._validate_transferred_receipt(paid_issues, max_references)
         if (
             sum(
                 issue.code != "execution.limit_exceeded" or issue.kind != "exhausted"
