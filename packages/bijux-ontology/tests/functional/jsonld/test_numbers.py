@@ -16,7 +16,7 @@ from bijux_ontology.jsonld.numbers import (
     decode_numeric_json,
     project_numeric_json,
 )
-from bijux_ontology.jsonld.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 
 
 @pytest.mark.skipif(

@@ -12,8 +12,8 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.json.paths import bound_index, bound_path
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.serialization import (
     InstanceCheck,

@@ -21,8 +21,8 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.runtime import processor
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource

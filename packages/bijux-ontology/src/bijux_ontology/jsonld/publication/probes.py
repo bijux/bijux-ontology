@@ -8,7 +8,7 @@ from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.composition.checking import _Case, _document
 from bijux_ontology.jsonld.contexts.processing import _data, inspect_context
 from bijux_ontology.jsonld.contexts.types import ContextInspection, TermDefinition
-from bijux_ontology.jsonld.resources import ContextResources
+from bijux_ontology.jsonld.processing.resources import ContextResources
 
 
 @dataclass

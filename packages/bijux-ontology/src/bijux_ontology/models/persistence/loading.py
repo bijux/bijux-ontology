@@ -22,8 +22,8 @@ from bijux_ontology.json.values import (
     optional_string_value,
     string_value,
 )
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.types import RdfSource

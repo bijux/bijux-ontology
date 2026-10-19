@@ -15,7 +15,7 @@ from bijux_ontology.jsonld.index_maps import (
     IndexMapExpectation,
     check_index_maps,
 )
-from bijux_ontology.jsonld.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.rdf.comparison import compare_rdf
 
 X = "https://index.example/"

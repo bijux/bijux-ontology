@@ -20,7 +20,7 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.execution import WorkerExecutor
 from bijux_ontology.json.paths import at_path
 from bijux_ontology.jsonld.framing import FramedDocument, frame_document
-from bijux_ontology.jsonld.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.selectors import EntitySelector
 from bijux_ontology.models.emission import ModelUsage, check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission

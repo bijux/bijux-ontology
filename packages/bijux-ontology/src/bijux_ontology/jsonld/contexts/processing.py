@@ -18,13 +18,13 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.json.paths import bound_index
 from bijux_ontology.json.values import own_json
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
     ContextResources,
     DocumentLoader,
     context_resources,
 )
-from bijux_ontology.jsonld.runtime import processor
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .types import (

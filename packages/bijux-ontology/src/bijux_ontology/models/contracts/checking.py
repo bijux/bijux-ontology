@@ -20,7 +20,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.jsonld.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.models.contracts.constraints import (
     _emission_issues,
     _field_issues,

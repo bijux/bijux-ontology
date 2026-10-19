@@ -12,7 +12,7 @@ from bijux_ontology.jsonld.composition import (
     compose_contexts,
 )
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 
 
 def _module(name: str, predicate: str, *, iri: bool = False) -> ContextModule:

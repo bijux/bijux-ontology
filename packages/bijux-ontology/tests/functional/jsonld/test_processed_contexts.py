@@ -15,7 +15,7 @@ from bijux_ontology.jsonld.contexts import (
     compare_context_definitions,
     inspect_context,
 )
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 
 EX = "https://example.org/v#"
 PREFIX = {"@id": EX, "@prefix": True}

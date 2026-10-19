@@ -20,11 +20,11 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.jsonld.conversion import DirectionPolicy, _convert_to_rdf_dataset
-from bijux_ontology.jsonld.resources import (
-    DocumentLoader,
-    context_resources,
+from bijux_ontology.jsonld.processing.conversion import (
+    DirectionPolicy,
+    _convert_to_rdf_dataset,
 )
+from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_resources
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term

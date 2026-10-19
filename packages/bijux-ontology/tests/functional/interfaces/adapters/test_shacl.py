@@ -17,7 +17,7 @@ from bijux_ontology.interfaces.adapters.shacl import (
     check_imported_rdf,
     import_shape_contracts,
 )
-from bijux_ontology.jsonld.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.sources.loading import prepare_rdf

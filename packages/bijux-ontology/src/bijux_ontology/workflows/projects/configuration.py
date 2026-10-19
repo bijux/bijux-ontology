@@ -20,7 +20,7 @@ from bijux_ontology.json.values import (
     read_json,
     text_value,
 )
-from bijux_ontology.jsonld.resources import DocumentLocation
+from bijux_ontology.jsonld.processing.resources import DocumentLocation
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.workflows.projects.jobs import (

@@ -20,7 +20,10 @@ from bijux_ontology.documents.relocation import (
 )
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.resources import OfflineDocument, OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.resources import (
+    OfflineDocument,
+    OfflineDocumentLoader,
+)
 from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector
 from bijux_ontology.rdf.comparison import compare_rdf
 

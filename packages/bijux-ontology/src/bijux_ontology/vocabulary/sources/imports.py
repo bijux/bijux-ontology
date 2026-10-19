@@ -13,7 +13,7 @@ from bijux_ontology.diagnostics.errors import (
 )
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.jsonld.resources import DocumentLoader
+from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource

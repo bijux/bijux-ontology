@@ -15,9 +15,9 @@ from bijux_ontology.jsonld.evidence.occurrences import (
     ObservedUsage,
     occurrences,
 )
+from bijux_ontology.jsonld.processing.resources import context_is_unscoped
 
 from .projections import NamedProjections
-from .resources import context_is_unscoped
 
 Expansion = Callable[[object], list[dict[str, object]]]
 

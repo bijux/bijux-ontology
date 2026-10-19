@@ -25,12 +25,12 @@ from bijux_ontology.jsonld.contexts.processing import (
     inspect_context,
 )
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,
     context_resources,
 )
-from bijux_ontology.jsonld.runtime import processor
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .types import ContextCase, ContextCaseResult, ContextComposition, ContextModule

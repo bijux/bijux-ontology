@@ -7,16 +7,15 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.json.values import own_json
-from bijux_ontology.rdf.identifiers import absolute_iri
-
-from .resources import (
+from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
     DocumentLoader,
     _consume_work,
     _json_size,
     context_resources,
 )
-from .runtime import processor
+from bijux_ontology.jsonld.processing.runtime import processor
+from bijux_ontology.rdf.identifiers import absolute_iri
 
 
 def expand_document(

@@ -14,8 +14,8 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.values import own_json
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.resources import DocumentLoader
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.serialization import InstanceCheck, check_instance
 from bijux_ontology.models.emission.types import ModelUsage

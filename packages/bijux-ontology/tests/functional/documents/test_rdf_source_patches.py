@@ -17,8 +17,11 @@ from bijux_ontology.documents.patches.rdf import (
     project_rdf_patch,
 )
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.resources import DocumentLoader, OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.resources import (
+    DocumentLoader,
+    OfflineDocumentLoader,
+)
 from bijux_ontology.jsonld.selectors.types import SourceSelector
 from bijux_ontology.rdf.patches import BlankNodePair, DatasetPatch, plan_rdf_patch
 from bijux_ontology.rdf.sources.loading import prepare_rdf

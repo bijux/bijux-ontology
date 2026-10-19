@@ -19,8 +19,7 @@ from bijux_ontology.jsonld.evidence.occurrences import (
     ObservedUsage,
     occurrences,
 )
-
-from .resources import context_is_unscoped
+from bijux_ontology.jsonld.processing.resources import context_is_unscoped
 
 Expansion = Callable[[object], list[dict[str, object]]]
 _RESOLVE = "https://bijux.org/ontology/identity-resolution"

@@ -22,8 +22,8 @@ from bijux_ontology.json.values import (
     text_value,
 )
 from bijux_ontology.jsonld.codecs import expectations_from_data
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.workflows.projects.jobs import VocabularySelection, strings

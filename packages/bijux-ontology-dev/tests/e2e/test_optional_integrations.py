@@ -335,7 +335,7 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
         )
         from bijux_ontology.shacl.checking import validate_shapes
         from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
-        from bijux_ontology.jsonld.expansion import expand_document
+        from bijux_ontology.jsonld.processing.expansion import expand_document
         from bijux_ontology.rdf.comparison import compare_rdf
         for name in (
             "pyld", "pyshacl", "pydantic", "linkml_runtime",

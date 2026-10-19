@@ -12,8 +12,8 @@ from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.evidence.values import ValueTraits
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.application import (
     application_matches,

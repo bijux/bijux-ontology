@@ -16,7 +16,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.values import _decode_json, own_json
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,
     DocumentLocation,

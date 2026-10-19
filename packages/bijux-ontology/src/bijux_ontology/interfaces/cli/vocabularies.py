@@ -8,7 +8,7 @@ from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.cli.arguments import VocabularyInput
 from bijux_ontology.interfaces.cli.inputs import protect_paths, rdf_input, source_map
 from bijux_ontology.json.values import known_keys, object_value, text_value
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

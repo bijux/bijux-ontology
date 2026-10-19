@@ -3,11 +3,11 @@
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import bound_text
 from bijux_ontology.json.values import _capture_json
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
     ContextResources,
 )
-from bijux_ontology.jsonld.runtime import processor
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 

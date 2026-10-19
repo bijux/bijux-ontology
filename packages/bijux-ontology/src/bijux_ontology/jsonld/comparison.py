@@ -15,13 +15,13 @@ from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.json.paths import SourcePath, location
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence, ObservedUsage
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy, convert_to_rdf
+from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .checking import PreparedUsages, prepare_usages
-from .conversion import DirectionPolicy, convert_to_rdf
-from .resources import DocumentLoader
 
 
 def _resource(value: str | None, implicit: int | None = None) -> str | None:

@@ -28,7 +28,7 @@ def test_supported_operations_agree_and_resources_stay_explicit(tmp_path: Path) 
             "expectations": expectations,
         },
     )
-    from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+    from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 
     direct = check_context(
         document,

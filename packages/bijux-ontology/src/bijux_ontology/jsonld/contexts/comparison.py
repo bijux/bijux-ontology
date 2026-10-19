@@ -14,7 +14,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.paths import bounded_location
-from bijux_ontology.jsonld.resources import DocumentLoader
+from bijux_ontology.jsonld.processing.resources import DocumentLoader
 
 from .processing import _capture, _data, _dump, _operation, _own, inspect_context
 from .types import (

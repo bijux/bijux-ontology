@@ -11,13 +11,17 @@ from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.paths import SourcePath, location
 from bijux_ontology.json.values import own_json
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.expansion import _drop_issues, expand_document
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.resources import (
+    DocumentLoader,
+    _consume_work,
+    _json_size,
+    context_resources,
+)
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.comparison import compare_rdf
-
-from .conversion import DirectionPolicy
-from .expansion import _drop_issues, expand_document
-from .preparation import prepare_jsonld
-from .resources import DocumentLoader, _consume_work, _json_size, context_resources
-from .runtime import processor
 
 
 def _json(value: object) -> str:

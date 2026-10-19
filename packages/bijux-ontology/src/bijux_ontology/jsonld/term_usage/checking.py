@@ -19,7 +19,7 @@ from bijux_ontology.jsonld.contexts.usages import (
     UsageContextUnavailable,
     source_terms,
 )
-from bijux_ontology.jsonld.resources import ContextInputError
+from bijux_ontology.jsonld.processing.resources import ContextInputError
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.rdf.identifiers import absolute_iri
 

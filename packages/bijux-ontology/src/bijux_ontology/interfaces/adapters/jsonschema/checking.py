@@ -19,8 +19,8 @@ from bijux_ontology.interfaces.adapters.jsonschema.extraction import (
 )
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
 from bijux_ontology.json.paths import SourcePath, location
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.resources import DocumentLoader
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.models.emission.serialization import InstanceCheck, check_serialized
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.vocabulary.sources.view import Vocabulary

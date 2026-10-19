@@ -29,8 +29,8 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.json.values import _measure
 from bijux_ontology.jsonld.contexts.processing import inspect_context
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.persistence.codecs import json_bytes
 from bijux_ontology.models.persistence.identity import _source, capture_inputs
 from bijux_ontology.models.persistence.loading import (

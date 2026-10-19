@@ -457,7 +457,7 @@ def test_empty_required_scope_conversion_evidence_and_bounded_remaining_records(
     )
     plan = _plan(tmp_path / "base", "baseline", EX.label)
     if importlib.util.find_spec("pyld") is not None:
-        from bijux_ontology.jsonld.preparation import prepare_jsonld
+        from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 
         converted = prepare_jsonld(
             {"@id": str(EX.a), str(EX.label): "name", "unmapped": "lost"}

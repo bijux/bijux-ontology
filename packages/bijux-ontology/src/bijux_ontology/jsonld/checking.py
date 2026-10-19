@@ -11,6 +11,16 @@ from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.evidence.entities import EntityInventory
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.evidence.values import ValueTraits, value_traits
+from bijux_ontology.jsonld.processing.expansion import (
+    _drop_issues,
+    _validate_allowed_drops,
+    expand_document,
+)
+from bijux_ontology.jsonld.processing.resources import (
+    ContextInputError,
+    DocumentLoader,
+    context_resources,
+)
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import (
     EntitySelector,
@@ -18,14 +28,8 @@ from bijux_ontology.jsonld.selectors.types import (
     SourceSelector,
 )
 
-from .expansion import _drop_issues, _validate_allowed_drops, expand_document
 from .expectations import ContextExpectation, compare_usage
 from .omissions import project_omissions
-from .resources import (
-    ContextInputError,
-    DocumentLoader,
-    context_resources,
-)
 from .selection import UsageIndex
 
 

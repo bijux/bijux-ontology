@@ -14,9 +14,9 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.paths import bound_path, location
 from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
-from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.resources import DocumentLoader
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.application import retain_enumeration_report
 from bijux_ontology.models.emission.direction import DirectionCheck

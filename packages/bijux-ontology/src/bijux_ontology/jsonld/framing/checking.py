@@ -17,10 +17,10 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
-from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.evidence.entities import EntityKey
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.resources import (
     DocumentLoader,
     _json_size,
     context_resources,

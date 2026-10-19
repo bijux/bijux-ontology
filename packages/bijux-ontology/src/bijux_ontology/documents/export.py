@@ -10,7 +10,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.values import decode_json
-from bijux_ontology.jsonld.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.sources.snapshots import (
     GraphSelection,

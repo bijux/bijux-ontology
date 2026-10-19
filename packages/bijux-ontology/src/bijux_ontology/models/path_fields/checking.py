@@ -12,7 +12,7 @@ from bijux_ontology.declarations.types import ValueDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.jsonld.preparation import JSONLDPreparation
+from bijux_ontology.jsonld.processing.preparation import JSONLDPreparation
 from bijux_ontology.models.emission.application import (
     application_matches,
     retain_enumeration_report,

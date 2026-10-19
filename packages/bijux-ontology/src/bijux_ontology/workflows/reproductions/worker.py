@@ -17,7 +17,10 @@ from bijux_ontology.json.paths import at_path
 from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
-from bijux_ontology.jsonld.resources import OfflineDocument, OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.resources import (
+    OfflineDocument,
+    OfflineDocumentLoader,
+)
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.rdf.patches.applying import _materialize

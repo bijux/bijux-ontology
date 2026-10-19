@@ -12,7 +12,7 @@ from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.values import owned_json
 from bijux_ontology.jsonld.contexts.processing import _data, _preflight
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,
     context_is_unscoped,

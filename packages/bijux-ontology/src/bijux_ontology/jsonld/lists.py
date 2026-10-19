@@ -14,9 +14,8 @@ from bijux_ontology.execution.limits import Budget
 from bijux_ontology.json.paths import location
 from bijux_ontology.json.values import decode_json, own_json
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence, ObservedUsage
+from bijux_ontology.jsonld.processing.conversion import _convert_to_rdf_dataset
 from bijux_ontology.rdf.identifiers import absolute_iri
-
-from .conversion import _convert_to_rdf_dataset
 
 
 @dataclass(frozen=True, init=False)

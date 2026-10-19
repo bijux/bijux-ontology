@@ -15,10 +15,10 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.values import decode_json, own_json
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.resources import DocumentLoader, _consume_work
-from bijux_ontology.jsonld.runtime import processor
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.resources import DocumentLoader, _consume_work
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .types import HtmlExtraction, HtmlScript

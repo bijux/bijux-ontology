@@ -11,7 +11,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.archive import bundle_reader, resource_path
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.json.values import decode_json, object_value, text_value
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.jsonld.processing.resources import (
     DocumentLoader,
     DocumentLocation,
     OfflineDocument,
@@ -474,7 +474,7 @@ def load_bundle(
             limits=capped,
         )
     if contexts or context_inputs:
-        from bijux_ontology.jsonld.expansion import expand_document
+        from bijux_ontology.jsonld.processing.expansion import expand_document
 
         for iri in contexts:
             expand_document({"@context": iri}, document_loader=resources, limits=capped)

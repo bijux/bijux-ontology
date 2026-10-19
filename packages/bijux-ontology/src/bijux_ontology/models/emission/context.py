@@ -14,11 +14,11 @@ from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.json.paths import SourcePath, at_path, location
 from bijux_ontology.jsonld.checking import PreparedUsages
-from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.evidence.entities import EntityKey, object_key
 from bijux_ontology.jsonld.evidence.entities import source_entity as source_record
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.jsonld.evidence.values import ValueTraits
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.models.emission.bindings import (
     candidate_paths,
     same_contribution,

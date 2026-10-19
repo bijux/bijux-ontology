@@ -24,10 +24,10 @@ from bijux_ontology.jsonld.comparison import compare_serializations
 from bijux_ontology.jsonld.contexts.comparison import compare_context_definitions
 from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.contexts.types import ContextScope
-from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.flattening import flatten_document
 from bijux_ontology.jsonld.framing.checking import frame_document
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.selectors.codecs import selector_from_data
 from bijux_ontology.jsonld.selectors.types import EntitySelector
 from bijux_ontology.models.emission.checking import check_emission

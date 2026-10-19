@@ -14,9 +14,12 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.values import _decode_json
-from bijux_ontology.jsonld.preparation import JSONLDPreparation, prepare_jsonld
-from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
-from bijux_ontology.jsonld.runtime import processor
+from bijux_ontology.jsonld.processing.preparation import (
+    JSONLDPreparation,
+    prepare_jsonld,
+)
+from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_resources
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .types import JSONLDRecord, JSONLDRecordResult, RecordCheck
