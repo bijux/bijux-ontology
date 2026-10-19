@@ -10,7 +10,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.usages.checking import prepare_usages
-from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
+from bijux_ontology.workflows.upgrades.assessment.checking import assess_upgrade
 
 EX = "https://example.org/"
 before = Graph().parse(

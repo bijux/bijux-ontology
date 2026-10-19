@@ -20,7 +20,8 @@ from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
-from .assessment import ContractChange, _contract_changes
+from .assessment.contracts import _contract_changes
+from .assessment.types import ContractChange
 
 
 @dataclass(frozen=True)

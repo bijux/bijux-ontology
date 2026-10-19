@@ -16,7 +16,7 @@ from bijux_ontology.vocabulary.comparison import compare_vocabularies
 from bijux_ontology.vocabulary.facts import FactGraph, FactPredicate, FactSelection
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
-from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
+from bijux_ontology.workflows.upgrades.assessment.checking import assess_upgrade
 
 EX = Namespace("urn:fact-impact:")
 

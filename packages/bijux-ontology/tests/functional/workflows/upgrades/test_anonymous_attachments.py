@@ -11,7 +11,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.vocabulary.comparison import compare_vocabularies
-from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
+from bijux_ontology.workflows.upgrades.assessment.checking import assess_upgrade
 
 E = Namespace("urn:attachment:")
 

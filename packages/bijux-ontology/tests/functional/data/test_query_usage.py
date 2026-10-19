@@ -233,7 +233,7 @@ def test_limits_cancellation_and_shared_allowances_cannot_pass() -> None:
 
 def test_parsed_dependencies_drive_actual_upgrade_checks_without_source_paths() -> None:
     """A removed used predicate breaks the consumer; dynamic scope stays required."""
-    from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
+    from bijux_ontology.workflows.upgrades.assessment.checking import assess_upgrade
     from bijux_ontology.workflows.upgrades.uses import index_uses
 
     usage = read_query_usage(

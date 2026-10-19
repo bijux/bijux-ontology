@@ -21,10 +21,10 @@ from bijux_ontology.workflows.upgrades.anonymous import (
     AnonymousAffectedUse,
     anonymous_uses,
 )
-from bijux_ontology.workflows.upgrades.assessment import (
+from bijux_ontology.workflows.upgrades.assessment.impacts import _affected_uses
+from bijux_ontology.workflows.upgrades.assessment.types import (
     AffectedUse,
     ContractChange,
-    _affected_uses,
 )
 from bijux_ontology.workflows.upgrades.facts import FactAffectedUse, selected_fact_uses
 from bijux_ontology.workflows.upgrades.qualification import consumer_change_report

@@ -1,5 +1,7 @@
 """Upgrade verdicts require actual application checks and preserve uncertainty."""
 
+import threading
+
 from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, RDFS, XSD
@@ -11,8 +13,9 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.execution.limits import Limits
-from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.workflows.upgrades.assessment.checking import assess_upgrade
 
 EX = Namespace("https://example.org/")
 
@@ -202,3 +205,39 @@ def test_completed_membership_does_not_hide_an_unassessed_additional_contract() 
     assert result.verdict == "unverified"
     assert any(delta.status == "uncertain" for delta in result.contracts)
     assert not result.report.verified
+
+
+def test_shared_assessments_preserve_cumulative_capacity_and_parent_cancellation() -> (
+    None
+):
+    graph = Graph().add((EX.A, RDF.type, OWL.Class))
+    terms = (TermDeclaration(str(EX.A)),)
+    shared = Budget(Limits(max_work=100))
+    assert assess_upgrade(graph, graph, terms=terms, budget=shared).report.verified
+    first = shared.remaining("work")
+    assert assess_upgrade(graph, graph, terms=terms, budget=shared).report.verified
+    assert shared.remaining("work") < first
+    assert assess_upgrade(graph, graph, terms=terms, budget=shared).report.outcome == (
+        "exhausted"
+    )
+    cancel = threading.Event()
+    cancel.set()
+    operation = Operation(None, None, 30, cancel)
+    stopped = assess_upgrade(graph, graph, terms=terms, budget=operation)
+    assert stopped.report.outcome == "exhausted"
+    assert operation.remaining("work") == operation.limits.max_work
+
+
+def test_completed_before_finding_survives_unadmitted_after_source() -> None:
+    before = Graph().add((EX.B, RDF.type, OWL.Class))
+    after = Graph().add((EX.A, RDF.type, OWL.Class))
+    shared = Budget(Limits(max_resources=3))
+    result = assess_upgrade(
+        before, after, terms=(TermDeclaration(str(EX.A)),), budget=shared
+    )
+    assert result.verdict == "unverified" and result.report.outcome == "exhausted"
+    assert len(result.before) == 1 and not result.after
+    assert any(issue.kind == "finding" for issue in result.before[0].issues)
+    assert any(child is result.before[0] for child in result.report.children)
+    assert not result.contracts
+    assert len(before) == len(after) == 1
