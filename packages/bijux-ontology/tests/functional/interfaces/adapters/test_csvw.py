@@ -256,7 +256,7 @@ def test_dialect_null_default_integer_and_multiline_cells_use_native_metadata() 
             base=BASE,
         )
         assert malformed.report.outcome == "disagreement"
-        assert str(ambient) == original and ambient.flags == flags
+        assert str(ambient) == original and dict(ambient.flags) == flags
     assert exact.report.verified and exact.source is not None
     assert str(next(exact.source.graph().objects(None, EX.amount))) == long_default
     assert exact.cells[1].text == ""
