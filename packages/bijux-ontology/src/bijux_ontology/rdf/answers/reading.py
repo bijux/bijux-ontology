@@ -10,6 +10,7 @@ from rdflib import BNode
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import (
     Budget,
@@ -253,7 +254,8 @@ def _dispatch(
     operation.consume("states", 2 * cap + 16)
     operation.consume("work", 4 * cap)
     allowances = {k: operation.remaining(k) for k in _KINDS}
-    envelope["allowances"] = allowances
+    delegated = DelegatedAllowance(operation, allowances)
+    envelope["allowances"] = delegated.to_data()
     raw_request = json.dumps(envelope, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
@@ -268,18 +270,9 @@ def _dispatch(
         response = object_value(decode_json(raw, max_bytes=cap), location="worker")
         if set(response) != {"status", "data", "message", "controls"}:
             raise InputError("Malformed answer worker receipt")
-        controls = response["controls"]
-        if not isinstance(controls, dict) or set(controls) != set(_KINDS):
-            raise InputError("Missing answer worker counters")
-        for kind in _KINDS:
-            amount = controls[kind]
-            if type(amount) is not int or not 0 <= amount <= allowances[kind]:
-                raise InputError("Invalid answer worker counter")
-        for kind in _KINDS:
-            operation.consume_completed(kind, controls[kind])
+        delegated.settle(response["controls"])
     except InputError as error:
-        for kind in _KINDS:
-            operation.consume_completed(kind, operation.remaining(kind))
+        delegated.forfeit()
         raise LimitExceeded(
             "Answer parser stopped without a qualified control receipt: " + str(error)
         ) from error

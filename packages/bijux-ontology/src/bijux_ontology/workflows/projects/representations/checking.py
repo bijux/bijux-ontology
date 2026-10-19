@@ -7,6 +7,7 @@ from dataclasses import asdict, replace
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, report_from_data
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import (
@@ -116,7 +117,8 @@ def _execute(
     # Internal preparation storage shares the actual host byte grant, while
     # exportable evidence retains its independently prepaid wire allowance.
     request["evidence_bytes"] = min(grants["bytes"], (cap - static) // (4 * 6))
-    request["allowances"] = grants
+    delegated = DelegatedAllowance(operation, grants)
+    request["allowances"] = delegated.to_data()
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
@@ -143,17 +145,6 @@ def _execute(
             "consumed",
         }:
             raise ResourceError("Malformed publication worker result")
-        consumed = data["consumed"]
-        if (
-            not isinstance(consumed, dict)
-            or set(consumed) != set(BUDGET_KINDS)
-            or any(
-                type(consumed[kind]) is not int
-                or not 0 <= consumed[kind] <= grants[kind]
-                for kind in BUDGET_KINDS
-            )
-        ):
-            raise ResourceError("Malformed publication worker receipt")
         report = report_from_data(data["report"])
         if report.requested != len(resource.variants) or len(report.children) > len(
             resource.variants
@@ -161,8 +152,7 @@ def _execute(
             raise ResourceError(
                 "Publication report lost its requested variant inventory"
             )
-        for kind in BUDGET_KINDS:
-            operation.consume_completed(kind, consumed[kind])
+        consumed = delegated.settle(data["consumed"])
         operation.shared._register_transferred_report(
             report,
             paid_issues=consumed["issues"],
@@ -173,10 +163,7 @@ def _execute(
     finally:
         if not received:
             # An admitted worker without a qualified receipt cannot refund its grant.
-            for kind in BUDGET_KINDS:
-                operation.consume_completed(
-                    kind, min(grants[kind], operation.remaining(kind))
-                )
+            delegated.forfeit()
 
 
 def check_representations(

@@ -13,6 +13,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import (
     BUDGET_KINDS,
@@ -131,7 +132,8 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
     operation.consume("states", 16)
     operation.consume("work", cap * 2)
     allowances = {kind: operation.remaining(kind) // 2 for kind in BUDGET_KINDS}
-    request["allowances"] = allowances
+    delegated = DelegatedAllowance(operation, allowances)
+    request["allowances"] = delegated.to_data()
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
     received = dispatched = False
     try:
@@ -153,15 +155,7 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
             or response["protocol"] != 1
         ):
             raise ResourceError("Invalid reifier worker receipt")
-        controls = object_value(response["controls"], location="controls")
-        if set(controls) != set(BUDGET_KINDS):
-            raise ResourceError("Reifier worker omitted cumulative counters")
-        for kind in BUDGET_KINDS:
-            amount = controls[kind]
-            if type(amount) is not int or not 0 <= amount <= allowances[kind]:
-                raise ResourceError("Invalid reifier control counter")
-        for kind in BUDGET_KINDS:
-            operation.consume_completed(kind, cast(int, controls[kind]))
+        delegated.settle(response["controls"])
         received = True
         operation.consume("work", 0)
         message = response["message"]
@@ -184,8 +178,7 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
             raise ResourceError("Invalid native reifier output bytes") from error
     finally:
         if dispatched and not received:
-            for kind in BUDGET_KINDS:
-                operation.consume_completed(kind, allowances[kind])
+            delegated.forfeit()
 
 
 def _restore_witness(snapshot: ReifierDataset, operation: Budget) -> SnapshotWitness:
