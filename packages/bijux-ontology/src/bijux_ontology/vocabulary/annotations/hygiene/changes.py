@@ -8,11 +8,11 @@ from rdflib.namespace import OWL
 from bijux_ontology.execution.limits import retain_report
 from bijux_ontology.rdf.patches.planning import Rejected
 from bijux_ontology.rdf.records.types import PatchQuad, PatchResource, PatchUnavailable
+from bijux_ontology.rdf.sources.selection import physical_graph
 from bijux_ontology.rdf.terms import literal_datatype
 from bijux_ontology.vocabulary.annotations.graphs.changes import AnnotationEditContext
 from bijux_ontology.vocabulary.annotations.graphs.reading import (
     _bound,
-    _physical,
     _Read,
     _same,
     inspect_annotation_graph,
@@ -56,7 +56,7 @@ def repair_annotation_literal(
         raise PatchUnavailable(
             "Literal repair requires a complete annotation attachment graph"
         )
-    _, physical = _physical(state.source, state.graph_name, state.operation)
+    _, physical = physical_graph(state.source, state.graph_name, state.operation)
     reader = _Read(physical, tuple(state.annotation_predicates), state.operation)
     if not reader.accepted(path.statement):
         raise PatchUnavailable(

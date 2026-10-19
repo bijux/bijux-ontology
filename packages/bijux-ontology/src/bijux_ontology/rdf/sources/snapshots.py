@@ -1,11 +1,11 @@
 """Independent graph and dataset snapshots with explicit scope and fidelity."""
 
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from threading import Lock
 from typing import Literal as TypingLiteral
 from typing import cast
 
-from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, URIRef
+from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, Literal, URIRef
 from rdflib.store import Store
 from rdflib.term import Node
 
@@ -15,6 +15,34 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node, validate_node, validate_triple
 
 GraphSelection = URIRef | BNode | str
+
+
+def owned_graph_name(
+    names: Iterable[URIRef | BNode],
+    requested: GraphSelection,
+    budget: Budget | None = None,
+) -> URIRef | BNode:
+    """Qualify a name against an owned inventory without equating foreign blanks."""
+    if not isinstance(requested, str) or isinstance(requested, Literal):
+        raise InputError("RDF graph selection requires an IRI or an owned blank term")
+    if budget is not None:
+        bound_text(requested, budget)
+    selected = (
+        requested
+        if isinstance(requested, BNode)
+        else URIRef(absolute_iri(str(requested)))
+    )
+    for name in names:
+        if budget is not None:
+            budget.consume("work")
+            bound_node(name, budget)
+        if (name is selected) if isinstance(selected, BNode) else (name == selected):
+            return name
+    raise InputError(
+        "A blank graph selector requires its actual owned term"
+        if isinstance(selected, BNode)
+        else "Selected graph is absent from the supplied dataset"
+    )
 
 
 class _SnapshotStore(Store):
@@ -280,7 +308,7 @@ class PreparedSource:
         self.union = union
         self.graph_fidelity = graph_fidelity
         self._dataset = copy_dataset(dataset, max_triples) if copy else dataset
-        self._readers: dict[tuple[GraphSelection | None, bool], Graph] = {}
+        self._readers: dict[tuple[GraphSelection | int | None, bool], Graph] = {}
         self._read_lock = Lock()
         self._max_triples = max_triples
         self.is_dataset = is_dataset
@@ -321,7 +349,8 @@ class PreparedSource:
     ) -> Graph:
         """Export one selected graph; a dataset never silently becomes a union.
 
-        The exported graph is independent of every owned read handle.
+        The exported graph is independent of every owned read handle. Blank graph
+        selectors must be the actual identifier terms exported by this snapshot.
         """
         return copy_graph(
             self._read(graph_name, union=union),
@@ -382,6 +411,12 @@ class PreparedSource:
         """
         if type(union) is not bool:
             raise InputError("union must be a boolean")
+        if graph_name is not None and (
+            not isinstance(graph_name, str) or isinstance(graph_name, Literal)
+        ):
+            raise InputError(
+                "RDF graph selection requires an IRI or an owned blank term"
+            )
         if graph_name is not None and budget is not None:
             bound_text(graph_name, budget)
         if isinstance(graph_name, URIRef):
@@ -390,7 +425,13 @@ class PreparedSource:
             if self.graph_name is not None and budget is not None:
                 bound_text(self.graph_name, budget)
             if (graph_name is not None or union) and (
-                graph_name != self.graph_name or union != self.union
+                (
+                    graph_name is not self.graph_name
+                    if isinstance(graph_name, BNode)
+                    or isinstance(self.graph_name, BNode)
+                    else graph_name != self.graph_name
+                )
+                or union != self.union
             ):
                 raise InputError(
                     "Graph selection conflicts with the resource declaration"
@@ -400,7 +441,9 @@ class PreparedSource:
             raise InputError("Choose a graph name or union, not both")
         if self.is_dataset and graph_name is None and not union:
             raise InputError("Dataset requires a graph name or explicit union=True")
-        key = graph_name, union
+        # Blank labels do not establish ownership: only an already qualified
+        # exact object may reuse its reader without re-enumerating the inventory.
+        key = (id(graph_name) if isinstance(graph_name, BNode) else graph_name), union
         with self._read_lock:
             if key not in self._readers:
                 if union:
@@ -417,12 +460,9 @@ class PreparedSource:
                         if isinstance(graph_name, BNode)
                         else URIRef(absolute_iri(str(graph_name)))
                     )
-                    if not any(
-                        item == name for item in self._graph_names(budget=budget)
-                    ):
-                        raise InputError(
-                            "Selected graph is absent from the supplied dataset"
-                        )
+                    name = owned_graph_name(
+                        self._graph_names(budget=budget), name, budget
+                    )
                     graph = self._dataset.graph(name)
                 bind_namespaces(graph, self._dataset)
                 self._readers[key] = _read_graph(graph)

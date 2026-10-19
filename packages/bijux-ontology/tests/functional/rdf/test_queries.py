@@ -387,3 +387,41 @@ def test_native_function_capability_is_distinct_from_invalid_query_scope(
         assert any(issue.code == code for issue in result.report.issues)
     else:
         assert result.rows == ((Literal("1", datatype=XSD.string),),)
+
+
+def test_query_annotation_and_transform_share_exact_physical_selection() -> None:
+    """A hidden named assertion stays hidden through independent public consumers."""
+    from bijux_ontology.rdf.transforms import extract_neighbourhood
+    from bijux_ontology.vocabulary.annotations.graphs import (
+        AnnotationStatement,
+        inspect_annotation_graph,
+    )
+
+    label = Literal("Hidden", lang="en")
+    dataset = Dataset()
+    dataset.graph(EX.hidden).add((EX.Hidden, RDFS.label, label))
+    dataset.graph(EX.empty)
+    source = prepare_source(dataset)
+    statement = AnnotationStatement(EX.Hidden, RDFS.label, label)
+    text = f"ASK {{ <{EX.Hidden}> <{RDFS.label}> ?label }}"
+    for graph in (None, EX.empty, EX.hidden):
+        expected = graph == EX.hidden
+        scope = QueryScope("default") if graph is None else QueryScope("named", graph)
+        queried = query_rdf(source, text, scope=scope)
+        assert queried.report.verified and queried.answer is expected
+        annotated = inspect_annotation_graph(source, (statement,), graph=graph)
+        assert annotated.report.verified is expected
+        transformed = extract_neighbourhood(
+            source,
+            (str(EX.Hidden),),
+            predicates=(str(RDFS.label),),
+            graph_name="@default" if graph is None else str(graph),
+        )
+        assert transformed.source is not None
+        selected = transformed.source.graph()
+        assert ((EX.Hidden, RDFS.label, label) in selected) is expected
+    assert query_rdf(source, text, scope=QueryScope("union")).answer is True
+    empty = query_rdf(
+        source, f"ASK {{ GRAPH <{EX.empty}> {{}} }}", scope=QueryScope("dataset")
+    )
+    assert empty.report.verified and empty.answer is True

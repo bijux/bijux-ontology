@@ -10,12 +10,13 @@ from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.term import Node
 
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.roles.classification import classify_statement, declaration_role
+from bijux_ontology.rdf.sources.selection import physical_graph
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 
@@ -56,40 +57,6 @@ def _bound(statement: AnnotationStatement, budget: Budget) -> None:
     """Qualify statement metadata before lookup, hashing or retained diagnostics."""
     for term in (statement.subject, statement.predicate, statement.value):
         bound_node(term, budget)
-
-
-def _physical(
-    source: PreparedSource, graph: URIRef | BNode | None | Absent, budget: Budget
-) -> tuple[URIRef | BNode | None, Graph]:
-    """Keep explicit dataset selection and actual owned blank graph witnesses."""
-    if not isinstance(source, PreparedSource):
-        raise InputError("Annotation graphs require an owned PreparedSource")
-    if source.union:
-        raise InputError("Annotation attachments require one physical graph")
-    name = source.graph_name if graph is ABSENT else graph
-    if name is not None:
-        if not isinstance(name, str | BNode):
-            raise InputError("Annotation graph selection requires an RDF graph name")
-        bound_text(name, budget)
-        if isinstance(name, URIRef | BNode):
-            bound_node(name, budget)
-        if type(name) is str and name == "@default":
-            name = None
-    if source.is_dataset and graph is ABSENT and source.graph_name is None:
-        raise InputError("Dataset annotation inspection requires an explicit graph")
-    if not source.is_dataset and name is not None:
-        raise InputError("A graph source cannot authorize a named graph")
-    if isinstance(name, BNode) and not any(
-        actual is name for actual in source._graph_names(budget=budget)
-    ):
-        raise InputError("A blank graph name requires its actual owned term")
-    selected = (
-        None if name is None else name if isinstance(name, BNode) else URIRef(name)
-    )
-    return selected, source._read(
-        selected if selected is not None else "@default" if source.is_dataset else None,
-        budget=budget,
-    )
 
 
 class _Read:
@@ -377,7 +344,7 @@ def inspect_annotation_graph(
             bound_node(predicate, operation)
             qualified_predicates.append(predicate)
         predicates = tuple(qualified_predicates)
-        selected, selected_graph = _physical(source, graph, operation)
+        selected, selected_graph = physical_graph(source, graph, operation)
         read = _Read(selected_graph, predicates, operation)
         issues = read.issues
         if not roots:
