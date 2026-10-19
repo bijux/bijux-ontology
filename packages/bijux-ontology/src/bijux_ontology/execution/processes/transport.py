@@ -61,6 +61,25 @@ def _deadline_reached(probe: Callable[[], float | None] | None) -> bool:
     return time.monotonic() >= value
 
 
+def _join_pipes(
+    threads: tuple[Thread, ...], *, failure: BaseException | None
+) -> ResourceError | None:
+    """Require pipe completion without closing a live buffered read lock."""
+    for thread in threads:
+        if thread.ident is not None:
+            thread.join(timeout=1)
+    if not any(thread.is_alive() for thread in threads):
+        return None
+    error = ResourceError("Worker pipes remain held after bounded cleanup")
+    if failure is None:
+        return error
+    if isinstance(failure, InputError):
+        failure.args = (f"{failure}; {error}",)
+    else:
+        failure.add_note(str(error))
+    return None
+
+
 def run_worker(
     command: list[str],
     *,
@@ -130,7 +149,13 @@ def run_worker(
         except ResourceError as error:
             cleanup_error = error
         finally:
-            reader.join(timeout=1)
+            pipe_error = _join_pipes((reader,), failure=failure)
+            if pipe_error is not None:
+                cleanup_error = (
+                    pipe_error
+                    if cleanup_error is None
+                    else ResourceError(f"{cleanup_error}; {pipe_error}")
+                )
             if process.stdout is not None and not reader.is_alive():
                 process.stdout.close()
     if overflow.is_set():
@@ -261,9 +286,13 @@ def exchange_worker(
                 raise
             cleanup_error = error
         finally:
-            for thread in threads:
-                if thread.ident is not None:
-                    thread.join(timeout=1)
+            pipe_error = _join_pipes(threads, failure=failure)
+            if pipe_error is not None:
+                cleanup_error = (
+                    pipe_error
+                    if cleanup_error is None
+                    else ResourceError(f"{cleanup_error}; {pipe_error}")
+                )
     response: bytes | None = None
     try:
         if completed is None:
