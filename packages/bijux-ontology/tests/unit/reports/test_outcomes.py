@@ -212,3 +212,24 @@ def test_structured_issue_evidence_is_owned_finite_and_part_of_identity() -> Non
     for invalid in ("[]", '{"value":NaN}', '{"value":Infinity}'):
         with pytest.raises(InputError):
             Issue("example.conflict", "Mismatch", evidence_json=invalid)
+
+
+@pytest.mark.parametrize("child", [False, True])
+@pytest.mark.parametrize("missing", [False, True])
+def test_decoded_coverage_cannot_infer_missing_requested_work(
+    child: bool, missing: bool
+) -> None:
+    from bijux_ontology.diagnostics.reports import report_from_data
+
+    report = combine_reports("root", Report("selected", 1, requested=2))
+    decoded = report_from_data(json.loads(json.dumps(report.to_dict())))
+    assert decoded.requested == decoded.children[0].requested == 2
+    assert not decoded.complete
+    data = json.loads(json.dumps(report.to_dict()))
+    selected = data["scopes"][0] if child else data
+    if missing:
+        del selected["requested"]
+    else:
+        selected["requested"] = None
+    with pytest.raises(InputError, match="requested comparison count"):
+        report_from_data(data)
