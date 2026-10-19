@@ -474,6 +474,7 @@ _CODES = {
         "no_contracts contract_persistent contract_resolved contract_introduced".split()
     ),
     "vocabulary": frozenset(
+        "allocation_conflict allocation_rejected allocation_unverified "
         "allowed_scope_unverified allowed_invalid binding_invalid "
         "binding_trait_unverified binding_no_case binding_cases_unverified "
         "binding_ambiguous binding_record_invalid "

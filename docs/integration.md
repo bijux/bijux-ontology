@@ -1812,3 +1812,15 @@ identity and existing binary-edge collisions cannot disappear. Scope and graph
 selection are explicit; event freshness concerns only the authorized snapshot.
 Original input stays untouched. Required `after_checks` qualify the candidate;
 use ordinary explicit migration acceptance/export after inspecting its report.
+
+`vocabulary.authoring.allocations.AllocationStore(path, policy)` owns one local
+SQLite ontology snapshot and allocation history. Explicit registry contributions,
+curator ranges, padding, reserved/retired identifiers and alternate-ID policies
+control allocation. `prepare_allocations(..., after_checks=...)` proposes native
+OWL class or SKOS concept/scheme declarations with exact optional labels;
+`store.commit(proposal, accept=True)` atomically checks the base revision and
+content before persisting both additions and history. Named graph/blank/literal
+identity stays exact. Original, request-metadata and committed references block
+reuse. Portable drafts need fresh checks when reimported; reconciliation exposes
+conflicts without renumbering or `sameAs`. Reopen with the same explicit policy.
+Separate RDF exports remain ordinary snapshots outside the SQLite transaction.
