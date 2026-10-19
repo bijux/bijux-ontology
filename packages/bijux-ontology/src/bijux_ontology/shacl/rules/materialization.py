@@ -1,22 +1,16 @@
 """Checked SHACL rule materialization in an owned bounded process."""
 
-import json
 import threading
 import time
 from collections.abc import Sequence
-from dataclasses import asdict
 
 from rdflib import URIRef
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import (
     Budget,
-    BudgetKind,
     IssueCollector,
     Limits,
     retain_report,
@@ -34,82 +28,8 @@ from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.functions import ShaclFunctionCatalog
 
 from .preparation import RuleUnavailable, namespaces, selected_names, single_scope
+from .protocol import run_rules
 from .types import RuleMaterialization, RuleMode
-
-_KINDS: tuple[BudgetKind, ...] = (
-    "bytes",
-    "resources",
-    "triples",
-    "work",
-    "issues",
-    "states",
-)
-
-
-def _run(request: dict[str, object], operation: Operation) -> dict[str, object]:
-    """Adopt exact owned worker accounting before accepting any result metadata."""
-    request["limits"] = asdict(operation.limits)
-    request["allowances"] = {kind: operation.remaining(kind) for kind in _KINDS}
-    size = json_bound(request, operation)
-    if size > operation.limits.max_bytes:
-        raise LimitExceeded("Rule request exceeds max_bytes")
-    operation.consume("bytes", size)
-    allowances = {kind: operation.remaining(kind) for kind in _KINDS}
-    request["allowances"] = allowances
-    payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode(
-        "ascii"
-    )
-    operation.consume("work")
-    raw = execute_worker(
-        "bijux_ontology.shacl.rules.worker",
-        payload,
-        cap=operation.limits.max_bytes,
-        timeout=operation.deadline - time.monotonic(),
-        cancel=operation.cancel,
-    )
-    operation.consume("bytes", len(raw))
-    value = decode_json(raw, max_bytes=operation.limits.max_bytes)
-    if not isinstance(value, dict) or value.get("status") not in (
-        "result",
-        "exhausted",
-        "unsupported",
-        "unavailable",
-        "backend_error",
-    ):
-        raise ResourceError("Malformed rule worker response")
-    consumed = value.get("consumed")
-    if (
-        not isinstance(consumed, dict)
-        or set(consumed) != set(_KINDS)
-        or any(
-            type(consumed[kind]) is not int
-            or not 0 <= consumed[kind] <= allowances[kind]
-            for kind in _KINDS
-        )
-    ):
-        raise ResourceError("Malformed rule worker accounting")
-    for kind in _KINDS:
-        operation.consume(kind, consumed[kind])
-    status = value["status"]
-    if status != "result":
-        if set(value) != {"status", "consumed"}:
-            raise ResourceError("Malformed incomplete rule completion")
-        if status == "exhausted":
-            raise LimitExceeded("Rule materialization exhausted its declared allowance")
-        if status == "unavailable":
-            raise RuleUnavailable(
-                "Install bijux-ontology[shacl] for maintained rule execution"
-            )
-        if status == "unsupported":
-            raise RuleUnavailable(
-                "Required rule semantics exceed the finite supported profile"
-            )
-        raise RuleUnavailable(
-            "The maintained rule executor did not complete successfully"
-        )
-    if set(value) != {"status", "consumed", "passes", "effective"}:
-        raise ResourceError("Malformed successful rule completion")
-    return value
 
 
 def _diagnostic(issues: IssueCollector, issue: Issue) -> None:
@@ -207,19 +127,17 @@ def materialize_rules(
             )
             function_names = selected_names(functions.selected, operation)
             function_namespaces = namespaces(owned_functions, operation)
-        response = _run(
-            {
-                "data": witness_data(captured, operation),
-                "rules": witness_data(selected, operation),
-                "namespaces": namespaces(rules, operation),
-                "selected": list(names),
-                "mode": mode,
-                "maximum": max_passes,
-                "functions": function_data,
-                "function_names": list(function_names),
-                "function_namespaces": function_namespaces,
-            },
-            operation,
+        response = run_rules(
+            data=witness_data(captured, operation),
+            rules=witness_data(selected, operation),
+            namespaces=namespaces(rules, operation),
+            selected=list(names),
+            mode=mode,
+            maximum=max_passes,
+            functions=function_data,
+            function_names=list(function_names),
+            function_namespaces=function_namespaces,
+            operation=operation,
         )
         completed = response["passes"]
         if type(completed) is not int or not 1 <= completed <= (
