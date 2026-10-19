@@ -1748,3 +1748,16 @@ every other source graph, its original selection and resource metadata. Required
 missing references, unsupported extensions and caller-selected arity violations
 remain visible. `project_labels` explicitly reports omitted form/sense structure
 and keeps the full lexicon available; labels never become unconditional synonyms.
+
+Install `[frictionless]` for the pinned Frictionless 5.21.0 Data Package v1 CSV
+profile. Use a separate environment from `[oak]`: their native dependencies
+require incompatible chardet versions. The workspace lock declares that conflict
+and installed-package checks exercise both profiles with their real dependencies.
+Workspace development requires uv 0.13.1 or later to resolve those profiles correctly.
+`interfaces.adapters.frictionless.extract_package` consumes an unchanged inline
+descriptor, exactly supplied package-relative bytes, explicit column bindings and
+an existing work directory. The owned worker runs actual native typing, missing
+markers, scalar keys and foreign keys; semantic checks run on each selected row.
+Cells retain original text, native values and record/column locations. Missing
+values emit nothing. Unsupported descriptor semantics and truncated validation
+remain unqualified; no remote resource or scientific identifier is inferred.

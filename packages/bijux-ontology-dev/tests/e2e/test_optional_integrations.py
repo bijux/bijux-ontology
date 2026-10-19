@@ -147,9 +147,9 @@ import pytest
     ],
 )
 def test_real_installed_integrations(
-    installed_all_extras: tuple[Path, Path, dict[str, str]], program: str
+    installed_integrations: tuple[Path, Path, dict[str, str]], program: str
 ) -> None:
-    python, work, env = installed_all_extras
+    python, work, env = installed_integrations
     result = subprocess.run(
         [
             str(python),
@@ -170,7 +170,7 @@ def test_real_installed_integrations(
 
 def test_external_consumer_uses_installed_public_types(
     installed_jsonld: tuple[Path, Path, dict[str, str]],
-    installed_all_extras: tuple[Path, Path, dict[str, str]],
+    installed_integrations: tuple[Path, Path, dict[str, str]],
 ) -> None:
     python, work, env = installed_jsonld
     config = work / "mypy.ini"
@@ -237,7 +237,7 @@ def test_external_consumer_uses_installed_public_types(
         capture_output=True,
         text=True,
     )
-    optional_python, optional_work, optional_env = installed_all_extras
+    optional_python, optional_work, optional_env = installed_integrations
     optional_source = optional_work / "consumer.py"
     optional_source.write_text(
         dedent("""
@@ -388,3 +388,66 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
         capture_output=True,
         text=True,
     )
+
+
+def test_native_package_profile_is_installed_with_its_locked_dependencies(
+    installed_frictionless: tuple[Path, Path, dict[str, str]],
+) -> None:
+    """The isolated native extra executes unchanged local package and key contracts."""
+    python, work, env = installed_frictionless
+    program = r"""
+        from pathlib import Path
+        import bijux_ontology
+        from rdflib.namespace import XSD
+        from bijux_ontology.declarations.types import (
+            FieldDeclaration, ValueDeclaration,
+        )
+        from bijux_ontology.interfaces.adapters.frictionless import (
+            ColumnBinding, ResourceBinding, extract_package,
+        )
+        assert Path(bijux_ontology.__file__).is_relative_to(Path('env').resolve())
+        description = {'resources': [
+            {'name': 'lookup', 'path': 'lookup.csv', 'schema': {
+                'fields': [{'name': 'code', 'type': 'string'}], 'primaryKey': 'code'}},
+            {'name': 'data', 'path': 'data.csv', 'schema': {
+                'fields': [{'name': 'id', 'type': 'string'},
+                           {'name': 'code', 'type': 'string'},
+                           {'name': 'value', 'type': 'number'}],
+                'missingValues': ['', 'NA'],
+                'foreignKeys': [{'fields': 'code', 'reference': {
+                    'resource': 'lookup', 'fields': 'code'}}]}}
+        ]}
+        resources = {
+            'lookup.csv': b'code\nc1\n',
+            'data.csv': (b'id,code,value\nurn:row:1,c1,1.250\n'
+                         b'urn:row:2,c1,NA\n'),
+        }
+        bindings = (ResourceBinding('data', 'id', (ColumnBinding(FieldDeclaration(
+            'value', 'urn:value', (ValueDeclaration('literal', str(XSD.decimal)),)
+        )),)),)
+        directory = Path('package-work')
+        directory.mkdir()
+        result = extract_package(description, resources, bindings,
+                                 work_directory=directory)
+        assert result.report.verified, result.report.to_dict()
+        assert result.producer.framework == '5.21.0'
+        missing = next(c for c in result.cells
+                       if c.resource == 'data' and c.row == 3 and c.name == 'value')
+        assert missing.value is None and not missing.statements
+        resources['data.csv'] = resources['data.csv'].replace(b'c1', b'absent', 1)
+        failed = extract_package(description, resources, bindings,
+                                 work_directory=directory)
+        assert not failed.report.verified and failed.source is None
+        assert any(i.code == 'frictionless.native_foreign_key'
+                   for i in failed.report.issues)
+        assert not list(directory.iterdir())
+    """
+    result = subprocess.run(
+        [str(python), "-I", "-B", "-c", dedent(program)],
+        cwd=work,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

@@ -28,6 +28,11 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "frictionless": frozenset(
+        "extraction_unverified input_invalid native_coverage_unverified "
+        "native_foreign_key native_primary_key native_type_error "
+        "native_constraint_error native_missing_cell native_extra_cell".split()
+    ),
     "ontolex": frozenset(
         "input source_unverified label_structure_omitted extension_unverified "
         "entry_unverified canonical_count form_invalid sense_invalid "
@@ -448,6 +453,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "frictionless": (
+        "supplied native Data Package resources and explicit column bindings",
+        "Native package coverage or a selected semantic column contract failed.",
+        "Inspect actual package-relative resource, record and field diagnostics; "
+        "supply supported inline metadata and complete local resource bytes.",
+        "extract_package(descriptor, resources, bindings, work_directory=directory)",
+    ),
     "ontolex": (
         "selected asserted lexical entries, forms and ontology references",
         "A selected lexical assertion fails its contract or remains unqualified.",
