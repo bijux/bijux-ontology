@@ -21,7 +21,7 @@ from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
-from bijux_ontology.shacl.execution.results import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.profiles.execution import freeze_data as _data
 from bijux_ontology.shacl.profiles.execution import portable_roles as _portable_roles
 from bijux_ontology.shacl.profiles.execution import result_semantics as _semantics

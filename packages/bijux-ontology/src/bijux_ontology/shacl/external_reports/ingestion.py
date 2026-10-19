@@ -21,7 +21,7 @@ from bijux_ontology.json.values import owned_json
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
-from bijux_ontology.shacl.findings import ShaclFinding, project_findings
+from bijux_ontology.shacl.evidence.findings import ShaclFinding, project_findings
 
 from .types import ExternalShaclReport, ExternalShaclScope
 

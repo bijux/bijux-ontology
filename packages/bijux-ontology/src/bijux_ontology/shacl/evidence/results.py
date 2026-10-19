@@ -4,7 +4,7 @@ from rdflib import Graph
 
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.shacl.bindings import TermSelection
-from bijux_ontology.shacl.findings import ShaclFinding
+from bijux_ontology.shacl.evidence.findings import ShaclFinding
 from bijux_ontology.shacl.targets.coverage import ShaclCoverage
 
 

@@ -12,7 +12,7 @@ from bijux_ontology.shacl.authoring.types import (
     ShaclNodeShape,
     ShaclPropertyShape,
 )
-from bijux_ontology.shacl.checking import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.profiles.types import ShapeProfile
 
 

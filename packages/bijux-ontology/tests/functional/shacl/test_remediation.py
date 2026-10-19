@@ -9,7 +9,7 @@ from rdflib.namespace import RDF, SH
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
-from bijux_ontology.shacl.findings import ShaclFinding
+from bijux_ontology.shacl.evidence.findings import ShaclFinding
 from bijux_ontology.shacl.remediation import RemediationStrategy, propose_remediations
 
 EX = Namespace("https://example.org/repair/")

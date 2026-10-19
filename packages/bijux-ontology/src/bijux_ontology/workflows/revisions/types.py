@@ -14,7 +14,7 @@ from bijux_ontology.models.persistence.types import (
 )
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.shacl.execution.results import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 
 
 @dataclass(frozen=True)

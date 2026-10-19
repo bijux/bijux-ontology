@@ -12,7 +12,7 @@ from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
-from bijux_ontology.shacl.checking import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 
 from .execution import freeze_data, portable_roles, result_semantics, validate_profile
 from .types import ProfileCase, ProfileComparison, ShapeProfile, ShapeTerm

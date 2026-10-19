@@ -11,10 +11,10 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
-from bijux_ontology.shacl.findings import ShaclFinding
+from bijux_ontology.shacl.evidence.findings import ShaclFinding
 
 if TYPE_CHECKING:
-    from bijux_ontology.shacl.execution.results import ShaclResult
+    from bijux_ontology.shacl.evidence.results import ShaclResult
 
 
 @dataclass(frozen=True)

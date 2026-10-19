@@ -21,6 +21,8 @@ from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.bindings import TermSelection, transport_roles
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
+from bijux_ontology.shacl.evidence.findings import ShaclSource
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.execution.planning import (
     _options,
     _prepare_data,
@@ -28,9 +30,7 @@ from bijux_ontology.shacl.execution.planning import (
     _ShapePlan,
 )
 from bijux_ontology.shacl.execution.projection import _project_result
-from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.execution.session import _payload, _prepay_graph
-from bijux_ontology.shacl.findings import ShaclSource
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 from ..runtime import invoke_jena

@@ -10,7 +10,7 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.documents.export import RDFExport
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
-from bijux_ontology.shacl.checking import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 
 Triple = tuple[Node, Node, Node]
 ShapeTerm = URIRef | BNode

@@ -25,7 +25,7 @@ from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.findings import ShaclFinding
+from bijux_ontology.shacl.evidence.findings import ShaclFinding
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 from .types import RemediationAlternative, RemediationResult, RemediationStrategy

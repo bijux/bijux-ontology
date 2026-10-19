@@ -8,7 +8,7 @@ from rdflib.namespace import RDF, SH, XSD
 
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.execution.results import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 
 EX = Namespace("https://example.org/")
 

@@ -10,7 +10,7 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.authoring.types import ShaclNodeShape, ShaclPropertyShape
-from bijux_ontology.shacl.checking import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.inspection.types import ShapeInspection
 from bijux_ontology.shex.types import ShexBinding, ShexResult, ShexSchema
 

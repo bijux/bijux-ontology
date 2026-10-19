@@ -21,7 +21,7 @@ from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.analysis.checking import analyze_shape_profile
 from bijux_ontology.shacl.authoring.types import ShaclNodeShape
-from bijux_ontology.shacl.checking import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.inspection.reading import inspect_shapes
 from bijux_ontology.shacl.refinement.normalization import Branch, Branches, Unsupported
 from bijux_ontology.shacl.refinement.proofs import prove

@@ -13,7 +13,7 @@ from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import bound_node, term_key
-from bijux_ontology.shacl.checking import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.refinement.normalization import (
     Branch,

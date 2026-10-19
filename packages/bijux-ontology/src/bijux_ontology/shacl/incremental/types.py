@@ -10,7 +10,7 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
-from bijux_ontology.shacl.execution.results import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.targets.coverage import ShaclTarget
 
 
