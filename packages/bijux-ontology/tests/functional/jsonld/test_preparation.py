@@ -98,9 +98,11 @@ def test_default_graph_exports_and_interoperability_failures_have_clear_scope() 
             "@type": "http://www.w3.org/2001/XMLSchema#token",
         }
     }
-    unsupported = prepare_jsonld(token)
-    assert unsupported.source is None
-    assert unsupported.report.outcome == "unverified"
+    exact = prepare_jsonld(token)
+    assert exact.source is not None and exact.report.verified
+    term = next(exact.source.graph().objects())
+    assert isinstance(term, Literal) and term.datatype == XSD.token
+    assert str(term) == " a\n  b "
     invalid = prepare_jsonld({EX + "p": object()})
     assert invalid.source is None
     assert invalid.report.outcome == "input_error"

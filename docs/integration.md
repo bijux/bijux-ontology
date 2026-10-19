@@ -13,10 +13,38 @@ owned_namespaces=("http://bia/",))` for local membership; add
 `require_coverage=True` and `coverage_terms=selected_owned_iris` for reverse coverage.
 Ownership and accepted RDF kinds are explicit caller contracts.
 
+Compose explicit namespaces with `merge_identifier_registry(contributions)`,
+where each `NamespaceContribution(namespace, canonical_prefix, owner, aliases)`
+retains ownership. Conflicting aliases never produce a partial registry;
+competing canonical spellings require an explicit `canonical_prefixes` choice.
+The immutable registry separates `.iri(value)` from `.expand_curie(value)` and
+uses the longest namespace in `.compact_iri(value)` without guessing intent.
+
+Install `bijux-ontology[templates]` for `IdentifierTemplate(template, keys)` with
+explicit `TemplateKey` string/integer bindings. `.construct()` uses maintained
+URI escaping; `.construct_many()` rejects exact IRI collisions atomically.
+Forward profiles support one `{key}` or `{+key}` per key. `.recognize(iri)` retains
+the original spelling and checks only unmodified slots separated by reserved
+literals, strict single decoding and exact re-expansion. Ambiguous or unsupported
+inverse profiles return no guessed record.
+
+Pass `compression="gzip"` with an explicit RDF `format` for paths, bytes or
+binary streams in `RdfSource` or `prepare_source`. `max_compressed_bytes` bounds
+input bytes; `max_bytes` bounds expanded bytes, and both consume the shared byte
+budget. All gzip members and trailers are checked before RDF is published.
+Caller streams remain open; individual compressed documents are not archives.
+
 Dataset-backed `RdfSource` resources declare `graph_name=graph_iri`,
 `graph_name="@default"`, or `union=True`. Imports, lookup resources and prepared
 SHACL inputs retain that selection. `prepared.dataset()` still exports every
 original graph; conflicting graph overrides fail explicitly.
+
+Exact source storage retains distinct `xsd:token` and `xsd:normalizedString`
+spellings through comparison, worker transport, canonicalization and RDF export.
+Queries can project those exact source terms. RDFLib query constants, casts and
+`STRDT` constructions that cannot retain their spelling return
+`rdf.literal_conversion_unverified`; SHACL preflight retains the same boundary.
+Explicit `preserve_literals=False` permits normalization at source preparation.
 
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
@@ -45,6 +73,18 @@ or unrepresented branches stay unverified. Agreement covers these finite inputs,
 including their predicate, direction, value and container checks; it does not
 prove arbitrary serializer output or biological correctness. Map-container
 qualification and structural `@id`/`@type` field aliases remain unverified.
+
+`check_skos(vocabulary, profile="mapping-integrity")` composes resource roles,
+relation clashes, exact-match conflicts and incident mapping endpoint checks.
+It does not require external target declarations. `profile="core-integrity"`
+and the omitted profile retain the four default integrity families; explicit
+`rules` add selected conditions to a profile. For opt-in `acyclic`, `isolated`
+and `same-scheme-hierarchy` policies, `hierarchy_basis="asserted"` uses authored
+hierarchy edges; the default `effective` also includes supported mapping
+implications. Semantic integrity retains broadMatch's hierarchy implications
+under both policy choices. Reports list expanded conditions and the chosen basis.
+The CLI exposes `--profile` and `--hierarchy-basis`; SKOS project jobs accept
+`profile` and `hierarchy_basis`.
 
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 

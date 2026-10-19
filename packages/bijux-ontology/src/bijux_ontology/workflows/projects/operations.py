@@ -1,7 +1,7 @@
 """Dispatch validated project jobs into concrete ontology-checking operations."""
 
 from collections.abc import Mapping
-from typing import cast
+from typing import Literal, cast
 
 from bijux_ontology._json import read_json, text_value
 from bijux_ontology.declarations.codecs import (
@@ -117,6 +117,14 @@ def run_check(
         }
         return check_skos(
             vocabulary,
+            profile=cast(
+                Literal["core-integrity", "mapping-integrity"] | None,
+                job.get("profile"),
+            ),
+            hierarchy_basis=cast(
+                Literal["asserted", "effective"],
+                job.get("hierarchy_basis", "effective"),
+            ),
             **kwargs,
             closed_targets=boolean(job.get("closed_targets", False)),
             limits=config.limits,

@@ -230,6 +230,14 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
             action.add_argument("--language", action="append", default=[])
         if name == "skos":
             action.add_argument("--rule", action="append")
+            action.add_argument(
+                "--profile", choices=("core-integrity", "mapping-integrity")
+            )
+            action.add_argument(
+                "--hierarchy-basis",
+                choices=("asserted", "effective"),
+                default="effective",
+            )
             action.add_argument("--concept", action="append", default=[])
             action.add_argument("--scheme", action="append", default=[])
             action.add_argument("--language", action="append", default=[])

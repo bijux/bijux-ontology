@@ -2,6 +2,7 @@
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Literal
 
 from rdflib import Graph, URIRef
 from rdflib.namespace import SKOS
@@ -40,6 +41,7 @@ class RuleSelection:
     closed_targets: bool
     notation_collections: tuple[str, ...] = ()
     replacement_predicates: tuple[str, ...] = ()
+    hierarchy_basis: Literal["asserted", "effective"] = "effective"
 
 
 @dataclass(frozen=True)

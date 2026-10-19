@@ -16,7 +16,7 @@ bijux-ontology-dev = { workspace = true }
 [dependency-groups]
 dev = [
   "bijux-ontology-dev",
-  "bijux-ontology[jsonld,shacl,pydantic,linkml]",
+  "bijux-ontology[jsonld,shacl,pydantic,linkml,templates]",
   "build>=1.2,<2",
   "hatchling>=1.27,<2",
   "twine>=6,<7",

@@ -181,7 +181,8 @@ def test_mapping_differences_and_ambiguous_root_scope_remain_visible() -> None:
         (str(XSD.double), 10**21, "agreement"),
         (str(XSD.boolean), True, "agreement"),
         (EX + "CustomDatatype", "text", "unverified"),
-        (str(XSD.token), " a\t b ", "unverified"),
+        (str(XSD.token), "a b", "agreement"),
+        (str(XSD.token), " a\t b ", "disagreement"),
         ("@json", {"name": "opaque"}, "unverified"),
     ],
 )

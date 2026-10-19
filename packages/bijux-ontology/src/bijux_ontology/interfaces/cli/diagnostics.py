@@ -113,6 +113,7 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "literal_conversion_unverified "
         "canonicalization_literal_scope_unverified "
         "canonicalization_graph_scope_unverified canonicalization_empty_graph_loss "
         "canonicalization_unavailable canonicalization_input_invalid "
@@ -164,7 +165,10 @@ _CODES = {
     "vocabulary": frozenset(
         "coverage_gap coverage_source_missing declaration_conflict "
         "entity_kind_mismatch fact_changed reference_kind_mismatch reference_missing "
-        "term_missing unknown_reserved_term".split()
+        "term_missing unknown_reserved_term "
+        "registry_alias_conflict registry_canonical_conflict "
+        "identifier_template_unverified identifier_template_mismatch "
+        "identifier_collision identifier_input_error".split()
     ),
 }
 
@@ -304,6 +308,11 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "rdf.literal_conversion_unverified": (
+        "The selected backend reconstructs literal spelling outside exact scope.",
+        "Retain exact source terms and use a supported query or explicit conversion.",
+        'query_rdf(source, "SELECT ?value WHERE {?s ?p ?value}", scope=scope)',
+    ),
     "context.probe_unverified": (
         "A declared branch lacks a supported finite JSON representative.",
         "Supply its explicit input shape or retain the unverified branch scope.",
@@ -359,6 +368,36 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
         "The selected function dependency closure contains unsupported recursion.",
         "Supply an acyclic supported catalog; do not bypass dependency checking.",
         "double(x) calls multiply(x, 2), with no dependency back to double.",
+    ),
+    "vocabulary.identifier_template_unverified": (
+        "The template is outside the explicitly supported inverse profile.",
+        "Use typed slots with reserved literal separators or retain uncertainty.",
+        'IdentifierTemplate("https://example.org/{collection}/{record}", keys)',
+    ),
+    "vocabulary.identifier_template_mismatch": (
+        "The original IRI is outside the template's exact typed expansion image.",
+        "Check the original spelling and declared keys without normalizing identity.",
+        'profile.recognize("https://example.org/images/item")',
+    ),
+    "vocabulary.identifier_collision": (
+        "Multiple input records construct the same exact IRI.",
+        "Choose an injective template or explicitly deduplicate the caller inputs.",
+        "profile.construct_many(records)",
+    ),
+    "vocabulary.identifier_input_error": (
+        "A supplied identifier or typed template binding is invalid.",
+        "Supply the declared string/integer keys and preserve the original IRI.",
+        'profile.construct({"collection": "images", "record": 1})',
+    ),
+    "vocabulary.registry_alias_conflict": (
+        "A contributed prefix identifies different exact namespaces.",
+        "Choose distinct permitted aliases; canonical spelling cannot remap an alias.",
+        "NamespaceContribution(namespace, canonical_prefix, owner, aliases)",
+    ),
+    "vocabulary.registry_canonical_conflict": (
+        "Owners prefer different canonical prefixes for the same exact namespace.",
+        "Supply one explicit canonical choice from the contributed permitted aliases.",
+        'merge_identifier_registry(items, canonical_prefixes={namespace: "ex"})',
     ),
     "vocabulary.term_missing": (
         "The exact declared term is absent from the selected vocabulary evidence.",

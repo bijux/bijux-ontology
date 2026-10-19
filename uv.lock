@@ -204,6 +204,9 @@ shacl = [
     { name = "pyparsing" },
     { name = "pyshacl" },
 ]
+templates = [
+    { name = "uri-template" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -214,8 +217,9 @@ requires-dist = [
     { name = "pyparsing", marker = "extra == 'shacl'", specifier = ">=3.2,<4" },
     { name = "pyshacl", marker = "extra == 'shacl'", specifier = ">=0.40.1,<0.41" },
     { name = "rdflib", specifier = ">=7.6,<8" },
+    { name = "uri-template", marker = "extra == 'templates'", specifier = ">=1.3,<2" },
 ]
-provides-extras = ["jsonld", "shacl", "pydantic", "linkml"]
+provides-extras = ["jsonld", "shacl", "pydantic", "linkml", "templates"]
 
 [[package]]
 name = "bijux-ontology-dev"
@@ -229,7 +233,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
-    { name = "bijux-ontology", extra = ["jsonld", "linkml", "pydantic", "shacl"] },
+    { name = "bijux-ontology", extra = ["jsonld", "linkml", "pydantic", "shacl", "templates"] },
     { name = "bijux-ontology-dev" },
     { name = "build" },
     { name = "codespell" },
@@ -250,7 +254,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bijux-ontology", extras = ["jsonld", "shacl", "pydantic", "linkml"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology", extras = ["jsonld", "shacl", "pydantic", "linkml", "templates"], editable = "packages/bijux-ontology" },
     { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
     { name = "build", specifier = ">=1.2,<2" },
     { name = "codespell", specifier = ">=2.4,<3" },
@@ -2330,6 +2334,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a3/26/b09b8010994eccc3c09092e6b34058f36a460eea2d4c3e8b910c695975a0/typing_inspection-0.4.4.tar.gz", hash = "sha256:547274fa6b0a561ccf549cc9524b999a578e737d015d8709d021f9d0d13bea47", size = 76928, upload-time = "2026-08-12T12:37:25.997Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl", hash = "sha256:65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147", size = 14750, upload-time = "2026-08-12T12:37:24.648Z" },
+]
+
+[[package]]
+name = "uri-template"
+version = "1.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/c7/0336f2bd0bcbada6ccef7aaa25e443c118a704f828a0620c6fa0207c1b64/uri-template-1.3.0.tar.gz", hash = "sha256:0e00f8eb65e18c7de20d595a14336e9f337ead580c70934141624b6d1ffdacc7", size = 21678, upload-time = "2023-06-21T01:49:05.374Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e7/00/3fca040d7cf8a32776d3d81a00c8ee7457e00f80c649f1e4a863c8321ae9/uri_template-1.3.0-py3-none-any.whl", hash = "sha256:a44a133ea12d44a0c0f06d7d42a52d71282e77e2f937d8abd5655b8d56fc1363", size = 11140, upload-time = "2023-06-21T01:49:03.467Z" },
 ]
 
 [[package]]

@@ -142,13 +142,9 @@ def run_check(
         return check_skos(
             vocabulary,
             scopes=options.scope or ("local", "imports"),
-            rules=options.rule
-            or (
-                "label-integrity",
-                "resource-integrity",
-                "relation-integrity",
-                "mapping-integrity",
-            ),
+            rules=options.rule,
+            profile=options.profile,
+            hierarchy_basis=options.hierarchy_basis,
             concepts=options.concept,
             schemes=options.scheme,
             languages=options.language,

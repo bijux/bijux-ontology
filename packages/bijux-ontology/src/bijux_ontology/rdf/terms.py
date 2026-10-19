@@ -9,6 +9,48 @@ from ..errors import InputError
 from .identifiers import absolute_iri, language_tag
 
 
+class _LexicalStringLiteral(Literal):
+    """Retain exact string-datatype spelling in an immutable RDFLib term.
+
+    RDFLib rewrites these datatypes even with normalize=False. Its maintained
+    constructor supplies metadata; only the owned lexical storage bypasses that
+    rewrite. The compatibility boundary is limited to its four literal slots.
+    """
+
+    __slots__ = ()
+
+    def __new__(
+        cls, value: str, lang: str | None = None, datatype: str | None = None
+    ) -> "_LexicalStringLiteral":
+        """Own lexical text while retaining maintained literal metadata."""
+        if lang is not None or datatype not in (
+            str(XSD.token),
+            str(XSD.normalizedString),
+        ):
+            raise InputError(
+                "Exact string storage requires a supported string datatype"
+            )
+        reference = Literal(value, datatype=datatype, normalize=False)
+        result = str.__new__(cls, value)
+        object.__setattr__(result, "_language", reference.language)
+        object.__setattr__(result, "_datatype", reference.datatype)
+        object.__setattr__(result, "_value", reference.value)
+        object.__setattr__(result, "_ill_typed", reference.ill_typed)
+        return result
+
+    def __setattr__(self, name: str, value: object) -> None:
+        """Reject metadata changes after owned initialization."""
+        raise AttributeError("Exact RDF literal metadata is immutable")
+
+    def __delattr__(self, name: str) -> None:
+        """Reject deletion of immutable term metadata."""
+        raise AttributeError("Exact RDF literal metadata is immutable")
+
+    def __reduce__(self) -> tuple[type[Literal], tuple[str, str | None, str | None]]:
+        """Keep lexical spelling through Python copy and pickle transports."""
+        return type(self), (str(self), self.language, str(self.datatype))
+
+
 def validate_node(node: Node) -> None:
     """Reject unsupported RDF terms and invalid identifier metadata."""
     if isinstance(node, URIRef):
@@ -57,6 +99,8 @@ def literal_term(
         normalize=False,
     )
     if preserve and str(literal) != value:
+        if datatype in (str(XSD.token), str(XSD.normalizedString)):
+            return _LexicalStringLiteral(value, datatype=datatype)
         raise InputError(
             "Literal lexical preservation is unsupported by RDFLib for this term; "
             "explicitly select preserve=False to accept normalisation"
