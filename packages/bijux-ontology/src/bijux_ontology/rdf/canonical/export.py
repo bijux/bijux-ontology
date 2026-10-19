@@ -47,6 +47,10 @@ class _CanonicalBudget(Budget):
         self.shared = shared
         self.deadline, self.cancel = deadline, cancel
 
+    def remaining(self, kind: BudgetKind) -> int:
+        """Read the caller's allowance without granting fresh metadata capacity."""
+        return self.shared.remaining(kind)
+
     def consume(self, kind: BudgetKind, amount: int = 1) -> None:
         checkpoint(self.deadline, self.cancel)
         self.shared.consume(kind, amount)

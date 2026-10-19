@@ -36,6 +36,10 @@ class _PageBudget(Budget):
         self._budget = budget
         self._cancel = cancel
 
+    def remaining(self, kind: BudgetKind) -> int:
+        """Expose the same cumulative allowance used by forwarded consumption."""
+        return self._budget.remaining(kind)
+
     def consume(self, kind: BudgetKind, amount: int = 1) -> None:
         """Check cancellation before each preparation or candidate work unit."""
         if self._cancel is not None and self._cancel.is_set():
