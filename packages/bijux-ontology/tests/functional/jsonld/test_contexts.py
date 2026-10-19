@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from pyld import jsonld  # type: ignore[import-untyped]
 
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.expansion import expand_document
 from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,

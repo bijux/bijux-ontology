@@ -5,7 +5,7 @@ from dataclasses import replace
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.composition.types import ContextCase
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.publication import (
     ContextOverride,

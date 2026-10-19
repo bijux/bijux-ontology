@@ -16,7 +16,7 @@ from bijux_ontology.declarations.types import FieldDeclaration as Field
 from bijux_ontology.declarations.types import ModelDeclaration as Model
 from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 
 EX = "https://example.org/"
 

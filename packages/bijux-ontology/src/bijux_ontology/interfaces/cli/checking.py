@@ -24,7 +24,7 @@ from bijux_ontology.interfaces.cli.inputs import (
 from bijux_ontology.interfaces.cli.results import CommandResult, display_data
 from bijux_ontology.interfaces.cli.vocabularies import load_command_vocabulary
 from bijux_ontology.json.values import object_value
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.models.contracts.checking import check_models

@@ -8,10 +8,13 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.paths import SourcePath, bound_path, bounded_location, location
 from bijux_ontology.json.values import own_json
+from bijux_ontology.jsonld.contracts.expectations import (
+    ContextExpectation,
+    compare_usage,
+)
 from bijux_ontology.jsonld.evidence.entities import EntityInventory
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.evidence.values import ValueTraits, value_traits
-from bijux_ontology.jsonld.expectations import ContextExpectation, compare_usage
 from bijux_ontology.jsonld.processing.expansion import (
     _drop_issues,
     _validate_allowed_drops,

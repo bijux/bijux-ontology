@@ -5,7 +5,7 @@ from typing import cast
 import pytest
 from pyld import jsonld  # type: ignore[import-untyped]
 
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.usages.checking import prepare_usages
 
 EX = "https://example.org/"

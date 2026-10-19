@@ -18,10 +18,10 @@ from bijux_ontology.json.values import (
     optional_string_value,
     string_value,
 )
-from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.contexts.comparison import compare_context_definitions
 from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.contexts.types import ContextScope
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.flattening import flatten_document
 from bijux_ontology.jsonld.framing.checking import frame_document
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy

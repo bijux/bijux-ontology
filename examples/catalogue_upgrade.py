@@ -8,7 +8,7 @@ from bijux_ontology.declarations import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.usages.checking import prepare_usages
 from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 

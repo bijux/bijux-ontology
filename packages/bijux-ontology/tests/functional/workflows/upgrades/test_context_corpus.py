@@ -4,7 +4,7 @@ import pytest
 
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.workflows.upgrades.corpus import (
     ContextCorpusDocument,

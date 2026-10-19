@@ -15,7 +15,7 @@ from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import IssueCollector, Limits, retain_report
 from bijux_ontology.json.paths import at_path
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.processing.resources import (
     OfflineDocument,
     OfflineDocumentLoader,

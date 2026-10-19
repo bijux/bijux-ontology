@@ -14,9 +14,12 @@ from bijux_ontology.json.values import (
     string_value,
     string_values,
 )
+from bijux_ontology.jsonld.contracts.expectations import (
+    ContainerKind,
+    ContextExpectation,
+)
+from bijux_ontology.jsonld.contracts.lists import ExpectedList
 from bijux_ontology.jsonld.evidence.values import ValueKind as ContextValueKind
-from bijux_ontology.jsonld.expectations import ContainerKind, ContextExpectation
-from bijux_ontology.jsonld.lists import ExpectedList
 
 
 def _trait(value: object) -> str | Absent | None:

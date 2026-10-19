@@ -22,8 +22,8 @@ from bijux_ontology.json.paths import (
     bound_path,
     bounded_location,
 )
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
-from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.selectors.types import EntitySelector
 from bijux_ontology.jsonld.usages.checking import PreparedUsages
 from bijux_ontology.rdf.patches.types import DatasetPatch, PatchLiteral, PatchQuad

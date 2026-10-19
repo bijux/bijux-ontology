@@ -11,7 +11,7 @@ import pytest
 
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.execution.executor import WorkerExecutor
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.usages.checking import check_context
 
 

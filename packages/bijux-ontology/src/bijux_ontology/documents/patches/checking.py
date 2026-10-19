@@ -20,8 +20,8 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.paths import at_path, bound_path, bounded_location
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
-from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import ContextResources, DocumentLoader
 from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages

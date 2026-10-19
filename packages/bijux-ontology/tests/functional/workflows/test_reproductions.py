@@ -10,7 +10,7 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, SKOS
 
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.rdf.patches.types import PatchBlank
 from bijux_ontology.workflows.reproductions import (

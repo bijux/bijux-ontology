@@ -3,7 +3,7 @@
 from rdflib.namespace import OWL
 
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.resources import (
     OfflineDocumentLoader,

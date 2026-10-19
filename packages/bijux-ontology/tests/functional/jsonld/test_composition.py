@@ -10,7 +10,7 @@ from bijux_ontology.jsonld.composition import (
     ContextModule,
     compose_contexts,
 )
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.usages.checking import check_context
 

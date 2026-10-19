@@ -9,8 +9,8 @@ from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.json.paths import SourcePath
 from bijux_ontology.json.values import own_json
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
-from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_resources

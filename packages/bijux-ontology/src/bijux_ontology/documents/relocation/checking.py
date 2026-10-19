@@ -24,8 +24,8 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.paths import bound_path
 from bijux_ontology.json.values import owned_json
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
-from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import ContextResources, DocumentLoader
 from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages

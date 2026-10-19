@@ -11,7 +11,7 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.json.values import optional_string_value, text_value
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.models.contracts.checking import check_models

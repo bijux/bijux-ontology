@@ -13,7 +13,7 @@ The package is still unpublished. These changes replace the initial local implem
 
 ```python
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.usages.checking import check_context
 
 report = check_context(

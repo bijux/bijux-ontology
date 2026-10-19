@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.jsonld.contexts.types import ContextInspection
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 
 
 @dataclass(frozen=True)

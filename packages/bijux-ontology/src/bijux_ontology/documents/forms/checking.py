@@ -13,8 +13,8 @@ from bijux_ontology.json.paths import (
     bound_pointer_text,
     bounded_location,
 )
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.evidence.entities import source_entity
-from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.resources import DocumentLoader

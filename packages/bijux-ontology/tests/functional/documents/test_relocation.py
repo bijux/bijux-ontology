@@ -19,7 +19,7 @@ from bijux_ontology.documents.relocation import (
     relocate_document,
 )
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.resources import (
     OfflineDocument,
     OfflineDocumentLoader,

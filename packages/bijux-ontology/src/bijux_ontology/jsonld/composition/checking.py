@@ -23,7 +23,7 @@ from bijux_ontology.jsonld.contexts.processing import (
     _preflight,
     inspect_context,
 )
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,

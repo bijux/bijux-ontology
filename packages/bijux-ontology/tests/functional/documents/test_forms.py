@@ -9,7 +9,7 @@ import pytest
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.forms import FormRequirement, check_document_form
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.selectors.types import (
     ArrayItems,
