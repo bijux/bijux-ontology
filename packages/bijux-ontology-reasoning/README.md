@@ -234,6 +234,12 @@ backend revision. `with sessions.ReasoningSession(theory)` loads and classifies
 once, then recomputes supported queries and batches. Capture and `bind` a new
 theory for changed imports or backend semantics; external mutable inputs are
 not watched. An optional fixed Budget is cumulative across requests.
+`session.query_classes(expression, direct=False)` retrieves actual named subclass
+and equivalent groups for supported typed intersections, unions, complements and
+existential/universal restrictions. Inspect separate expression satisfiability,
+global consistency, native node flags and enumeration completeness. Strings have
+no implicit label resolver; unsupported or fresh-role requests remain unverified.
+Direct and transitive views reuse the same classification without caching answers.
 `session.project` exports explicitly bounded subclass/existential domains as
 a separate ordinary RDF artifact, retaining quantifiers and unknown pairs.
 Its raw required-axiom answers remain inspectable separately from pair coverage;

@@ -13,6 +13,7 @@ import org.bijux.ontology.backend.QualifiedReasoning;
 import org.bijux.ontology.backend.WorkerProtocol;
 import org.bijux.ontology.entailment.EntailmentChecks;
 import org.bijux.ontology.relationships.InferredRelationships;
+import org.bijux.ontology.queries.ClassQueries;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.formats.TurtleDocumentFormat;
 import org.semanticweb.owlapi.io.StreamDocumentSource;
@@ -151,7 +152,7 @@ public final class PersistentWorker {
                 int cap = Math.min(maximum, WorkerProtocol.positive(job.path("max_bytes")));
                 ObjectNode request = ((ObjectNode) first).deepCopy();
                 for (String key : Arrays.asList("operation", "obligations", "queries", "axioms",
-                        "max_nodes", "max_results", "max_issues", "max_bytes", "query_depth",
+                        "max_nodes", "max_results", "max_issues", "max_bytes", "query_depth", "direct",
                         "task_timeout_ms"))
                     if (job.has(key)) request.set(key, job.get(key));
                 Map<String,Object> result = new LinkedHashMap<>(prepared);
@@ -160,6 +161,8 @@ public final class PersistentWorker {
                     EntailmentChecks.evaluatePrepared(request, theory, result);
                 else if (operation.equals("relationships"))
                     InferredRelationships.evaluatePrepared(request, theory, result);
+                else if (operation.equals("classes"))
+                    ClassQueries.evaluatePrepared(request, theory, result);
                 else if (operation.equals("projection")) projection(request, theory, result, cap);
                 else throw new IOException("Unsupported session operation");
                 write(outgoing, result, cap);
