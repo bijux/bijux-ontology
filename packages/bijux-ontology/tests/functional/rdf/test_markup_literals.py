@@ -1,17 +1,25 @@
 """Markup value semantics are opt-in, bounded and separate from original RDF."""
 
 import importlib.util
+import json
+import subprocess
+import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Event, Thread
+from types import FrameType
 from typing import Any
+from typing import Literal as EventKind
 
 import pytest
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF
 
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.execution.processes import transport
 from bijux_ontology.execution.processes.ownership import spawn_owned_process
+from bijux_ontology.execution.receipts import TerminalResponse
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.rdf.literal_values.markup import (
     MarkupCanonicalization,
     compare_markup_values,
@@ -179,3 +187,82 @@ def test_live_owned_worker_cancellation_reaps_and_fresh_operation_recovers(
     monkeypatch.setattr(transport, "spawn_owned_process", original)
     recovered = inspect_markup_literal(_xml("<a/>"), canonicalization=CANON)
     assert recovered.report.verified
+
+
+@pytest.mark.parametrize("phase", ("completed", "interrupted", "killed"))
+def test_inherited_cancellation_preserves_terminal_costs_and_reaps_native_work(
+    phase: str,
+) -> None:
+    """Observe real receipts and children without replacing any native results."""
+    pytest.importorskip("lxml")
+    source = _xml("<p>value</p>")
+    ledger = Budget()
+    cancellation = Event()
+    operation = Operation(None, ledger, 30, cancellation)
+    processes: list[subprocess.Popen[bytes]] = []
+    grants: dict[str, int] = {}
+    native: dict[str, int] = {}
+    host: dict[str, int] = {}
+    at_dispatch: dict[str, int] = {}
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        value: object,
+    ) -> None:
+        """Set the inherited Event only at an actual native lifetime boundary."""
+        if previous is not None:
+            previous(frame, event, value)
+        is_worker = (
+            frame.f_code is execute_worker.__code__
+            and frame.f_locals.get("module")
+            == "bijux_ontology.rdf.literal_values.markup.worker"
+        )
+        if is_worker and event == "call":
+            grants.update(json.loads(frame.f_locals["payload"])["allowances"])
+            at_dispatch.update((kind, ledger.remaining(kind)) for kind in BUDGET_KINDS)
+        if event != "return":
+            return
+        process = frame.f_locals.get("self")
+        if (
+            frame.f_code is subprocess.Popen.__init__.__code__
+            and isinstance(process, subprocess.Popen)
+            and isinstance(process.args, list)
+            and "bijux_ontology.rdf.literal_values.markup.worker" in process.args
+        ):
+            processes.append(process)
+            if phase == "interrupted":
+                cancellation.set()
+            elif phase == "killed":
+                process.kill()
+        if is_worker and isinstance(value, bytes):
+            native.update(json.loads(value)["consumed"])
+            if phase == "completed":
+                cancellation.set()
+        if frame.f_code is TerminalResponse.close.__code__:
+            host.update(frame.f_locals["self"]._host.consumed())
+
+    sys.setprofile(observe)
+    try:
+        stopped = inspect_markup_literal(
+            source, canonicalization=CANON, budget=operation
+        )
+    finally:
+        sys.setprofile(previous)
+    assert stopped.report.outcome == (
+        "unverified" if phase == "killed" else "exhausted"
+    )
+    assert processes and all(process.returncode is not None for process in processes)
+    assert bool(native) == (phase == "completed")
+    expected = native if native else grants
+    assert expected and host
+    if phase == "killed":
+        # A real transport failure needs the host's own Issue allowance.
+        assert ledger.remaining("issues") == ledger.limits.max_issues - 1
+        assert any(issue.kind == "unverified" for issue in stopped.report.issues)
+    else:
+        assert {
+            kind: at_dispatch[kind] - ledger.remaining(kind) for kind in BUDGET_KINDS
+        } == {kind: expected[kind] + host[kind] for kind in BUDGET_KINDS}
+    assert inspect_markup_literal(source, canonicalization=CANON).report.verified

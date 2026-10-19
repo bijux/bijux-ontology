@@ -415,16 +415,22 @@ def test_shared_limits_cancellation_and_paid_native_postcondition_prefix() -> No
     field = PathFieldDeclaration(
         "value", E.value, (ValueDeclaration("literal", datatype=str(XSD.integer)),)
     )
-    ends = []
 
-    def run(cap: int) -> tuple[MigrationCandidate, int]:
+    def run(
+        cap: int, *, stop_after_finding: bool = False
+    ) -> tuple[MigrationCandidate, int]:
         operation = Budget(Limits(max_work=cap))
 
         def actual(candidate: PreparedSource) -> Report:
             result = check_path_fields(
                 candidate, (PathFieldUsage(field, E.s),), budget=operation
             )
-            ends.append(cap - operation.remaining("work"))
+            if stop_after_finding:
+                # The real native mismatch is paid before the next adoption stops.
+                assert any(
+                    issue.code == "emission.value_mismatch" for issue in result.issues
+                )
+                operation.consume("work", operation.remaining("work"))
             return result
 
         result = transform_sparql(
@@ -446,9 +452,8 @@ def test_shared_limits_cancellation_and_paid_native_postcondition_prefix() -> No
 
     complete, paid = run(100000)
     assert complete.report.outcome == "disagreement" and paid
-    end = ends[-1]
-    rows = [run(cap) for cap in range(end, end + 24, 4)]
-    assert any(value.report.outcome == "exhausted" and paid for value, paid in rows)
+    late, paid = run(100000, stop_after_finding=True)
+    assert late.report.outcome == "exhausted" and paid
     for limit in (Limits(max_work=1), Limits(max_states=1), Limits(max_bytes=100)):
         result = transform_sparql(source, program, limits=limit)
         assert result.report.outcome == "exhausted" and result.source is None

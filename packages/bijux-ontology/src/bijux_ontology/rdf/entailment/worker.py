@@ -25,14 +25,15 @@ from .protocol import decode_rows, decode_term, encode_rows, encode_term
 
 def evaluate(request: dict[str, Any]) -> dict[str, object]:
     """Complete actual maintained rules, then retain all final consequences."""
+    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
     try:
         import owlrl  # type: ignore[import-untyped]
     except ImportError:
         return {
             "status": "unavailable",
             "message": "Install bijux-ontology[shacl] for owlrl entailment",
+            "consumed": budget.consumed(),
         }
-    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
     backend = "owlrl " + owlrl.__version__
     reason = "backend_rejected"
     try:

@@ -149,11 +149,11 @@ def _canonical(root: Any, budget: Budget) -> str:
 
 def evaluate(request: dict[str, Any]) -> dict[str, object]:
     """Return only complete native observations and cumulative owned counters."""
+    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
     try:
         from lxml import etree
     except ImportError:
-        return {"status": "unavailable"}
-    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
+        return {"status": "unavailable", "consumed": budget.consumed()}
     backend = "lxml " + ".".join(map(str, etree.LXML_VERSION))
     backend += "; libxml2 " + ".".join(map(str, etree.LIBXML_VERSION))
     try:

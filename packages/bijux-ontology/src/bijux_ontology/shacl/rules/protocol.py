@@ -6,9 +6,11 @@ from dataclasses import asdict
 from typing import TypedDict, cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import ControlBudget, Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.records.codecs import witness_data
@@ -68,36 +70,40 @@ def run_rules(
     if size > operation.limits.max_bytes:
         raise LimitExceeded("Rule request exceeds max_bytes")
     operation.consume("bytes", size)
-    allowances = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
-    request["allowances"] = allowances
+    operation.consume("work")
+    terminal = TerminalResponse(operation, operation.limits.max_bytes)
+    allowances = {kind: terminal.available(kind) for kind in BUDGET_KINDS}
+    # Native function/condition qualification may pay Issues. Keep one
+    # actual host diagnostic slot for a failed or unavailable executor.
+    allowances["issues"] = max(0, terminal.available("issues") - 1)
+    delegated = DelegatedAllowance(operation, allowances)
+    request["allowances"] = delegated.to_data()
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
-    operation.consume("work")
-    raw = execute_worker(
-        "bijux_ontology.shacl.rules.worker",
-        payload,
-        cap=operation.limits.max_bytes,
-        timeout=operation.deadline - time.monotonic(),
-        cancel=operation.cancel,
-    )
-    operation.consume("bytes", len(raw))
-    value = decode_json(raw, max_bytes=operation.limits.max_bytes)
-    if not isinstance(value, dict) or value.get("status") not in _STATUSES:
-        raise ResourceError("Malformed rule worker response")
-    consumed = value.get("consumed")
-    if (
-        not isinstance(consumed, dict)
-        or set(consumed) != set(BUDGET_KINDS)
-        or any(
-            type(consumed[kind]) is not int
-            or not 0 <= consumed[kind] <= allowances[kind]
-            for kind in BUDGET_KINDS
+    dispatched = received = False
+    try:
+        terminal.admit(payload)
+        dispatched = True
+        raw = execute_worker(
+            "bijux_ontology.shacl.rules.worker",
+            payload,
+            cap=terminal.cap,
+            timeout=operation.deadline - time.monotonic(),
+            cancel=operation.cancel,
         )
-    ):
-        raise ResourceError("Malformed rule worker accounting")
-    for kind in BUDGET_KINDS:
-        operation.consume(kind, consumed[kind])
+        value = terminal.decode(raw)
+        if not isinstance(value, dict) or value.get("status") not in _STATUSES:
+            raise ResourceError("Malformed rule worker response")
+        delegated.settle(value.get("consumed"))
+        received = True
+    finally:
+        try:
+            terminal.close()
+        finally:
+            if dispatched and not received:
+                delegated.forfeit()
+    operation.consume("work", 0)
     status = value["status"]
     if status != "result":
         if set(value) != {"status", "consumed"}:

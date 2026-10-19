@@ -6,11 +6,12 @@ from dataclasses import asdict
 from typing import Any
 
 from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, bound_text
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.json.values import decode_json
 
 
 def run_markup(
@@ -32,48 +33,49 @@ def run_markup(
         "output_cap": budget.limits.max_total_bytes,
     }
     budget.consume("bytes", json_bound(request, budget))
+    maximum = min(budget.limits.max_total_bytes, budget.remaining("bytes") // 4)
+    terminal = TerminalResponse(budget, maximum)
     allowances = {
-        key: budget.remaining(key) // 2
+        key: terminal.available(key) // 2
         if key in ("bytes", "states", "work")
-        else budget.remaining(key)
+        else terminal.available(key)
         for key in BUDGET_KINDS
     }
-    request["allowances"] = allowances
-    output_cap = min(budget.limits.max_total_bytes, budget.remaining("bytes") // 4)
-    if output_cap < 64:
-        raise LimitExceeded("Markup reply has no reserved adoption allowance")
-    request["output_cap"] = output_cap
+    # The native evaluator returns data/counters; host adoption owns Issues.
+    allowances["issues"] = 0
+    delegated = DelegatedAllowance(budget, allowances)
+    request["allowances"] = delegated.to_data()
+    request["output_cap"] = terminal.cap
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
-    raw = execute_worker(
-        "bijux_ontology.rdf.literal_values.markup.worker",
-        payload,
-        cap=budget.limits.max_total_bytes,
-        timeout=max(0.000001, budget.deadline - time.monotonic()),
-        cancel=budget.cancel,
-    )
-    budget.consume("bytes", len(raw))
-    budget.consume("work", len(raw) + 1)
-    response = decode_json(raw, max_bytes=output_cap, max_depth=budget.limits.max_depth)
-    if not isinstance(response, dict) or response.get("status") not in (
-        "result",
-        "exhausted",
-        "unavailable",
-        "unverified",
-        "input_error",
-    ):
-        raise ResourceError("Invalid native markup result")
-    consumed = response.get("consumed")
-    if consumed is not None:
-        if not isinstance(consumed, dict) or set(consumed) != set(BUDGET_KINDS):
-            raise ResourceError("Native markup omitted cumulative counters")
-        for key in BUDGET_KINDS:
-            amount = consumed[key]
-            if type(amount) is not int or not 0 <= amount <= allowances[key]:
-                raise ResourceError("Invalid native markup counter")
-        for key in BUDGET_KINDS:
-            budget.consume(key, consumed[key])
-    elif response["status"] not in ("unavailable", "exhausted"):
-        raise ResourceError("Native markup omitted its work receipt")
+    dispatched = received = False
+    try:
+        terminal.admit(payload)
+        dispatched = True
+        raw = execute_worker(
+            "bijux_ontology.rdf.literal_values.markup.worker",
+            payload,
+            cap=terminal.cap,
+            timeout=max(0.000001, budget.deadline - time.monotonic()),
+            cancel=budget.cancel,
+        )
+        response = terminal.decode(raw)
+        if not isinstance(response, dict) or response.get("status") not in (
+            "result",
+            "exhausted",
+            "unavailable",
+            "unverified",
+            "input_error",
+        ):
+            raise ResourceError("Invalid native markup result")
+        delegated.settle(response.get("consumed"))
+        received = True
+    finally:
+        try:
+            terminal.close()
+        finally:
+            if dispatched and not received:
+                delegated.forfeit()
+    budget.consume("work", 0)
     if response["status"] == "exhausted":
         raise LimitExceeded("Native markup did not finish within its allowance")
     backend = response.get("backend", "")

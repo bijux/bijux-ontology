@@ -10,6 +10,7 @@ from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import (
@@ -21,8 +22,8 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.receipts import TerminalResponse
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCandidate,
     MigrationCheck,
@@ -85,40 +86,42 @@ def _native(
     if size > operation.limits.max_bytes:
         raise LimitExceeded("SPARQL transformation request exceeds max_bytes")
     operation.consume("bytes", size)
-    allowances = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
-    request["allowances"] = allowances
+    terminal = TerminalResponse(operation, operation.limits.max_bytes)
+    allowances = {kind: terminal.available(kind) for kind in BUDGET_KINDS}
+    # The native evaluator returns data/counters; host adoption owns Issues.
+    allowances["issues"] = 0
+    delegated = DelegatedAllowance(operation, allowances)
+    request["allowances"] = delegated.to_data()
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
     remaining = operation.deadline - time.monotonic()
     if remaining <= 0:
+        terminal.close()
         raise LimitExceeded("SPARQL transformation exceeded its owned deadline")
-    raw = execute_worker(
-        "bijux_ontology.rdf.query_transforms.worker",
-        payload,
-        cap=operation.limits.max_bytes,
-        timeout=remaining,
-        cancel=operation.cancel,
-    )
-    operation.consume("bytes", len(raw))
-    response = decode_json(
-        raw, max_bytes=operation.limits.max_bytes, max_depth=operation.limits.max_depth
-    )
-    if not isinstance(response, dict):
-        raise ResourceError("Malformed SPARQL transformation response")
-    consumed = response.get("consumed")
-    if (
-        not isinstance(consumed, dict)
-        or set(consumed) != set(BUDGET_KINDS)
-        or any(
-            type(consumed[kind]) is not int
-            or not 0 <= consumed[kind] <= allowances[kind]
-            for kind in BUDGET_KINDS
+    dispatched = received = False
+    try:
+        terminal.admit(payload)
+        dispatched = True
+        raw = execute_worker(
+            "bijux_ontology.rdf.query_transforms.worker",
+            payload,
+            cap=terminal.cap,
+            timeout=remaining,
+            cancel=operation.cancel,
         )
-    ):
-        raise ResourceError("Malformed transformation worker accounting")
-    for kind in BUDGET_KINDS:
-        operation.consume(kind, consumed[kind])
+        response = terminal.decode(raw)
+        if not isinstance(response, dict):
+            raise ResourceError("Malformed SPARQL transformation response")
+        delegated.settle(response.get("consumed"))
+        received = True
+    finally:
+        try:
+            terminal.close()
+        finally:
+            if dispatched and not received:
+                delegated.forfeit()
+    operation.consume("work", 0)
     status = response.get("status")
     if status == "exhausted":
         raise LimitExceeded("SPARQL transformation exhausted its owned allowance")
