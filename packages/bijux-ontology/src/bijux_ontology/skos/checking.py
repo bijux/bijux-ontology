@@ -18,7 +18,8 @@ from bijux_ontology.vocabulary.browsing.inspection import (
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .relations import check_relations
-from .resources import _LABELS, check_resources
+from .resource_facts import LABEL_PREDICATES
+from .resources import check_resources
 from .selection import RuleSelection, SkosScope
 from .structure import structure
 from .xl import XL as XL
@@ -158,7 +159,11 @@ def check_skos(
             {URIRef(iri) for iri in concepts}
             if concepts
             else {node for node, roles in facts.roles.items() if SKOS.Concept in roles}
-            | {node for predicate in _LABELS for node in graph.subjects(predicate)}
+            | {
+                node
+                for predicate in LABEL_PREDICATES
+                for node in graph.subjects(predicate)
+            }
         )
         if "xl" in rules and not concepts:
             resources.update(

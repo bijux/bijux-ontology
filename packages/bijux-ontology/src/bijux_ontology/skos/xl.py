@@ -10,6 +10,8 @@ from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 
+from .resource_facts import ResourceFacts
+
 XL = Namespace("http://www.w3.org/2008/05/skos-xl#")
 ROLES = (XL.prefLabel, XL.altLabel, XL.hiddenLabel)
 
@@ -30,6 +32,12 @@ def describe_xl_label(
     """Describe a label independently, retaining missing-form uncertainty."""
     operation = budget if budget is not None else Budget(view.limits)
     selected = view.statements(resource, budget=operation)
+    return _describe_label(resource, selected, operation)
+
+
+def _describe_label(
+    resource: URIRef | BNode, selected: Selection[Edge], operation: Budget
+) -> Selection[XLLabel]:
     issues = IssueCollector(operation)
     list.extend(issues, selected.report.issues)
     forms = tuple(edge for edge in selected.items if edge.predicate == XL.literalForm)
@@ -65,6 +73,15 @@ def xl_labels(
 ) -> Selection[XLLabel]:
     """Follow only explicit XL label roles; equal forms never merge label resources."""
     operation = budget if budget is not None else Budget(view.limits)
+    return _label_links(view, owner, operation, None)
+
+
+def _label_links(
+    view: VocabularyView,
+    owner: URIRef | BNode,
+    operation: Budget,
+    facts: ResourceFacts | None,
+) -> Selection[XLLabel]:
     links = view.statements(owner, predicates=tuple(map(str, ROLES)), budget=operation)
     issues = IssueCollector(operation)
     list.extend(issues, links.report.issues)
@@ -82,7 +99,11 @@ def xl_labels(
                     )
                 )
                 continue
-            selected = describe_xl_label(view, link.object, budget=operation)
+            selected = (
+                describe_xl_label(view, link.object, budget=operation)
+                if facts is None
+                else describe_xl_label_from_facts(facts, link.object, budget=operation)
+            )
             list.extend(issues, selected.report.issues)
             complete = complete and selected.report.complete
             value = selected.items[0]
@@ -103,3 +124,18 @@ def xl_labels(
             families=("skos.xl",),
         ),
     )
+
+
+def describe_xl_label_from_facts(
+    facts: ResourceFacts, resource: URIRef | BNode, *, budget: Budget
+) -> Selection[XLLabel]:
+    """Interpret the actual once-admitted outgoing edges with fresh XL obligations."""
+    return _describe_label(resource, facts.label_statements(resource, budget), budget)
+
+
+def xl_labels_from_facts(
+    facts: ResourceFacts, owner: URIRef | BNode, *, budget: Budget
+) -> Selection[XLLabel]:
+    """Retain original links while descriptions reuse qualified native edge facts."""
+    facts.qualify(budget)
+    return _label_links(facts.scope.view, owner, budget, facts)
