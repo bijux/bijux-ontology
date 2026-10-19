@@ -1,6 +1,7 @@
 """Isolated Python entry points selected by trusted host operations."""
 
 import sys
+from collections.abc import Callable
 from threading import Event
 
 from bijux_ontology.errors import InputError
@@ -14,6 +15,7 @@ def execute_worker(
     cap: int,
     timeout: float,
     cancel: Event | None = None,
+    completed: Callable[[bytes], None] | None = None,
 ) -> bytes:
     """Exchange opaque bytes with a trusted installed package worker.
 
@@ -33,4 +35,5 @@ def execute_worker(
         cap=cap,
         timeout=timeout,
         cancel=cancel,
+        completed=completed,
     )
