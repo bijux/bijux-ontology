@@ -28,6 +28,9 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "shex": frozenset(
+        "unsupported input_invalid backend_unavailable not_matched engine_error".split()
+    ),
     "quantity": frozenset(
         "unit_unverified backend_unverified field_missing dimension_mismatch "
         "bound_mismatch unverified".split()
@@ -74,6 +77,8 @@ _CODES = {
         "patch_rebinding_unverified".split()
     ),
     "obo": frozenset(
+        "publication_text publication_qualification publication_definition_xref "
+        "publication_synonym_type publication_unverified "
         "alternative_id_unverified alternative_id_ambiguous "
         "attachment_shape attachment_unverified base_missing "
         "synonym_type_shape value_kind "
@@ -234,6 +239,7 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "materialization_input_error "
         "triple_terms_unverified "
         "container_contract container_unverified container_conversion_rejected "
         "query_transform_unverified query_transform_invalid query_unverified "
@@ -259,6 +265,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "remediation_unverified "
         "external_aggregate_empty external_nonconformance "
         "external_detail_unverified external_projection_incomplete "
         "external_scope_missing external_proof_unverified external_structure_invalid "
@@ -330,6 +337,7 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "lifecycle_violation lifecycle_unverified lifecycle_input_error "
         "identifier_changed identifier_unverified identifier_input_error "
         "matrix_unverified "
         "value_inadmissible value_unverified value_scope_unverified "
@@ -362,6 +370,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "shex": (
+        "explicit supplied ShEx node-to-shape obligations",
+        "A native ShEx obligation fails or exceeds its qualified capability.",
+        "Install bijux-ontology[shex], supply local ShapeDecl ShExJ and imports, "
+        "and inspect each exact binding and its native diagnostics.",
+        "bijux-ontology shex data.ttl schema.json --schema-iri urn:schema "
+        "--binding urn:record urn:shape --json",
+    ),
     "quantity": (
         "explicit selected-record quantity contracts",
         "A quantity differs from its reference-unit contract "

@@ -29,6 +29,7 @@ PACKAGES = {
     "models",
     "skos",
     "shacl",
+    "shex",
     "data",
     "interfaces.api",
     "interfaces.cli",
@@ -216,7 +217,7 @@ def test_library_dependencies_follow_feature_ownership(
                 assert target_owner in FOUNDATION, f"{module} -> {target}"
             if owner == "rdf":
                 assert target_owner in FOUNDATION | {"rdf"}, f"{module} -> {target}"
-            if owner in {"jsonld", "owl", "declarations"}:
+            if owner in {"jsonld", "owl", "declarations", "shex"}:
                 assert target_owner in FOUNDATION | {"rdf", owner}, (
                     f"{module} -> {target}"
                 )

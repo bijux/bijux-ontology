@@ -44,6 +44,7 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
         "transform",
         "explain",
         "upgrade",
+        "shex",
     ):
         action = actions.add_parser(
             name,
@@ -59,6 +60,7 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
                 "transform": "Write a checked RDF candidate without editing inputs",
                 "explain": "Explain a registered diagnostic and corrective example",
                 "upgrade": "Assess versions against supplied application contracts",
+                "shex": "Validate explicit node-to-shape bindings with supplied ShExJ",
             }[name],
         )
         action.epilog = {
@@ -110,6 +112,11 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
                 "Example: bijux-ontology upgrade before.ttl after.ttl "
                 "--declarations models.json --json; the verdict covers "
                 "only the supplied application contracts."
+            ),
+            "shex": (
+                "Example: bijux-ontology shex data.ttl schema.json "
+                "--schema-iri urn:schema:example --binding urn:record:A urn:shape:S "
+                "--json; requires bijux-ontology[shex]."
             ),
         }[name]
         if name == "explain":
@@ -293,6 +300,25 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
             action.add_argument("--replacement-predicate", action="append", default=[])
             action.add_argument(
                 "--scope", action="append", choices=("local", "imports", "lookup")
+            )
+        if name == "shex":
+            action.add_argument("schema", type=Path, help="Supplied local ShExJ schema")
+            action.add_argument("--schema-iri", required=True)
+            action.add_argument(
+                "--binding",
+                nargs=2,
+                action="append",
+                default=[],
+                metavar=("FOCUS_IRI", "SHAPE_IRI"),
+                help="Require this exact named node-to-shape obligation",
+            )
+            action.add_argument(
+                "--schema-import",
+                nargs=2,
+                action="append",
+                default=[],
+                metavar=("DOCUMENT_IRI", "PATH"),
+                help="Resolve an authored import from an explicit local file",
             )
         if name == "upgrade":
             action.add_argument("after", type=Path)

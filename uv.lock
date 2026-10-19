@@ -276,6 +276,9 @@ shacl = [
     { name = "pyparsing" },
     { name = "pyshacl" },
 ]
+shex = [
+    { name = "pyrudof" },
+]
 sssom = [
     { name = "pandas" },
     { name = "pyyaml" },
@@ -307,6 +310,7 @@ requires-dist = [
     { name = "pyld", marker = "extra == 'jsonld'", specifier = ">=3.3,<4" },
     { name = "pyoxigraph", specifier = ">=0.5.11,<0.6" },
     { name = "pyparsing", marker = "extra == 'shacl'", specifier = ">=3.2,<4" },
+    { name = "pyrudof", marker = "extra == 'shex'", specifier = "==0.3.20" },
     { name = "pyshacl", marker = "extra == 'shacl'", specifier = ">=0.40.1,<0.41" },
     { name = "python-stdnum", marker = "extra == 'checksums'", specifier = ">=2.2,<3" },
     { name = "pyyaml", marker = "extra == 'sssom'", specifier = ">=6,<7" },
@@ -316,7 +320,7 @@ requires-dist = [
     { name = "sssom-schema", marker = "extra == 'sssom'", specifier = "==1.1.0a5" },
     { name = "uri-template", marker = "extra == 'templates'", specifier = ">=1.3,<2" },
 ]
-provides-extras = ["quantities", "csvw", "jsonpatch", "markup", "jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
+provides-extras = ["shex", "quantities", "csvw", "jsonpatch", "markup", "jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
 
 [[package]]
 name = "bijux-ontology-dev"
@@ -345,7 +349,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
-    { name = "bijux-ontology", extra = ["checksums", "csvw", "jsonld", "jsonpatch", "linkml", "patterns", "pydantic", "quantities", "shacl", "sssom", "templates", "xsd"] },
+    { name = "bijux-ontology", extra = ["checksums", "csvw", "jsonld", "jsonpatch", "linkml", "patterns", "pydantic", "quantities", "shacl", "shex", "sssom", "templates", "xsd"] },
     { name = "bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning" },
     { name = "build" },
@@ -367,7 +371,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bijux-ontology", extras = ["quantities", "csvw", "jsonpatch", "jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology", extras = ["shex", "quantities", "csvw", "jsonpatch", "jsonld", "shacl", "pydantic", "linkml", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
     { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
     { name = "bijux-ontology-reasoning", editable = "packages/bijux-ontology-reasoning" },
     { name = "build", specifier = ">=1.2,<2" },
@@ -2749,6 +2753,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/6d/5d/f2ddeef4a855a102aaae5e97826a0260007522ab504421b75addfdb1517c/pyproject_hooks-1.3.3.tar.gz", hash = "sha256:defda19b854fa0d3bd4f76ea4ddcba8abd7dcfcdd585a6690ade050744fc5f43", size = 21013, upload-time = "2026-09-16T08:58:03.999Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/85/11/044d1ae1b4ec0d7af88ee5bc91e081be1022533032b906a7bdabdbb60977/pyproject_hooks-1.3.3-py3-none-any.whl", hash = "sha256:5fc53fdac9f7bd63fbcdc868fb5f90b4784d78a53a3d3388cd738b807441a20b", size = 10724, upload-time = "2026-09-16T08:58:02.96Z" },
+]
+
+[[package]]
+name = "pyrudof"
+version = "0.3.20"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/71/61/ed530399b295691218e3583ba0b1ccd374836d8a1ddb80c86d1bab368f2a/pyrudof-0.3.20-cp37-abi3-macosx_13_0_arm64.whl", hash = "sha256:e62bb425178e7d8eb972d6e6485b54bcc8d8cd53bc0c5b2fa73d9870c2c80f13", size = 16161253, upload-time = "2026-09-13T07:27:02.483Z" },
+    { url = "https://files.pythonhosted.org/packages/01/0d/703fc75a10f3946081a0bbb8904de89d86c454de0361f082f9f7d1a8caef/pyrudof-0.3.20-cp37-abi3-macosx_13_0_x86_64.whl", hash = "sha256:811f4cab7e12672579819a0664a78af41c14c8245b9e223e7aa0583a8f3e8cfc", size = 16769401, upload-time = "2026-09-13T07:27:04.767Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/38/71bd28c3c11096b3826c3e454866fcda72a531e810b8d27123626c38f579/pyrudof-0.3.20-cp37-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:ea3e97447be924617312a90390ab037bce8a9657fec479ce77de75bc6d2a19d7", size = 23434025, upload-time = "2026-09-13T07:27:06.868Z" },
+    { url = "https://files.pythonhosted.org/packages/63/7d/94e1500a23156ff3264617c51d96034f9d28a2b57584528ce3777a0d2c46/pyrudof-0.3.20-cp37-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:8c90303065d885d9d8e06fdb94cbf3eeb6f6b08f9ea9b7c26f7812dc32387d23", size = 23697153, upload-time = "2026-09-13T07:27:09.388Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/30/f9078553fd7859119240e90a5a8adb2d2e4668b527e29c0c909dc3b73a7e/pyrudof-0.3.20-cp37-abi3-win_amd64.whl", hash = "sha256:15c324ab207faf0cfa035c6ab9954721aa8c26ac0867951105e7ca4364344ce8", size = 18404663, upload-time = "2026-09-13T07:27:11.365Z" },
 ]
 
 [[package]]

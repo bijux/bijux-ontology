@@ -1438,3 +1438,52 @@ The supported atomic names are meter, millimeter, centimeter, kilometer, second,
 minute, hour, kelvin and degree_Celsius. Unsupported or inexact conversions remain
 unknown. `.check(record, contract, convert=True)` exposes a separate `.converted`
 record only after intrinsic rechecks; `.source` preserves the actual input.
+
+`bijux_ontology.workflows.upgrades.lifecycle.check_lifecycle` checks explicit
+ordered `Release` snapshots and selected IRIs under a `LifecyclePolicy`. Supply
+`HistoryCoverage` for the exact interval and optional `Tombstone` records.
+Reserved logical predicates and occurrence positions are caller policy; retained
+assertions and prohibited reactivation are distinct from ordinary label changes.
+Raw observations and adjacent differences remain available. Missing history or
+anonymous attribution cannot certify permanent identifier stability.
+Each release can bind its own `imports` to supplied local resources. Those
+resources qualify the authored import closure; lifecycle observations still
+cover the selected physical local graph. Missing resources remain unverified.
+
+`bijux_ontology.shacl.remediation.propose_remediations` accepts explicit
+`RemediationStrategy` callbacks keyed by named shape and constraint-component
+IRIs. Each receives a private source and actual findings, returning a proposed
+snapshot or `None` for unresolved content. Alternatives carry exact patches and
+full required SHACL rechecks, including original named target obligations;
+additional `MigrationCheck` contracts can reject application-specific changes.
+Inspect each candidate and use the existing explicit migration export gate.
+Callbacks are trusted in-process Python code; native checks have a deadline.
+
+`bijux_ontology.workflows.ontology.materialization.prepare_materialization` owns
+asserted input and an `EntailmentPlan` or `RulePlan`. Its session applies exact
+asserted patches with an `expected` revision receipt, then recomputes the complete
+maintained closure. Removed supports and replaced programs cannot retain stale
+derivations; explicitly asserted duplicates remain asserted. Only a fully checked
+update publishes a new revision. Failed updates expose no replacement closure.
+Ambiguous anonymous correspondence stays unavailable; rule callbacks remain
+ordinary trusted Python. Close the session when its retained inputs are no longer needed.
+
+Install `[shex]` for `bijux_ontology.shex.validate_shex` with explicit `ShexSchema`
+text and typed `ShexBinding` obligations. The qualified native profile accepts
+ShapeDecl ShExJ, absolute IRIs, supplied local imports and positive structural
+expressions, including OneOf, inverse, CLOSED and EXTRA. Datatype constraints
+support strings and whitespace-free integers of at most eighteen decimal digits.
+Other dialects, scalar domains, actions and unsupported features remain unknown.
+Each obligation retains its actual native result; incomplete work cannot verify.
+The installed command accepts `shex data.ttl schema.json --schema-iri urn:schema
+--binding urn:record urn:shape --schema-import urn:child child.json --json`.
+It uses the same owned native execution and completed-result recovery as Python.
+
+`bijux_ontology.workflows.ontology.obo.check_obo_publication` applies an explicit
+`OboPublicationProfile` to named owned terms in a `Release`. Select ordinary
+annotation contracts, native qualified definition/synonym rules, referenced subset
+metadata and supplied-interval lifecycle policy independently. Imported support
+cannot fill missing local annotations; each release binds its own local imports.
+Explicit term/namespace exclusions remove support terms from the owned selection.
+The result retains scoped records and selected subset witnesses. This finite
+opt-in convention does not certify every OBO Foundry recommendation.

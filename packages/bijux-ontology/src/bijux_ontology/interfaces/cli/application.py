@@ -58,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
         result = (
             run_command(options, configuration=configured)
-            if options.timeout is None or options.action == "acquire"
+            if options.timeout is None or options.action in ("acquire", "shex")
             else execute_bounded(
                 supplied,
                 timeout=options.timeout,
