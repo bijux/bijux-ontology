@@ -202,7 +202,7 @@ def check_emission(
         issues.extend(mapping.issues)
         complete = mapping.complete
         preservation = direction_check.check(
-            prepared._document, base=base, loader=prepared._loader, budget=budget
+            prepared._original_expansion, budget=budget
         )
         if preservation is not None:
             checked += preservation.checked
