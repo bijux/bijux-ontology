@@ -2,6 +2,7 @@
 
 import sys
 import threading
+from collections.abc import Callable
 from typing import Literal
 
 from bijux_ontology.errors import InputError
@@ -40,6 +41,7 @@ def execute_worker(
     cap: int,
     timeout: float,
     cancel: threading.Event | None = None,
+    completed: Callable[[bytes], None] | None = None,
 ) -> bytes:
     """Run an owned RDF worker and reap its process group.
 
@@ -78,4 +80,5 @@ def execute_worker(
         cap=cap,
         timeout=timeout,
         cancel=cancel,
+        completed=completed,
     )
