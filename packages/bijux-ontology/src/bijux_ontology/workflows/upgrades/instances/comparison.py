@@ -137,13 +137,28 @@ def _included(
     for value in left:
         found = False
         uncertain = False
-        for candidate in right:
-            result = _relation(value, candidate, policy, budget, issues, proofs)
-            found |= result is True
-            uncertain |= result is None
-        if not found and not uncertain:
-            return False
-        unknown |= not found
+        candidates = IssueCollector(budget)
+        try:
+            for candidate in right:
+                result = _relation(value, candidate, policy, budget, candidates, proofs)
+                if any(issue.kind == "exhausted" for issue in candidates):
+                    raise LimitExceeded(
+                        "Instance value comparison exhausted its allowance"
+                    )
+                if result is True:
+                    found = True
+                    break
+                uncertain |= result is None
+        except LimitExceeded:
+            issues.extend(candidates)
+            raise
+        if not found:
+            # Inclusion needs one qualified witness, not comparison of every
+            # unrelated operand family. Keep all raw probes in comparisons.
+            issues.extend(candidates)
+            if not uncertain:
+                return False
+            unknown = True
     return None if unknown else True
 
 

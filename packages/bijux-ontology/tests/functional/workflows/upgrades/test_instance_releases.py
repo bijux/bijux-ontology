@@ -100,6 +100,26 @@ def test_value_qualified_equality_preserves_lexical_delta_and_unknowns() -> None
     ).report.verified
 
 
+def test_supported_set_witnesses_do_not_require_cross_family_comparisons() -> None:
+    before = _release('e:A e:value "01"^^xsd:integer, "true"^^xsd:boolean.', EX.A)
+    after = _release('e:A e:value "1"^^xsd:integer, "1"^^xsd:boolean.', EX.A)
+    result = compare_instance_releases(
+        before,
+        after,
+        fields=(InstanceFieldPolicy("values", EX.value, equality="sparql-1.1"),),
+    )
+    assert result.report.verified and result.fields[0].accepted is True
+    assert result.patch is not None and result.patch.removals
+    assert result.fields[0].exact_equal is False
+    changed = _release('e:A e:value "1"^^xsd:integer, "false"^^xsd:boolean.', EX.A)
+    unknown = compare_instance_releases(
+        before,
+        changed,
+        fields=(InstanceFieldPolicy("values", EX.value, equality="sparql-1.1"),),
+    )
+    assert not unknown.report.verified and unknown.fields[0].accepted is not True
+
+
 def test_named_identity_is_explicit_and_blank_identity_never_uses_labels() -> None:
     before = _release('e:A e:label "same".', EX.A)
     after = _release('e:B e:label "same".', EX.B)
