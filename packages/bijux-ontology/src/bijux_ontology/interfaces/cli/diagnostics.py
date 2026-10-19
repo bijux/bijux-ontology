@@ -355,6 +355,7 @@ _CODES = {
         "datatype_not_disjoint datatypes_unverified datatypes_input_error "
         "datatypes_input_loss datatypes_profile_unsupported "
         "models_input_loss models_profile_unsupported "
+        "emitted_record_unverified emitted_unverified emitted_input_error "
         "rename_postconditions_missing rename_postcondition_unverified "
         "rename_base_mismatch rename_unverified rename_profile_violation "
         "rename_target_collision rename_builtin_source rename_module_scope "

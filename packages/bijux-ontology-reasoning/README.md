@@ -154,3 +154,12 @@ the datatype checker. One captured RDF import closure supports both operations.
 Unsupported contexts and uncovered scenarios remain unknown. Logical existence
 or cardinality never certifies emitted required fields; use ordinary model/output
 checking for those obligations.
+
+`instances.check_emitted_consistency(backend, ontology, emitted, bindings)`
+checks all statements in the two explicitly selected prepared RDF graphs with
+one captured ontology import closure. Inspect `.diagnosis` for global logical
+consistency and `.records` for original node participation. Bindings never filter
+the graph or identify a uniquely guilty record. Original scopes stay separate
+from the derived joint input. Missing explicit existential values and different
+IRIs retain ordinary OWL semantics; submission conformance remains a separate
+model/output check.
