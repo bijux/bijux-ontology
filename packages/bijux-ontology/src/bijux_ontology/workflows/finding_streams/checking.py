@@ -381,6 +381,7 @@ def stream_model_findings(
             operation.consume("states")
             operation.consume("bytes", 1024)
             record_index = totals.evaluated
+            sample_cursor = len(totals.samples)
             handoff = min(
                 stream_limits.max_retained - len(totals.samples),
                 prepared.limits.max_issues + 1,
@@ -394,7 +395,7 @@ def stream_model_findings(
             # cannot erase a paid finding merely because projection cannot run.
             for index in range(min(handoff, len(record.issues))):
                 issue = record.issues[index]
-                if not sample_codes or issue.code in sample_codes:
+                if not sample_codes:
                     totals.samples.append(
                         FindingEvent(totals.run_id, record_index, index, issue, ((),))
                     )
@@ -408,6 +409,17 @@ def stream_model_findings(
             totals.failing += int(any(issue.kind == "finding" for issue in record))
             totals.outcomes[record.outcome] = totals.outcomes.get(record.outcome, 0) + 1
             operation.consume("work", len(record.issues))
+            if sample_codes and handoff:
+                operation.consume("work", len(record.issues) * len(sample_codes))
+                for index, issue in enumerate(record.issues):
+                    if issue.code in sample_codes:
+                        totals.samples.append(
+                            FindingEvent(
+                                totals.run_id, record_index, index, issue, ((),)
+                            )
+                        )
+                        if len(totals.samples) == stream_limits.max_retained:
+                            break
             for issue in record:
                 totals.kinds[issue.kind] = totals.kinds.get(issue.kind, 0) + 1
             if (
@@ -439,6 +451,12 @@ def stream_model_findings(
                 event = FindingEvent(
                     totals.run_id, record_index, index, issue, tuple(paths)
                 )
+                if (
+                    sample_cursor < len(totals.samples)
+                    and totals.samples[sample_cursor].finding_index == index
+                ):
+                    totals.samples[sample_cursor] = event
+                    sample_cursor += 1
                 _send(event, sink, totals, stream_limits, operation)
             if any(issue.kind == "exhausted" for issue in record):
                 raise LimitExceeded(

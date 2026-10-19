@@ -176,6 +176,32 @@ def test_small_report_agreement_and_sample_filters_do_not_change_truth() -> None
         )
         assert filtered.raw_outcome == result.raw_outcome and filtered.semantic_complete
 
+    missing = document(0)
+    del missing["label"]
+    selected_code = "emission.value_mismatch"
+    selected_events: list[StreamEvent] = []
+    sampled = stream_model_findings(
+        plan,
+        (missing,),
+        USAGES,
+        sink=CallbackFindingSink(selected_events.append),
+        stream_limits=FindingStreamLimits(max_retained=1),
+        sample_codes=(selected_code,),
+    )
+    assert sampled.semantic_complete and sampled.export_complete
+    assert sampled.finding_count == sampled.emitted_findings == 2
+    assert len(sampled.samples) == 1
+    assert sampled.samples[0].issue.code == selected_code
+    assert sampled.samples[0].issue.location == "/child/label[0]"
+    assert sampled.samples[0].finding_index == 1
+    exported = next(
+        event
+        for event in selected_events
+        if isinstance(event, FindingEvent) and event.issue.code == selected_code
+    )
+    assert sampled.samples[0] is exported
+    assert sampled.samples[0].check_paths == ((), (1,))
+
 
 def test_broken_sink_and_callback_cancel_preserve_known_negative() -> None:
     """Output consumers never supply truth, and no next record is prefetched."""
