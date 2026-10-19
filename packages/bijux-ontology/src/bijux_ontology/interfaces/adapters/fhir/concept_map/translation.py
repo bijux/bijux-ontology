@@ -8,7 +8,7 @@ from typing import Literal
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,

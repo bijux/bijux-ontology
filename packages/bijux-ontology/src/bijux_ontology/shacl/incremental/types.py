@@ -7,7 +7,7 @@ from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.shacl.coverage import ShaclTarget

@@ -16,6 +16,13 @@ from bijux_ontology.documents.export import RDFExport
 from bijux_ontology.documents.forms.checking import check_document_form
 from bijux_ontology.documents.forms.types import DocumentFormCheck, FormRequirement
 from bijux_ontology.execution.budgets import operation
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.comparison import compare_observed_usages
@@ -23,13 +30,6 @@ from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.jsonld.resources import ContextResources, DocumentLoader
-from bijux_ontology.limits import (
-    Budget,
-    IssueCollector,
-    Limits,
-    bound_text,
-    retain_report,
-)
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
 

@@ -13,7 +13,7 @@ from bijux_ontology.data.query_usage import (
     read_query_usage,
 )
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 
 EX = Namespace("urn:query-use:")
 PREFIX = "PREFIX e:<urn:query-use:> "

@@ -29,7 +29,7 @@ from rdflib.namespace import XSD
 
 from bijux_ontology.declarations.types import FieldDeclaration, ValueDeclaration
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 
 SMALL, WIDE, FAR = (
     NamedEntity("datatype", "urn:" + name) for name in ("small", "wide", "far")

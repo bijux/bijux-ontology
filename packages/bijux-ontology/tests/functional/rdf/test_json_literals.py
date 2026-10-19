@@ -9,8 +9,8 @@ from rdflib import Literal
 from rdflib.namespace import RDF, XSD
 
 from bijux_ontology._jsonschema import DIALECT
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.literal_values.json import (
     JsonLiteralContract,
     JsonRequirement,

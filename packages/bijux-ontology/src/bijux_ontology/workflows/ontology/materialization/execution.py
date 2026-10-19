@@ -8,7 +8,7 @@ from rdflib import BNode, URIRef
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import bound_text
+from bijux_ontology.execution.limits import bound_text
 from bijux_ontology.rdf.entailment.preparation import prepare_entailment
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.patches.applying import _materialize

@@ -4,7 +4,7 @@ from collections.abc import Mapping
 
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 from ...axioms.changes.checking import prepare_axiom_change
 from ...axioms.changes.preconditions import source_base

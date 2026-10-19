@@ -8,7 +8,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import RDF, RDFS, SH, XSD
 
 from bijux_ontology.documents.export import export_rdf
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes

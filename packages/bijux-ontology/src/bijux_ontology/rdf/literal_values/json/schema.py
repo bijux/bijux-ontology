@@ -9,7 +9,7 @@ from bijux_ontology._jsonschema import DIALECT, backend, validator
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.limits import Budget, IssueCollector, bound_text
+from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 
 from .decoding import decimal_bound, integral
 from .locations import value_location

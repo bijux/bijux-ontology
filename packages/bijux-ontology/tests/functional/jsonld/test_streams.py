@@ -17,9 +17,9 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.jsonld.streams.checking import check_jsonld_records
 from bijux_ontology.jsonld.streams.types import JSONLDRecord
-from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.snapshots import PreparedSource

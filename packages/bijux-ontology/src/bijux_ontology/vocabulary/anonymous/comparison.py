@@ -9,7 +9,7 @@ from rdflib import BNode, Graph, URIRef
 
 from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget, IssueCollector, bound_text
+from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView

@@ -23,9 +23,14 @@ from bijux_ontology.documents.archive import bundle_reader, resource_path
 from bijux_ontology.documents.writing import write_bytes
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.limits import (
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import IssueCollector, Limits, bound_text, retain_report
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 from .types import (

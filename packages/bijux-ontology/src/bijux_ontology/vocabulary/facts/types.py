@@ -9,7 +9,7 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.roles.types import (
     Statement,

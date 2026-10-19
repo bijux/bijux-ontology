@@ -5,7 +5,7 @@ from collections.abc import Callable
 from threading import Event
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.processes.transport import exchange_worker
+from bijux_ontology.execution.processes.transport import exchange_worker
 
 
 def execute_worker(

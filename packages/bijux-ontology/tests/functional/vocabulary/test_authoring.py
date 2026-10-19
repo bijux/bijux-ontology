@@ -9,7 +9,7 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.documents.migrations import export_migration
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations import MigrationCheck
 from bijux_ontology.rdf.snapshots import PreparedSource

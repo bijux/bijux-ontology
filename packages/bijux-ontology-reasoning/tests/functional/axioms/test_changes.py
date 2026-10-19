@@ -40,7 +40,7 @@ from bijux_ontology_reasoning.inference.entailment import check_entailments
 
 from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 
 _BASE = """Ontology(<urn:changes>
  Declaration(Class(<urn:C>)) Declaration(Class(<urn:D>))
@@ -387,7 +387,7 @@ def test_unsupported_changed_axiom_and_cumulative_limits(
     def failure(document: OwlDocument, budget: Budget) -> Report:
         """Pay a real application diagnostic before a later check exhausts."""
         del document
-        from bijux_ontology.limits import IssueCollector
+        from bijux_ontology.execution.limits import IssueCollector
 
         issues = IssueCollector(budget)
         issues.append(

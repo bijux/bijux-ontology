@@ -9,9 +9,9 @@ import pytest
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF
 
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.processes import transport
-from bijux_ontology.processes.ownership import spawn_owned_process
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.processes import transport
+from bijux_ontology.execution.processes.ownership import spawn_owned_process
 from bijux_ontology.rdf.literal_values.markup import (
     MarkupCanonicalization,
     compare_markup_values,

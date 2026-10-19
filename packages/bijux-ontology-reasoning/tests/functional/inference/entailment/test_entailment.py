@@ -23,7 +23,7 @@ from bijux_ontology_reasoning.inference.entailment import check_entailments
 from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 
 A, B, C, D = (NamedEntity("class", "urn:" + name) for name in ("A", "B", "C", "D"))

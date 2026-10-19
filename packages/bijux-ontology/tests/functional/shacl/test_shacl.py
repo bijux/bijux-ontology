@@ -10,7 +10,12 @@ from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import AcceptancePolicy
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.coverage import ShaclCoverageContract

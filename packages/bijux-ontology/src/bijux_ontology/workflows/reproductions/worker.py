@@ -14,10 +14,10 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.patches.operations import serialized, snapshot
 from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.limits import IssueCollector, Limits, retain_report
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.resources import OfflineDocument, OfflineDocumentLoader
-from bijux_ontology.limits import IssueCollector, Limits, retain_report
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.rdf.loading import prepare_rdf

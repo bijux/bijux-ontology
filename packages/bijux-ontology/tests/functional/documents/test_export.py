@@ -11,7 +11,7 @@ from rdflib.namespace import RDF, XSD
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.export import export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource

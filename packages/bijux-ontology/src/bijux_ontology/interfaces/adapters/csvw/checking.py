@@ -5,7 +5,7 @@ from collections.abc import Mapping
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, IssueKind, Report
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,

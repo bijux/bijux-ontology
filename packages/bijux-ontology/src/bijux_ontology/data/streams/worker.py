@@ -22,8 +22,8 @@ from bijux_ontology.diagnostics.errors import (
 )
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.limits import IssueCollector, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
 from bijux_ontology.rdf.snapshots import PreparedSource

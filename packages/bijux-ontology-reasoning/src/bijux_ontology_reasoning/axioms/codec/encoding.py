@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from typing import cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .. import types as t

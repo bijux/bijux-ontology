@@ -10,7 +10,7 @@ from rdflib.plugins.sparql.processor import SPARQLProcessor
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import read_term, term_data
 from bijux_ontology.rdf.queries.syntax import prepare_local_query

@@ -17,7 +17,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import operation as operation
 from bijux_ontology.execution.inputs import capture as capture
-from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 
 
 def validate_output(

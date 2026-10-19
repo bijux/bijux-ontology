@@ -13,12 +13,12 @@ from rdflib.namespace import RDF, SH
 
 from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.jena import (
     JenaBackend,
     prepare_jena_backend,
 )
 from bijux_ontology.interfaces.adapters.jena.shacl import validate_jena_shapes
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import validate_shapes

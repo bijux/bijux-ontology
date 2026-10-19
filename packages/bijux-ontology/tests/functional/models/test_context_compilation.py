@@ -19,7 +19,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.context_compilation import CompiledContext, compile_context
 from bijux_ontology.models.context_probes import ContextProbe, ProbeSample
 from bijux_ontology.models.emission.serialization import check_instance

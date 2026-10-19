@@ -5,7 +5,7 @@ from typing import cast
 from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
 
 from .types import (
     DatasetPatch,

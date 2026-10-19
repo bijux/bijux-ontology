@@ -7,7 +7,7 @@ from rdflib import BNode, Dataset, Literal, Namespace, URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.algebra import rdf_set_operation
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches import BlankNodePair

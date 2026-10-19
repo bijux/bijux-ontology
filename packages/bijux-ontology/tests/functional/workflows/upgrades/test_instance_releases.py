@@ -6,7 +6,7 @@ from typing import cast
 
 from rdflib import BNode, Namespace, URIRef
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches import BlankNodePair, apply_rdf_patch

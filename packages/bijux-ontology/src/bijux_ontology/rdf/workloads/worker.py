@@ -18,8 +18,8 @@ from rdflib.plugins.sparql.sparql import Query
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
 from bijux_ontology.rdf.queries.syntax import prepare_local_query
 from bijux_ontology.rdf.terms import (

@@ -29,7 +29,7 @@ from bijux_ontology.diagnostics.errors import (
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,

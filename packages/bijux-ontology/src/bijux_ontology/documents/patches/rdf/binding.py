@@ -16,11 +16,16 @@ from bijux_ontology._jsonpaths import (
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.patches.operations import _Unsupported
 from bijux_ontology.execution.inputs import capture
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.observations import ObservedOccurrence
 from bijux_ontology.jsonld.selectors.types import EntitySelector
-from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.patches.types import DatasetPatch, PatchLiteral, PatchQuad
 
 from .types import SourceEditBinding

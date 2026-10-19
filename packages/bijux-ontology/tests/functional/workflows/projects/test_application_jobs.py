@@ -8,8 +8,8 @@ import pytest
 from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.cli import main
-from bijux_ontology.limits import Limits
 from bijux_ontology.workflows.projects.building import (
     ApplicationInput,
     CorpusDocumentInput,

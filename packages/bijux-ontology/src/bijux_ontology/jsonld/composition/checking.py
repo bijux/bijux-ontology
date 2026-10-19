@@ -7,6 +7,13 @@ from typing import Literal, cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.contexts.processing import (
     _capture,
@@ -24,13 +31,6 @@ from bijux_ontology.jsonld.resources import (
     context_resources,
 )
 from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import (
-    Budget,
-    IssueCollector,
-    Limits,
-    bound_text,
-    retain_report,
-)
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .types import ContextCase, ContextCaseResult, ContextComposition, ContextModule

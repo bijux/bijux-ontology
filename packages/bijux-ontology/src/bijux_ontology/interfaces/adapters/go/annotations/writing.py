@@ -13,14 +13,14 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
 
 from .checking import _expand, _registry

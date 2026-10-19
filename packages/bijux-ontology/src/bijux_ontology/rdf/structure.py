@@ -9,8 +9,8 @@ from rdflib.namespace import RDF
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget
 
-from ..limits import Budget
 from .terms import bound_node, term_key
 
 

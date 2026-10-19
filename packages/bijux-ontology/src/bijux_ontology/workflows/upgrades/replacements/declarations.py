@@ -9,7 +9,7 @@ from rdflib import Literal, URIRef
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
 from bijux_ontology.diagnostics.errors import LimitExceeded
-from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.roles.classification import declaration_role
 from bijux_ontology.rdf.roles.types import TermRole
 from bijux_ontology.rdf.terms import bound_node, literal_term

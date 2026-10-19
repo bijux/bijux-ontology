@@ -10,7 +10,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import IssueCollector, bound_text, retain_report
+from bijux_ontology.execution.limits import IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.types import PatchUnavailable
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata

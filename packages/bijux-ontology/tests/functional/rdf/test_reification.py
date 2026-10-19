@@ -10,7 +10,7 @@ from rdflib.namespace import RDF, RDFS, XSD
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.reification.checking import check_reifications
 from bijux_ontology.rdf.reification.reading import inspect_reifications
 from bijux_ontology.rdf.reification.types import ReificationContract, ReificationRecord

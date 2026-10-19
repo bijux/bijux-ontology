@@ -14,7 +14,7 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import _charge_graph
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource, copy_graph
 from bijux_ontology.rdf.sources import Payload, RdfSource

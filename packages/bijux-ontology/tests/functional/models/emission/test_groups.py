@@ -15,7 +15,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission

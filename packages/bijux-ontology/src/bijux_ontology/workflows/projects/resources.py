@@ -15,6 +15,7 @@ from rdflib import ConjunctiveGraph, Dataset, Graph
 from bijux_ontology._json import _decode_json, own_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.jsonld.resources import (
     ContextResources,
     DocumentLoader,
@@ -22,7 +23,6 @@ from bijux_ontology.jsonld.resources import (
     OfflineDocument,
     OfflineDocumentLoader,
 )
-from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.loading import prepare_input
 from bijux_ontology.rdf.snapshots import PreparedSource

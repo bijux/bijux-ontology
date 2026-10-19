@@ -9,6 +9,7 @@ from rdflib import URIRef
 from rdflib.namespace import RDFS
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.fhir.code_system import (
     check_code_membership,
     read_code_system,
@@ -18,7 +19,6 @@ from bijux_ontology.interfaces.adapters.fhir.identity import (
     FhirCodeBinding,
     FhirCodeIdentity,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.annotations.coverage import check_annotation_coverage
 from bijux_ontology.vocabulary.annotations.types import (
     AnnotationRequirement,

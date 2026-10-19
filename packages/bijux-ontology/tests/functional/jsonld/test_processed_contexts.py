@@ -9,13 +9,13 @@ from typing import overload
 import pytest
 
 from bijux_ontology.absence import ABSENT
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.contexts import (
     ContextScope,
     compare_context_definitions,
     inspect_context,
 )
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.limits import Budget, Limits
 
 EX = "https://example.org/v#"
 PREFIX = {"@id": EX, "@prefix": True}

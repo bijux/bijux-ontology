@@ -4,8 +4,8 @@ from rdflib import BNode, Graph
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
 from bijux_ontology.rdf.terms import bound_node, validate_triple
 

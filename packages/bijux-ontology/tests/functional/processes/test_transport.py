@@ -12,7 +12,7 @@ from rdflib import Graph
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.processes.transport import exchange_worker, run_worker
+from bijux_ontology.execution.processes.transport import exchange_worker, run_worker
 from bijux_ontology.shacl.checking import validate_shapes
 
 

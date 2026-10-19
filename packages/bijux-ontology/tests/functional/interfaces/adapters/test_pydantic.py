@@ -106,7 +106,7 @@ def test_exclusions_and_duplicate_aliases_do_not_silently_rewrite_contracts() ->
 
 
 def test_extraction_limits_retain_prior_models_and_completed_findings() -> None:
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     class First(BaseModel):
         name: str
@@ -230,7 +230,7 @@ def test_output_registries_preserve_conflicts_and_bounded_prefixes() -> None:
     from dataclasses import replace
 
     from bijux_ontology.declarations.types import ModelDeclaration
-    from bijux_ontology.limits import Budget, Limits
+    from bijux_ontology.execution.limits import Budget, Limits
 
     small = RdfField(
         str(EX.title),

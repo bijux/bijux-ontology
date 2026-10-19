@@ -10,6 +10,7 @@ from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.go.annotations import (
     GoAnnotationDocument,
     GoAnnotationPolicy,
@@ -20,7 +21,6 @@ from bijux_ontology.interfaces.adapters.go.annotations import (
     read_go_annotations,
     write_go_annotations,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.registry.types import (
     IdentifierRegistry,

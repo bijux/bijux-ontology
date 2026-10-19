@@ -15,12 +15,12 @@ from typing import Any, cast
 import pytest
 from rdflib import Graph
 
-import bijux_ontology.processes.ownership as processes
-from bijux_ontology.errors import LimitExceeded, ResourceError
+import bijux_ontology.execution.processes.ownership as processes
+from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
+from bijux_ontology.execution.limits import Limits
+from bijux_ontology.execution.processes import transport as worker_transport
+from bijux_ontology.execution.processes.transport import stop_process
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import Limits
-from bijux_ontology.processes import transport as worker_transport
-from bijux_ontology.processes.transport import stop_process
 from bijux_ontology.rdf.queries.access import QueryScope, query_rdf
 from bijux_ontology.shacl import transport as shacl_transport
 

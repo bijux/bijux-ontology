@@ -7,7 +7,7 @@ from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.registry.prefixes import compact_iri, expand_curie
 from bijux_ontology.vocabulary.sources.view import Vocabulary

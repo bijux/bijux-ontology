@@ -11,8 +11,8 @@ from rdflib import Dataset, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.oak import OakOperationError, as_oak
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.registry.types import (
     IdentifierRegistry,

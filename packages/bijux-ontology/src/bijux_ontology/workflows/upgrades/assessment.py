@@ -12,8 +12,8 @@ from bijux_ontology.data.query_usage.types import QueryUsage
 from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.resource_roles.checking import check_resource_roles
 from bijux_ontology.models.resource_roles.types import RoleUse

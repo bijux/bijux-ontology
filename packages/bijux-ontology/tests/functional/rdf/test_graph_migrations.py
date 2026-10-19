@@ -11,7 +11,7 @@ from bijux_ontology.data.query_rules.checking import run_query_rules
 from bijux_ontology.data.query_rules.types import QueryRule
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.documents.migrations import export_migration
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.migrations.graphs import GraphRoute, migrate_graphs

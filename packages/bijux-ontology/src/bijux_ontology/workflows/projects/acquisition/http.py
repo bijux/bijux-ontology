@@ -14,7 +14,7 @@ from urllib.request import (
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import bound_text
+from bijux_ontology.execution.limits import bound_text
 from bijux_ontology.rdf.compression import decode_gzip
 
 from .types import AcquiredResource, AcquisitionPolicy, _http_url

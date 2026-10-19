@@ -7,6 +7,12 @@ from typing import cast
 from bijux_ontology._jsonpaths import SourcePath, at_path, bound_path, bounded_location
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.contexts.usages import (
     SourceTerm,
@@ -15,7 +21,6 @@ from bijux_ontology.jsonld.contexts.usages import (
 )
 from bijux_ontology.jsonld.resources import ContextInputError
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
-from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .types import (

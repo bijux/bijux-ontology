@@ -21,6 +21,7 @@ from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled import (
     AllowedDifference,
     AllowedIntersection,
@@ -31,7 +32,6 @@ from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled import (
     compile_bindings,
     select_binding,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission

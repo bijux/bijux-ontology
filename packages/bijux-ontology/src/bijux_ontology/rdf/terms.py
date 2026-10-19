@@ -8,9 +8,9 @@ from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution import limits
+from bijux_ontology.execution.limits import Budget
 
-from .. import limits
-from ..limits import Budget
 from .identifiers import absolute_iri, language_tag
 
 

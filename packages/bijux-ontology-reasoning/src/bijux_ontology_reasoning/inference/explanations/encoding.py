@@ -3,7 +3,7 @@
 from dataclasses import replace
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.codec.encoding import ConstructionEncoder

@@ -3,7 +3,7 @@
 from bijux_ontology._jsonpaths import bounded_location
 from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.diagnostics.reports import Location
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 
 def value_location(

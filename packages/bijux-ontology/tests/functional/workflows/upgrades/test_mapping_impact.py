@@ -9,7 +9,7 @@ from rdflib import Graph, Namespace
 from rdflib.namespace import RDF, SKOS
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.mappings import MappingPolicy, MappingRead, read_sssom
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence

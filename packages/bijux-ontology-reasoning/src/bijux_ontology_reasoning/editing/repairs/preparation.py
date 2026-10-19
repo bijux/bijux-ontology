@@ -7,7 +7,7 @@ from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import IssueCollector, bound_text, retain_report
+from bijux_ontology.execution.limits import IssueCollector, bound_text, retain_report
 
 from ...axioms.codec.encoding import ConstructionEncoder
 from ...axioms.inspection import inspect_axioms

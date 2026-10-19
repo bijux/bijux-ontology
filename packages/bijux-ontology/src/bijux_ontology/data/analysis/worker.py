@@ -9,7 +9,7 @@ from typing import cast
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import ControlBudget
-from bijux_ontology.limits import Limits, bound_text
+from bijux_ontology.execution.limits import Limits, bound_text
 
 
 def calculate(request: dict[str, object], capacity: int) -> dict[str, object]:

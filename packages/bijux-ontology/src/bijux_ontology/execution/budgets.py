@@ -5,8 +5,8 @@ import threading
 import time
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
-from bijux_ontology.processes.transport import checkpoint
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
+from bijux_ontology.execution.processes.transport import checkpoint
 
 
 def operation(limits: Limits | None, budget: Budget | None) -> Budget:

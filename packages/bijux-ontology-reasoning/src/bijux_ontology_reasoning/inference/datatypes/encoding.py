@@ -9,7 +9,7 @@ from rdflib import RDF
 
 from bijux_ontology.declarations.types import FieldDeclaration
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
-from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.terms import bound_node
 
 from ...axioms.codec.decoding import ProjectionDecoder

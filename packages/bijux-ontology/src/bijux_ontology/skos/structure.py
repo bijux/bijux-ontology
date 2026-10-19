@@ -8,7 +8,7 @@ from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import RDF, SKOS
 from rdflib.term import Node
 
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 _RELATIONS = frozenset(
     (

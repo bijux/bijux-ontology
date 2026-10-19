@@ -10,7 +10,7 @@ from rdflib.namespace import OWL, RDF, SH, XSD
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.export import export_rdf
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource

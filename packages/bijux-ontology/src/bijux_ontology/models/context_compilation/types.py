@@ -8,7 +8,7 @@ from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 
 
 @dataclass(frozen=True, init=False)

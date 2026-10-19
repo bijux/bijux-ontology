@@ -4,7 +4,12 @@ from importlib import import_module
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 
 from ..code_system.reading import _operation as operation
 from ..json import UnsupportedJsonNumber, decode_fhir_json, same_json

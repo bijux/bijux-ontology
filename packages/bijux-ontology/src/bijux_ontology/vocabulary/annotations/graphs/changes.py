@@ -7,7 +7,7 @@ from rdflib.namespace import OWL
 
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import IssueCollector, retain_report
+from bijux_ontology.execution.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.patches.planning import Captured, Rejected
 from bijux_ontology.rdf.patches.types import (
     PatchQuad,

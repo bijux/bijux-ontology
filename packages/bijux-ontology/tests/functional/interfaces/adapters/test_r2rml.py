@@ -23,6 +23,7 @@ from bijux_ontology.declarations.types import (
     OutputRequirement,
     ValueDeclaration,
 )
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.r2rml import (
     MorphBackend,
     R2rmlCheck,
@@ -34,7 +35,6 @@ from bijux_ontology.interfaces.adapters.r2rml import (
     prepare_morph_backend,
     prepare_sqlite_snapshot,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource

@@ -8,7 +8,7 @@ import pytest
 from rdflib import Literal
 from rdflib.namespace import XSD
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.temporal import (
     RelativeTemporal,
     TemporalField,

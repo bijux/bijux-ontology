@@ -14,6 +14,7 @@ from bijux_ontology._jsonpaths import (
 )
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.jsonld.entities import (
     EntityInventory,
     EntityKey,
@@ -32,7 +33,6 @@ from bijux_ontology.jsonld.selectors.types import (
     SourceSelector,
     Step,
 )
-from bijux_ontology.limits import Budget, IssueCollector
 
 
 def _selector_metadata(

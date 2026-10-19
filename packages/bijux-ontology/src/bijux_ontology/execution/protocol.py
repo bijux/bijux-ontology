@@ -1,7 +1,7 @@
 """Prepaid bounds for the closed JSON worker protocol."""
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 
 def json_bound(value: object, budget: Budget) -> int:

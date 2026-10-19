@@ -7,16 +7,16 @@ from typing import Self
 from bijux_ontology._json import _decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
-from bijux_ontology.jsonld.preparation import JSONLDPreparation, prepare_jsonld
-from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
-from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
+from bijux_ontology.jsonld.preparation import JSONLDPreparation, prepare_jsonld
+from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
+from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .types import JSONLDRecord, JSONLDRecordResult, RecordCheck

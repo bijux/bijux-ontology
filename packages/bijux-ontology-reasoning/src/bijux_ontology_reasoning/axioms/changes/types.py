@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 from ...backend.types import BackendCapability
 from ...documents.types import NativeProfile, OwlDocument, OwlSyntax

@@ -17,6 +17,7 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.comparison import compare_serializations
@@ -29,7 +30,6 @@ from bijux_ontology.jsonld.framing.checking import frame_document
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.selectors.codecs import selector_from_data
 from bijux_ontology.jsonld.selectors.types import EntitySelector
-from bijux_ontology.limits import Limits
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.rdf.sources import RdfSource

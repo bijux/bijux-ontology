@@ -17,7 +17,7 @@ from bijux_ontology.declarations import (
 from bijux_ontology.declarations.resource_roles import ResourceRole
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report, combine_reports
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.emission.checking import check_emission

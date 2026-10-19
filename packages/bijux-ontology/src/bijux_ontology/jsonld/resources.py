@@ -14,7 +14,7 @@ from bijux_ontology.diagnostics.errors import (
     LimitExceeded,
     attach_input_failure,
 )
-from bijux_ontology.limits import Budget, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 DocumentLoader = Callable[[str, dict[str, object]], dict[str, object]]

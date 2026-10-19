@@ -7,7 +7,7 @@ from rdflib import Literal, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.snapshots import PreparedSource
 
 

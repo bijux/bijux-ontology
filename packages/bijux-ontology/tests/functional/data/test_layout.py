@@ -14,7 +14,7 @@ from bijux_ontology.data.layout import (
     check_dataset_layout,
 )
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource

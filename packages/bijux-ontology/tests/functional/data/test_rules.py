@@ -85,7 +85,7 @@ def test_rule_result_budgets_preserve_prior_scopes_and_callback_exceptions() -> 
     from collections.abc import Iterator
 
     from bijux_ontology.diagnostics.errors import LimitExceeded
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     data = Graph().add((EX.record, EX.related, EX.value))
 

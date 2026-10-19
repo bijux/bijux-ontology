@@ -18,7 +18,7 @@ from bijux_ontology.data.analysis import (
     resnik_term_sets,
 )
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.vocabulary.browsing.inspection import (
     VocabularyView,
     inspect_vocabulary,

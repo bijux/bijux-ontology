@@ -18,10 +18,10 @@ from bijux_ontology.documents.relocation import (
     export_relocation,
     relocate_document,
 )
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.resources import OfflineDocument, OfflineDocumentLoader
 from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 
 OLD = "https://old.example/records/document.jsonld"

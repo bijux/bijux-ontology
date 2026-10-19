@@ -8,17 +8,17 @@ from urllib.parse import unquote, urldefrag
 from bijux_ontology._json import decode_json, own_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.resources import DocumentLoader, _consume_work
-from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
+from bijux_ontology.jsonld.conversion import DirectionPolicy
+from bijux_ontology.jsonld.preparation import prepare_jsonld
+from bijux_ontology.jsonld.resources import DocumentLoader, _consume_work
+from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .types import HtmlExtraction, HtmlScript

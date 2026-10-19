@@ -10,7 +10,7 @@ from rdflib.namespace import RDF, RDFS, SKOS, XSD
 
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.skos.label_relations import XLRelationPolicy, check_xl_relations
 from bijux_ontology.skos.xl import XL
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary

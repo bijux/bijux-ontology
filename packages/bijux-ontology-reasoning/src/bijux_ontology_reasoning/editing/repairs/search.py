@@ -7,7 +7,12 @@ from threading import Event
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 
 from ...axioms.types import ProjectedAxiom
 from ...backend.types import OwlProfileBackend

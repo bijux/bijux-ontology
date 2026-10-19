@@ -9,6 +9,7 @@ from rdflib import Dataset, Graph, Literal, Namespace
 from rdflib.namespace import DCTERMS, FOAF, RDF, XSD
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.adapters.dcat import (
     CatalogBinding,
     CatalogRole,
@@ -16,7 +17,6 @@ from bijux_ontology.interfaces.adapters.dcat import (
     check_catalog,
     prepare_catalog_profile,
 )
-from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 
 E = Namespace("https://example.org/catalog/")

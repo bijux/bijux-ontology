@@ -3,7 +3,7 @@
 from xml.parsers import expat
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 from .types import XMLCapabilityError, XMLEncoding, XMLInput
 

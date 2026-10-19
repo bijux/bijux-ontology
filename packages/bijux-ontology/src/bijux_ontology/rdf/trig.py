@@ -12,7 +12,7 @@ from rdflib.plugins.serializers.trig import TrigSerializer
 from rdflib.term import Identifier, Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 
 class _InventorySink(RDFSink):

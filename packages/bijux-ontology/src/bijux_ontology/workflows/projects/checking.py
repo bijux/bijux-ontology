@@ -15,7 +15,7 @@ from bijux_ontology.diagnostics.reports import (
     Report,
     combine_reports,
 )
-from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.sources.view import Vocabulary

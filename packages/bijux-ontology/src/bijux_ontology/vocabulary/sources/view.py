@@ -11,7 +11,7 @@ from rdflib.namespace import RDF
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import _read_graph, bind_namespaces, copy_graph

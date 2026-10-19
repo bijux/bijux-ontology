@@ -9,7 +9,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.models.resource_roles import RoleUse
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.comparison import compare_vocabularies

@@ -9,8 +9,8 @@ from rdflib import Dataset, Graph
 from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource, bind_namespaces
 from bijux_ontology.rdf.trig import serialize_trig

@@ -13,7 +13,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage

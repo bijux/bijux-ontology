@@ -7,7 +7,7 @@ from rdflib import BNode, Graph, Namespace
 from rdflib.namespace import RDF, SKOS
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.publication import check_scheme_coverage
 from bijux_ontology.skos.xl import XL

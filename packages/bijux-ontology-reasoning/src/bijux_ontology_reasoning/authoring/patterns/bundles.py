@@ -5,7 +5,7 @@ from pathlib import Path
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.stores.seals import seal_files
 
 from .types import DosdpQueryBackend

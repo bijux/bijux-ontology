@@ -35,7 +35,7 @@ from rdflib import BNode, Dataset, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView

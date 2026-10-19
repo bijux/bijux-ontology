@@ -12,13 +12,13 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import EntityKey, object_key
 from bijux_ontology.jsonld.entities import source_entity as source_record
 from bijux_ontology.jsonld.observations import ObservedOccurrence
 from bijux_ontology.jsonld.values import ValueTraits
-from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.models.emission.bindings import (
     candidate_paths,
     same_contribution,

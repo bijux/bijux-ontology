@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import language_tag
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry

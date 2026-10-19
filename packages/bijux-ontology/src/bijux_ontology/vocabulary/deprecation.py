@@ -9,7 +9,7 @@ from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 

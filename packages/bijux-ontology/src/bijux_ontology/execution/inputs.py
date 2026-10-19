@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from typing import Any, TypeVar
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 _T = TypeVar("_T")
 

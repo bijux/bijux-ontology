@@ -9,7 +9,7 @@ from bijux_ontology.declarations.types import (
     TermDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.vocabulary.comparison import compare_vocabularies
 from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 

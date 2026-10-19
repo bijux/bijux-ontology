@@ -8,7 +8,7 @@ from typing import Literal
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.types import MappingRow, MappingSet
 

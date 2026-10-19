@@ -11,9 +11,9 @@ from rdflib import Literal
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.interfaces.execution.record_streams import AsyncJSONLDRecords
 from bijux_ontology.jsonld.streams import JSONLDRecord, check_jsonld_records
-from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.snapshots import PreparedSource
 

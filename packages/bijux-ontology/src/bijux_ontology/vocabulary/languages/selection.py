@@ -5,7 +5,7 @@ from typing import Literal, TypeVar, cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Annotation, Selection

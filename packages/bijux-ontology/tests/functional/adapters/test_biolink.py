@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.biolink import (
     BiolinkAssociation,
     BiolinkModel,
@@ -20,7 +21,6 @@ from bijux_ontology.interfaces.adapters.biolink import (
     check_biolink,
     prepare_biolink,
 )
-from bijux_ontology.limits import Budget, Limits
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "biolink"
 # Exact raw official release files; gzip is only fixture storage. Model sources:

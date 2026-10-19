@@ -13,14 +13,14 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.paths import RdfPath
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata

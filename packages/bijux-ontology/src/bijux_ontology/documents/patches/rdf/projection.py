@@ -19,18 +19,18 @@ from bijux_ontology.documents.patches.operations import (
     snapshot,
 )
 from bijux_ontology.documents.patches.types import DocumentPatch, RetainedUsage
-from bijux_ontology.jsonld.checking import prepare_usages
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.resources import ContextResources, DocumentLoader
-from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
+from bijux_ontology.jsonld.checking import prepare_usages
+from bijux_ontology.jsonld.conversion import DirectionPolicy
+from bijux_ontology.jsonld.preparation import prepare_jsonld
+from bijux_ontology.jsonld.resources import ContextResources, DocumentLoader
+from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch

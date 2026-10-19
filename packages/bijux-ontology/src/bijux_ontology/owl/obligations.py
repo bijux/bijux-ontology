@@ -10,7 +10,7 @@ from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import DatatypeRelation, Regime, datatype_relation
 from bijux_ontology.rdf.snapshots import PreparedSource, _is_owned_reader, copy_graph

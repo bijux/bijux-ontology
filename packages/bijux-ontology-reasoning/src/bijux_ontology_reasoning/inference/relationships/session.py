@@ -8,7 +8,7 @@ from bijux_ontology._json import object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 
 from ...axioms.types import NamedEntity
 from ...backend.owlapi.protocol import (

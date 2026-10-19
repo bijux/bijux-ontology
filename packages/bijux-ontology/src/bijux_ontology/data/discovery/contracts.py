@@ -14,7 +14,12 @@ from bijux_ontology.declarations.path_fields import PathFieldDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.models.path_fields.checking import check_path_fields
 from bijux_ontology.models.path_fields.types import PathFieldUsage
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource

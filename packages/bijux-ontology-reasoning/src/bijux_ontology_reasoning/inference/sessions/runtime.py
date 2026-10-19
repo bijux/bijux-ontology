@@ -13,9 +13,9 @@ from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.processes.sessions import FramedSession
-from bijux_ontology.processes.transport import checkpoint
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.execution.processes.sessions import FramedSession
+from bijux_ontology.execution.processes.transport import checkpoint
 
 from ...backend.owlapi.bundles import qualify_backend
 from ...backend.owlapi.execution import qualify_capability

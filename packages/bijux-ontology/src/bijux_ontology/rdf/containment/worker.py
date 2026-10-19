@@ -13,8 +13,8 @@ from rdflib.term import Identifier, Node
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import read_witness, term_data

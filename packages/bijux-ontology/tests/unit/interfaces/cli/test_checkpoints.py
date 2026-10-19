@@ -4,11 +4,11 @@ import json
 from pathlib import Path
 
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.execution.checkpoints import (
     read_completed,
     retain_completed,
 )
-from bijux_ontology.limits import Limits
 
 
 def test_checkpoint_cap_retains_the_complete_prefix_and_marks_lost_evidence(

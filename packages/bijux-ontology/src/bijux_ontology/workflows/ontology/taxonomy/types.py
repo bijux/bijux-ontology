@@ -10,7 +10,7 @@ from rdflib.namespace import RDFS
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import TermRoleOccurrence

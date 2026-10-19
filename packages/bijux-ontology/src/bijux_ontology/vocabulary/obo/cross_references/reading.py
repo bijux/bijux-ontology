@@ -6,7 +6,12 @@ from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.annotations.graphs.reading import (

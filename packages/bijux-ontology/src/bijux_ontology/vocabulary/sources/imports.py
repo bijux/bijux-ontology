@@ -12,8 +12,8 @@ from bijux_ontology.diagnostics.errors import (
     attach_input_failure,
 )
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.jsonld.resources import DocumentLoader
-from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource

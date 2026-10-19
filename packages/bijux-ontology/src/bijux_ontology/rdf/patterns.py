@@ -3,7 +3,7 @@
 from importlib.metadata import PackageNotFoundError, version
 from typing import Protocol, cast
 
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 _PATTERN_MEMORY = 65_536
 

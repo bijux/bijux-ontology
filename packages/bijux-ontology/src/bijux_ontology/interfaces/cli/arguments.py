@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from importlib.metadata import version
 from pathlib import Path
 
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 
 
 @dataclass(frozen=True)

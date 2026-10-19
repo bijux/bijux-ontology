@@ -9,6 +9,13 @@ from rdflib import BNode, Literal, URIRef
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import EntityKey
@@ -20,13 +27,6 @@ from bijux_ontology.jsonld.resources import (
 )
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import EntitySelector
-from bijux_ontology.limits import (
-    Budget,
-    IssueCollector,
-    Limits,
-    bound_text,
-    retain_report,
-)
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node

@@ -24,7 +24,7 @@ from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, URIRef
 from rdflib.namespace import OWL, RDF
 
 from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource

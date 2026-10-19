@@ -11,7 +11,7 @@ from rdflib.namespace import OWL, RDF, RDFS, XSD
 from bijux_ontology.absence import Absent
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 DatatypeRelation = Choice["equal", "subset", "overlap", "disjoint", "unknown"]

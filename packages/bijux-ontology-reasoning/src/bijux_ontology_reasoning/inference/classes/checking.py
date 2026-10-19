@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from bijux_ontology._json import object_value
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.codec.encoding import ConstructionEncoder

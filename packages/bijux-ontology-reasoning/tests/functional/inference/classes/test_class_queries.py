@@ -24,7 +24,7 @@ from bijux_ontology_reasoning.inference.sessions import (
 from rdflib import URIRef
 from rdflib.namespace import RDFS
 
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
 

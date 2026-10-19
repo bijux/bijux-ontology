@@ -8,7 +8,7 @@ from rdflib.namespace import SH, XSD
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.shacl.analysis import ShapeAnalysis, analyze_shape_profile
 from bijux_ontology.shacl.checking import validate_shapes

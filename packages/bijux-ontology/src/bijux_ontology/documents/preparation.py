@@ -7,9 +7,9 @@ from bijux_ontology.diagnostics.errors import (
     ResourceError,
     attach_input_failure,
 )
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_input, prepare_native
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Compression, Payload, RdfSource

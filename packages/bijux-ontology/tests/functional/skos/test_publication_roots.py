@@ -8,7 +8,7 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SKOS
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.publication import TopConceptPolicy, check_top_concepts
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary

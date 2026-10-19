@@ -7,7 +7,7 @@ from rdflib import BNode, Graph, Literal, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import Statement

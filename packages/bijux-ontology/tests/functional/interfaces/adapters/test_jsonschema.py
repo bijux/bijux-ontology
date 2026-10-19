@@ -9,13 +9,13 @@ from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.declarations.types import OutputRequirement, ValueDeclaration
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.jsonschema import (
     SchemaModel,
     check_instance,
     model_declarations,
 )
-from bijux_ontology.limits import Limits
 from bijux_ontology.models.emission.types import ModelUsage
 
 

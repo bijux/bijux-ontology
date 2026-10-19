@@ -9,12 +9,12 @@ from typing import cast
 
 from bijux_ontology._jsonpaths import SourcePath, at_path, location
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
     ObservedUsage,
     occurrences,
 )
-from bijux_ontology.limits import Budget
 
 from .projections import NamedProjections
 from .resources import context_is_unscoped

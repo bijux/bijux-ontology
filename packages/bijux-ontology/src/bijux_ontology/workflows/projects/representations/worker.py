@@ -12,10 +12,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.budgets import ControlBudget, Operation
-from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     BudgetKind,
     IssueCollector,
@@ -23,6 +20,9 @@ from bijux_ontology.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.jsonld.preparation import prepare_jsonld
+from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource

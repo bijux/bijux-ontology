@@ -15,7 +15,7 @@ from bijux_ontology._json import (
     string_value,
 )
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource

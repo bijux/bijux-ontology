@@ -5,7 +5,7 @@ import zlib
 from io import BytesIO
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 
 def decode_gzip(payload: bytes, *, max_bytes: int, budget: Budget) -> bytes:

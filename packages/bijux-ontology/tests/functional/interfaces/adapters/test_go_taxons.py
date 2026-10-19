@@ -6,6 +6,7 @@ from hashlib import sha256
 
 from rdflib import URIRef
 
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.go.taxon_constraints import (
     GoTaxonAnnotation,
     GoTaxonPolicy,
@@ -13,7 +14,6 @@ from bijux_ontology.interfaces.adapters.go.taxon_constraints import (
     GoTaxonResource,
     check_go_taxa,
 )
-from bijux_ontology.limits import Budget, Limits
 
 P = """@prefix e: <urn:go:test:> .
 @prefix obo: <http://purl.obolibrary.org/obo/> .

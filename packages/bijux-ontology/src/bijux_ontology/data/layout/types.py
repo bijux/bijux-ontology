@@ -7,7 +7,7 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology._jsonpaths import bound_index
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.terms import bound_node
 
 _Item = TypeVar("_Item")

@@ -12,7 +12,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import IssueCollector, retain_report
+from bijux_ontology.execution.limits import IssueCollector, retain_report
 from bijux_ontology.owl.obligations import OntologyObligation, _NativeProofs
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.roles.classification import declaration_role

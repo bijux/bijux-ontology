@@ -5,7 +5,7 @@ from typing import Literal
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.vocabulary.browsing.results import SearchMatch
 
 

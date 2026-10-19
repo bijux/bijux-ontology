@@ -10,7 +10,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 from xml.parsers import expat
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.loading import prepare_input
 from bijux_ontology.rdf.sources import RdfSource

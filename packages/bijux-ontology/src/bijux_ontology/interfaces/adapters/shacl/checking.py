@@ -13,18 +13,18 @@ from bijux_ontology._jsonpaths import at_path, bound_path
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.jsonld.checking import prepare_usages
-from bijux_ontology.jsonld.entities import object_key
-from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.resources import DocumentLoader
-from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
+from bijux_ontology.jsonld.checking import prepare_usages
+from bijux_ontology.jsonld.entities import object_key
+from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.resources import DocumentLoader
+from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.models.emission.bindings import source_entity
 from bijux_ontology.models.emission.serialization import (
     InstanceCheck,

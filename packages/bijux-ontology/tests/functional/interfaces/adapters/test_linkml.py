@@ -66,7 +66,7 @@ def test_unprepared_imports_do_not_trigger_implicit_framework_retrieval() -> Non
 
 
 def test_induced_slot_limits_preserve_completed_models_and_diagnostics() -> None:
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     result = model_declarations(SchemaView(SCHEMA), limits=Limits(max_issues=1))
     assert len(result.declarations) == 1

@@ -18,13 +18,18 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import object_key
 from bijux_ontology.jsonld.observations import ObservedOccurrence
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.models.emission.bindings import (
     candidate_paths,
     source_entity,

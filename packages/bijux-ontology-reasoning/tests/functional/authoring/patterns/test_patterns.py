@@ -23,7 +23,7 @@ from rdflib.namespace import OWL
 
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.queries import QueryScope
 from bijux_ontology.rdf.sources import RdfSource
 

@@ -7,7 +7,7 @@ from rdflib.namespace import XSD
 from rdflib.plugins.sparql.parserutils import CompValue
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 _NORMALIZED = frozenset((XSD.token, XSD.normalizedString))
 

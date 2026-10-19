@@ -3,8 +3,8 @@
 from bijux_ontology.declarations.types import FieldDeclaration, ValueDeclaration
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import IssueCollector
 from bijux_ontology.interfaces.adapters.contracts import RdfField
-from bijux_ontology.limits import IssueCollector
 
 
 def select_contract(

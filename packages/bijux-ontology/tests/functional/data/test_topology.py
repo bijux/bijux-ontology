@@ -12,7 +12,7 @@ from bijux_ontology.data.topology import TopologyRecord, check_record_topology
 from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Location
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource

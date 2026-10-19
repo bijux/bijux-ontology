@@ -8,6 +8,7 @@ from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.comparison import compare_context_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
@@ -15,7 +16,6 @@ from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource

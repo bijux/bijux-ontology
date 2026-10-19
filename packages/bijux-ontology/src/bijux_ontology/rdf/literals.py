@@ -8,9 +8,8 @@ from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import bound_text
+from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 
-from ..limits import Budget, IssueCollector
 from .datatype_evaluators.registry import DatatypeRegistry
 from .datatype_evaluators.types import DatatypeRelation as DatatypeRelation
 from .datatype_evaluators.types import Regime as Regime

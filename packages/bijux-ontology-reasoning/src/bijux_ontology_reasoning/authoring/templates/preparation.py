@@ -9,7 +9,7 @@ from typing import cast
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import IssueCollector
+from bijux_ontology.execution.limits import IssueCollector
 
 from ...axioms.codec.encoding import ConstructionEncoder
 from ...axioms.types import (

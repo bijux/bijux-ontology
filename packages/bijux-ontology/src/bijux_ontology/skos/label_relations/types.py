@@ -9,7 +9,7 @@ from rdflib import Literal as RdfLiteral
 
 from bijux_ontology.absence import Absent
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.vocabulary.browsing.results import Edge
 

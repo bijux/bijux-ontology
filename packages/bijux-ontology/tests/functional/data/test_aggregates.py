@@ -11,7 +11,7 @@ from rdflib.namespace import XSD
 from bijux_ontology.data.aggregates import AggregateGroup, check_aggregates
 from bijux_ontology.data.keys import KeyRecord
 from bijux_ontology.declarations.aggregates import AggregateContract
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
 

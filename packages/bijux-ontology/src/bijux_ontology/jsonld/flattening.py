@@ -10,7 +10,7 @@ from bijux_ontology._json import own_json
 from bijux_ontology._jsonpaths import SourcePath, location
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 
 from .conversion import DirectionPolicy

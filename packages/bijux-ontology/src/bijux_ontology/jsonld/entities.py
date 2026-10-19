@@ -10,12 +10,12 @@ from types import MappingProxyType
 
 from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
     ObservedUsage,
     occurrences,
 )
-from bijux_ontology.limits import Budget
 
 
 @dataclass(frozen=True)

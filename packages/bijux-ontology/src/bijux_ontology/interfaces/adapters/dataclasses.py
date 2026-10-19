@@ -6,13 +6,13 @@ from dataclasses import fields, is_dataclass
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction, RdfField
 from bijux_ontology.interfaces.adapters.field_contracts import (
     declare_field,
     select_alias,
     select_contract,
 )
-from bijux_ontology.limits import Budget, IssueCollector, Limits
 
 
 def model_declarations(

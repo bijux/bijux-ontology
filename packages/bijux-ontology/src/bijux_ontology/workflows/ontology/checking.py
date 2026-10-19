@@ -9,7 +9,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.checking import (
     check_axiom_annotations,
     check_declarations,

@@ -13,8 +13,6 @@ FOUNDATION = {
     "execution",
     "absence",
     "diagnostics",
-    "limits",
-    "processes",
     "_json",
     "_jsonpaths",
     "_jsonschema",

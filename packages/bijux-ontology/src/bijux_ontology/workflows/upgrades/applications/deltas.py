@@ -12,12 +12,12 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
+from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.jsonld.comparison import (
     _associated_occurrences,
     compare_observed_usages,
 )
 from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.models.emission.coverage import source_properties
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.comparison import compare_rdf

@@ -422,7 +422,7 @@ def test_owl_dl_class_membership_does_not_implicitly_promote_datatypes() -> None
 def test_broad_disjoint_groups_only_compare_reachable_members_under_work_limits() -> (
     None
 ):
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     graph = vocabulary()
     members = tuple(EX[f"Disjoint{index}"] for index in range(1000))
@@ -462,7 +462,7 @@ def test_broad_disjoint_groups_only_compare_reachable_members_under_work_limits(
 
 
 def test_repeated_deep_class_closure_is_owned_cached_and_work_bounded() -> None:
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     graph = Graph()
     classes = tuple(EX[f"Ancestor{index}"] for index in range(500))

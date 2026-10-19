@@ -6,8 +6,8 @@ from typing import Literal
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
-from bijux_ontology.limits import Budget, Limits, bound_text
 
 from .validation import validate_output
 

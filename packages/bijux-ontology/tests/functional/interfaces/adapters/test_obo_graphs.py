@@ -10,12 +10,12 @@ from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.obo_graphs import (
     OboGraphsDocument,
     read_obo_graphs,
     write_obo_graphs,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.annotations.graphs.reading import (
     inspect_annotation_graph,

@@ -14,14 +14,14 @@ import pytest
 
 import bijux_ontology.workflows.projects.parallel.checking as parallel_checks
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     BudgetKind,
     IssueCollector,
     Limits,
     retain_report,
 )
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.parallel.checking import check_project_parallel

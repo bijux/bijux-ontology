@@ -7,7 +7,7 @@ from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import RDFS, SKOS
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.languages import matches_language, negotiate_annotations
 from bijux_ontology.vocabulary.sources.view import Vocabulary

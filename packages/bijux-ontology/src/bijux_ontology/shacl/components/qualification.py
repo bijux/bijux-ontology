@@ -11,7 +11,7 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, bound_text
+from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.authoring.parameters import parameter_name
 from bijux_ontology.shacl.queries import _CASTS, _nodes, analyze_query

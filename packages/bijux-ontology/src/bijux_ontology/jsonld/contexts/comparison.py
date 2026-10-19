@@ -7,14 +7,14 @@ from bijux_ontology._jsonpaths import bounded_location
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.jsonld.resources import DocumentLoader
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
+from bijux_ontology.jsonld.resources import DocumentLoader
 
 from .processing import _capture, _data, _dump, _operation, _own, inspect_context
 from .types import (

@@ -17,10 +17,15 @@ from bijux_ontology.diagnostics.errors import (
 )
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.interfaces.execution import WorkerExecutor
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary

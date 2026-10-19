@@ -5,6 +5,7 @@ from threading import Event
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.ontolex import (
     LexicalPolicy,
     Lexicon,
@@ -13,7 +14,6 @@ from bijux_ontology.interfaces.adapters.ontolex import (
     read_lexicon,
     write_lexicon,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource

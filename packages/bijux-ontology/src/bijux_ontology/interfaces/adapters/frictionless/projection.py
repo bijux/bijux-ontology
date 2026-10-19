@@ -12,11 +12,16 @@ from bijux_ontology.declarations.path_fields import PathFieldDeclaration
 from bijux_ontology.declarations.types import OutputRequirement
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Location, Report
-from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.models.emission.counts import check_occurrences
 from bijux_ontology.models.path_fields.checking import check_path_fields
 from bijux_ontology.models.path_fields.types import PathFieldUsage
-from bijux_ontology.processes.transport import checkpoint
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.loading import prepare_rdf
 

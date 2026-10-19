@@ -104,7 +104,7 @@ def spawn_owned_process(
     if not command or any(not isinstance(value, str) for value in command):
         raise InputError("Owned processes require a nonempty argument list")
     if os.name == "nt":
-        from .windows import parent_identity
+        from bijux_ontology.execution.processes.windows import parent_identity
 
         parent, created = parent_identity()
         command = [
@@ -112,7 +112,7 @@ def spawn_owned_process(
             "-I",
             "-B",
             "-m",
-            "bijux_ontology.processes.windows",
+            "bijux_ontology.execution.processes.windows",
             str(parent),
             str(created),
             "--",

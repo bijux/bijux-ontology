@@ -10,7 +10,7 @@ from rdflib.namespace import OWL, RDF, SH
 
 from bijux_ontology.data.streams import check_rdf_stream
 from bijux_ontology.data.usage import check_data_usage
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.sources import RdfSource

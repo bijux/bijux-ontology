@@ -8,7 +8,7 @@ from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.reports import Issue
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.execution.limits import Budget, IssueCollector
 
 _OBJECT_ONLY = frozenset(
     (

@@ -14,7 +14,7 @@ from bijux_ontology._jsonpaths import bound_index, bounded_location
 from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.path_traversal import (
     PathIdentityUnavailable,
     finite_path_steps,

@@ -14,8 +14,8 @@ from bijux_ontology.declarations.path_fields import (
 from bijux_ontology.declarations.types import OutputRequirement, ValueDeclaration
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.limits import Limits
 from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
 from bijux_ontology.rdf.sources import RdfSource
 

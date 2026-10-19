@@ -3,7 +3,7 @@
 from typing import cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, _bound_text_size
+from bijux_ontology.execution.limits import Budget, _bound_text_size
 
 SourcePath = tuple[str | int, ...]
 

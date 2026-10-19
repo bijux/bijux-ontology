@@ -13,7 +13,12 @@ from bijux_ontology.declarations.path_fields import PathFieldDeclaration
 from bijux_ontology.declarations.types import OutputRequirement, ValueDeclaration
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.paths import capture_path
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource

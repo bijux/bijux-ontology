@@ -9,7 +9,7 @@ from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.vocabulary.anonymous.types import (
     AnonymousChange,

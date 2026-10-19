@@ -7,6 +7,7 @@ from bijux_ontology._json import own_json
 from bijux_ontology._jsonpaths import SourcePath, bound_path, bounded_location, location
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import (
@@ -14,7 +15,6 @@ from bijux_ontology.jsonld.selectors.types import (
     Selection,
     SourceSelector,
 )
-from bijux_ontology.limits import Budget, IssueCollector, Limits
 
 from .entities import EntityInventory
 from .expansion import _drop_issues, _validate_allowed_drops, expand_document

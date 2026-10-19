@@ -16,11 +16,11 @@ from bijux_ontology.diagnostics.reports import (
     combine_reports,
     report_from_data,
 )
+from bijux_ontology.execution.limits import Limits
+from bijux_ontology.execution.processes.ownership import spawn_owned_process
+from bijux_ontology.execution.processes.transport import stop_process
 from bijux_ontology.interfaces.cli.results import CommandResult
 from bijux_ontology.interfaces.execution.checkpoints import read_completed
-from bijux_ontology.limits import Limits
-from bijux_ontology.processes.ownership import spawn_owned_process
-from bijux_ontology.processes.transport import stop_process
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 

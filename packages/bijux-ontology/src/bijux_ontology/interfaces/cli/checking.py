@@ -13,6 +13,7 @@ from bijux_ontology.declarations.codecs import (
 )
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.cli.arguments import vocabulary_input
 from bijux_ontology.interfaces.cli.inputs import (
     command_limits,
@@ -26,7 +27,6 @@ from bijux_ontology.interfaces.cli.vocabularies import load_command_vocabulary
 from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.limits import Limits
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.rdf.literals import Regime as ModelRegime
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary

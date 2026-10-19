@@ -18,7 +18,7 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations import MigrationCheck
 from bijux_ontology.rdf.snapshots import PreparedSource

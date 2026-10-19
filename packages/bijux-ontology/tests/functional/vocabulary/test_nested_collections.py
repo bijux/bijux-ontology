@@ -9,7 +9,7 @@ from rdflib.namespace import RDF, SKOS
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.collections import expand_collection

@@ -22,7 +22,7 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.terms import bound_node
 
 _DECLARATIONS = (

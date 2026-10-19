@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from threading import Event
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 
 from ...axioms.types import ClassExpression, ProjectedAxiom
 from ..classes.types import ClassQueryResult

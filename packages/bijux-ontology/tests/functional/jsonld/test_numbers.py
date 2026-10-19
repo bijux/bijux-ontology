@@ -10,13 +10,13 @@ from rdflib.namespace import XSD
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.numbers import (
     NumericProjection,
     decode_numeric_json,
     project_numeric_json,
 )
 from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.limits import Budget, Limits
 
 
 @pytest.mark.skipif(

@@ -8,7 +8,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Budget, IssueCollector, retain_report
+from bijux_ontology.execution.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.rdf.paths import RdfPath
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource

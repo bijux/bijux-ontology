@@ -8,7 +8,7 @@ from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.shacl.authoring.types import ShaclNodeShape, ShaclPropertyShape
 from bijux_ontology.workflows.projects.bundles import PreparedBundle
 from bijux_ontology.workflows.projects.profiles.execution import EffectiveProfile

@@ -4,7 +4,7 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.browsing.navigation import (
     collection_members,

@@ -6,7 +6,12 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.rdf.reification.reading import inspect_reifications
 from bijux_ontology.rdf.reification.types import (
     ReificationCheck,

@@ -4,11 +4,11 @@ import pytest
 from rdflib import Namespace
 
 from bijux_ontology.diagnostics.errors import LimitExceeded
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.observations import occurrences
 from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.limits import Budget, Limits
 
 EX = Namespace("https://language.example/")
 

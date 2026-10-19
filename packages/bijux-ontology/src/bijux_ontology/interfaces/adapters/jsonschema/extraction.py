@@ -13,10 +13,10 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import FieldDeclaration, ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
 from bijux_ontology.interfaces.adapters.field_contracts import declare_field
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
-from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 DIALECT = "https://json-schema.org/draft/2020-12/schema"

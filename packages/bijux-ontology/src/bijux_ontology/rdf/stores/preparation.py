@@ -15,7 +15,7 @@ from bijux_ontology._json import decode_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.queries.protocol import read_term
 
 from .protocol import execute, failure

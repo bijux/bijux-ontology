@@ -12,7 +12,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.queries import QueryScope, query_rdf
 
 EX = Namespace("https://queries.example/")

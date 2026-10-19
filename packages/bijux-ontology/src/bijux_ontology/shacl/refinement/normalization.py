@@ -7,7 +7,7 @@ from rdflib.term import Node
 
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.paths import RdfPath
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.shacl.authoring.types import (

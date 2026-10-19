@@ -275,7 +275,7 @@ def test_anonymous_nested_nodes_need_no_manual_array_index_bindings() -> None:
 
 
 def test_failed_resource_or_exhausted_preparation_keeps_actual_sample_output() -> None:
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     calls: list[str] = []
 
@@ -389,7 +389,7 @@ def test_computed_sidecars_keep_members_aliases_and_actual_output() -> None:
     assert extraction.report.verified, extraction.report.to_dict()
     field = extraction.declarations[0].fields[-1]
     assert field.name == "summary" and field.key == "summaryName"
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     stopped = check_instance(
         Computed(label="Name"),
@@ -615,8 +615,8 @@ def test_whole_serializer_conditions_use_actual_emitted_discriminators() -> None
 
 
 def test_serializer_failure_metadata_uses_the_bounded_native_boundary() -> None:
+    from bijux_ontology.execution.limits import Limits
     from bijux_ontology.interfaces.adapters.contracts import RdfField
-    from bijux_ontology.limits import Limits
 
     formatted: list[bool] = []
 

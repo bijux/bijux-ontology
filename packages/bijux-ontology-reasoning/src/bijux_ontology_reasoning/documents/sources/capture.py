@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.execution.limits import Budget, bound_text
 
 from ..types import OwlDocument
 from .native import prepare_owl_document

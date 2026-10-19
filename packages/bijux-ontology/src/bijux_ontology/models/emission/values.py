@@ -10,12 +10,12 @@ from rdflib.term import Node
 from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import EntityInventory, object_key
 from bijux_ontology.jsonld.observations import ObservedOccurrence
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.direction import DirectionCheck
 from bijux_ontology.models.emission.matching import matches_value

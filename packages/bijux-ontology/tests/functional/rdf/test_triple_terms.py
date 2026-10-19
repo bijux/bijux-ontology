@@ -12,7 +12,7 @@ from rdflib import Graph
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.export import export_rdf
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.canonical.export import canonicalize_rdf
 from bijux_ontology.rdf.entailment.preparation import prepare_entailment
 from bijux_ontology.rdf.loading import prepare_rdf

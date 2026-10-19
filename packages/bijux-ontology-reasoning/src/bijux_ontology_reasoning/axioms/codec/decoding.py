@@ -6,7 +6,7 @@ from typing import Any, Literal, cast
 
 from bijux_ontology._json import object_value
 from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from ...backend.owlapi.protocol import result_counter, result_text

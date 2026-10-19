@@ -11,15 +11,15 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
-    compile_allowed,
-)
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     BudgetKind,
     IssueCollector,
     Limits,
     retain_report,
+)
+from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
+    compile_allowed,
 )
 from bijux_ontology.rdf.literals import _lexical, datatype_relation
 from bijux_ontology.rdf.patterns import matches_pattern

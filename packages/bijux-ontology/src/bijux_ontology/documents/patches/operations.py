@@ -9,13 +9,13 @@ from typing import Any
 from bijux_ontology._json import owned_json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.inputs import capture
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.jsonld.contexts.processing import _data, _preflight
 from bijux_ontology.jsonld.resources import (
     ContextResources,
     DocumentLoader,
     context_resources,
 )
-from bijux_ontology.limits import Budget, bound_text
 
 
 class _Unsupported(InputError):

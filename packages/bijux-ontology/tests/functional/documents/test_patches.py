@@ -18,10 +18,10 @@ from bijux_ontology.documents.patches import (
     apply_document_patch,
     export_document_patch,
 )
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector
-from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 
 EX = "https://example.org/patch/"

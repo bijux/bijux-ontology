@@ -8,6 +8,7 @@ from rdflib.namespace import RDF, SKOS, XSD
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.xkos.classifications import (
     ClassificationPolicy,
     LevelCodePolicy,
@@ -16,7 +17,6 @@ from bijux_ontology.interfaces.adapters.xkos.classifications import (
     read_classification,
 )
 from bijux_ontology.interfaces.adapters.xkos.classifications.types import XKOS
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.skos.checking import check_skos
 

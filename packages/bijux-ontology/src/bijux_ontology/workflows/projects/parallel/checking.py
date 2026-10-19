@@ -20,15 +20,15 @@ from bijux_ontology.diagnostics.reports import (
     report_from_data,
 )
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     BudgetKind,
     IssueCollector,
     bound_text,
     retain_report,
 )
-from bijux_ontology.processes.transport import checkpoint
+from bijux_ontology.execution.processes.transport import checkpoint
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.jobs import dependencies
 

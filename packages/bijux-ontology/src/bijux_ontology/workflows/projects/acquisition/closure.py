@@ -13,10 +13,10 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from bijux_ontology._json import decode_json, object_value, own_json
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.archive import resource_path
+from bijux_ontology.execution.limits import bound_text
 from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.jsonld.resources import OfflineDocument, OfflineDocumentLoader
 from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import bound_text
 from bijux_ontology.rdf.loading import prepare_input
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary

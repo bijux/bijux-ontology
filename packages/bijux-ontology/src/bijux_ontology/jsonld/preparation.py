@@ -13,17 +13,17 @@ from bijux_ontology.diagnostics.errors import (
     attach_input_failure,
 )
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
-from bijux_ontology.jsonld.conversion import DirectionPolicy, _convert_to_rdf_dataset
-from bijux_ontology.jsonld.resources import (
-    DocumentLoader,
-    context_resources,
-)
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
+)
+from bijux_ontology.jsonld.conversion import DirectionPolicy, _convert_to_rdf_dataset
+from bijux_ontology.jsonld.resources import (
+    DocumentLoader,
+    context_resources,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource

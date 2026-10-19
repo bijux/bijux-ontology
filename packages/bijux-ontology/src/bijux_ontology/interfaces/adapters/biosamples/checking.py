@@ -14,15 +14,15 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import operation
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
-    compile_allowed,
-)
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
+)
+from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
+    compile_allowed,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.vocabulary.checking import check_vocabulary

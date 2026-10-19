@@ -6,7 +6,7 @@ from rdflib import URIRef
 
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import IssueCollector, retain_report
+from bijux_ontology.execution.limits import IssueCollector, retain_report
 
 from ..axioms.types import ProjectedAxiom
 from ..backend.types import OwlProfileBackend

@@ -13,8 +13,13 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, MigrationCheck
 from bijux_ontology.rdf.patches.planning import capture_source, plan_rdf_patch
 from bijux_ontology.rdf.patches.types import BlankNodePair, PatchUnavailable

@@ -12,7 +12,7 @@ from bijux_ontology.declarations.types import OutputRequirement, ValueDeclaratio
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.documents.migrations import export_migration
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations import MigrationCheck

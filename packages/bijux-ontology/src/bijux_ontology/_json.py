@@ -14,10 +14,10 @@ from typing import TYPE_CHECKING, NoReturn, cast
 from bijux_ontology._jsonpaths import bound_index
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.limits import Limits, bound_text
+from bijux_ontology.execution.limits import Limits, bound_text
 
 if TYPE_CHECKING:
-    from bijux_ontology.limits import Budget
+    from bijux_ontology.execution.limits import Budget
 
 
 def _string_bytes(
@@ -110,7 +110,7 @@ class _JsonMeasurement:
 
 def encode_json(value: object, *, budget: Budget) -> str:
     """Prepay maintained JSON encoding with the ordinary unescaped output format."""
-    from bijux_ontology.limits import Budget as RuntimeBudget
+    from bijux_ontology.execution.limits import Budget as RuntimeBudget
 
     if not isinstance(budget, RuntimeBudget):
         raise InputError("JSON encoding requires a Budget")
@@ -145,7 +145,7 @@ def _measure_json(
     if type(max_depth) is not int or max_depth <= 0:
         raise InputError("max_depth must be a positive integer")
     if budget is not None:
-        from bijux_ontology.limits import Budget as RuntimeBudget
+        from bijux_ontology.execution.limits import Budget as RuntimeBudget
 
         if not isinstance(budget, RuntimeBudget):
             raise InputError("JSON ownership requires a Budget")

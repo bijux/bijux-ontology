@@ -7,11 +7,11 @@ import pytest
 
 from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld import checking
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.limits import Budget, Limits
 
 EX = "https://example.org/"
 

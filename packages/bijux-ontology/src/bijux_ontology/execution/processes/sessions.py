@@ -6,8 +6,11 @@ import time
 from contextlib import suppress
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget
-from bijux_ontology.processes.ownership import spawn_owned_process, stop_owned_process
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.execution.processes.ownership import (
+    spawn_owned_process,
+    stop_owned_process,
+)
 
 _stop_group = stop_owned_process
 

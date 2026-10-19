@@ -8,7 +8,7 @@ from rdflib import BNode, Graph, URIRef
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,

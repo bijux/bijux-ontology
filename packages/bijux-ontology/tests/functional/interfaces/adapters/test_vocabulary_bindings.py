@@ -11,10 +11,10 @@ from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.vocabulary_bindings import (
     generate_vocabulary_bindings,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
 EX = Namespace("https://example.org/")

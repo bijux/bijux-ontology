@@ -9,7 +9,7 @@ import pytest
 from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
 
 

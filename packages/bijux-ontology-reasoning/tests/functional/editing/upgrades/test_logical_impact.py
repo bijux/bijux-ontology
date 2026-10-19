@@ -29,7 +29,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 
 A, B, C, D = (NamedEntity("class", "urn:" + name) for name in ("A", "B", "C", "D"))
 DECLARATIONS = """

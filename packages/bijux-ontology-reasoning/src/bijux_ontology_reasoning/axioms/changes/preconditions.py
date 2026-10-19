@@ -2,7 +2,7 @@
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
 
 from ...documents.sources.capture import capture_document
 from ...documents.types import OwlDocument

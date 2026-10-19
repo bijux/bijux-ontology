@@ -7,7 +7,7 @@ from rdflib import URIRef
 from rdflib.paths import Path
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.paths import RdfPath, capture_path
 

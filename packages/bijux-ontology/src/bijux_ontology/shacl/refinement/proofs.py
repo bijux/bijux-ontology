@@ -3,7 +3,7 @@
 from rdflib import BNode, Literal
 from rdflib.term import Node
 
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.terms import literal_datatype, term_key
 from bijux_ontology.shacl.refinement.normalization import Branch, Obligation, path_key

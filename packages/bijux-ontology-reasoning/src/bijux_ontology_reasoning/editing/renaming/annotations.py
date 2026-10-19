@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 from ...documents.sources.native import native_iri
 from .types import AnnotationRole

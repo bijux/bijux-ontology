@@ -4,9 +4,9 @@ import sys
 import threading
 
 from bijux_ontology.diagnostics.errors import ResourceError
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.execution.processes.sessions import FramedSession
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import Budget
-from bijux_ontology.processes.sessions import FramedSession
 
 
 def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes:

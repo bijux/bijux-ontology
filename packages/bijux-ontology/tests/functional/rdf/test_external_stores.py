@@ -8,7 +8,7 @@ from rdflib.namespace import OWL, RDF, XSD
 
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.stores.external.preparation import prepare_external_store
 from bijux_ontology.rdf.stores.external.queries import query_external

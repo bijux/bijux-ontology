@@ -8,7 +8,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.authoring.parameters import parameter_name
 from bijux_ontology.shacl.capabilities import CapabilityPlan

@@ -11,7 +11,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.patches.types import BlankNodePair
 from bijux_ontology.rdf.skolem.checking import deskolemize, skolemize

@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.conversion import convert_to_rdf
 from bijux_ontology.jsonld.expansion import expand_document
@@ -17,7 +18,6 @@ from bijux_ontology.jsonld.resources import (
     context_document_loader,
     context_resources,
 )
-from bijux_ontology.limits import Budget, Limits
 
 EX = "https://example.org/"
 
