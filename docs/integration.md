@@ -1385,6 +1385,15 @@ and missing supported relationships remain unknown. Agreement covers this finite
 interface; provider dependencies require separate checks and whole-ontology
 equivalence or consistency needs its own evidence. Asserted signatures need no Java.
 
+`bijux_ontology.data.analysis.prepare_annotation_population` owns explicit positive
+entity annotations, eligible background, selected terms and typed child-to-parent
+propagation. Duplicate rows and diamond paths count each eligible entity once per
+ancestor; unannotated entities remain in the universe. `resnik_similarity` returns
+base-two information content and all tied shared-ancestor witnesses.
+`resnik_term_sets` explicitly averages the two directional mean-best scores.
+Results carry actual corpus/hierarchy fingerprints. Unknown terms, zero frequency,
+cycles, disconnected pairs and incomplete propagation withhold required scores.
+
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing
 owned worker enumerates each selected root once, then validates ordinary Core

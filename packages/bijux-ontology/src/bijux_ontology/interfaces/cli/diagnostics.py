@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "analysis": frozenset(
+        "annotation_unknown term_unknown parent_unknown projection_unknown "
+        "hierarchy_cycle zero_frequency disconnected input".split()
+    ),
     "projection": frozenset(
         "term_unverified value_invalid reference_unverified conversion_unverified "
         "path_unverified ambiguous cardinality list_invalid graph_unverified "
@@ -388,6 +392,14 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "analysis": (
+        "explicit finite annotation population and selected hierarchy",
+        "A required analytical input or result is unavailable within its scope.",
+        "Inspect the supplied universe, annotation rows, propagation witnesses "
+        "and actual method identity; retain missing terms and incomplete work "
+        "rather than shrinking the population.",
+        "resnik_similarity(population, left, right)",
+    ),
     "projection": (
         "explicit graph-qualified RDF record projection",
         "A selected field or record disagrees with its read contract or lacks proof.",
