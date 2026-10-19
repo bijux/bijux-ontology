@@ -15,15 +15,15 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.workflows.ontology.modules.types import ModuleContract
 
-from ...axioms.changes.checking import _error, _losses
 from ...axioms.changes.preconditions import qualify_base, source_base
+from ...axioms.changes.qualification import retain_error, retain_losses
 from ...axioms.changes.types import AxiomBase
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...backend.owlapi.bundles import PROFILES, qualify_backend
 from ...backend.owlapi.execution import invoke_worker, qualify_capability
 from ...backend.owlapi.protocol import result_counter
 from ...backend.types import OwlProfile, OwlProfileBackend
-from ...documents.conversion import _profiles
+from ...documents.receipts import native_profiles
 from ...documents.sources.capture import capture_document, capture_imports
 from ...documents.sources.native import (
     native_iri,
@@ -274,7 +274,7 @@ def prepare_role_rename(
                 )
                 data = invoke_worker(backend, request, directory, operation, heap_mb)
                 capability = qualify_capability(data, backend, operation)
-                _losses(data.get("changes"), decoder, issues)
+                retain_losses(data.get("changes"), decoder, issues)
                 failure = data.get("failure")
                 if failure is not None:
                     reason = decoder.text(failure)
@@ -344,7 +344,7 @@ def prepare_role_rename(
                                 "Native candidates have an unselected "
                                 "or duplicate module"
                             )
-                        observations = _profiles(
+                        observations = native_profiles(
                             item.get("after_profiles"), selected_profiles, operation
                         )
                         for observation in observations:
@@ -413,7 +413,7 @@ def prepare_role_rename(
     except LimitExceeded as error:
         issues.exhausted(str(error), location="owl.role_rename")
     except (InputError, OSError) as error:
-        _error(issues, error, "owl.role_rename")
+        retain_error(issues, error, "owl.role_rename")
     return RenameCandidate(
         modules,
         updated_interfaces,

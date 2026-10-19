@@ -26,8 +26,8 @@ from bijux_ontology.workflows.ontology.modules.types import (
     ModuleProvider,
 )
 
-from ...axioms.changes.checking import _losses
 from ...axioms.changes.preconditions import source_base
+from ...axioms.changes.qualification import retain_losses
 from ...axioms.changes.types import AxiomBase
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.types import ProjectedAxiom
@@ -120,7 +120,7 @@ def _rdf_views(
     """Adopt only checked maintained RDF views with exact real loader coverage."""
     item = object_value(raw, location="checked native RDF modules")
     decoder = ProjectionDecoder(operation)
-    _losses(item.get("changes"), decoder, issues)
+    retain_losses(item.get("changes"), decoder, issues)
     observed = set()
     for encoded in decoder.records(item.get("loaders")):
         metadata = object_value(encoded, location="native RDF loader metadata")
@@ -481,7 +481,7 @@ def prepare_module_refactor(
                 capability = qualify_capability(data, backend, operation)
                 before.append(capability.report)
                 decoder = ProjectionDecoder(operation)
-                _losses(data.get("changes"), decoder, issues)
+                retain_losses(data.get("changes"), decoder, issues)
                 if data.get("failure") is not None:
                     issues.append(
                         Issue(

@@ -18,7 +18,7 @@ from ...backend.owlapi.bundles import PROFILES, qualify_backend
 from ...backend.owlapi.execution import invoke_worker, qualify_capability
 from ...backend.owlapi.protocol import result_counter
 from ...backend.types import OwlProfile, OwlProfileBackend
-from ...documents.conversion import _profiles
+from ...documents.receipts import native_profiles
 from ...documents.sources.capture import (
     capture_document,
     capture_imports,
@@ -30,6 +30,7 @@ from ..codec.decoding import ProjectionDecoder
 from ..codec.encoding import ConstructionEncoder
 from ..types import ProjectedAxiom
 from .preconditions import qualify_base, source_base
+from .qualification import retain_error, retain_losses
 from .types import AxiomBase, AxiomCandidate, AxiomCheck, AxiomPatch
 
 
@@ -77,44 +78,6 @@ def _delta(
             )
         )
     return tuple(result)
-
-
-def _losses(raw: object, decoder: ProjectionDecoder, issues: IssueCollector) -> None:
-    """Keep original-input and reread interpretation losses distinct from edits."""
-    for item in decoder.records(raw):
-        record = object_value(item, location="native change loss")
-        kind, value = (
-            decoder.text(record.get("kind")),
-            decoder.text(record.get("value")),
-        )
-        issues.append(
-            Issue(
-                "owl.axiom_change_loss",
-                "Native input or output has an unaccounted structural difference",
-                expected=kind,
-                actual=value,
-                kind="unverified",
-            )
-        )
-
-
-def _error(issues: IssueCollector, error: InputError | OSError, location: str) -> None:
-    """Preserve ordinary input/unknown failures and paid-prefix exhaustion."""
-    try:
-        issues.append(
-            Issue(
-                "owl.axiom_change_unverified"
-                if isinstance(error, ResourceError | OSError)
-                else "owl.axiom_change_input_error",
-                str(error),
-                location,
-                kind="unverified"
-                if isinstance(error, ResourceError | OSError)
-                else "input_error",
-            )
-        )
-    except LimitExceeded as stopped:
-        issues.exhausted(str(stopped), location=location)
 
 
 def compare_axioms(
@@ -171,7 +134,7 @@ def compare_axioms(
             )
             data = invoke_worker(backend, request, directory, operation, heap_mb)
             capability = qualify_capability(data, backend, operation)
-            _losses(data.get("changes"), decoder, issues)
+            retain_losses(data.get("changes"), decoder, issues)
             if data.get("header_compatible") is False:
                 issues.append(
                     Issue(
@@ -197,7 +160,7 @@ def compare_axioms(
     except LimitExceeded as error:
         issues.exhausted(str(error), location="owl.axiom_comparison")
     except (InputError, OSError) as error:
-        _error(issues, error, "owl.axiom_comparison")
+        retain_error(issues, error, "owl.axiom_comparison")
     return AxiomPatch(
         base,
         additions,
@@ -343,7 +306,7 @@ def prepare_axiom_change(
                 )
                 data = invoke_worker(backend, request, directory, operation, heap_mb)
                 capability = qualify_capability(data, backend, operation)
-                _losses(data.get("changes"), decoder, issues)
+                retain_losses(data.get("changes"), decoder, issues)
                 if data.get("preconditions") is False:
                     issues.append(
                         Issue(
@@ -362,7 +325,7 @@ def prepare_axiom_change(
                 else:
                     added = _delta(data.get("additions"), decoder, issues)
                     removed = _delta(data.get("removals"), decoder, issues)
-                    observations = _profiles(
+                    observations = native_profiles(
                         data.get("after_profiles"),
                         cast(tuple[OwlProfile, ...], selected),
                         operation,
@@ -406,7 +369,7 @@ def prepare_axiom_change(
     except LimitExceeded as error:
         issues.exhausted(str(error), location="owl.axiom_change")
     except (InputError, OSError) as error:
-        _error(issues, error, "owl.axiom_change")
+        retain_error(issues, error, "owl.axiom_change")
     if original is None:
         original = source
     report = Report(
