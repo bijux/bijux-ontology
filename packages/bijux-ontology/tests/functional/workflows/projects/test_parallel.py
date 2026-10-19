@@ -287,7 +287,8 @@ def test_failed_or_timed_out_dependencies_do_not_hide_siblings(
             nested.extend(
                 int(pid)
                 for pid, parent, command in rows
-                if int(parent) in owned and "bijux_ontology.shacl.worker" in command
+                if int(parent) in owned
+                and "bijux_ontology.shacl.execution.worker" in command
             )
             if received.is_set() and len(owned) >= 2 and len(live) == 1:
                 cancel.set()

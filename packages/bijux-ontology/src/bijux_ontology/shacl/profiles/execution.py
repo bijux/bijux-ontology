@@ -13,7 +13,7 @@ from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, independent_blank_scopes
 from bijux_ontology.shacl.checking import ShaclResult
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
-from bijux_ontology.shacl.session import ShaclSession
+from bijux_ontology.shacl.execution.session import ShaclSession
 
 from .resources import _owned
 from .types import ShapeProfile, Triple

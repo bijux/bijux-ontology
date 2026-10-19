@@ -162,7 +162,7 @@ def test_real_shacl_report_requires_successful_worker_exit_and_recovers(
     owned: list[subprocess.Popen[bytes]] = []
     program = """import runpy
 try:
-    runpy.run_module('bijux_ontology.shacl.worker', run_name='__main__')
+    runpy.run_module('bijux_ontology.shacl.execution.worker', run_name='__main__')
 except SystemExit as result:
     if result.code not in (0, None):
         raise
@@ -175,7 +175,7 @@ raise SystemExit(7)
         for index in range(len(arguments) - 1):
             if arguments[index : index + 2] == [
                 "-m",
-                "bijux_ontology.shacl.worker",
+                "bijux_ontology.shacl.execution.worker",
             ]:
                 arguments[index : index + 2] = ["-c", program]
                 process = original(arguments, **kwargs)

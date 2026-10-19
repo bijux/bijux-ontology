@@ -23,9 +23,9 @@ from bijux_ontology.shacl.authoring.compiling import _Compiler
 from bijux_ontology.shacl.authoring.types import ShaclCount, ShaclPropertyShape
 from bijux_ontology.shacl.checking import ShaclResult
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.profiles.comparison import _coverage
 from bijux_ontology.shacl.profiles.resources import _capture, _owned
-from bijux_ontology.shacl.session import ShaclSession
 
 from .types import ShapeCountEdit, ShapeEdit, ShapeInspection
 

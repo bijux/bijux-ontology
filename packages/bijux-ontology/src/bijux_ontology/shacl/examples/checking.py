@@ -19,7 +19,7 @@ from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.projection import _retained_result
 from bijux_ontology.shacl.execution.results import ShaclResult
-from bijux_ontology.shacl.session import ShaclSession
+from bijux_ontology.shacl.execution.session import ShaclSession
 
 from .construction import Candidates, State
 from .profile import PreparedExamples, UnsupportedExample, prepare, reserve

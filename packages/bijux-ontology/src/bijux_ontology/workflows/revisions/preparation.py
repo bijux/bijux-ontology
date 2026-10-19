@@ -43,7 +43,7 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
-from bijux_ontology.shacl.session import ShaclSession
+from bijux_ontology.shacl.execution.session import ShaclSession
 
 from .types import (
     PreparedRevision,

@@ -22,8 +22,8 @@ from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.checking import ShaclResult
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.profiles.execution import freeze_data
-from bijux_ontology.shacl.session import ShaclSession
 from bijux_ontology.shex.checking import validate_shex
 from bijux_ontology.shex.types import ShexResult
 

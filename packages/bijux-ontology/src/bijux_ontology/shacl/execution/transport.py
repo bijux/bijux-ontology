@@ -12,7 +12,7 @@ from bijux_ontology.execution.workers import execute_worker
 def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes:
     """Require delivered input and successful owned SHACL worker completion."""
     return execute_worker(
-        "bijux_ontology.shacl.worker", payload, cap=cap, timeout=timeout
+        "bijux_ontology.shacl.execution.worker", payload, cap=cap, timeout=timeout
     )
 
 
@@ -27,7 +27,7 @@ class SessionBackend(FramedSession):
                 "-I",
                 "-B",
                 "-m",
-                "bijux_ontology.shacl.worker",
+                "bijux_ontology.shacl.execution.worker",
                 str(cap),
                 "--session",
             ),

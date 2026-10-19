@@ -395,7 +395,7 @@ def test_isolated_project_native_jobs_stay_owned_and_honor_timeout(
                 and any(
                     name in command
                     for name in (
-                        "bijux_ontology.shacl.worker",
+                        "bijux_ontology.shacl.execution.worker",
                         "bijux_ontology.rdf.queries.worker",
                     )
                 )

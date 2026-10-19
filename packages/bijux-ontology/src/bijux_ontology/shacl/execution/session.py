@@ -38,9 +38,9 @@ from bijux_ontology.shacl.execution.projection import (
     _retained_result,
 )
 from bijux_ontology.shacl.execution.results import ShaclResult
+from bijux_ontology.shacl.execution.transport import SessionBackend
 from bijux_ontology.shacl.findings import ShaclSource
 from bijux_ontology.shacl.functions import ShaclFunctionCatalog
-from bijux_ontology.shacl.transport import SessionBackend
 
 
 def _prepay_graph(graph: Graph, budget: Budget) -> None:
