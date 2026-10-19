@@ -298,6 +298,10 @@ assert "__getattr__" not in vars(bijux_ontology)
 assert "__getattr__" not in vars(bijux_ontology.shacl)
 from bijux_ontology.errors import InputError
 assert issubclass(InputError, Exception)
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.pages import terms_page
+assert all(callable(item) for item in (load_vocabulary, inspect_vocabulary, terms_page))
 """,
         ],
         text=True,
