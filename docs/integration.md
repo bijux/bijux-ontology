@@ -1368,6 +1368,48 @@ unselected metadata remain informational; incomplete baseline or consumer scope
 stays unknown. Selected identifier qualifiers need qualified prefix interpretation;
 selected `curie_map` metadata compares the actual retained prefix maps.
 
+`bijux_ontology.data.projection.project_records` reads explicit `ReadBinding`
+subjects and `ReadField` paths in one selected physical graph. Immutable records
+retain exact terms, ordered list members and source-qualified reference handles.
+Raw terms are the default; opt into checked string, integer, boolean or Decimal
+conversion. Unsupported conversions retain their terms with an unknown report.
+Use `construct_projected(result, factory)` for trusted application construction
+only after every declared check succeeds. The factory owns its runtime and output;
+this read contract makes no serializer inversion or ORM promise.
+
+`workflows.ontology.modules.check_module_wiring` checks named public exports and
+selected class/property/datatype obligations against explicitly bound provider
+views. Each requirement needs exactly one binding; lookup resources and other
+candidates cannot supply a missing guarantee. Native witnesses retain their scope,
+and missing supported relationships remain unknown. Agreement covers this finite
+interface; provider dependencies require separate checks and whole-ontology
+equivalence or consistency needs its own evidence. Asserted signatures need no Java.
+
+`bijux_ontology.data.analysis.prepare_annotation_population` owns explicit positive
+entity annotations, eligible background, selected terms and typed child-to-parent
+propagation. Duplicate rows and diamond paths count each eligible entity once per
+ancestor; unannotated entities remain in the universe. `resnik_similarity` returns
+base-two information content and all tied shared-ancestor witnesses.
+`resnik_term_sets` explicitly averages the two directional mean-best scores.
+Results carry actual corpus/hierarchy fingerprints. Unknown terms, zero frequency,
+cycles, disconnected pairs and incomplete propagation withhold required scores.
+
+`enrich_annotations` uses that population, an explicit study and a prespecified
+term family. Install `[analysis]` for SciPy Fisher tests with the `greater`
+alternative and whole-family BY or explicitly qualified BH correction. Results
+retain contingency counts, population/method identities and exclusions; partial
+execution withholds adjusted values. Sampling/dependence declarations concern the
+supplied sets and do not establish biological conclusions.
+
+`bijux_ontology.models.persistence.compile_model_artifact` captures ordinary
+`RdfSource` text/bytes, declarations and closed context resources as inert data.
+Compute `model_preparation_identity` from current inputs before loading; pass it
+and the compiler output's SHA256 from a trusted application/build manifest to
+`load_model_artifact`. A fresh `PreparedModels` reuses named source/index
+preparation and reruns declaration and output checks. Changed resources, contexts,
+selections, declarations or installed semantic code invalidate reuse. Unknown
+formats/extensions are rejected; successful submissions and callables are never saved.
+
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing
 owned worker enumerates each selected root once, then validates ordinary Core

@@ -28,6 +28,17 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "analysis": frozenset(
+        "annotation_unknown term_unknown parent_unknown projection_unknown "
+        "hierarchy_cycle zero_frequency disconnected input "
+        "family_unknown native_capacity backend_unavailable backend_unsupported "
+        "backend_failed".split()
+    ),
+    "projection": frozenset(
+        "term_unverified value_invalid reference_unverified conversion_unverified "
+        "path_unverified ambiguous cardinality list_invalid graph_unverified "
+        "identity subject_unverified type_missing invalid_input".split()
+    ),
     "shex": frozenset(
         "unsupported input_invalid backend_unavailable not_matched engine_error".split()
     ),
@@ -211,6 +222,7 @@ _CODES = {
         "markup_invalid markup_unverified markup_value_changed".split()
     ),
     "models": frozenset(
+        "artifact_input_error artifact_incompatible "
         "direction_unverified contextual_direction_unverified "
         "emission_group_conflict emission_group_unverified "
         "scenario_coverage_unverified emission_scenario_conflict "
@@ -232,6 +244,8 @@ _CODES = {
         "loader_unverified profile_unverified profile_violation".split()
     ),
     "ontology": frozenset(
+        "module_export_missing module_kind_mismatch module_obligation_unverified "
+        "module_obligation_contradicted module_input_error "
         "ownership_unverified ownership_input_error owner_conflict "
         "definition_redefined "
         "annotation_shape annotation_statement_missing cardinality_shape "
@@ -381,6 +395,22 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "analysis": (
+        "explicit finite annotation population and selected hierarchy",
+        "A required analytical input or result is unavailable within its scope.",
+        "Inspect the supplied universe, annotation rows, propagation witnesses "
+        "and actual method identity; retain missing terms and incomplete work "
+        "rather than shrinking the population.",
+        "resnik_similarity(population, left, right)",
+    ),
+    "projection": (
+        "explicit graph-qualified RDF record projection",
+        "A selected field or record disagrees with its read contract or lacks proof.",
+        "Inspect the exact graph, subject, path, original terms and cardinality; "
+        "choose raw retention for unsupported conversion and require full "
+        "verification before invoking a trusted consumer factory.",
+        "project_records(source, (ReadBinding('record', subject, fields),))",
+    ),
     "shex": (
         "explicit supplied ShEx node-to-shape obligations",
         "A native ShEx obligation fails or exceeds its qualified capability.",

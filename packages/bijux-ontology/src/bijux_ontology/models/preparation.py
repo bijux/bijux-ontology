@@ -11,12 +11,13 @@ from uuid import uuid4
 from rdflib import Graph
 
 from bijux_ontology._json import own_json
+from bijux_ontology._jsonschema import _measure
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
@@ -28,6 +29,18 @@ from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.view import Vocabulary
 
 from .checking import check_models
+
+
+def _prepared_json(value: object, operation: Budget) -> object:
+    """Prepay closed JSON snapshots and serialization before allocating copies."""
+    count = _measure(value, operation)
+    operation.consume("work", 12 * count + 1)
+    operation.consume("bytes", 128 + 64 * count)
+    return own_json(
+        value,
+        max_bytes=operation.limits.max_bytes,
+        max_depth=operation.limits.max_depth,
+    )
 
 
 @dataclass(frozen=True, init=False)
@@ -62,18 +75,26 @@ class PreparedModels:
         resources: Mapping[str, object] | None = None,
         base: str | None = None,
         limits: Limits | None = None,
+        budget: Budget | None = None,
         regime: Regime = "application",
         rdf_direction: DirectionPolicy | None = None,
     ) -> None:
         if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
             raise InputError("Unsupported RDF direction policy")
-        selected = limits if limits is not None else Limits()
-        operation = Budget(selected)
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Prepared models require a Budget")
+        if limits is not None and not isinstance(limits, Limits):
+            raise InputError("Prepared models require Limits")
+        if budget is not None and limits is not None and budget.limits != limits:
+            raise InputError("Explicit limits conflict with the preparation budget")
+        operation = budget if budget is not None else Budget(limits)
+        selected = operation.limits
         if isinstance(cast(object, models), (str, bytes)) or not isinstance(
             models, Sequence
         ):
             raise InputError("Prepared models require a finite declaration sequence")
         operation.consume("states", len(models))
+        operation.consume("bytes", 64 + 16 * len(models))
         declarations = tuple(models)
         supplied = resources if resources is not None else {}
         if not isinstance(supplied, Mapping):
@@ -81,23 +102,18 @@ class PreparedModels:
         operation.consume("resources", len(supplied))
         snapshots = {}
         for url, document in supplied.items():
+            bound_text(url, operation)
             absolute_iri(url)
             if isinstance(document, Path):
                 raise InputError("Prepared JSON-LD resources require parsed snapshots")
-            snapshot = own_json(
-                document, max_bytes=selected.max_bytes, max_depth=selected.max_depth
-            )
-            operation.consume("bytes", len(json.dumps(snapshot).encode("utf-8")))
-            snapshots[url] = snapshot
+            snapshots[url] = _prepared_json(document, operation)
         if base is not None:
+            bound_text(base, operation)
             absolute_iri(base)
         context_json = None
         if context is not ABSENT:
-            owned_context = own_json(
-                context, max_bytes=selected.max_bytes, max_depth=selected.max_depth
-            )
+            owned_context = _prepared_json(context, operation)
             context_json = json.dumps(owned_context, ensure_ascii=False)
-            operation.consume("bytes", len(context_json.encode("utf-8")))
         owned = (
             vocabulary
             if isinstance(vocabulary, Vocabulary)

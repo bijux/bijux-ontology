@@ -9,7 +9,7 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import XSD
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -24,10 +24,59 @@ from bijux_ontology.rdf.patches import (
     patch_to_data,
     plan_rdf_patch,
 )
+from bijux_ontology.rdf.patches.applying import _materialize
+from bijux_ontology.rdf.patches.correspondence import Operation
+from bijux_ontology.rdf.patches.planning import capture_source
+from bijux_ontology.rdf.patches.types import SnapshotWitness
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 
 EX = Namespace("https://patch.example/")
+
+
+def test_materialized_bindings_are_exact_fresh_owned_nodes_across_graph_roles() -> None:
+    """A native replay binds anonymous selectors without guessing parser labels."""
+    original = _dataset("shared", "01", "empty")
+    operation = Operation(None, None, 10, None)
+    captured = capture_source(original, "source:", operation)
+    bindings: dict[str, BNode] = {}
+    result = _materialize(captured.witness, original, operation, bindings=bindings)
+    node = _shared(result)
+    assert any(value is node for value in bindings.values())
+    assert any(name is node for name in result._graph_names())
+    assert node is not _shared(original)
+    assert result.graph(str(EX.H)).value(EX.other, EX.child) is node
+    assert str(result.graph(node).value(node, EX.value)) == "01"
+    exported = result.graph(str(EX.G))
+    exported.remove((EX.root, EX.child, None))
+    assert result.graph(str(EX.G)).value(EX.root, EX.child) is node
+    again: dict[str, BNode] = {}
+    _materialize(captured.witness, original, operation, bindings=again)
+    assert not set(bindings.values()).intersection(again.values())
+    with pytest.raises(InputError, match="empty plain dictionary"):
+        _materialize(captured.witness, original, operation, bindings=bindings)
+    incomplete: dict[str, BNode] = {}
+    with pytest.raises(LimitExceeded):
+        _materialize(
+            captured.witness,
+            original,
+            Operation(Limits(max_work=1), None, 10, None),
+            bindings=incomplete,
+        )
+    assert not incomplete
+    graph_token = next(
+        name for name in captured.witness.graphs if isinstance(name, PatchBlank)
+    )
+    selected = SnapshotWitness(
+        "named",
+        graph_token,
+        tuple(quad for quad in captured.witness.quads if quad.graph == graph_token),
+        (graph_token,),
+    )
+    scoped: dict[str, BNode] = {}
+    named = _materialize(selected, original, operation, bindings=scoped)
+    assert named.graph_name is scoped[graph_token.token]
+    assert str(named.graph().value(named.graph_name, EX.value)) == "01"
 
 
 def _dataset(label: str, lexical: str, empty: str) -> PreparedSource:

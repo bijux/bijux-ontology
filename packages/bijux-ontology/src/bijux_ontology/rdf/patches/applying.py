@@ -31,9 +31,20 @@ from .types import (
 
 
 def _materialize(
-    witness: SnapshotWitness, original: PreparedSource, operation: Operation
+    witness: SnapshotWitness,
+    original: PreparedSource,
+    operation: Operation,
+    *,
+    bindings: dict[str, BNode] | None = None,
 ) -> PreparedSource:
-    """Copy exact records and empty graphs without mutating any accepted base."""
+    """Own exact records and optionally expose their fresh anonymous identities.
+
+    The optional empty caller dictionary receives bindings only after complete
+    materialization. Each token denotes the actual node in the returned owner,
+    never a parser label or a node from the original input snapshot.
+    """
+    if bindings is not None and (type(bindings) is not dict or bindings):
+        raise InputError("Materialization bindings require an empty plain dictionary")
     operation.consume("states", len(witness.quads) + len(witness.graphs))
     dataset = Dataset()
     blanks: dict[str, BNode] = {}
@@ -79,16 +90,25 @@ def _materialize(
     for metadata in (original.document_iri, original.effective_url):
         if metadata is not None:
             bound_text(metadata, operation)
-    return PreparedSource(
+    result = PreparedSource._from_owned(
         dataset,
         is_dataset=witness.kind != "graph",
         document_iri=original.document_iri,
         effective_url=original.effective_url,
         literal_fidelity=original.literal_fidelity,
         graph_fidelity="complete",
-        graph_name=selection,
+        graph_name=selection if not isinstance(selection, BNode) else None,
         max_triples=operation.limits.max_triples,
     )
+    if isinstance(selection, BNode):
+        # Selection now refers to the exact fresh graph allocated by node().
+        result.graph_name = selection
+    if bindings is not None:
+        operation.consume("states", len(blanks))
+        operation.consume("bytes", 64 * len(blanks))
+        operation.consume("work", len(blanks))
+        bindings.update(blanks)
+    return result
 
 
 def apply_rdf_patch(

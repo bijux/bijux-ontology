@@ -50,7 +50,7 @@ def collection_memberships(
             if head not in cached:
                 try:
                     members = read_rdf_list(
-                        graph, head, max_items=budget.limits.max_work
+                        graph, head, max_items=budget.limits.max_work, budget=budget
                     )
                     budget.consume("work", len(members))
                     budget.consume("states", len(members))

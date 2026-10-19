@@ -13,6 +13,7 @@ from rdflib.term import Node
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import _read_graph, bind_namespaces, copy_graph
 
 from .results import Edge, TermInfo
@@ -101,6 +102,19 @@ class _VocabularyIndex:
     outgoing: Mapping[Node, tuple[Edge, ...]]
     incoming: Mapping[Node, tuple[Edge, ...]]
     terms: Mapping[str, TermInfo]
+
+
+@dataclass(frozen=True)
+class _VocabularyPreparation:
+    """Closed source receipts and already qualified native inspection records.
+
+    This internal handoff carries preparation, never validation verdicts. An
+    external decoder owns its trust pin, input identity and typed record checks.
+    """
+
+    sources: tuple[tuple[str, OwnedSource, SnapshotMetadata], ...]
+    inspections: tuple[tuple[tuple[str, ...], _VocabularyIndex], ...]
+    required_imports_qualified: bool
 
 
 def _index(
@@ -244,6 +258,144 @@ class Vocabulary:
             limits,
             required_imports_qualified=required_imports_qualified,
         )
+        return result
+
+    def _capture_preparation(self, *, budget: Budget) -> _VocabularyPreparation:
+        """Capture existing immutable preparation; do not build missing indexes."""
+        if not isinstance(budget, Budget):
+            raise InputError("Vocabulary preparation requires a Budget")
+        with self._read_lock:
+            count = len(self._source_handles) + len(self._indexes)
+            budget.consume("work", count)
+            budget.consume("states", 3 * count)
+            budget.consume("bytes", 128 * count)
+            sources = tuple(
+                (scope, source, SnapshotMetadata.capture(source.prepared, budget))
+                for scope, source in self._source_handles
+            )
+            inspections = tuple(self._indexes.items())
+            return _VocabularyPreparation(
+                sources, inspections, self._required_imports_qualified
+            )
+
+    @classmethod
+    def _from_preparation(
+        cls, preparation: _VocabularyPreparation, *, budget: Budget
+    ) -> "Vocabulary":
+        """Publish a new owner after a trusted decoder qualifies native records.
+
+        Role keys and source receipts must match this owner exactly. The decoder
+        has already checked complete index references against externally pinned
+        artifact data; adoption freezes those records without rederiving them.
+        """
+        if not isinstance(preparation, _VocabularyPreparation) or not isinstance(
+            budget, Budget
+        ):
+            raise InputError("Expected typed vocabulary preparation and Budget")
+        if (
+            type(preparation.sources) is not tuple
+            or not preparation.sources
+            or type(preparation.inspections) is not tuple
+            or type(preparation.required_imports_qualified) is not bool
+        ):
+            raise InputError("Vocabulary preparation requires complete inventories")
+        budget.consume(
+            "states", len(preparation.sources) + len(preparation.inspections)
+        )
+        sources: list[OwnedSource] = []
+        imports: list[OwnedSource] = []
+        lookup: list[OwnedSource] = []
+        scopes: list[str] = []
+        for position, (scope, source, receipt) in enumerate(preparation.sources):
+            budget.consume("work")
+            if not isinstance(source, OwnedSource) or not isinstance(
+                receipt, SnapshotMetadata
+            ):
+                raise InputError(
+                    "Vocabulary preparation requires owned source receipts"
+                )
+            expected = (
+                "local"
+                if not position
+                else f"import[{len(imports)}]"
+                if scope.startswith("import[") and not lookup
+                else f"lookup[{len(lookup)}]"
+            )
+            if scope != expected:
+                raise InputError(
+                    "Vocabulary preparation source roles are not canonical"
+                )
+            if not receipt.same_scope(
+                SnapshotMetadata.capture(source.prepared, budget)
+            ):
+                raise InputError("Vocabulary preparation source metadata changed")
+            if source.selected is not source.prepared._read(
+                source.graph_name, union=source.union, budget=budget
+            ):
+                raise InputError("Vocabulary preparation selected graph is not owned")
+            budget.consume("resources")
+            budget.consume("triples", len(source.selected))
+            scopes.append(scope)
+            sources.append(source)
+            if position:
+                (imports if scope.startswith("import[") else lookup).append(source)
+        result = cls._from_owned(
+            sources[0],
+            tuple(imports),
+            tuple(lookup),
+            budget.limits,
+            required_imports_qualified=preparation.required_imports_qualified,
+        )
+        for key, index in preparation.inspections:
+            budget.consume("work")
+            if (
+                type(key) is not tuple
+                or len(key) > len(scopes)
+                or not isinstance(index, _VocabularyIndex)
+            ):
+                raise InputError("Vocabulary preparation inspection scope is invalid")
+            budget.consume("work", (len(scopes) + 1) * (len(key) + 1))
+            budget.consume("states", len(key))
+            for scope in key:
+                if not isinstance(scope, str):
+                    raise InputError("Vocabulary preparation role keys require text")
+                budget.consume("work", len(scope) + 1)
+            roles = {source_role(scope) for scope in key}
+            if (
+                tuple(scope for scope in scopes if source_role(scope) in roles) != key
+                or key in result._indexes
+            ):
+                raise InputError("Vocabulary preparation inspection scope is invalid")
+            count = (
+                len(index.kinds)
+                + len(index.edges)
+                + len(index.outgoing)
+                + len(index.incoming)
+                + len(index.terms)
+                + sum(map(len, index.kinds.values()))
+                + sum(map(len, index.outgoing.values()))
+                + sum(map(len, index.incoming.values()))
+            )
+            budget.consume("work", count)
+            budget.consume("states", count)
+            budget.consume("bytes", 128 + 64 * count)
+            if any(edge.scope not in key for edge in index.edges):
+                raise InputError("Vocabulary preparation edge escapes inspection scope")
+            frozen = _VocabularyIndex(
+                MappingProxyType(
+                    {iri: frozenset(kinds) for iri, kinds in index.kinds.items()}
+                ),
+                tuple(index.edges),
+                MappingProxyType(
+                    {node: tuple(edges) for node, edges in index.outgoing.items()}
+                ),
+                MappingProxyType(
+                    {node: tuple(edges) for node, edges in index.incoming.items()}
+                ),
+                MappingProxyType(dict(index.terms)),
+            )
+            result._indexes[key] = frozen
+            result._kinds[key] = frozen.kinds
         return result
 
     @property

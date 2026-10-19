@@ -194,7 +194,12 @@ def test_numeric_bounds_context_isolation_and_core_processor_coverage() -> None:
     )
     assert stopped.report.outcome == "exhausted"
     assert any(i.code == "context.number_not_exact" for i in stopped.report.issues)
-    assert (context.prec, context.rounding, context.flags, context.traps) == before
+    assert (
+        context.prec,
+        context.rounding,
+        dict(context.flags),
+        dict(context.traps),
+    ) == before
     if importlib.util.find_spec("pyld") is None:
         missing = decode_numeric_json('{"n":1}', policy="source-exact")
         assert missing.report.outcome == "unverified" and missing.document_json is None
