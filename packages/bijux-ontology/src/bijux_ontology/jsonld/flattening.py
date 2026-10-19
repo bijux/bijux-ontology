@@ -262,6 +262,7 @@ def flatten_document(
             candidate,
             max_bytes=operation.limits.max_bytes,
             max_depth=operation.limits.max_depth,
+            budget=operation,
         )
         operation.consume("bytes", _json_size(candidate))
         _consume_work(candidate, operation)

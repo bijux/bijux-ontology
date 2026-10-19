@@ -39,6 +39,7 @@ def expand_document(
         document,
         max_bytes=operation.limits.max_bytes,
         max_depth=operation.limits.max_depth,
+        budget=operation,
     )
     operation.consume("bytes", _json_size(document))
     _consume_work(document, operation)
