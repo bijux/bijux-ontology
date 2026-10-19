@@ -331,6 +331,9 @@ _CODES = {
         "required_occurrence_missing types_mismatch value_mismatch "
         "value_unverified".split()
     ),
+    "geospatial": frozenset(
+        "invalid_lexical invalid_geometry unavailable relation input_error".split()
+    ),
     "endpoint": frozenset(
         "completeness_unverified blank_scope_unverified slice_incomplete "
         "acquisition_unverified input_error".split()
@@ -944,6 +947,14 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Check the selected output path and model alternatives; examples "
         "do not prove all outputs.",
         '{"@id":"https://example.org/item","@type":"https://example.org/Image"}',
+    ),
+    "geospatial": (
+        "explicit geometry values and spatial relationships",
+        "A supported geometry or relation fails, or native interpretation "
+        "remains unavailable.",
+        "Inspect original literal, CRS, axis order and explicit distance unit; "
+        "RDF identity and topology are separate obligations.",
+        "GeometryValue('point', Literal('POINT(15 45)', datatype=WKT))",
     ),
     "endpoint": (
         "explicit endpoint triple extraction",

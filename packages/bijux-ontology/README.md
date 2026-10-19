@@ -51,3 +51,12 @@ exact row-total and no-truncation headers. Missing guarantees, short/capped page
 changed receipts and cross-page blank identities cannot certify a complete slice.
 The initial profile uses parameterized distinct-triple SELECT over HTTP GET;
 it does not accept executable query fragments. No validation fetches the endpoint.
+
+The same local Jena bundle supports `jena.geosparql.check_geometries` with explicit
+`GeometryValue`, `SpatialRelation` and `SpatialDistance` records. The finite
+GeoSPARQL 1.0 profile covers two-dimensional WKT Point/LineString/Polygon/empty and
+securely qualified GML 3.2 Point/pos. Only bundled CRS84 and EPSG4326 are supported,
+with their actual axis order; distance requires explicit planar angular degrees.
+Original RDF literals, geometric equality and topology stay distinct. Invalid
+geometry is a completed negative; dependent operations, unavailable CRS transforms,
+other serializations and unsupported units remain unverified.

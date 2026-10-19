@@ -107,10 +107,15 @@ public final class JenaWorker {
             JsonElement parsed = JsonParser.parseReader(reader);
             if (!parsed.isJsonObject()) throw new IllegalArgumentException("Expected a request object");
             JsonObject request = parsed.getAsJsonObject();
-            if (request.size()>32 || number(request,"protocol") != 1 || !text(request,"operation").equals("shacl"))
+            if (request.size()>32 || number(request,"protocol") != 1)
                 throw new IllegalArgumentException("Unsupported Jena operation");
             control = new Control(request);
-            result = ShaclValidation.execute(request, result, control, cap);
+            String operation = text(request,"operation");
+            if (operation.equals("shacl"))
+                result = ShaclValidation.execute(request, result, control, cap);
+            else if (operation.equals("geosparql"))
+                result = GeometryValidation.execute(request, result, control, cap);
+            else throw new IllegalArgumentException("Unsupported Jena operation");
         } catch (Stopped error) {
             result.addProperty("status", "exhausted"); result.addProperty("message", error.getMessage());
         } catch (Unavailable error) {
