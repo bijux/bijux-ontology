@@ -1,6 +1,7 @@
 """Actual finite Data Cube normalization, integrity and scoped coverage controls."""
 
 from dataclasses import replace
+from typing import cast
 
 import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
@@ -8,7 +9,14 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
 from bijux_ontology.data.cube import CubeCheck, check_cube
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import (
+    BUDGET_KINDS,
+    Budget,
+    BudgetKind,
+    IssueCollector,
+    Limits,
+)
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 
 EX = Namespace("urn:cube:")
@@ -288,6 +296,7 @@ def test_structural_constraints_and_explicit_coverage() -> None:
     graph = cube()
     graph.add((EX.dimension, QB.componentRequired, Literal(False)))
     assert "cube.ic6_nonattribute_optional" in codes(check(graph))
+
     graph = cube()
     graph.add((EX.key, RDF.type, QB.SliceKey))
     graph.add((EX.dsd, QB.sliceKey, EX.key))
@@ -401,3 +410,59 @@ def test_collection_normalization_follows_only_required_membership_scope() -> No
         )
         assert bounded.report.outcome in ("agreement", "exhausted")
         assert budget._counts.get("triples", 0) <= cap
+
+
+@pytest.mark.parametrize("boundary", ("bytes", "states", "issues"))
+def test_nested_cube_failure_keeps_its_paid_findings_without_parent_evidence(
+    boundary: str,
+) -> None:
+    """Real literal failures survive exact child capacity stops, once each."""
+
+    class ObservedBudget(Budget):
+        first: dict[str, int] | None = None
+
+        def _retain_issue(self, issue: Issue, *, repeated: bool) -> None:
+            super()._retain_issue(issue, repeated=repeated)
+            if issue.code == "literal.lexical_invalid" and self.first is None:
+                self.first = {
+                    kind: self.limits.max_total_bytes - self.remaining(kind)
+                    if kind == "bytes"
+                    else getattr(self.limits, "max_" + kind) - self.remaining(kind)
+                    for kind in BUDGET_KINDS
+                }
+
+    graph = cube()
+    for observation in (EX.o1, EX.o2):
+        graph.set(
+            (
+                observation,
+                EX.value,
+                Literal("bad", datatype=XSD.decimal, normalize=False),
+            )
+        )
+    source = prepare_rdf(graph)
+    unrelated = Issue("example.parent", "An earlier unrelated check failed")
+    pilot = ObservedBudget(Limits(max_issues=2))
+    IssueCollector(pilot).append(unrelated)
+    check_cube(source, complete=True, budget=pilot)
+    assert pilot.first is not None
+    options = {"max_issues": 2}
+    options["max_total_bytes" if boundary == "bytes" else "max_" + boundary] = (
+        pilot.first[boundary]
+    )
+    budget = Budget(Limits(**options))
+    IssueCollector(budget).append(unrelated)
+    result = check_cube(source, complete=True, budget=budget)
+    assert result.report.outcome == "exhausted"
+    retained = [i for i in result.report.issues if i.code == "literal.lexical_invalid"]
+    assert len(retained) == 1
+    assert sum(i.kind == "exhausted" for i in result.report.issues) == 1
+    assert unrelated not in result.report.issues
+    # Exhausting setup before a checkpoint exists must not adopt parent issues.
+    early = Budget(Limits())
+    IssueCollector(early).append(unrelated)
+    kind = cast(BudgetKind, "states" if boundary == "issues" else boundary)
+    early.consume(kind, early.remaining(kind))
+    stopped = check_cube(source, complete=True, budget=early)
+    assert stopped.report.outcome == "exhausted"
+    assert unrelated not in stopped.report.issues

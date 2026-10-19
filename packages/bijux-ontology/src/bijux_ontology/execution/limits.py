@@ -151,6 +151,16 @@ class Budget:
             self._retained_issues[id(issue)] = issue
 
 
+@dataclass
+class _FindingCheckpoint:
+    """One prepaid terminal handoff to its original receiving collector."""
+
+    collector: "IssueCollector"
+    start: int
+    capacity: int
+    used: bool = False
+
+
 class IssueCollector(list[Issue]):
     """Bound retained ordinary findings, reserving one final exhaustion marker."""
 
@@ -170,6 +180,46 @@ class IssueCollector(list[Issue]):
         """Retain each completed finding before a later exhaustion occurs."""
         for issue in issues:
             self.append(issue)
+
+    def checkpoint(self) -> _FindingCheckpoint:
+        """Reserve a bounded child-finding handoff without copying parent issues.
+
+        Paid identities have insertion order within this operation. Prepay the
+        bounded prefix scan and receiver reference storage while work is live;
+        terminal adoption never needs new capacity after a child has stopped.
+        Each checkpoint belongs to one collector and can be adopted once.
+        """
+        start = len(self.budget._retained_issues)
+        capacity = min(self.budget.limits.max_states, self.budget.remaining("issues"))
+        self.budget.consume("states")
+        self.budget.reserve_storage(128 + 128 * capacity)
+        self.budget.consume("work", start + capacity)
+        return _FindingCheckpoint(self, start, capacity)
+
+    def retain_since(self, checkpoint: _FindingCheckpoint) -> None:
+        """Transfer only this checkpoint's paid child prefix, exactly once.
+
+        Nested checkpoints select their own insertion spans. Parent findings
+        cannot consume the child bound, and duplicate local adoption adds no
+        issue slots. The collector's reserved exhaustion marker stays separate.
+        """
+        if (
+            type(checkpoint) is not _FindingCheckpoint
+            or checkpoint.collector is not self
+        ):
+            raise InputError("Finding checkpoint belongs to another collector")
+        if checkpoint.used:
+            return
+        checkpoint.used = True
+        for issue in islice(
+            self.budget._retained_issues.values(),
+            checkpoint.start,
+            checkpoint.start + checkpoint.capacity,
+        ):
+            identity = id(issue)
+            if identity not in self._retained_ids:
+                self._retained_ids.add(identity)
+                super().append(issue)
 
     def retain_completed(self, report: Report) -> None:
         """Transfer only this returned report's already qualified paid findings.

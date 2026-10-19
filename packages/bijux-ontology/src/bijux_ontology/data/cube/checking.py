@@ -1,6 +1,5 @@
 """Explicit bounded Data Cube integrity, with every normative constraint accounted."""
 
-from itertools import islice
 from typing import Literal as Choice
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
@@ -124,14 +123,11 @@ def check_cube(
         for index, method in enumerate(methods)
     ]
     checked = 0
-    prior: frozenset[int] = frozenset()
-    handoff = min(operation.limits.max_states, operation.limits.max_issues)
+    checkpoint = None
     try:
-        operation.consume("states", 44 + len(operation._retained_issues))
-        operation.consume(
-            "bytes", 22 * 512 + 64 * len(operation._retained_issues) + 8 * handoff
-        )
-        prior = frozenset(operation._retained_issues)
+        operation.consume("states", 44)
+        operation.consume("bytes", 22 * 512)
+        checkpoint = issues.checkpoint()
         if type(source) is not PreparedSource:
             raise InputError("Cube checking requires an ordinary owned PreparedSource")
         metadata = SnapshotMetadata.capture(source, operation)
@@ -189,23 +185,7 @@ def check_cube(
             for index, method in enumerate(methods):
                 checks.issues = IssueCollector(operation)
                 procedure = procedures[index]
-                try:
-                    count = procedure(checks)
-                except LimitExceeded:
-                    issues.retain_completed(
-                        Report(
-                            "cube.paid_prefix",
-                            1,
-                            tuple(
-                                issue
-                                for issue in islice(
-                                    operation._retained_issues.values(), handoff
-                                )
-                                if id(issue) not in prior
-                            ),
-                        )
-                    )
-                    raise
+                count = procedure(checks)
                 report = Report(
                     f"cube.IC-{index}",
                     count,
@@ -228,17 +208,8 @@ def check_cube(
             if not metadata.same_scope(SnapshotMetadata.capture(source, operation)):
                 raise InputError("Cube source metadata changed during checking")
     except LimitExceeded as error:
-        issues.retain_completed(
-            Report(
-                "cube.paid_prefix",
-                1,
-                tuple(
-                    issue
-                    for issue in islice(operation._retained_issues.values(), handoff)
-                    if id(issue) not in prior
-                ),
-            )
-        )
+        if checkpoint is not None:
+            issues.retain_since(checkpoint)
         issues.exhausted(str(error))
         if checked < 22:
             coverage[checked] = CubeConstraintCoverage(
