@@ -206,6 +206,28 @@ def test_compiled_declaration_failures_are_retained_for_every_output() -> None:
         )
 
 
+def test_rdf_batches_share_an_allowance_without_reusing_previous_success() -> None:
+    plan = PreparedModels(declarations(), vocabulary())
+    graph = Graph().add((EX.root, RDF.type, EX.Node))
+    graph.add((EX.root, EX.label, Literal("Root")))
+    source = prepare_rdf(graph)
+    usages = (RdfModelUsage("node", EX.root),)
+    pilot = Budget(plan.limits)
+    assert plan.check_rdf(source, usages, budget=pilot).verified
+    operation = Budget(plan.limits)
+    operation.consume("work", operation.limits.max_work - pilot._counts["work"])
+    first = plan.check_rdf(source, usages, budget=operation)
+    assert first.verified
+    stopped = plan.check_rdf(source, usages, budget=operation)
+    assert stopped.outcome == "exhausted" and first.verified
+    assert operation._counts["work"] <= operation.limits.max_work
+    graph.set((EX.root, EX.label, Literal(7)))
+    assert not plan.check_rdf(prepare_rdf(graph), usages).verified
+    assert plan.check_rdf(source, usages).verified
+    with pytest.raises(InputError, match="conflicts"):
+        plan.check_rdf(source, usages, budget=Budget(Limits(max_work=1)))
+
+
 def test_owned_declarations_contexts_and_import_versions_require_a_new_plan() -> None:
     root = Graph().add((EX.ontology, OWL.imports, EX.imported))
     imported = vocabulary()
