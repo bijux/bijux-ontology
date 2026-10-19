@@ -23,7 +23,7 @@ from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.inputs import ShaclJobInput, capture_job_inputs
 from bijux_ontology.workflows.projects.jobs.decoding import check_kind, dependencies
 from bijux_ontology.workflows.projects.jobs.descriptors import APPLICATION_KINDS
-from bijux_ontology.workflows.projects.operations import run_check
+from bijux_ontology.workflows.projects.operations import _run_owned_check, run_check
 from bijux_ontology.workflows.projects.resources import ProjectResources
 
 
@@ -246,9 +246,35 @@ class PreparedChecks:
         job: dict[str, object],
         *,
         shacl_input: ShaclJobInput | None = None,
-        _owned_worker: bool = False,
     ) -> Report:
         """Validate and run one job, retaining lazy context-batch execution."""
+        return self._execute(
+            job,
+            shacl_input=shacl_input,
+            owned_worker=False,
+        )
+
+    def _check_owned(
+        self,
+        job: dict[str, object],
+        *,
+        shacl_input: ShaclJobInput | None = None,
+    ) -> Report:
+        """Check one job within the fixed dispatcher's supervised worker."""
+        return self._execute(
+            job,
+            shacl_input=shacl_input,
+            owned_worker=True,
+        )
+
+    def _execute(
+        self,
+        job: dict[str, object],
+        *,
+        shacl_input: ShaclJobInput | None = None,
+        owned_worker: bool,
+    ) -> Report:
+        """Share input qualification and results across fixed execution owners."""
         with self._resources.operation():
             bound_text(
                 cast(str, job.get("name", "")), Budget(self.configuration.limits)
@@ -266,12 +292,12 @@ class PreparedChecks:
                 raise InputError("Required job dependencies need project execution")
             if kind == "context" and "documents" in job:
                 return self._context_batch(job)
-            return run_check(
+            execute = _run_owned_check if owned_worker else run_check
+            return execute(
                 kind,
                 job,
                 self._resources,
                 shacl_input=shacl_input,
-                _owned_worker=_owned_worker,
             )
 
 
@@ -280,16 +306,50 @@ def check_project(
     *,
     completed: Callable[[Report], None] | None = None,
     job_inputs: Mapping[str, ShaclJobInput] | None = None,
-    _owned_worker: bool = False,
-    _job_deadline: Callable[[float | None], None] | None = None,
 ) -> Report:
     """Retain completed sibling evidence when a required independent input fails."""
+    return _check_project(
+        configuration,
+        completed=completed,
+        job_inputs=job_inputs,
+        owned_worker=False,
+        job_deadline=None,
+    )
+
+
+def _check_project_owned(
+    configuration: ProjectConfig | PreparedChecks,
+    *,
+    completed: Callable[[Report], None] | None = None,
+    job_inputs: Mapping[str, ShaclJobInput] | None = None,
+    job_deadline: Callable[[float | None], None],
+) -> Report:
+    """Run jobs within the caller's fixed worker and deadline publisher."""
+    return _check_project(
+        configuration,
+        completed=completed,
+        job_inputs=job_inputs,
+        owned_worker=True,
+        job_deadline=job_deadline,
+    )
+
+
+def _check_project(
+    configuration: ProjectConfig | PreparedChecks,
+    *,
+    completed: Callable[[Report], None] | None = None,
+    job_inputs: Mapping[str, ShaclJobInput] | None = None,
+    owned_worker: bool,
+    job_deadline: Callable[[float | None], None] | None,
+) -> Report:
+    """Retain sibling evidence under one explicit execution owner."""
     prepared = (
         configuration
         if isinstance(configuration, PreparedChecks)
         else PreparedChecks(configuration)
     )
     config = prepared.configuration
+    execute = prepared._check_owned if owned_worker else prepared.check
     reports: list[Report] = []
     remaining = config.limits.max_issues
     work = Budget(config.limits)
@@ -316,7 +376,7 @@ def check_project(
             blocked = _dependency_report(job, previous, work)
             timeout = job.get("timeout", 30.0)
             if (
-                _job_deadline is not None
+                job_deadline is not None
                 and blocked is None
                 and job.get("kind") in ("shacl", "query-rules")
             ):
@@ -328,7 +388,7 @@ def check_project(
                     raise InputError(
                         "Native job timeout must be positive and finite or None"
                     )
-                _job_deadline(
+                job_deadline(
                     time.monotonic() + cast(float, timeout)
                     if timeout is not None
                     else None
@@ -337,14 +397,13 @@ def check_project(
                 blocked
                 if blocked is not None
                 else replace(
-                    prepared.check(
+                    execute(
                         {
                             key: value
                             for key, value in job.items()
                             if key != "depends_on"
                         },
                         shacl_input=runtime.get(name),
-                        _owned_worker=_owned_worker,
                     ),
                     scope=name,
                 )
@@ -366,8 +425,8 @@ def check_project(
                     ),
                 ),
             )
-        if _job_deadline is not None:
-            _job_deadline(None)
+        if job_deadline is not None:
+            job_deadline(None)
         remaining, retained = _retain_report(reports, report, remaining)
         previous[name] = reports[-1]
         if completed is not None:

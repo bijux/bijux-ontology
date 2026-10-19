@@ -519,3 +519,51 @@ def test_query_rules_direct_and_owned_project_keep_completed_answers_and_locatio
     assert finding.details.source == str(rule_file)
     assert finding.details.term == "urn:record"
     assert not list((tmp_path / "runs").iterdir())
+
+
+@pytest.mark.parametrize("minimum", [1, 2])
+def test_shacl_direct_and_owned_project_preserve_named_findings(
+    tmp_path: Path, minimum: int
+) -> None:
+    """Only freshly allocated report identities differ across real execution routes."""
+    from dataclasses import replace
+
+    from bijux_ontology.workflows.projects.checking import check_project
+    from bijux_ontology.workflows.projects.configuration import ProjectConfig
+
+    (tmp_path / "data.ttl").write_text('<urn:record> <urn:p> "value".')
+    (tmp_path / "shapes.ttl").write_text(
+        "@prefix sh:<http://www.w3.org/ns/shacl#>. "
+        "<urn:Shape> a sh:NodeShape; sh:targetNode <urn:record>; "
+        "sh:property <urn:Property>. <urn:Property> sh:path <urn:p>; "
+        f"sh:minCount {minimum}."
+    )
+    configuration = {
+        "version": 1,
+        "rdf": {name: {"path": name + ".ttl"} for name in ("data", "shapes")},
+        "checks": [
+            {"name": "shapes", "kind": "shacl", "document": "data", "shapes": "shapes"}
+        ],
+    }
+    direct = check_project(ProjectConfig(configuration, directory=tmp_path))
+    owned = (
+        WorkerExecutor(artifacts=tmp_path / "runs")
+        .run("project", {"configuration": configuration, "directory": str(tmp_path)})
+        .report
+    )
+    assert direct.complete and owned.complete
+    assert direct.verified is (minimum == 1) and owned.verified is direct.verified
+    for report in (direct, owned):
+        assert len(report.issues) == minimum - 1
+    for before, after in zip(direct.issues, owned.issues, strict=True):
+        assert replace(before, evidence_json=None) == replace(after, evidence_json=None)
+        left, right = before.evidence, after.evidence
+        assert left is not None and right is not None
+        assert left["focus_node"] == {"kind": "iri", "value": "urn:record"}
+        assert left["source_shape"] == {"kind": "iri", "value": "urn:Property"}
+        assert cast(dict[str, object], left.pop("result"))["kind"] == "blank"
+        assert cast(dict[str, object], right.pop("result"))["kind"] == "blank"
+        assert left == right
+    if minimum == 1:
+        assert direct == owned
+    assert not list((tmp_path / "runs").iterdir())

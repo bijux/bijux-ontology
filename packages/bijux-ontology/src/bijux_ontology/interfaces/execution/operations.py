@@ -35,7 +35,10 @@ from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
-from bijux_ontology.workflows.projects.checking import check_project
+from bijux_ontology.workflows.projects.checking import (
+    _check_project_owned,
+    check_project,
+)
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 OPERATIONS = frozenset(
@@ -122,11 +125,10 @@ def execute_operation(
         project = ProjectConfig(
             config, directory=Path(string_value(parameters.get("directory")))
         )
-        return check_project(
-            project,
-            completed=completed,
-            _owned_worker=job_deadline is not None,
-            _job_deadline=job_deadline,
+        if job_deadline is None:
+            return check_project(project, completed=completed), None
+        return _check_project_owned(
+            project, completed=completed, job_deadline=job_deadline
         ), None
     if operation == "vocabulary":
         known_keys(

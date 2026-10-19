@@ -36,9 +36,47 @@ def run_check(
     *,
     shacl_input: ShaclJobInput | None = None,
     budget: Budget | None = None,
-    _owned_worker: bool = False,
 ) -> Report:
     """Execute one supported check using its operation-owned explicit inputs."""
+    return _execute_check(
+        kind,
+        job,
+        resources,
+        shacl_input=shacl_input,
+        budget=budget,
+        owned_worker=False,
+    )
+
+
+def _run_owned_check(
+    kind: CheckKind,
+    job: Mapping[str, object],
+    resources: ProjectResources,
+    *,
+    shacl_input: ShaclJobInput | None = None,
+    budget: Budget | None = None,
+) -> Report:
+    """Execute a captured job inside its supervising worker lifetime."""
+    return _execute_check(
+        kind,
+        job,
+        resources,
+        shacl_input=shacl_input,
+        budget=budget,
+        owned_worker=True,
+    )
+
+
+def _execute_check(
+    kind: CheckKind,
+    job: Mapping[str, object],
+    resources: ProjectResources,
+    *,
+    shacl_input: ShaclJobInput | None = None,
+    budget: Budget | None = None,
+    owned_worker: bool,
+) -> Report:
+    """Share input qualification and results across fixed execution owners."""
     config = resources.configuration
     descriptor = describe(kind)
     if budget is not None and descriptor.worker is None:
@@ -82,7 +120,10 @@ def run_check(
     if kind == "shacl":
         from rdflib import URIRef
 
-        from bijux_ontology.shacl.checking import validate_shapes
+        from bijux_ontology.shacl.checking import (
+            _validate_shapes_owned,
+            validate_shapes,
+        )
         from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
         coverage = None
@@ -107,7 +148,8 @@ def run_check(
         selected = GraphSelection.from_job(
             job, name_key="data_graph", union_key="data_union"
         )
-        return validate_shapes(
+        validate = _validate_shapes_owned if owned_worker else validate_shapes
+        return validate(
             shacl_input.source
             if shacl_input is not None
             else resources.source(text_value(job.get("document"), location="document")),
@@ -134,7 +176,6 @@ def run_check(
             limits=config.limits,
             allow_empty=boolean(job.get("allow_empty", False)),
             budget=budget,
-            _owned_worker=_owned_worker,
         ).report
     if kind == "query-rules":
         from bijux_ontology.data.query_rules.checking import (
@@ -143,7 +184,7 @@ def run_check(
         )
         from bijux_ontology.data.query_rules.loading import load_query_rules
 
-        execute = _run_query_rules_owned if _owned_worker else run_query_rules
+        execute = _run_query_rules_owned if owned_worker else run_query_rules
         return execute(
             resources.source(text_value(job.get("source"), location="source")),
             load_query_rules(

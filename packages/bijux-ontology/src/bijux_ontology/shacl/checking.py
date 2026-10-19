@@ -51,7 +51,6 @@ def validate_shapes(
     limits: Limits | None = None,
     timeout: float | None = 30.0,
     budget: Budget | None = None,
-    _owned_worker: bool = False,
 ) -> results.ShaclResult:
     """Validate supplied graphs with inference, JS, rules and implicit retrieval off.
 
@@ -91,13 +90,108 @@ def validate_shapes(
     that scope. Backend recursion depth and process deadline are separate limits.
     Optional shared accounting covers controlled preparation and projection;
     opaque maintained-engine CPU remains bounded by the owning process deadline.
-    The private owned-worker route requires an already isolated disposable worker
-    whose caller enforces the timeout; it starts no nested process.
     """
+    return _validate_shapes(
+        data,
+        shapes,
+        ontology=ontology,
+        graph_name=graph_name,
+        union=union,
+        imports=imports,
+        trusted_sparql=trusted_sparql,
+        trusted_targets=trusted_targets,
+        focus_nodes=focus_nodes,
+        use_shapes=use_shapes,
+        mode=mode,
+        preflight=preflight,
+        allow_empty=allow_empty,
+        coverage=coverage,
+        required_constraints=required_constraints,
+        functions=functions,
+        source_usages=source_usages,
+        limits=limits,
+        timeout=timeout,
+        budget=budget,
+        owned_worker=False,
+    )
+
+
+def _validate_shapes_owned(
+    data: Graph | PreparedSource,
+    shapes: Graph | PreparedSource,
+    *,
+    ontology: Graph | PreparedSource | None = None,
+    graph_name: GraphSelection | None = None,
+    union: bool = False,
+    imports: Mapping[str, RdfSource | Payload] | None = None,
+    trusted_sparql: bool = False,
+    trusted_targets: bool = False,
+    focus_nodes: Sequence[TermSelection] = (),
+    use_shapes: Sequence[TermSelection] = (),
+    mode: str = "targets",
+    preflight: bool = False,
+    allow_empty: bool = False,
+    coverage: ShaclCoverageContract | None = None,
+    required_constraints: Sequence[ShaclConstraintRequirement] = (),
+    functions: ShaclFunctionCatalog | None = None,
+    source_usages: Sequence[findings.ShaclSource] = (),
+    limits: Limits | None = None,
+    timeout: float | None = 30.0,
+    budget: Budget | None = None,
+) -> results.ShaclResult:
+    """Validate inside a fixed disposable worker whose caller owns its deadline."""
+    return _validate_shapes(
+        data,
+        shapes,
+        ontology=ontology,
+        graph_name=graph_name,
+        union=union,
+        imports=imports,
+        trusted_sparql=trusted_sparql,
+        trusted_targets=trusted_targets,
+        focus_nodes=focus_nodes,
+        use_shapes=use_shapes,
+        mode=mode,
+        preflight=preflight,
+        allow_empty=allow_empty,
+        coverage=coverage,
+        required_constraints=required_constraints,
+        functions=functions,
+        source_usages=source_usages,
+        limits=limits,
+        timeout=timeout,
+        budget=budget,
+        owned_worker=True,
+    )
+
+
+def _validate_shapes(
+    data: Graph | PreparedSource,
+    shapes: Graph | PreparedSource,
+    *,
+    ontology: Graph | PreparedSource | None = None,
+    graph_name: GraphSelection | None = None,
+    union: bool = False,
+    imports: Mapping[str, RdfSource | Payload] | None = None,
+    trusted_sparql: bool = False,
+    trusted_targets: bool = False,
+    focus_nodes: Sequence[TermSelection] = (),
+    use_shapes: Sequence[TermSelection] = (),
+    mode: str = "targets",
+    preflight: bool = False,
+    allow_empty: bool = False,
+    coverage: ShaclCoverageContract | None = None,
+    required_constraints: Sequence[ShaclConstraintRequirement] = (),
+    functions: ShaclFunctionCatalog | None = None,
+    source_usages: Sequence[findings.ShaclSource] = (),
+    limits: Limits | None = None,
+    timeout: float | None = 30.0,
+    budget: Budget | None = None,
+    owned_worker: bool,
+) -> results.ShaclResult:
+    """Share input qualification and results across fixed execution owners."""
     if budget is not None and not isinstance(budget, Budget):
         raise InputError("SHACL shared accounting requires a Budget")
-    if type(_owned_worker) is not bool:
-        raise InputError("Owned SHACL execution flag must be boolean")
     if timeout is not None and (
         type(timeout) not in (int, float) or not isfinite(timeout) or timeout <= 0
     ):
@@ -147,7 +241,7 @@ def validate_shapes(
         plan.limits,
         budget=budget,
     )
-    if _owned_worker:
+    if owned_worker:
         # The caller already owns a disposable worker and its outer deadline.
         # Execute the same backend there; a nested isolated process would escape
         # the outer POSIX process group when its owner is terminated.
