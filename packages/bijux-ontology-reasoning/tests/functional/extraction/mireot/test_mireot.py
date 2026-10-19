@@ -12,14 +12,14 @@ from bijux_ontology_reasoning.axioms.types import (
     SubClassOf,
 )
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
+from bijux_ontology_reasoning.backend.robot import RobotBackend, prepare_robot_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.imports import (
+from bijux_ontology_reasoning.extraction.mireot import (
     MireotBoundary,
     MireotImport,
     MireotRetention,
     extract_mireot,
 )
-from bijux_ontology_reasoning.robot import RobotBackend, prepare_robot_backend
 
 from bijux_ontology.declarations.types import (
     FieldDeclaration,

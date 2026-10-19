@@ -207,7 +207,7 @@ rows through exact original module ownership, preserving duplicate occurrences
 and pre-existing failures without new blame. Unsupported qualifiers and endpoint
 facets remain unverified; completion covers only the selected obligations.
 
-`locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
+`extraction.locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
 for an explicit typed signature. Choose flattened imports, retained annotations
 and a fresh module identity. Inspect original annotated axiom owners and separate
 before/after consumer entailment proofs; only the selected obligations are
@@ -221,7 +221,7 @@ redundancy does not authorize the union. Choose retained annotations and read-on
 imports, and supply nonempty consumer entailments. Original inconsistency blocks
 proof; publish only verified candidates with `axioms.changes.write_axiom_change`.
 
-`imports.extract_mireot` runs maintained ROBOT extraction with explicit same-role
+`extraction.mireot.extract_mireot` runs maintained ROBOT extraction with explicit same-role
 `MireotBoundary` lower/upper pairs and `MireotRetention` property, axiom and
 annotation requirements. Supply an import-free Functional source, distinct module
 identity/version and nonempty consumer entailments. Actual hierarchy and
@@ -229,7 +229,7 @@ before/after proofs qualify the selected scope; missing boundaries or omitted
 required content publish no output. Paired Functional and Turtle outputs must
 preserve the same annotated axioms and headers. This syntactic import profile
 claims no locality or universal consequence preservation; it reuses the explicit
-pinned `robot.prepare_robot_backend` runtime and its separate sealing allowance.
+pinned `backend.robot.prepare_robot_backend` runtime and its separate sealing allowance.
 
 `repairs.propose_repairs` checks finite alternatives from one established native
 inconsistency justification. Supply nonempty consumer entailments, exact protected

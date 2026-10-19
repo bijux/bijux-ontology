@@ -10,8 +10,11 @@ from bijux_ontology_reasoning.axioms.types import (
 )
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
+from bijux_ontology_reasoning.extraction.locality import (
+    LocalityMethod,
+    extract_locality_module,
+)
 from bijux_ontology_reasoning.extraction.locality.types import LocalityModule
-from bijux_ontology_reasoning.locality import LocalityMethod, extract_locality_module
 
 SOURCE = """Ontology(<urn:original>
  Annotation(<urn:note> "ontology annotation")
