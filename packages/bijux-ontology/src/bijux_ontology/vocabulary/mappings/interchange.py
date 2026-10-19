@@ -223,6 +223,7 @@ def export_sssom(
     mapping_set: MappingSet,
     *,
     limits: Limits | None = None,
+    budget: Budget | None = None,
     cancel: threading.Event | None = None,
 ) -> MappingExport:
     """Publish immutable bytes already qualified by maintained write and reparse.
@@ -231,7 +232,7 @@ def export_sssom(
     policy truth. No mapping predicate is rewritten, inverted or interpreted as
     equivalence; export does not execute any semantic application policy.
     """
-    operation = Operation(limits, None, 30, cancel)
+    operation = Operation(limits, budget, 30, cancel)
     issues = IssueCollector(operation)
     content = None
     try:
