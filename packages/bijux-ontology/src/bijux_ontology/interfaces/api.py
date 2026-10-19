@@ -108,8 +108,28 @@ from bijux_ontology.reports import (
 )
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.collections import check_collection_sequence
+from bijux_ontology.skos.label_relations import (
+    XLRelation,
+    XLRelationPolicy,
+    check_xl_relations,
+)
+from bijux_ontology.skos.labels import LabelHomonym, check_label_collisions
+from bijux_ontology.skos.publication import (
+    ConceptReachability,
+    HierarchyStep,
+    SchemeCoverage,
+    TopConceptCheck,
+    TopConceptPolicy,
+    check_scheme_coverage,
+    check_top_concepts,
+)
 from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
 from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.collections import (
+    CollectionExpansion,
+    CollectionOccurrence,
+    expand_collection,
+)
 from bijux_ontology.vocabulary.comparison import (
     Change,
     VocabularyChanges,
@@ -163,6 +183,8 @@ __all__ = [
     "CanonicalRDF",
     "Change",
     "CheckError",
+    "CollectionExpansion",
+    "CollectionOccurrence",
     "ContextCorpusDocument",
     "ContextCorpusUpgrade",
     "ContextExpectation",
@@ -195,6 +217,7 @@ __all__ = [
     "IssueSelection",
     "JSONLDPreparation",
     "KeyedItems",
+    "LabelHomonym",
     "LimitExceeded",
     "Limits",
     "Location",
@@ -235,6 +258,11 @@ __all__ = [
     "SubjectIdentity",
     "TemplateKey",
     "TermDeclaration",
+    "ConceptReachability",
+    "HierarchyStep",
+    "SchemeCoverage",
+    "TopConceptCheck",
+    "TopConceptPolicy",
     "TermInfo",
     "Transformation",
     "UpgradeAssessment",
@@ -245,6 +273,8 @@ __all__ = [
     "VocabularyChanges",
     "VocabularyView",
     "WorkerExecutor",
+    "XLRelation",
+    "XLRelationPolicy",
     "assess_context_corpus",
     "assess_models",
     "assess_upgrade",
@@ -255,13 +285,17 @@ __all__ = [
     "check_data_usage",
     "check_emission",
     "check_instance",
+    "check_label_collisions",
     "check_models",
     "check_ontology",
     "check_project",
     "check_rdf_emission",
     "check_serializer_corpus",
+    "check_scheme_coverage",
     "check_skos",
+    "check_top_concepts",
     "check_vocabulary",
+    "check_xl_relations",
     "combine_reports",
     "compare_context_usages",
     "compare_rdf",
@@ -269,6 +303,7 @@ __all__ = [
     "compare_vocabularies",
     "context_document_loader",
     "convert_to_rdf",
+    "expand_collection",
     "expand_document",
     "expectations_from_data",
     "export_jsonld",

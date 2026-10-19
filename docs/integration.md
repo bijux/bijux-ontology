@@ -100,12 +100,44 @@ under both policy choices. Reports list expanded conditions and the chosen basis
 The CLI exposes `--profile` and `--hierarchy-basis`; SKOS project jobs accept
 `profile` and `hierarchy_basis`.
 
+`check_top_concepts(view, TopConceptPolicy(scheme_iri, required=(root_iri,)))`
+checks an opt-in published-root inventory using either SKOS top-concept inverse.
+An optional `allowed` inventory and `broader="forbid-within-scheme"` qualify
+authored broader/narrower assertions; parents with unresolved scheme membership
+remain unverified. These consumer rules leave default SKOS integrity unchanged.
+
+`check_scheme_coverage(view, scheme_iri)` returns actual root-to-concept witnesses
+and unreachable components over authored hierarchy links. Choose traversal
+`direction`, `cross_scheme` bridges and `cycles` explicitly when defaults differ
+from the publication policy. Coverage concerns selected scheme concepts; it does
+not establish logical validity. Incomplete traversal retains proved paths and
+returns `unreachable=None`.
+
+`check_label_collisions(view, schemes=(scheme_iri,))` applies optional uniqueness
+to selected concept labels, separately for each scheme and language. Select
+plain SKOS label `roles`, `comparison` (`exact`, `casefold`, `nfc`, `nfc-casefold`)
+and explicit `LabelHomonym` owner sets. Comparison keys never alter RDF literals;
+legal homonyms remain legal under default integrity checks.
+
+`check_xl_relations(view, policies)` checks explicitly declared SKOS-XL relation
+predicates and flat subrelation inventories. `XLRelationPolicy` selects endpoint
+languages, exact literal-form comparisons, asserted/either orientation or
+forbidden relations. Equal forms preserve distinct label resources; missing
+forms remain unverified. Subrelations inherit no implicit reverse assertion.
+
 Use `check_collection_sequence(inspect_vocabulary(source), collection_iri,
 expected=(first_iri, second_iri), unique_members=True)` for authored list order.
 `minimum_size`/`maximum_size` count every position; duplicates remain visible.
 `collection_members(view, iri, ordered=True)` exposes each immutable member's
 zero-based `position`; direct `skos:member` assertions have no position. Missing
 or ambiguous lists remain unverified, and proved violations survive bad tails.
+
+`expand_collection(view, collection_iri, nested="expand")` retains concept
+occurrences and their complete membership paths, reusing shared child decoding.
+Its `concepts` set and duplicate-preserving `sequence` serve distinct purposes:
+a sequence is available only for complete, fully ordered membership. Mixed or
+unordered membership supplies no total order. `nested="retain"` keeps child
+collections atomic; cycles, unresolved roles and exhausted bounds remain visible.
 
 Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[jsonld]` for JSON-LD processing. Hosts pinned to another PyLD version can use the core without changing their dependency requirements; JSON-LD operations require a compatible runtime.
 

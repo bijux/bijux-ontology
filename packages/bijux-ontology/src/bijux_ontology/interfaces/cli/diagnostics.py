@@ -139,6 +139,16 @@ _CODES = {
         "implicit_target_unverified nonconformance sparql_unverified".split()
     ),
     "skos": frozenset(
+        "xl_relation.endpoint_not_resource xl_relation.form_shape "
+        "xl_relation.form_conflict xl_relation.role_conflict "
+        "xl_relation.forbidden xl_relation.policy_mismatch "
+        "policy.label_collision policy.label_collision_unverified "
+        "publication.root_not_published publication.root_scope_unverified "
+        "publication.unreachable_component publication.hierarchy_cycle "
+        "publication.scope_unverified "
+        "publication.required_root_missing publication.root_not_allowed "
+        "publication.root_has_broader publication.broader_scope_unverified "
+        "publication.reference_unverified "
         "policy.collection_sequence_mismatch policy.collection_size_mismatch "
         "policy.collection_duplicate_member "
         "collection_member_role_conflict label_role_conflict mapping_conflict "
@@ -158,6 +168,8 @@ _CODES = {
         "xl_form_conflict xl_form_unresolved xl_role_conflict xl_role_overlap".split()
     ),
     "terms": frozenset(
+        "collection_member_invalid collection_member_unverified "
+        "collection_root_unverified collection_containment_cycle "
         "collection_list_ambiguous collection_list_malformed "
         "navigation_anonymous".split()
     ),
