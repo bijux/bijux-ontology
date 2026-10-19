@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind, Li
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.usages.checking import check_context
-from bijux_ontology.rdf.patches.types import PatchBlank
+from bijux_ontology.rdf.records.types import PatchBlank
 from bijux_ontology.workflows.reproductions import (
     ContextRequest,
     EmissionRequest,

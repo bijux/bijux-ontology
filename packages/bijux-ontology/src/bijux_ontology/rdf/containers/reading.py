@@ -12,7 +12,7 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import PatchUnavailable
+from bijux_ontology.rdf.records.types import PatchUnavailable
 from bijux_ontology.rdf.roles.types import Statement
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key

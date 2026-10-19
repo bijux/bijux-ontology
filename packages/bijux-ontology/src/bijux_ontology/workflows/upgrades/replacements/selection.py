@@ -8,7 +8,7 @@ from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import IssueCollector, bound_text
-from bijux_ontology.rdf.patches.types import PatchQuad, SnapshotWitness
+from bijux_ontology.rdf.records.types import PatchQuad, SnapshotWitness
 from bijux_ontology.rdf.roles.classification import declaration_role
 from bijux_ontology.rdf.roles.types import TermPosition, TermRole
 from bijux_ontology.rdf.terms import bound_node

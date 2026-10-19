@@ -26,9 +26,8 @@ from bijux_ontology.rdf.patches.planning import (
     capture_source,
     report,
 )
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
-    PatchBlankBinding,
+from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
+from bijux_ontology.rdf.records.types import (
     PatchQuad,
     PatchResource,
     PatchUnavailable,

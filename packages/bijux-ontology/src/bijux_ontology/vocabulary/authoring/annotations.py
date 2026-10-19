@@ -9,7 +9,7 @@ from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.execution.limits import retain_report
 from bijux_ontology.rdf.patches.planning import Rejected
-from bijux_ontology.rdf.patches.types import PatchResource, PatchUnavailable
+from bijux_ontology.rdf.records.types import PatchResource, PatchUnavailable
 from bijux_ontology.rdf.roles.classification import classify_statement, declaration_role
 from bijux_ontology.vocabulary.obo.reading import _ROLE, read_obo_records
 

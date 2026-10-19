@@ -7,7 +7,7 @@ from rdflib.namespace import OWL
 
 from bijux_ontology.execution.limits import retain_report
 from bijux_ontology.rdf.patches.planning import Rejected
-from bijux_ontology.rdf.patches.types import PatchQuad, PatchResource, PatchUnavailable
+from bijux_ontology.rdf.records.types import PatchQuad, PatchResource, PatchUnavailable
 from bijux_ontology.rdf.terms import literal_datatype
 from bijux_ontology.vocabulary.annotations.graphs.changes import AnnotationEditContext
 from bijux_ontology.vocabulary.annotations.graphs.reading import (

@@ -12,13 +12,13 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.types import (
+from bijux_ontology.rdf.queries.literals import check_literal_scope
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchLiteral,
     PatchValue,
     SnapshotWitness,
 )
-from bijux_ontology.rdf.queries.literals import check_literal_scope
 from bijux_ontology.rdf.terms import bound_node, literal_term
 
 

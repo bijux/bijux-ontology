@@ -15,7 +15,7 @@ from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, 
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.rdf.patches.codecs import term_data, witness_data
+from bijux_ontology.rdf.records.codecs import term_data, witness_data
 
 from .preparation import reserve
 from .types import (

@@ -15,10 +15,10 @@ from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.codecs import read_witness, term_data
-from bijux_ontology.rdf.patches.types import PatchBlank, PatchLiteral, PatchValue
 from bijux_ontology.rdf.queries.syntax import prepare_local_query
+from bijux_ontology.rdf.records.codecs import read_witness, term_data
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import PatchBlank, PatchLiteral, PatchValue
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.terms import literal_datatype, literal_term
 
@@ -33,7 +33,7 @@ def evaluate(request: dict[str, object], budget: ControlBudget) -> dict[str, obj
         raise InputError("Simple entailment requires physical graph projections")
     original = prepare_rdf(Graph(), budget=budget)
     actual_blanks: dict[str, BNode] = {}
-    source = _materialize(data, original, budget, bindings=actual_blanks)
+    source = materialize(data, original, budget, bindings=actual_blanks)
     graph = source._read(budget=budget)
     budget.consume("states", len(actual_blanks))
     budget.consume("bytes", 64 * len(actual_blanks))

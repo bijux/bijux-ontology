@@ -11,8 +11,8 @@ from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import bound_text
 from bijux_ontology.rdf.entailment.preparation import prepare_entailment
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
-from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.planning import capture_source
+from bijux_ontology.rdf.records.materialization import materialize
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.rules.materialization import materialize_rules
@@ -36,7 +36,7 @@ def own_source(source: PreparedSource, operation: Operation) -> PreparedSource:
     captured = capture_source(source, "asserted:", operation)
     if captured.witness.kind == "dataset":
         raise InputError("Sessions require a plain or pinned named/default graph")
-    owned = _materialize(captured.witness, source, operation)
+    owned = materialize(captured.witness, source, operation)
     if not metadata.same_scope(
         SnapshotMetadata.capture(source, operation)
     ) or not metadata.same_scope(SnapshotMetadata.capture(owned, operation)):

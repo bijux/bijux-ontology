@@ -17,9 +17,10 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, MigrationCheck
-from bijux_ontology.rdf.patches.applying import _materialize, apply_rdf_patch
+from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import PatchUnavailable
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import PatchUnavailable
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .types import MigrationPlanResult, MigrationStep, MigrationStepResult
@@ -67,9 +68,7 @@ def _checks(
             operation.consume("states", 2)
             operation.consume("bytes", 64)
             seen.add(declaration.name)
-            report = declaration.check(
-                _materialize(captured.witness, source, operation)
-            )
+            report = declaration.check(materialize(captured.witness, source, operation))
             if not isinstance(report, Report):
                 raise InputError("Migration conditions must return Report")
             retain_report(report, operation, issues)
@@ -147,7 +146,7 @@ def execute_migration_plan(
                 )
             )
         captured = capture_source(source, "plan:", operation)
-        current = _materialize(captured.witness, source, operation)
+        current = materialize(captured.witness, source, operation)
         for step in selected:
             active = step.name
             gates = []
@@ -162,7 +161,7 @@ def execute_migration_plan(
             gates.append(pre)
             if pre.verified:
                 actual = capture_source(current, "operation:", operation)
-                callback_source = _materialize(actual.witness, current, operation)
+                callback_source = materialize(actual.witness, current, operation)
                 candidate = step.transform(callback_source, operation)
                 if not isinstance(candidate, MigrationCandidate):
                     raise InputError(

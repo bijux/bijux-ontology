@@ -6,10 +6,12 @@ from bijux_ontology.rdf.patches.planning import plan_rdf_patch
 from bijux_ontology.rdf.patches.types import (
     BlankNodePair,
     DatasetPatch,
-    PatchBlank,
     PatchBlankBinding,
-    PatchLiteral,
     PatchPlan,
+)
+from bijux_ontology.rdf.records.types import (
+    PatchBlank,
+    PatchLiteral,
     PatchQuad,
     SnapshotWitness,
 )

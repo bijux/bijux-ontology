@@ -15,18 +15,20 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.patches import (
     BlankNodePair,
-    PatchBlank,
     PatchBlankBinding,
-    PatchLiteral,
-    PatchQuad,
     apply_rdf_patch,
     patch_from_data,
     patch_to_data,
     plan_rdf_patch,
 )
-from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import SnapshotWitness
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import (
+    PatchBlank,
+    PatchLiteral,
+    PatchQuad,
+    SnapshotWitness,
+)
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
@@ -40,7 +42,7 @@ def test_materialized_bindings_are_exact_fresh_owned_nodes_across_graph_roles() 
     operation = Operation(None, None, 10, None)
     captured = capture_source(original, "source:", operation)
     bindings: dict[str, BNode] = {}
-    result = _materialize(captured.witness, original, operation, bindings=bindings)
+    result = materialize(captured.witness, original, operation, bindings=bindings)
     node = _shared(result)
     assert any(value is node for value in bindings.values())
     assert any(name is node for name in result._graph_names())
@@ -51,13 +53,13 @@ def test_materialized_bindings_are_exact_fresh_owned_nodes_across_graph_roles() 
     exported.remove((EX.root, EX.child, None))
     assert result.graph(str(EX.G)).value(EX.root, EX.child) is node
     again: dict[str, BNode] = {}
-    _materialize(captured.witness, original, operation, bindings=again)
+    materialize(captured.witness, original, operation, bindings=again)
     assert not set(bindings.values()).intersection(again.values())
     with pytest.raises(InputError, match="empty plain dictionary"):
-        _materialize(captured.witness, original, operation, bindings=bindings)
+        materialize(captured.witness, original, operation, bindings=bindings)
     incomplete: dict[str, BNode] = {}
     with pytest.raises(LimitExceeded):
-        _materialize(
+        materialize(
             captured.witness,
             original,
             Operation(Limits(max_work=1), None, 10, None),
@@ -74,7 +76,7 @@ def test_materialized_bindings_are_exact_fresh_owned_nodes_across_graph_roles() 
         (graph_token,),
     )
     scoped: dict[str, BNode] = {}
-    named = _materialize(selected, original, operation, bindings=scoped)
+    named = materialize(selected, original, operation, bindings=scoped)
     assert named.graph_name is scoped[graph_token.token]
     assert str(named.graph().value(named.graph_name, EX.value)) == "01"
 

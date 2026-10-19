@@ -26,10 +26,10 @@ from bijux_ontology.rdf.migrations.candidates import (
     MigrationCheck,
     finish_migration,
 )
-from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
+from bijux_ontology.rdf.patches.types import DatasetPatch
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchLiteral,
     PatchQuad,
@@ -123,7 +123,7 @@ def plan_replacements(
         before_state = ReplacementState(
             selected_terms,
             selected_models,
-            _materialize(captured.witness, data, operation),
+            materialize(captured.witness, data, operation),
         )
         before = before_vocabulary._read(("local", "imports"), budget=operation).graph
         after = after_vocabulary._read(("local", "imports"), budget=operation).graph
@@ -260,7 +260,7 @@ def plan_replacements(
             children=tuple(children),
         )
         if raw.verified:
-            transformed_source = _materialize(target, data, operation)
+            transformed_source = materialize(target, data, operation)
             after_state = ReplacementState(new_terms, new_models, transformed_source)
 
             def checks(

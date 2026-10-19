@@ -12,12 +12,8 @@ from bijux_ontology.execution.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
-    PatchBlankBinding,
-    PatchQuad,
-    PatchUnavailable,
-)
+from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
+from bijux_ontology.rdf.records.types import PatchQuad, PatchUnavailable
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.skos.checking import check_skos

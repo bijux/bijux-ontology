@@ -17,11 +17,11 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
-from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.codecs import read_witness, witness_data
 from bijux_ontology.rdf.patches.correspondence import blank_tokens
 from bijux_ontology.rdf.patches.planning import capture_source, plan_rdf_patch
-from bijux_ontology.rdf.patches.types import SnapshotWitness
+from bijux_ontology.rdf.records.codecs import read_witness, witness_data
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import SnapshotWitness
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
@@ -111,7 +111,7 @@ def materialize_rules(
             raise RuleUnavailable(
                 "Original anonymous data has no qualified transport correspondence"
             )
-        asserted = _materialize(captured, data, operation)
+        asserted = materialize(captured, data, operation)
         function_data = None
         function_names: tuple[str, ...] = ()
         function_namespaces: list[list[str]] = []
@@ -161,8 +161,8 @@ def materialize_rules(
             tuple(quad for quad in effective.quads if quad not in original),
             effective.graphs,
         )
-        output = _materialize(effective, data, operation)
-        derived = _materialize(derived_witness, data, operation)
+        output = materialize(effective, data, operation)
+        derived = materialize(derived_witness, data, operation)
         stage = Report("shacl.rules.execution", passes, requested=passes, regime=mode)
         children.append(stage)
         plan = plan_rdf_patch(

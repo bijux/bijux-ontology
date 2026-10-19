@@ -10,10 +10,10 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import PatchUnavailable
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import PatchUnavailable
 
 from .execution import _remaining
 from .types import MigrationPlanResult
@@ -71,7 +71,7 @@ def export_migration_plan(
                     )
                 )
             else:
-                owned = _materialize(actual.witness, result.source, operation)
+                owned = materialize(actual.witness, result.source, operation)
                 exported = export_rdf(
                     owned,
                     format=format,

@@ -10,7 +10,7 @@ from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
-from bijux_ontology.rdf.patches.types import (
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchResource,
     PatchUnavailable,

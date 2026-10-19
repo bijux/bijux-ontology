@@ -8,15 +8,15 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.correspondence import blank_tokens
 from bijux_ontology.rdf.patches.planning import (
     Captured,
     capture_source,
     replace_witness,
 )
-from bijux_ontology.rdf.patches.types import (
-    BlankNodePair,
+from bijux_ontology.rdf.patches.types import BlankNodePair
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchUnavailable,
     SnapshotWitness,
@@ -166,7 +166,7 @@ def rdf_set_operation(
             if quad.graph is not None:
                 graphs.add(quad.graph)
         witness = SnapshotWitness(before.kind, None, tuple(quads), tuple(graphs))
-        candidate = _materialize(witness, left, owned)
+        candidate = materialize(witness, left, owned)
     except PatchUnavailable as error:
         try:
             issues.append(

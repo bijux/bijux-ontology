@@ -26,7 +26,8 @@ from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.jsonld.selectors.types import EntitySelector
 from bijux_ontology.jsonld.usages.checking import PreparedUsages
-from bijux_ontology.rdf.patches.types import DatasetPatch, PatchLiteral, PatchQuad
+from bijux_ontology.rdf.patches.types import DatasetPatch
+from bijux_ontology.rdf.records.types import PatchLiteral, PatchQuad
 
 from .types import SourceEditBinding
 

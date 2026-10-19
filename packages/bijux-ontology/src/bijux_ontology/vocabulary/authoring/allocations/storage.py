@@ -26,15 +26,15 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json, object_value, string_value
-from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.codecs import (
+from bijux_ontology.rdf.patches.planning import Captured, capture_source
+from bijux_ontology.rdf.records.codecs import (
     read_term,
     read_witness,
     term_data,
     witness_data,
 )
-from bijux_ontology.rdf.patches.planning import Captured, capture_source
-from bijux_ontology.rdf.patches.types import PatchLiteral, PatchUnavailable
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import PatchLiteral, PatchUnavailable
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, literal_term
@@ -539,7 +539,7 @@ class AllocationStore:
             effective_url=cast(str | None, metadata[1]),
             literal_fidelity=cast(str, metadata[2]),
         )
-        source = _materialize(witness, template, operation)
+        source = materialize(witness, template, operation)
         history = data["history"]
         unavailable = data["unavailable"]
         if not isinstance(history, list) or not isinstance(unavailable, list):

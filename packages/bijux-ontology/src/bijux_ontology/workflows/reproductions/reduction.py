@@ -16,7 +16,7 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.paths import SourcePath, at_path, bound_path, location
 from bijux_ontology.json.snapshots import snapshot
 from bijux_ontology.rdf.merging.planning import _list_domains
-from bijux_ontology.rdf.patches.types import (
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     SnapshotWitness,
     validate_witness,

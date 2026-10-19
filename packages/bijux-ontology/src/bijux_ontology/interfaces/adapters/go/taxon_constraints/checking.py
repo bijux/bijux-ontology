@@ -20,7 +20,7 @@ from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.types imp
     AllowedIntersection,
     AllowedUnion,
 )
-from bijux_ontology.rdf.patches.types import PatchUnavailable
+from bijux_ontology.rdf.records.types import PatchUnavailable
 from bijux_ontology.vocabulary.browsing.navigation import traverse
 from bijux_ontology.vocabulary.relation_paths.checking import find_relation_path
 from bijux_ontology.vocabulary.relation_paths.types import (

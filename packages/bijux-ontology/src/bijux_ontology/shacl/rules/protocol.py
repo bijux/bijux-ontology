@@ -11,8 +11,8 @@ from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind, Li
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
-from bijux_ontology.rdf.patches.codecs import witness_data
-from bijux_ontology.rdf.patches.types import SnapshotWitness
+from bijux_ontology.rdf.records.codecs import witness_data
+from bijux_ontology.rdf.records.types import SnapshotWitness
 
 from .preparation import RuleUnavailable
 from .types import RuleMode

@@ -27,10 +27,9 @@ from bijux_ontology.rdf.migrations.lists.types import ListTarget, ListValue, _te
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
+from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
-    PatchBlankBinding,
     PatchQuad,
     PatchUnavailable,
     PatchValue,

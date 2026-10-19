@@ -29,15 +29,10 @@ from bijux_ontology.rdf.migrations.candidates import (
     finish_migration,
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
-from bijux_ontology.rdf.patches.codecs import read_witness, term_data, witness_data
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
-    PatchBlankBinding,
-    PatchLiteral,
-    PatchUnavailable,
-    PatchValue,
-)
+from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
+from bijux_ontology.rdf.records.codecs import read_witness, term_data, witness_data
+from bijux_ontology.rdf.records.types import PatchLiteral, PatchUnavailable, PatchValue
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.rdf.transforms import Transformation

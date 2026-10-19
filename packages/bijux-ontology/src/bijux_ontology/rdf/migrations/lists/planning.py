@@ -6,8 +6,8 @@ from rdflib.namespace import RDF
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
+from bijux_ontology.rdf.patches.types import DatasetPatch
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchQuad,
     PatchValue,

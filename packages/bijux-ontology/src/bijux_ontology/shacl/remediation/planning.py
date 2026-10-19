@@ -17,9 +17,10 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
-from bijux_ontology.rdf.patches.applying import _materialize, apply_rdf_patch
+from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import capture_source, plan_rdf_patch
-from bijux_ontology.rdf.patches.types import PatchUnavailable
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import PatchUnavailable
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
@@ -71,7 +72,7 @@ def propose_remediations(
         SnapshotMetadata.capture(shapes, operation)
         source = capture_source(data, "source:", operation)
         shape_capture = capture_source(shapes, "shapes:", operation)
-        owned_shapes = _materialize(shape_capture.witness, shapes, operation)
+        owned_shapes = materialize(shape_capture.witness, shapes, operation)
         supplied = capture_items(strategies, RemediationStrategy, operation)
         extra = capture_items(checks, MigrationCheck, operation)
         required = capture_items(
@@ -98,7 +99,7 @@ def propose_remediations(
                 bound_node(node, operation)
         initial_coverage = coverage or ShaclCoverageContract(minimum_focus=1)
         baseline = validate_shapes(
-            _materialize(source.witness, data, operation),
+            materialize(source.witness, data, operation),
             owned_shapes,
             coverage=initial_coverage,
             required_constraints=required,
@@ -168,7 +169,7 @@ def propose_remediations(
                     completed += 1
                     continue
                 proposed = strategy.propose(
-                    _materialize(source.witness, data, operation), tuple(matched)
+                    materialize(source.witness, data, operation), tuple(matched)
                 )
                 operation.consume("work", 0)
                 if proposed is None:

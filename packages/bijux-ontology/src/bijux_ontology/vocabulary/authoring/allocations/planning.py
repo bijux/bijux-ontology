@@ -23,9 +23,8 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
-    PatchBlankBinding,
+from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
+from bijux_ontology.rdf.records.types import (
     PatchLiteral,
     PatchQuad,
     PatchResource,

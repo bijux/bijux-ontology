@@ -25,9 +25,9 @@ from bijux_ontology.rdf.patches.planning import (
     capture_source,
     replace_witness,
 )
-from bijux_ontology.rdf.patches.types import (
-    BlankNodePair,
-    DatasetPatch,
+from bijux_ontology.rdf.patches.types import BlankNodePair, DatasetPatch
+from bijux_ontology.rdf.paths.types import RdfPath, capture_path
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchLiteral,
     PatchQuad,
@@ -35,7 +35,6 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     PatchValue,
 )
-from bijux_ontology.rdf.paths.types import RdfPath, capture_path
 from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values
 from bijux_ontology.rdf.value_comparison.types import (

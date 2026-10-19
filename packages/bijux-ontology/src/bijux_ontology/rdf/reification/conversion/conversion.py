@@ -25,10 +25,10 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import Captured, capture_source, edited
-from bijux_ontology.rdf.patches.types import (
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchLiteral,
     PatchQuad,
@@ -575,7 +575,7 @@ def restore_reifications(
                 "Reifier dataset does not restore its declared original structure"
             )
         bindings: dict[str, BNode] = {}
-        materialized = _materialize(
+        materialized = materialize(
             restored, snapshot.origin, operation, bindings=bindings
         )
         actual = capture_source(materialized, "restored:", operation)

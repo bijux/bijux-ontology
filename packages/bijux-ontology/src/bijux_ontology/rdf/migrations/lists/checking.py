@@ -17,8 +17,8 @@ from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import Captured, Rejected, capture_source
-from bijux_ontology.rdf.patches.types import (
-    PatchBlankBinding,
+from bijux_ontology.rdf.patches.types import PatchBlankBinding
+from bijux_ontology.rdf.records.types import (
     PatchLiteral,
     PatchQuad,
     PatchResource,
