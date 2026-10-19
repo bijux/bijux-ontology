@@ -10,11 +10,11 @@ from bijux_ontology.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 
-from ..axioms.changes.checking import _owned, receipt
 from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.inspection import inspect_axioms
 from ..axioms.types import AxiomInspection, ProjectedAxiom
 from ..backend.types import OwlProfileBackend
+from ..documents.sources.capture import capture_document, document_receipt
 from ..documents.sources.native import prepare_owl_document
 from ..documents.types import OwlDocument
 from ..entailment.encoding import capture_obligations, encode_axiom
@@ -43,7 +43,7 @@ def origin(value: SourceAxiom, operation: Operation) -> SourceAxiom:
     if hashlib.sha256(rendering.encode("utf-8")).hexdigest() != digest:
         raise InputError("Source axiom rendering differs from its native hash")
     reserve(operation)
-    return SourceAxiom(_owned(document, operation), rendering, digest)
+    return SourceAxiom(capture_document(document, operation), rendering, digest)
 
 
 def controls(
@@ -133,7 +133,7 @@ class OriginBridge:
         operation = self.operation
         value = origin(value, operation)
         reserve(operation)
-        key = (*receipt(value.document), value.sha256)
+        key = (*document_receipt(value.document), value.sha256)
         if key in self.cache:
             return self.cache[key]
         if self.inspection is None:
@@ -142,7 +142,7 @@ class OriginBridge:
         operation.consume("work", len(actual.documents) + 1)
         if not any(
             isinstance(item.source, OwlDocument)
-            and receipt(item.source) == receipt(value.document)
+            and document_receipt(item.source) == document_receipt(value.document)
             for item in actual.documents
         ):
             raise InputError(
@@ -164,7 +164,8 @@ class OriginBridge:
         operation.consume("work", (len(value.rendering) + 1) * (len(actual.axioms) + 1))
         if not any(
             isinstance(row.document.source, OwlDocument)
-            and receipt(row.document.source) == receipt(value.document)
+            and document_receipt(row.document.source)
+            == document_receipt(value.document)
             and row.axiom == axiom
             for row in actual.axioms
         ):

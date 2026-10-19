@@ -10,7 +10,7 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
-from .checking import _owned, receipt
+from ...documents.sources.capture import capture_document, document_receipt
 from .types import AxiomCandidate
 
 
@@ -57,7 +57,7 @@ def write_axiom_change(
             )
         elif (
             source is not candidate._checked_source
-            or receipt(source) != candidate._receipt
+            or document_receipt(source) != candidate._receipt
         ):
             issues.append(
                 Issue(
@@ -67,7 +67,7 @@ def write_axiom_change(
                 )
             )
         else:
-            owned = _owned(source, operation)
+            owned = capture_document(source, operation)
             operation.consume("work")
             write_bytes(owned.content, destination, overwrite=overwrite)
             published = True

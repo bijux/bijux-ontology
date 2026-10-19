@@ -9,10 +9,15 @@ from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.workflows.ontology.modules.types import ModuleBinding
 
-from ..axioms.changes.checking import _base, _expected, _imports, _owned, receipt
+from ..axioms.changes.preconditions import qualify_base, source_base
 from ..axioms.changes.types import AxiomBase
 from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import ProjectedAxiom
+from ..documents.sources.capture import (
+    capture_document,
+    capture_imports,
+    document_receipt,
+)
 from ..documents.sources.native import native_iri
 from ..documents.types import OwlDocument
 from ..entailment.encoding import encode_axiom
@@ -53,10 +58,10 @@ def capture_modules(
 
     def add(document: OwlDocument, alias: str | None = None) -> OwlDocument:
         """Preserve exact source context and reject first-winner alias conflicts."""
-        source = _owned(document, operation)
+        source = capture_document(document, operation)
         reserve(operation, 3)
         prior = originals.get(source.effective_url)
-        if prior is not None and receipt(prior) != receipt(source):
+        if prior is not None and document_receipt(prior) != document_receipt(source):
             raise ResourceError("Module originals conflict at one effective identity")
         originals[source.effective_url] = source
         for key in (source.document_iri, source.effective_url, alias):
@@ -65,7 +70,9 @@ def capture_modules(
             native_iri(key, operation)
             prior = aliases.get(key)
             operation.consume("work", len(source.content) + 1)
-            if prior is not None and receipt(prior) != receipt(source):
+            if prior is not None and document_receipt(prior) != document_receipt(
+                source
+            ):
                 raise ResourceError("Module originals require conflicting aliases")
             reserve(operation)
             aliases[key] = source
@@ -91,7 +98,7 @@ def capture_modules(
         reserve(operation)
         roots.add(identity)
         labeled.append((label, identity))
-        for alias, child in (_imports(imported, operation) or {}).items():
+        for alias, child in (capture_imports(imported, operation) or {}).items():
             add(child, alias)
     chosen = capture_items(owned, str, operation)
     reserve(operation, len(chosen) + len(originals))
@@ -111,11 +118,12 @@ def capture_modules(
         captured_base = AxiomBase(
             value.sha256, value.format, value.document_iri, value.effective_url
         )
-        bases[native_iri(key, operation)] = _expected(captured_base, operation)
+        bases[native_iri(key, operation)] = qualify_base(captured_base, operation)
     if len(bases) != count:
         raise InputError("Module source-set bases changed during capture")
     matched = set(bases) == set(originals) and all(
-        bases[identity] == _base(document) for identity, document in originals.items()
+        bases[identity] == source_base(document)
+        for identity, document in originals.items()
     )
     # Every supplied original is selected, including explicitly read-only modules.
     components_owned = tuple(

@@ -13,10 +13,14 @@ from bijux_ontology.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.changes.checking import _imports, _owned, receipt
 from ..axioms.types import ProjectedAxiom
 from ..backend.types import OwlProfileBackend
 from ..diagnosis.checking import check_consistency
+from ..documents.sources.capture import (
+    capture_document,
+    capture_imports,
+    document_receipt,
+)
 from ..documents.sources.native import prepare_owl_document
 from ..documents.types import OwlDocument
 from ..entailment.checking import check_entailments
@@ -92,8 +96,8 @@ def capture_theories(
             reserve(operation)
             captured[label] = TheoryComponent(
                 label,
-                _owned(component.source, operation),
-                _imports(component.imports, operation),
+                capture_document(component.source, operation),
+                capture_imports(component.imports, operation),
             )
     if required - captured.keys():
         raise InputError("A selected component or bridge is not supplied")
@@ -135,10 +139,10 @@ def assemble_theory(
         reserve(operation)
         prior = aliases.get(alias)
         operation.consume("work", len(document.content) + 1)
-        if prior is not None and receipt(prior) != receipt(document):
+        if prior is not None and document_receipt(prior) != document_receipt(document):
             raise ResourceError("Selected theories require conflicting import aliases")
         prior = bases.get(document.effective_url)
-        if prior is not None and receipt(prior) != receipt(document):
+        if prior is not None and document_receipt(prior) != document_receipt(document):
             raise ResourceError(
                 "Selected theories conflict at one effective source URL"
             )

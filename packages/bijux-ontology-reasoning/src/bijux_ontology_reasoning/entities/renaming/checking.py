@@ -23,14 +23,8 @@ from bijux_ontology.workflows.ontology.modules.types import (
     ModuleRequirement,
 )
 
-from ...axioms.changes.checking import (
-    _base,
-    _error,
-    _expected,
-    _imports,
-    _losses,
-    _owned,
-)
+from ...axioms.changes.checking import _error, _losses
+from ...axioms.changes.preconditions import qualify_base, source_base
 from ...axioms.changes.types import AxiomBase
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...backend.owlapi.bundles import PROFILES, qualify_backend
@@ -41,6 +35,7 @@ from ...backend.owlapi.execution import (
 )
 from ...backend.types import OwlProfile, OwlProfileBackend
 from ...documents.conversion import _profiles
+from ...documents.sources.capture import capture_document, capture_imports
 from ...documents.sources.native import (
     native_iri,
     prepare_owl_document,
@@ -253,7 +248,7 @@ def _checks(
         names.add(value.name)
         operation.consume("bytes", 128 + len(documents) * 64 + len(interfaces) * 64)
         witness = ModuleSet(
-            tuple(_owned(document, operation) for document in documents),
+            tuple(capture_document(document, operation) for document in documents),
             tuple(
                 (key, _contract(contract, operation)) for key, contract in interfaces
             ),
@@ -319,8 +314,8 @@ def prepare_role_rename(
     capability = None
     finished = False
     try:
-        original = _owned(source, operation)
-        supplied = _imports(imports, operation)
+        original = capture_document(source, operation)
+        supplied = capture_imports(imports, operation)
         old, new, roles = _rename(rename, operation)
         annotation_wire = annotation_policy(annotations, operation)
         selected = capture_items(profiles, str, operation)
@@ -347,7 +342,7 @@ def prepare_role_rename(
         for identity, base in expected.items():
             if len(bases) >= expected_size:
                 raise InputError("Expected bases changed during capture")
-            bases[native_iri(identity, operation)] = _expected(base, operation)
+            bases[native_iri(identity, operation)] = qualify_base(base, operation)
         if len(bases) != expected_size:
             raise InputError("Expected bases changed during capture")
         qualify_backend(backend, operation)
@@ -364,7 +359,8 @@ def prepare_role_rename(
                 document.effective_url: index for index, document in enumerate(inputs)
             }
             if set(bases) != set(by_identity) or any(
-                bases[document.effective_url] != _base(document) for document in inputs
+                bases[document.effective_url] != source_base(document)
+                for document in inputs
             ):
                 issues.append(
                     Issue(
@@ -516,7 +512,7 @@ def prepare_role_rename(
                         candidates[index] = RenamedModule(
                             inputs[index],
                             candidate,
-                            _base(inputs[index]),
+                            source_base(inputs[index]),
                             additions,
                             removals,
                             observations,

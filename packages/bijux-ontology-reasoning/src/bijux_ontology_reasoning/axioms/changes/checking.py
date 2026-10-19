@@ -22,103 +22,18 @@ from ...backend.owlapi.execution import (
 )
 from ...backend.types import OwlProfile, OwlProfileBackend
 from ...documents.conversion import _profiles
+from ...documents.sources.capture import (
+    capture_document,
+    capture_imports,
+    document_receipt,
+)
 from ...documents.sources.native import prepare_owl_document, stage_native_documents
 from ...documents.types import NativeProfile, OwlDocument
 from ..codec.decoding import ProjectionDecoder
 from ..codec.encoding import ConstructionEncoder
 from ..types import ProjectedAxiom
+from .preconditions import qualify_base, source_base
 from .types import AxiomBase, AxiomCandidate, AxiomCheck, AxiomPatch
-
-
-def receipt(source: OwlDocument) -> tuple[object, ...]:
-    """Bind checked bytes, parser selection and both resolution identities."""
-    return (
-        source.content,
-        source.format,
-        source.document_iri,
-        source.effective_url,
-        source.sha256,
-    )
-
-
-def _owned(source: OwlDocument, budget: Budget) -> OwlDocument:
-    """Capture one ordinary descriptor without trusting subclass field callbacks."""
-    if type(source) is not OwlDocument:
-        raise InputError("Axiom transactions require an ordinary prepared OwlDocument")
-    content, syntax, identity, effective, digest = (
-        source.content,
-        source.format,
-        source.document_iri,
-        source.effective_url,
-        source.sha256,
-    )
-    if type(content) is not bytes or type(digest) is not str:
-        raise InputError("Invalid native source record")
-    result = prepare_owl_document(
-        content,
-        format=syntax,
-        document_iri=identity,
-        effective_url=effective,
-        budget=budget,
-    )
-    bound_text(digest, budget)
-    if result.sha256 != digest:
-        raise InputError("Prepared source bytes differ from their captured hash")
-    return result
-
-
-def _base(source: OwlDocument) -> AxiomBase:
-    """Retain already-qualified immutable scalar preconditions."""
-    return AxiomBase(
-        source.sha256, source.format, source.document_iri, source.effective_url
-    )
-
-
-def axiom_base(
-    source: OwlDocument, *, limits: Limits | None = None, budget: Budget | None = None
-) -> AxiomBase:
-    """Capture raw integrity together with syntax and exact resolution identities."""
-    operation = Operation(limits, budget, 30, None)
-    return _base(_owned(source, operation))
-
-
-def _expected(expected: AxiomBase, budget: Budget) -> AxiomBase:
-    """Prepay required scalars before comparing interpretation context."""
-    if type(expected) is not AxiomBase:
-        raise InputError("Expected a complete typed native axiom base")
-    for value in (
-        expected.sha256,
-        expected.format,
-        expected.document_iri,
-        expected.effective_url,
-    ):
-        if type(value) is not str:
-            raise InputError("Native axiom base fields require plain text")
-        bound_text(value, budget)
-    return expected
-
-
-def _imports(
-    values: Mapping[str, OwlDocument] | None, budget: Budget
-) -> Mapping[str, OwlDocument] | None:
-    """Capture supplied import bytes before trusted application callbacks run."""
-    if values is None:
-        return None
-    if not isinstance(values, Mapping):
-        raise InputError("Native imports need an explicit finite mapping")
-    size = len(values)
-    budget.consume("resources", size)
-    budget.consume("states", size)
-    budget.consume("bytes", 64 + size * 128)
-    result: dict[str, OwlDocument] = {}
-    for alias, source in values.items():
-        if len(result) >= size or type(alias) is not str:
-            raise InputError("Import mapping changed or has a nontext alias")
-        bound_text(alias, budget)
-        result[alias] = _owned(source, budget)
-    if len(result) != size:
-        raise InputError("Import mapping changed during capture")
-    return result
 
 
 def _stage(
@@ -233,10 +148,13 @@ def compare_axioms(
     complete = False
     base = None
     try:
-        old, new = _owned(before, operation), _owned(after, operation)
-        base = _base(old)
-        captured_imports = _imports(imports, operation)
-        captured_after = _imports(after_imports, operation)
+        old, new = (
+            capture_document(before, operation),
+            capture_document(after, operation),
+        )
+        base = source_base(old)
+        captured_imports = capture_imports(imports, operation)
+        captured_after = capture_imports(after_imports, operation)
         qualify_backend(backend, operation)
         backend.artifacts.mkdir(parents=True, exist_ok=True)
         with TemporaryDirectory(
@@ -330,7 +248,7 @@ def _checks(
         operation.consume("states", 3)
         operation.consume("bytes", 128)
         names.add(selected_check.name)
-        checked = selected_check.check(_owned(source, operation), operation)
+        checked = selected_check.check(capture_document(source, operation), operation)
         if not isinstance(checked, Report):
             raise InputError("Axiom checks must return ordinary Reports")
         try:
@@ -390,8 +308,8 @@ def prepare_axiom_change(
     candidate = original = None
     finished = False
     try:
-        original = _owned(source, operation)
-        if _expected(expected, operation) != _base(original):
+        original = capture_document(source, operation)
+        if qualify_base(expected, operation) != source_base(original):
             issues.append(
                 Issue(
                     "owl.axiom_base_mismatch",
@@ -400,7 +318,7 @@ def prepare_axiom_change(
                 )
             )
         else:
-            captured_imports = _imports(imports, operation)
+            captured_imports = capture_imports(imports, operation)
             encoder = ConstructionEncoder(operation)
             added, add_wire = encoder.axioms(additions)
             removed, remove_wire = encoder.axioms(removals)
@@ -513,6 +431,6 @@ def prepare_axiom_change(
         tuple(after),
         capability,
         report,
-        receipt(candidate) if candidate is not None else None,
+        document_receipt(candidate) if candidate is not None else None,
         candidate,
     )

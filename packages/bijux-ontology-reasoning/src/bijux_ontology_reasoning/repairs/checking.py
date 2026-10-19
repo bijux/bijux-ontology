@@ -6,7 +6,8 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget
 from bijux_ontology.reports import Report
 
-from ..axioms.changes.checking import _base, prepare_axiom_change
+from ..axioms.changes.checking import prepare_axiom_change
+from ..axioms.changes.preconditions import source_base
 from ..axioms.changes.types import AxiomCheck
 from ..axioms.types import ProjectedAxiom
 from ..backend.types import OwlProfileBackend
@@ -63,7 +64,7 @@ def check_candidate(
     candidate = prepare_axiom_change(
         backend,
         source,
-        expected=_base(source),
+        expected=source_base(source),
         additions=additions,
         removals=tuple(edit.axiom for edit in edits),
         imports=imports,

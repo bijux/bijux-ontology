@@ -10,12 +10,14 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.changes.checking import _base, _imports, _owned, prepare_axiom_change
+from ..axioms.changes.checking import prepare_axiom_change
+from ..axioms.changes.preconditions import source_base
 from ..axioms.changes.types import AxiomCandidate, AxiomCheck
 from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import ClassRelation, ProjectedAxiom, SubClassOf
 from ..backend.types import OwlProfileBackend
 from ..diagnosis.checking import check_consistency
+from ..documents.sources.capture import capture_document, capture_imports
 from ..documents.types import OwlDocument
 from ..entailment.checking import check_entailments
 from ..entailment.encoding import encode_axiom
@@ -134,7 +136,7 @@ def _prepare(
     return prepare_axiom_change(
         backend,
         original,
-        expected=_base(original),
+        expected=source_base(original),
         removals=removals,
         imports=imports,
         profiles=("owl2-dl",),
@@ -175,8 +177,8 @@ def prepare_reduction(
     proofs: list[EntailmentCheck] = []
     try:
         _policies(annotation_policy, import_policy, operation)
-        original = _owned(source, operation)
-        supplied = _imports(imports, operation)
+        original = capture_document(source, operation)
+        supplied = capture_imports(imports, operation)
         selected = _removals(removals, operation)
         obligations, _ = ConstructionEncoder(operation).axioms(consumer_entailments)
         if not obligations:
@@ -270,8 +272,8 @@ def analyze_redundancy(
     selected: tuple[ProjectedAxiom, ...] = ()
     try:
         _policies(annotation_policy, import_policy, operation)
-        original = _owned(source, operation)
-        supplied = _imports(imports, operation)
+        original = capture_document(source, operation)
+        supplied = capture_imports(imports, operation)
         selected = _removals(removable, operation)
         operation.consume("states", len(selected) * 4 + 8)
         operation.consume("bytes", 512 + 512 * len(selected))

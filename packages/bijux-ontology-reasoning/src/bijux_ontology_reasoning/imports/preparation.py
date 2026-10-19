@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from bijux_ontology.errors import InputError, ResourceError
 from bijux_ontology.limits import Budget
 
-from ..axioms.changes.checking import _owned
 from ..axioms.codec.decoding import ProjectionDecoder
 from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import NamedEntity, ProjectedAxiom
+from ..documents.sources.capture import capture_document
 from ..documents.types import OwlDocument
 from .types import MireotBoundary, MireotRetention
 
@@ -38,7 +38,7 @@ def prepare_import(
     """Qualify exact ordinary records and prevent native term-file token injection."""
     encoder = ConstructionEncoder(budget)
     decoder = ProjectionDecoder(budget)
-    original = _owned(source, budget)
+    original = capture_document(source, budget)
     if original.format != "functional":
         raise ResourceError("MIREOT requires the declared original Functional profile")
     identity = encoder.text(module_iri, iri=True)

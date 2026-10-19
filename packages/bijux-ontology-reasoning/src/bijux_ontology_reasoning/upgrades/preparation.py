@@ -9,10 +9,10 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget
 from bijux_ontology.models.persistence.codecs import declaration_data, json_bytes
 
-from ..axioms.changes.checking import _imports, _owned
 from ..axioms.codec.decoding import ProjectionDecoder
 from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import DataProperty, NamedEntity, ObjectProperty
+from ..documents.sources.capture import capture_document, capture_imports
 from ..documents.types import OwlDocument
 from ..relationships.types import RelationshipValue
 from .types import (
@@ -164,9 +164,9 @@ def capture_side(
     """Capture ordinary native descriptors and inert consumer data exactly once."""
     if imports is not None and type(imports) is not dict:
         raise InputError("Logical upgrade imports require an ordinary finite dict")
-    owned_source = _owned(source, budget)
+    owned_source = capture_document(source, budget)
     consumer, contracts, fingerprints = _snapshot(snapshot, budget)
-    owned_imports = _imports(imports, budget)
+    owned_imports = capture_imports(imports, budget)
     if owned_imports is not None:
         budget.consume("bytes", 64 + 128 * len(owned_imports))
     return CapturedSide(

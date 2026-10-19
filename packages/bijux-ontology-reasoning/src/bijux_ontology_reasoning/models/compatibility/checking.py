@@ -17,7 +17,6 @@ from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Issue, Report
 
-from ...axioms.changes.checking import _imports, _owned
 from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.types import ClassExpression, SubClassOf
 from ...backend.owlapi.bundles import qualify_backend
@@ -36,6 +35,7 @@ from ...backend.owlapi.receipts import (
 from ...backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
 from ...datatypes.checking import check_datatype_branches
 from ...datatypes.types import DatatypeCheck
+from ...documents.sources.capture import capture_document, capture_imports
 from ...documents.sources.native import stage_native_documents
 from ...documents.sources.rdf import capture_rdf_closure, stage_documents
 from ...documents.types import OwlDocument
@@ -234,8 +234,8 @@ def check_model_compatibility(
         ) as job:
             directory = Path(job)
             if isinstance(source, OwlDocument):
-                captured = _owned(source, operation)
-                captured_imports = _imports(
+                captured = capture_document(source, operation)
+                captured_imports = capture_imports(
                     cast(Mapping[str, OwlDocument] | None, imports), operation
                 )
                 originals, request = stage_native_documents(

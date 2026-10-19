@@ -12,12 +12,12 @@ from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.mappings.composition.checking import _input
 from bijux_ontology.vocabulary.mappings.types import MappingRead, MappingSet
 
-from ..axioms.changes.checking import receipt
 from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.inspection import inspect_axioms
 from ..axioms.types import AxiomInspection, ProjectedAxiom
 from ..backend.types import OwlProfileBackend
 from ..diagnosis.checking import _classes
+from ..documents.sources.capture import document_receipt
 from ..documents.types import OwlDocument
 from ..entailment.encoding import encode_axiom
 from ..explanations.checking import explain_reasoning
@@ -68,7 +68,7 @@ def _same_source(left: OwlDocument, right: OwlDocument, operation: Operation) ->
             )
         ),
     )
-    return receipt(left) == receipt(right)
+    return document_receipt(left) == document_receipt(right)
 
 
 def _explain(

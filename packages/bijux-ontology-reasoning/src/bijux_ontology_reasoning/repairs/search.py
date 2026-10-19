@@ -9,9 +9,13 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.changes.checking import _imports, _owned, receipt
 from ..axioms.types import ProjectedAxiom
 from ..backend.types import OwlProfileBackend
+from ..documents.sources.capture import (
+    capture_document,
+    capture_imports,
+    document_receipt,
+)
 from ..documents.types import OwlDocument
 from ..explanations.checking import explain_reasoning
 from ..explanations.types import ExplanationCheck, ExplanationQuestion, SourceAxiom
@@ -48,14 +52,14 @@ def _groups(
     if justification is None:
         raise ResourceError("An established native justification is required")
     protected_structures = tuple(
-        (receipt(value.document), bridge.resolve(value)) for value in protected
+        (document_receipt(value.document), bridge.resolve(value)) for value in protected
     )
     for replacement in replacements:
         bridge.resolve(replacement.origin)
-        if receipt(replacement.origin.document) != receipt(source):
+        if document_receipt(replacement.origin.document) != document_receipt(source):
             raise InputError("Authored replacements cannot edit read-only imports")
         if (
-            receipt(replacement.origin.document),
+            document_receipt(replacement.origin.document),
             bridge.resolve(replacement.origin),
         ) in protected_structures:
             raise InputError("Authored replacements cannot edit protected assertions")
@@ -67,7 +71,10 @@ def _groups(
             reserve(operation)
             # Every support owner is qualified even when it cannot be edited.
             bridge.resolve(value)
-            if receipt(value.document) == receipt(source) and value not in seen:
+            if (
+                document_receipt(value.document) == document_receipt(source)
+                and value not in seen
+            ):
                 seen.add(value)
                 roots.append(value)
     operation.consume("work", sum(len(value.rendering) + 1 for value in roots))
@@ -81,7 +88,7 @@ def _groups(
     for value in roots:
         operation.consume("work", len(protected) + len(replacements) + 1)
         axiom = bridge.resolve(value)
-        if (receipt(value.document), axiom) in protected_structures:
+        if (document_receipt(value.document), axiom) in protected_structures:
             continue
         reserve(operation, 1 + len(replacements))
         edits = [RepairEdit(value, axiom, (), "remove exact source assertion")]
@@ -138,8 +145,8 @@ def propose_repairs(
         for value in (max_candidates, max_removals, max_axioms):
             if type(value) is not int or value <= 0:
                 raise InputError("Repair search bounds require positive integers")
-        original = _owned(source, operation)
-        supplied = _imports(imports, operation)
+        original = capture_document(source, operation)
+        supplied = capture_imports(imports, operation)
         selected, replacements, obligations = controls(
             protected_axioms, allowed_replacements, consumer_entailments, operation
         )

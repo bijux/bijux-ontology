@@ -26,7 +26,8 @@ from bijux_ontology.workflows.ontology.modules.types import (
     ModuleProvider,
 )
 
-from ..axioms.changes.checking import _base, _losses
+from ..axioms.changes.checking import _losses
+from ..axioms.changes.preconditions import source_base
 from ..axioms.changes.types import AxiomBase
 from ..axioms.codec.decoding import ProjectionDecoder
 from ..axioms.types import ProjectedAxiom
@@ -572,7 +573,7 @@ def prepare_module_refactor(
                         edits[identity] = ChangedModule(
                             originals[identity],
                             revised_sources[identity],
-                            _base(originals[identity]),
+                            source_base(originals[identity]),
                             additions,
                             removals,
                         )

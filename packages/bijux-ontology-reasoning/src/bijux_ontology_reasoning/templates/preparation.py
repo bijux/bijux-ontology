@@ -11,7 +11,6 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import IssueCollector
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.changes.checking import _owned
 from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import (
     AnnotationAssertion,
@@ -25,6 +24,7 @@ from ..axioms.types import (
     ProjectedAxiom,
     SubClassOf,
 )
+from ..documents.sources.capture import capture_document
 from ..documents.types import OwlDocument
 from .types import TableRowReceipt, TemplateColumn, TemplateIdentifier, TemplateTerm
 
@@ -180,7 +180,7 @@ def prepare_table(
     if delimiter not in ("csv", "tsv"):
         raise InputError("Choose csv or tsv")
     ontology_iri = encoder.text(ontology_iri, iri=True)
-    original = _owned(bindings, operation)
+    original = capture_document(bindings, operation)
     if original.format != "functional":
         raise InputError(
             "Template bindings initially require original Functional Syntax"

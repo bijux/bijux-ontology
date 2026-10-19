@@ -17,7 +17,6 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.changes.checking import _imports, _owned
 from ..backend.owlapi.execution import (
     invoke_worker,
     qualify_capability,
@@ -32,6 +31,7 @@ from ..backend.owlapi.receipts import (
 from ..backend.types import OwlProfileBackend
 from ..diagnosis import check_consistency
 from ..diagnosis.types import ConsistencyCheck
+from ..documents.sources.capture import capture_document, capture_imports
 from ..documents.sources.native import prepare_owl_document, stage_native_documents
 from ..documents.types import OwlDocument
 from ..entailment import check_entailments
@@ -240,8 +240,8 @@ def explain_reasoning(
         captured, wire = capture_question(question, operation)
         if type(max_axioms) is not int or max_axioms < 1:
             raise InputError("max_axioms must be a positive ordinary integer")
-        original = _owned(source, operation)
-        supplied = _imports(imports, operation)
+        original = capture_document(source, operation)
+        supplied = capture_imports(imports, operation)
         underlying = _observation(
             backend, original, captured, supplied, operation, timeout, heap_mb
         )

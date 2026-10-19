@@ -13,7 +13,8 @@ from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.types import MappingSet
 
-from ..axioms.changes.checking import axiom_base, prepare_axiom_change
+from ..axioms.changes.checking import prepare_axiom_change
+from ..axioms.changes.preconditions import axiom_base
 from ..axioms.changes.types import AxiomCheck
 from ..axioms.inspection import inspect_axioms
 from ..axioms.types import (

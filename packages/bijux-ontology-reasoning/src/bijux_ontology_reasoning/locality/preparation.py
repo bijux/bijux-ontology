@@ -10,9 +10,9 @@ from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_text
 
-from ..axioms.changes.checking import _imports, _owned
 from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import NamedEntity, ProjectedAxiom
+from ..documents.sources.capture import capture_document, capture_imports
 from ..documents.types import OwlDocument
 from .types import LocalityMethod
 
@@ -59,8 +59,8 @@ def prepare_locality(
         raise InputError("The derived module needs an explicit absolute identity")
     bound_text(module_iri, budget)
     absolute_iri(module_iri)
-    owned = _owned(source, budget)
-    supplied = _imports(imports, budget)
+    owned = capture_document(source, budget)
+    supplied = capture_imports(imports, budget)
     selected = capture_items(signature, NamedEntity, budget)
     if not selected:
         raise InputError("Locality extraction requires a nonempty typed signature")
