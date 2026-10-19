@@ -21,7 +21,7 @@ from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
-from bijux_ontology.rdf.queries.worker import _checked_query
+from bijux_ontology.rdf.queries.syntax import prepare_local_query
 from bijux_ontology.rdf.terms import (
     bound_node,
     oxigraph_term,
@@ -174,7 +174,7 @@ def evaluate(request: dict[str, object], budget: Budget) -> dict[str, object]:
             raise InputError("Workload bindings require IRI or literal terms")
         bound_node(value, budget)
         bindings[name] = value
-    query = cast(Query, _checked_query(text, namespaces, budget))
+    query = cast(Query, prepare_local_query(text, namespaces, budget))
     _profile(query, bindings, budget)
     dataset = Dataset(default_union=config["default_graph"] == "union")
     store = ox.Store() if config["engine"] == "pyoxigraph" else None

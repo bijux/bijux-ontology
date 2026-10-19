@@ -19,7 +19,7 @@ from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import read_witness, term_data
 from bijux_ontology.rdf.patches.types import PatchBlank, PatchLiteral, PatchValue
-from bijux_ontology.rdf.queries.worker import _checked_query
+from bijux_ontology.rdf.queries.syntax import prepare_local_query
 from bijux_ontology.rdf.terms import literal_datatype, literal_term
 
 
@@ -93,7 +93,7 @@ def evaluate(request: dict[str, object], budget: ControlBudget) -> dict[str, obj
     )
     sparql.SPARQL_LOAD_GRAPHS = False
     sparql.SPARQL_DEFAULT_GRAPH_UNION = False
-    query = _checked_query(text, {}, budget)
+    query = prepare_local_query(text, {}, budget)
     result = SPARQLProcessor(graph).query(query, initBindings=bindings)  # type: ignore[no-untyped-call]
     if not variables:
         answer = result.get("askAnswer")

@@ -18,7 +18,7 @@ from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import term_data
-from bijux_ontology.rdf.queries.worker import _checked_query
+from bijux_ontology.rdf.queries.syntax import prepare_local_query
 
 from .native import native_term, qualify_literal, rdf_term
 
@@ -46,7 +46,7 @@ def _query(
     request: dict[str, Any], store: ox.Store, budget: Budget
 ) -> dict[str, object]:
     """Parse the same finite local query profile, then execute the maintained store."""
-    query = _checked_query(request["query"], {}, budget)
+    query = prepare_local_query(request["query"], {}, budget)
     pending = [query.algebra]
     probe = ox.Store()
     while pending:
