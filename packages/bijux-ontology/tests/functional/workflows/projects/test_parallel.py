@@ -5,17 +5,27 @@ import os
 import subprocess
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import cast
 
 import pytest
 
+import bijux_ontology.workflows.projects.parallel.checking as parallel_checks
 from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.limits import (
+    Budget,
+    BudgetKind,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
+from bijux_ontology.rdf.execution import WorkerModule, execute_worker
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.parallel.checking import check_project_parallel
+from bijux_ontology.workflows.projects.parallel.types import ParallelJobResult
 from bijux_ontology.workflows.projects.resources import ProjectResources
 
 EX = "https://example.org/"
@@ -148,7 +158,9 @@ def test_actual_checks_overlap_and_keep_sequential_order(tmp_path: Path) -> None
     assert isolated.jobs[1].report.outcome == "exhausted"
 
 
-def test_failed_or_timed_out_dependencies_do_not_hide_siblings(tmp_path: Path) -> None:
+def test_failed_or_timed_out_dependencies_do_not_hide_siblings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     config = project(tmp_path / "inputs", missing=True, shape_timeout=0.000001)
     raw = config.to_dict()
     cast(list[object], raw["checks"]).append(
@@ -221,6 +233,21 @@ def test_failed_or_timed_out_dependencies_do_not_hide_siblings(tmp_path: Path) -
     ]
     actual = ProjectConfig(raw, directory=config.directory)
     cancel, observed_stop = threading.Event(), threading.Event()
+    received = threading.Event()
+    actual_reply = parallel_checks._reply
+
+    def observe_reply(
+        raw: bytes, name: str, grant: dict[BudgetKind, int]
+    ) -> ParallelJobResult:
+        """Observe actual qualified findings rather than guessing which PID exited."""
+        result = actual_reply(raw, name, grant)
+        if name == "terms" and any(
+            issue.code == "vocabulary.term_missing" for issue in result.report.issues
+        ):
+            received.set()
+        return result
+
+    monkeypatch.setattr(parallel_checks, "_reply", observe_reply)
     owned: set[int] = set()
     nested: list[int] = []
 
@@ -245,7 +272,7 @@ def test_failed_or_timed_out_dependencies_do_not_hide_siblings(tmp_path: Path) -
                 for pid, parent, command in rows
                 if int(parent) in owned and "bijux_ontology.shacl.worker" in command
             )
-            if len(owned) >= 2 and len(live) == 1:
+            if received.is_set() and len(owned) >= 2 and len(live) == 1:
                 cancel.set()
                 return
 
@@ -457,3 +484,85 @@ def test_unsupported_revisions_and_jobs_are_required_not_stale(tmp_path: Path) -
     )
     assert time.monotonic() - before < 2
     assert stopped.report.outcome == "exhausted"
+
+
+@pytest.mark.parametrize(
+    ("missing", "stop_kind"), [(False, "cancel"), (True, "cancel"), (False, "deadline")]
+)
+def test_completed_native_receipt_survives_late_stop_and_preserves_counters(
+    tmp_path: Path, missing: bool, stop_kind: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Retain actual qualified outcomes once, without cancelling them into success."""
+    config = project(tmp_path / "inputs", missing=missing)
+    raw = config.to_dict()
+    raw["checks"] = [config.checks()[0]]
+    config = ProjectConfig(raw, directory=config.directory)
+    budget, cancelled = Budget(config.limits), threading.Event()
+    actual_exchange = execute_worker
+    receipts: list[bytes] = []
+
+    def exchange(
+        module: WorkerModule,
+        payload: bytes,
+        *,
+        cap: int,
+        timeout: float,
+        cancel: threading.Event | None = None,
+        completed: Callable[[bytes], None] | None = None,
+    ) -> bytes:
+        """Request a real stop only after the real native receipt was qualified."""
+        assert completed is not None and cancel is not None
+        started = time.monotonic()
+
+        def handoff(response: bytes) -> None:
+            """Delegate the unchanged domain decoder before stopping either owner."""
+            receipts.append(response)
+            completed(response)
+            if stop_kind == "cancel":
+                cancelled.set()
+                cancel.set()
+            else:
+                time.sleep(max(0.0, started + timeout + 0.1 - time.monotonic()))
+
+        return actual_exchange(
+            module, payload, cap=cap, timeout=timeout, cancel=cancel, completed=handoff
+        )
+
+    monkeypatch.setattr(parallel_checks, "execute_worker", exchange)
+    result = check_project_parallel(
+        config,
+        budget=budget,
+        artifacts=tmp_path / "runs",
+        cancel=cancelled,
+        job_timeout=5,
+    )
+    assert len(receipts) == 1 and isinstance(receipts[0], bytes)
+    if stop_kind == "cancel":
+        assert result.jobs[0].state == "completed"
+        assert result.jobs[0].report.complete
+        assert result.jobs[0].report.verified is not missing
+    else:
+        assert result.jobs[0].state == "interrupted"
+        assert not result.jobs[0].report.complete
+        assert result.jobs[0].report.children[0].verified
+    assert (
+        any(
+            issue.code == "vocabulary.term_missing"
+            for issue in result.jobs[0].report.issues
+        )
+        is missing
+    )
+    assert not result.report.complete and not result.report.verified
+    assert any(issue.kind == "exhausted" for issue in result.report.issues)
+    for kind in ("bytes", "work", "issues", "states", "resources", "triples"):
+        maximum = getattr(
+            config.limits, "max_total_bytes" if kind == "bytes" else "max_" + kind
+        )
+        used = maximum - budget.remaining(kind)
+        assert 0 <= used <= maximum
+        assert sum(dict(job.consumed).get(kind, 0) for job in result.jobs) <= used
+    assert budget.remaining("issues") == config.limits.max_issues - int(missing)
+    assert not list((tmp_path / "runs").iterdir())
+    monkeypatch.setattr(parallel_checks, "execute_worker", actual_exchange)
+    recovered = check_project_parallel(config, artifacts=tmp_path / "recovery")
+    assert recovered.report.complete and recovered.report.verified is not missing
