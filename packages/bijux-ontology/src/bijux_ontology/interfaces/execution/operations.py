@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from dataclasses import asdict
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 from bijux_ontology._json import (
     boolean_value,
@@ -12,11 +12,15 @@ from bijux_ontology._json import (
     optional_string_value,
     string_value,
 )
+from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
-from bijux_ontology.errors import InputError
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.comparison import compare_serializations
+from bijux_ontology.jsonld.contexts.comparison import compare_context_definitions
+from bijux_ontology.jsonld.contexts.processing import inspect_context
+from bijux_ontology.jsonld.contexts.types import ContextScope
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.flattening import flatten_document
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
@@ -34,6 +38,8 @@ from bijux_ontology.workflows.projects.configuration import ProjectConfig
 OPERATIONS = frozenset(
     (
         "context",
+        "context_inspection",
+        "context_definitions",
         "emission",
         "serialization",
         "flatten",
@@ -42,6 +48,28 @@ OPERATIONS = frozenset(
         "selection",
     )
 )
+
+
+def _context_scopes(value: object, limits: Limits) -> tuple[ContextScope, ...]:
+    """Decode only a finite list of explicit scoped-context transitions."""
+    if not isinstance(value, list):
+        raise InputError("Scoped context selections require an array")
+    if len(value) > limits.max_states:
+        raise LimitExceeded("Scoped context selections exceed max_states")
+    selected = []
+    for item in value:
+        scope = object_value(item, location="worker context scope")
+        known_keys(scope, {"term", "kind"}, location="worker context scope")
+        selected.append(
+            ContextScope(
+                string_value(scope.get("term")),
+                cast(
+                    Literal["property", "type"],
+                    string_value(scope.get("kind", "property")),
+                ),
+            )
+        )
+    return tuple(selected)
 
 
 def execute_operation(
@@ -92,6 +120,103 @@ def execute_operation(
         ),
         max_bytes=limits.max_bytes,
     )
+    if operation == "context_inspection":
+        known_keys(
+            parameters,
+            {
+                "context",
+                "processing_mode",
+                "base",
+                "inherited_context",
+                "scopes",
+                "resources",
+            },
+            location="worker context inspection",
+        )
+        if "context" not in parameters:
+            raise InputError("Context inspection requires an explicit context")
+        inspection = inspect_context(
+            parameters["context"],
+            processing_mode=string_value(
+                parameters.get("processing_mode", "json-ld-1.1")
+            ),
+            base=optional_string_value(parameters.get("base")),
+            inherited_context=parameters.get("inherited_context", ABSENT),
+            scopes=_context_scopes(parameters.get("scopes", []), limits),
+            document_loader=loader,
+            limits=limits,
+        )
+        return inspection.report, inspection.data
+    if operation == "context_definitions":
+        known_keys(
+            parameters,
+            {
+                "before",
+                "after",
+                "terms",
+                "scopes",
+                "processing_mode",
+                "before_base",
+                "after_base",
+                "before_inherited",
+                "after_inherited",
+                "compare_defaults",
+                "resources",
+                "before_resources",
+                "after_resources",
+            },
+            location="worker context definitions",
+        )
+        if "before" not in parameters or "after" not in parameters:
+            raise InputError("Context comparison requires both explicit contexts")
+        raw_terms = parameters.get("terms")
+        if raw_terms is not None and not isinstance(raw_terms, list):
+            raise InputError("Selected context terms require an array or null")
+        if isinstance(raw_terms, list) and len(raw_terms) > limits.max_states:
+            raise LimitExceeded("Selected context terms exceed max_states")
+        terms = (
+            None
+            if raw_terms is None
+            else tuple(string_value(term) for term in raw_terms)
+        )
+        before_loader = (
+            OfflineDocumentLoader(
+                object_value(
+                    parameters["before_resources"], location="worker before resources"
+                ),
+                max_bytes=limits.max_bytes,
+            )
+            if "before_resources" in parameters
+            else loader
+        )
+        after_loader = (
+            OfflineDocumentLoader(
+                object_value(
+                    parameters["after_resources"], location="worker after resources"
+                ),
+                max_bytes=limits.max_bytes,
+            )
+            if "after_resources" in parameters
+            else loader
+        )
+        comparison = compare_context_definitions(
+            parameters["before"],
+            parameters["after"],
+            terms=terms,
+            scopes=_context_scopes(parameters.get("scopes", []), limits),
+            processing_mode=string_value(
+                parameters.get("processing_mode", "json-ld-1.1")
+            ),
+            before_base=optional_string_value(parameters.get("before_base")),
+            after_base=optional_string_value(parameters.get("after_base")),
+            before_inherited=parameters.get("before_inherited", ABSENT),
+            after_inherited=parameters.get("after_inherited", ABSENT),
+            compare_defaults=boolean_value(parameters.get("compare_defaults", True)),
+            before_loader=before_loader,
+            after_loader=after_loader,
+            limits=limits,
+        )
+        return comparison.report, comparison.data
     if operation == "serialization":
         known_keys(
             parameters,

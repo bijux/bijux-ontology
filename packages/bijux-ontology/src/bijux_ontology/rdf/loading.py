@@ -7,7 +7,12 @@ from typing import Literal as TypingLiteral
 
 from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, Literal, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.errors import (
+    InputError,
+    LimitExceeded,
+    ResourceError,
+    attach_input_failure,
+)
 from bijux_ontology.limits import Budget, Limits
 
 from .compression import decode_gzip
@@ -15,6 +20,7 @@ from .identifiers import absolute_iri, language_tag
 from .parsing import RDF_FORMATS, parse_dataset
 from .snapshots import PreparedSource, bind_namespaces, copy_dataset, copy_graph
 from .sources import Compression, Payload, RdfSource
+from .terms import bound_text
 
 _ALIASES = {
     "ttl": "turtle",
@@ -260,7 +266,26 @@ def prepare_input(
     effective = resource.effective_url or document
     if effective is not None:
         absolute_iri(effective)
-    syntax = None if isinstance(resource.content, Graph) else _format(resource)
+    for text in (
+        document or "",
+        effective or "",
+        resource.location,
+        resource.role if resource.role != "input" else "",
+    ):
+        if text:
+            bound_text(text, operation)
+    try:
+        syntax = None if isinstance(resource.content, Graph) else _format(resource)
+    except InputError as error:
+        attach_input_failure(
+            error,
+            document_iri=document,
+            location=resource.location
+            or (str(resource.content) if isinstance(resource.content, Path) else ""),
+            role=resource.role,
+        )
+        raise
+
     return SourcePreparation(
         resource,
         document,
@@ -274,7 +299,7 @@ def prepare_input(
     )
 
 
-def prepare_native(preparation: SourcePreparation) -> PreparedSource:
+def _prepare_native(preparation: SourcePreparation) -> PreparedSource:
     """Prepare a graph or native RDF syntax from an already-resolved source."""
     resource = preparation.resource
     document = preparation.document_iri
@@ -330,6 +355,22 @@ def prepare_native(preparation: SourcePreparation) -> PreparedSource:
         graph_name=resource.graph_name,
         union=resource.union,
     )
+
+
+def prepare_native(preparation: SourcePreparation) -> PreparedSource:
+    """Retain resource identity and structured parser detail on native failures."""
+    try:
+        return _prepare_native(preparation)
+    except InputError as error:
+        resource = preparation.resource
+        attach_input_failure(
+            error,
+            document_iri=preparation.document_iri,
+            location=resource.location
+            or (str(resource.content) if isinstance(resource.content, Path) else ""),
+            role=resource.role,
+        )
+        raise
 
 
 def prepare_rdf(

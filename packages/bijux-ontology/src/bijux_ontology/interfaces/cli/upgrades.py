@@ -25,7 +25,7 @@ from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.comparison import compare_context_usages
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.reports import Issue, Report, combine_reports
+from bijux_ontology.reports import Issue, Location, Report, combine_reports
 from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 
 
@@ -144,6 +144,7 @@ def upgrade(options: argparse.Namespace) -> CommandResult:
                                 else "input.invalid",
                                 str(error),
                                 str(path),
+                                details=Location.from_error(error),
                                 kind="exhausted"
                                 if isinstance(error, LimitExceeded)
                                 else "input_error",

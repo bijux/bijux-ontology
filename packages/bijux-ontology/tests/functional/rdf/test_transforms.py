@@ -8,6 +8,7 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.transforms import (
     extract_neighbourhood,
     merge_sources,
@@ -104,7 +105,7 @@ def test_merging_separates_blanks_and_retains_explicit_dataset_semantics() -> No
         dataset.bind("ex", URIRef(EX + f"namespace{index}/"))
         snapshots.append(prepare_source(dataset))
     merged = merge_sources(snapshots)
-    assert merged.source is not None
+    assert merged.source is not None and merged.report.verified
     assert len(set(merged.source.graph(G).subjects())) == 2
     assert (A, OWL.imports, URIRef(EX + "import")) in merged.source.graph("@default")
     assert len(merged.source.graph(EX + "empty")) == 0
@@ -115,6 +116,45 @@ def test_merging_separates_blanks_and_retains_explicit_dataset_semantics() -> No
     assert not union.source.is_dataset
     assert len(union.source.graph()) == 3
     assert all(len(source.graph(G)) == 1 for source in snapshots)
+
+
+def test_merge_respects_declared_graph_views_and_retains_scope_failures() -> None:
+    dataset = Dataset()
+    dataset.default_graph.add((A, P, Literal("default")))
+    dataset.graph(G).add((A, P, Literal("selected")))
+    dataset.graph(URIRef(EX + "hidden")).add((B, P, Literal("hidden")))
+    pinned = prepare_source(RdfSource(dataset, graph_name=str(G)))
+    merged = merge_sources((pinned,))
+    assert merged.source is not None and merged.report.verified
+    assert set(merged.source.graph(G)) == {(A, P, Literal("selected"))}
+    assert not merged.source.graph("@default")
+    assert set(merged.source._graph_names()) == {G}
+    default = merge_sources(
+        (prepare_source(RdfSource(dataset, graph_name="@default")),)
+    )
+    assert default.source is not None and default.report.verified
+    assert set(default.source.graph("@default")) == {(A, P, Literal("default"))}
+    assert not tuple(default.source._graph_names())
+    declared_union = merge_sources((prepare_source(RdfSource(dataset, union=True)),))
+    assert declared_union.source is not None and declared_union.report.verified
+    assert (
+        not declared_union.source.is_dataset and len(declared_union.source.graph()) == 3
+    )
+    unknown = merge_sources(
+        (
+            PreparedSource(
+                dataset,
+                is_dataset=True,
+                document_iri=None,
+                effective_url=None,
+                literal_fidelity="source_terms",
+                graph_fidelity="nonempty-only",
+            ),
+        )
+    )
+    assert unknown.report.outcome == "unverified"
+    stopped = merge_sources((pinned,), limits=Limits(max_triples=1, max_work=1))
+    assert stopped.source is None and stopped.report.outcome == "exhausted"
 
 
 def test_candidate_rechecks_preserve_outcomes_and_callback_ownership() -> None:

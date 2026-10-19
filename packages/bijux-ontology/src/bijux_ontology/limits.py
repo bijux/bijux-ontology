@@ -170,6 +170,24 @@ def retain_report(report: Report, operation: Budget, issues: IssueCollector) -> 
                             "Adopted diagnostic index exceeds max_bytes"
                         )
                     _report_text(str(value), operation)
+                if details.failure is not None:
+                    failure = details.failure
+                    operation.consume("states", len(failure.import_chain) + 1)
+                    for text in chain(
+                        (failure.document_iri or "", failure.location, failure.role),
+                        failure.import_chain,
+                    ):
+                        _report_text(text, operation)
+                    if failure.span is not None:
+                        for value in failure.span.to_dict().values():
+                            if value is not None:
+                                if value.bit_length() > min(
+                                    4096, operation.limits.max_bytes
+                                ):
+                                    raise LimitExceeded(
+                                        "Parser coordinate exceeds max_bytes"
+                                    )
+                                _report_text(str(value), operation)
             issues.append(issue)
         operation.consume("states", len(current.children))
         pending.extend((child, depth + 1) for child in current.children)

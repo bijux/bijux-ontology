@@ -265,6 +265,14 @@ descriptions expose `expanded_paths` into expanded input, not compact source
 pointers. Blank-node or anonymous-graph correspondence remains unverified without
 an identity witness. RDF preservation does not promise original JSON shape.
 
+Loading errors expose `InputError.failure` from `bijux_ontology.errors`: the
+logical document IRI, supplied location and role, known import chain, and any
+parser-provided span. Pass `location=` and `role=` on `RdfSource` when available.
+Reports retain these as `Issue.details.failure`, independently of the job's
+configuration location; absent parser coordinates remain absent.
+Source identity, supplied location and nondefault role text also consume the
+shared cumulative byte budget during preparation.
+
 Keep findings and unsupported comparisons visible. Apply narrow code/location exceptions through `AcceptancePolicy`; they do not change verification truth. Retain application validation, reference checks and any existing reasoning gate. Supplied-shapes validation is an optional additional operation, not general OWL consistency checking.
 
 Author explicit application shapes with `ShaclNodeShape`, `ShaclPropertyShape`
@@ -793,3 +801,42 @@ semantics nor exact RDF numeric identity. Ordinary array length does not prove
 RDF distinct-value counts. The existing importer accepts the documented finite
 scalar/local-definition subset; general unions and list wrappers remain outside
 that importer's supported scope. Install `[jsonschema]` to request compilation.
+
+Use `author_vocabulary` from `bijux_ontology.vocabulary.authoring` for explicit
+SKOS creation, preferred-label replacement, scheme membership, deprecation or
+annotation edits. Supply typed edits, the exact physical graph and required
+`MigrationCheck` postconditions. The resulting candidate uses the existing
+checked patch/export gates; shared qualified annotations and unrelated facts
+retain their identities. No edit applies to the original source automatically.
+
+`inspect_context` and `compare_context_definitions` from
+`bijux_ontology.jsonld.contexts` expose bounded effective definitions, including
+unused terms and defaults. Supply the processing mode, base, offline resources
+and inherited context explicitly; `ContextScope` selects finite property/type
+transitions. Uninstantiated nested scopes remain unverified. These comparisons
+qualify selected definitions, without claiming compatibility for all documents.
+The same operations are available through `WorkerExecutor` as
+`context_inspection` and `context_definitions`.
+
+`decode_numeric_json` from `bijux_ontology.jsonld.numbers` qualifies original raw
+JSON tokens under an explicit processor, portable-integer or source-exact policy.
+Inspect numeric observations and their pointers before conversion. A requested
+`project_numeric_json` call with `NumericProjection` needs an explicit supported
+datatype and context-free input;
+unsupported projections return no checked output. Already decoded Python floats
+carry no raw-token precision claim. Ordinary JSON decoding remains unchanged.
+
+`check_term_usages` from `bijux_ontology.jsonld.term_usage` checks direct keys in
+selected source-object regions of one `PreparedUsages`. Use `TermUsageRegion` to
+require explicit definitions, permit default-vocabulary extension regions, or
+require membership through an owned vocabulary view. Findings retain actual key
+pointers and expanded IRIs. Scoped contexts, keyword aliases, nullified terms and
+opaque JSON retain their processor roles; the policy does not redefine JSON-LD
+validity. Select descendants explicitly with existing source selectors.
+
+`check_dataset_layout` from `bijux_ontology.data.layout` checks an explicitly
+supplied complete dataset against `DatasetLayout`. Declare open or closed graph
+inventory, required graphs (including empty ones), and `ContentPlacement` rules
+for selected predicates, types or owned subjects. Findings identify the physical
+graph and original statement. Incomplete empty-graph fidelity cannot establish a
+closed inventory; pinned or union views do not establish original partitions.

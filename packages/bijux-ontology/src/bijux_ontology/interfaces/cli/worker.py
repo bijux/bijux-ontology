@@ -10,7 +10,7 @@ from bijux_ontology.interfaces.cli.arguments import arguments
 from bijux_ontology.interfaces.cli.checking import run_command
 from bijux_ontology.interfaces.cli.checkpoints import retain_completed
 from bijux_ontology.interfaces.cli.inputs import command_limits
-from bijux_ontology.reports import CheckError, Issue, Report
+from bijux_ontology.reports import CheckError, Issue, Location, Report
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 
@@ -58,6 +58,7 @@ def execute(request_path: Path) -> None:
                     if isinstance(error, LimitExceeded)
                     else "input.invalid",
                     str(error),
+                    details=Location.from_error(error),
                     kind="exhausted"
                     if isinstance(error, LimitExceeded)
                     else "input_error",

@@ -63,6 +63,11 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "term_usage_disallowed term_usage_membership "
+        "term_usage_unverified term_usage_input_error "
+        "number_not_portable number_not_exact number_rdf_not_exact "
+        "number_projection_missing number_unverified number_input_error "
+        "definition_changed defaults_changed definition_unverified "
         "compilation_conflict compilation_unverified "
         "index_mismatch list_index_mismatch index_keys_mismatch "
         "index_origin_mismatch index_unverified index_binding_mismatch "
@@ -84,6 +89,8 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "layout_unverified layout_count_mismatch layout_graph_forbidden "
+        "layout_content_misplaced layout_input_error "
         "topology_binding_unverified topology_corpus_unverified topology_cycle "
         "topology_owners topology_path_unverified topology_record_missing "
         "topology_reference_missing topology_reference_unverified "
@@ -253,6 +260,7 @@ _CODES = {
         "no_contracts contract_persistent contract_resolved contract_introduced".split()
     ),
     "vocabulary": frozenset(
+        "authoring_rejected authoring_unverified "
         "fact_role_unverified fact_attribution_unverified fact_graph_unverified "
         "coverage_gap coverage_source_missing declaration_conflict "
         "entity_kind_mismatch fact_changed reference_kind_mismatch reference_missing "

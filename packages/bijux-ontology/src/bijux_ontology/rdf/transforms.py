@@ -1,8 +1,9 @@
 """Explicit syntactic transformations of owned RDF, never ontology approval."""
 
 from collections import deque
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, replace
+from itertools import chain
 from typing import cast
 
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
@@ -13,7 +14,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource, bind_namespaces
-from bijux_ontology.rdf.terms import literal_term
+from bijux_ontology.rdf.terms import bound_node, bound_text, literal_term
 from bijux_ontology.reports import Issue, Report, combine_reports
 
 
@@ -264,6 +265,23 @@ def remap_iris(
     )
 
 
+def _merge_contexts(
+    source: PreparedSource, budget: Budget
+) -> Iterator[tuple[URIRef | BNode | None, Graph]]:
+    """Read only authorized partitions without exporting a second input dataset."""
+    if source.union:
+        yield None, source._read(budget=budget)
+    elif source.is_dataset and source.graph_name is None:
+        for name in chain((None,), source._graph_names(budget=budget)):
+            yield (
+                name,
+                source._read("@default" if name is None else name, budget=budget),
+            )
+    else:
+        for _, name, graph in source._contexts(budget=budget):
+            yield name, graph
+
+
 def merge_sources(
     sources: Sequence[PreparedSource],
     *,
@@ -284,12 +302,12 @@ def merge_sources(
     result = Dataset()
     checked = 0
     try:
-        datasets: list[Dataset] = []
+        namespace_sources: list[Graph] = []
         for source in sources:
+            if not isinstance(source, PreparedSource):
+                raise InputError("Merging requires owned prepared sources")
             operation.consume("resources")
             _fidelity(source, issues)
-            dataset = source.dataset()
-            datasets.append(dataset)
             nodes: dict[BNode, BNode] = {}
 
             def own(term: Node, nodes: dict[BNode, BNode] = nodes) -> Node:
@@ -301,21 +319,40 @@ def merge_sources(
                     return nodes[term]
                 return term
 
-            for graph in dataset.graphs():
+            namespace_source: Graph | None = None
+            for name, graph in _merge_contexts(source, operation):
                 operation.consume("work")
+                if namespace_source is None:
+                    namespace_source = graph
+                    operation.consume("states")
+                    operation.consume("bytes", 16)
+                    namespace_sources.append(graph)
                 target = (
                     result.default_graph
-                    if union or graph.identifier == dataset.default_graph.identifier
-                    else result.graph(cast(URIRef | BNode, own(graph.identifier)))
+                    if union or name is None
+                    else result.graph(cast(URIRef | BNode, own(name)))
                 )
                 for triple in graph:
                     operation.consume("triples")
+                    operation.consume("work")
+                    for term in triple:
+                        bound_node(term, operation)
                     target.add((own(triple[0]), own(triple[1]), own(triple[2])))
             checked += 1
-        bind_namespaces(result, *datasets)
+        binding_count = binding_text = 0
+        for graph in namespace_sources:
+            for prefix, namespace in graph.namespaces():
+                operation.consume("states")
+                bound_text(prefix, operation)
+                bound_text(str(namespace), operation)
+                binding_count += 1
+                binding_text += len(prefix) + len(namespace) + 1
+        operation.consume("work", binding_text * max(1, binding_count.bit_length()))
+        bind_namespaces(result, *namespace_sources)
         candidate = PreparedSource(
             result,
-            is_dataset=not union and any(source.is_dataset for source in sources),
+            is_dataset=not union
+            and any(source.is_dataset and not source.union for source in sources),
             document_iri=None,
             effective_url=None,
             literal_fidelity="source_terms",
@@ -323,14 +360,6 @@ def merge_sources(
             if all(source.graph_fidelity == "complete" for source in sources)
             else "nonempty-only",
             max_triples=operation.limits.max_triples,
-        )
-        issues.append(
-            Issue(
-                "rdf.merge_scope",
-                "Merged explicit sources; import statements remain without fetching",
-                severity="info",
-                actual="graph union" if union else "dataset membership retained",
-            )
         )
     except LimitExceeded as error:
         issues.exhausted(str(error))

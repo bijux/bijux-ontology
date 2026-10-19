@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from dataclasses import KW_ONLY, dataclass, replace
 from typing import Literal, cast
 
-from .errors import InputError
+from .errors import InputError, InputFailure
 
 IssueKind = Literal["finding", "unverified", "input_error", "exhausted"]
 Severity = Literal["error", "warning", "info"]
@@ -32,6 +32,7 @@ class Location:
     graph: str | None = None
     model: str | None = None
     branch: int | None = None
+    failure: InputFailure | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.source, str) or isinstance(
@@ -49,6 +50,18 @@ class Location:
         ):
             raise InputError("A branch index must be nonnegative")
         object.__setattr__(self, "path", path)
+        if self.failure is not None and not isinstance(self.failure, InputFailure):
+            raise InputError("Expected typed input failure details")
+
+    @classmethod
+    def from_error(cls, error: BaseException) -> Location | None:
+        """Retain failing content separately from the check configuration path."""
+        if isinstance(error, InputError) and error.failure is not None:
+            return cls(
+                source=error.failure.document_iri or error.failure.location,
+                failure=error.failure,
+            )
+        return None
 
     def __str__(self) -> str:
         pointer = "".join(
@@ -58,7 +71,7 @@ class Location:
 
     def to_dict(self) -> dict[str, object]:
         """Return established location fields without assuming file coordinates."""
-        return {
+        data: dict[str, object] = {
             "source": self.source,
             "path": list(self.path),
             "term": self.term,
@@ -66,6 +79,9 @@ class Location:
             "model": self.model,
             "branch": self.branch,
         }
+        if self.failure is not None:
+            data["input_failure"] = self.failure.to_dict()
+        return data
 
 
 @dataclass(frozen=True)

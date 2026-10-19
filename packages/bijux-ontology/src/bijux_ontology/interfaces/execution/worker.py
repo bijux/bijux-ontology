@@ -9,7 +9,7 @@ from bijux_ontology._json import decode_json, object_value, string_value
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.interfaces.execution.checkpoints import retain_completed
 from bijux_ontology.limits import Limits
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.reports import Issue, Location, Report
 
 
 def execute(path: Path, cap: int) -> None:
@@ -64,6 +64,7 @@ def execute(path: Path, cap: int) -> None:
                 Issue(
                     "execution.limit_exceeded" if exhausted else "input.invalid",
                     str(error) or "Worker exhausted memory",
+                    details=Location.from_error(error),
                     kind="exhausted" if exhausted else "input_error",
                 ),
             ),
