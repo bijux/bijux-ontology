@@ -15,6 +15,7 @@ from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.authoring.types import (
+    ShaclClosed,
     ShaclComparison,
     ShaclConstraint,
     ShaclCount,
@@ -122,6 +123,35 @@ class _Reader:
     def constraints(self, node: URIRef | BNode) -> tuple[ShaclConstraint, ...]:
         """Project only supported constraint parameters, preserving conjunction."""
         result: list[ShaclConstraint] = []
+        closed = self.one(node, SH.closed)
+        ignored = self.one(node, SH.ignoredProperties)
+        if ignored is not None and closed is None:
+            raise InputError(
+                "Typed ignored properties require an explicit closed policy"
+            )
+        if closed is not None:
+            if (
+                not isinstance(closed, Literal)
+                or literal_datatype(closed) != XSD.boolean
+                or str(closed) not in ("true", "false", "1", "0")
+            ):
+                raise InputError("SHACL closed requires a boolean literal")
+            predicates = []
+            if ignored is not None:
+                for value in iter_rdf_list(
+                    self.graph,
+                    ignored,
+                    max_items=self.budget.limits.max_states,
+                    budget=self.budget,
+                ):
+                    if not isinstance(value, URIRef):
+                        raise InputError(
+                            "Ignored properties require named predicate IRIs"
+                        )
+                    self.budget.consume("states")
+                    self.budget.consume("bytes", 32 + 4 * len(value))
+                    predicates.append(str(value))
+            result.append(ShaclClosed(str(closed) in ("true", "1"), tuple(predicates)))
         for predicate in (SH.datatype, SH["class"]):
             parameters = self.values(node, predicate)
             if predicate == SH.datatype and len(parameters) > 1:
@@ -230,6 +260,8 @@ _MANAGED = frozenset(
         SH.targetClass,
         SH.targetNode,
         SH.datatype,
+        SH.closed,
+        SH.ignoredProperties,
         SH["class"],
         SH.nodeKind,
         SH.hasValue,

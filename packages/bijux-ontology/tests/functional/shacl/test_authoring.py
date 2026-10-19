@@ -12,6 +12,7 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.paths import RdfPath, capture_path
 from bijux_ontology.shacl.authoring import (
+    ShaclClosed,
     ShaclComparison,
     ShaclCount,
     ShaclLogical,
@@ -23,9 +24,80 @@ from bijux_ontology.shacl.authoring import (
     compile_shapes,
 )
 from bijux_ontology.shacl.checking import validate_shapes
+from bijux_ontology.shacl.inspection import inspect_shapes
 from bijux_ontology.shacl.paths import ShaclPath, decode_path
 
 EX = Namespace("https://example.invalid/catalogue/")
+
+
+def test_closed_policy_and_ignored_predicates_survive_typed_inspection() -> None:
+    """Closed true/false and ignored predicates keep actual maintained semantics."""
+    pytest.importorskip("pyshacl")
+    for policy in (
+        ShaclClosed(True),
+        ShaclClosed(True, (str(RDF.type),)),
+        ShaclClosed(False),
+    ):
+        source = compile_shapes(
+            (
+                ShaclNodeShape(
+                    EX.RecordShape,
+                    properties=(ShaclShapeRef(EX.NameShape),),
+                    constraints=(policy,),
+                ),
+                ShaclPropertyShape(
+                    EX.NameShape,
+                    EX.name,
+                    (ShaclCount(1, 1), ShaclValue(datatype=str(XSD.string))),
+                ),
+            )
+        )
+        inspection = inspect_shapes(source, (EX.RecordShape,))
+        assert inspection.report.verified and not inspection.remainder
+        root = next(
+            item for item in inspection.definitions if item.identifier == EX.RecordShape
+        )
+        assert policy in root.constraints
+        rebuilt = compile_shapes(inspection.definitions)
+        data = Graph()
+        data.add((EX.record, EX.name, Literal("name")))
+        ordinary = validate_shapes(
+            data,
+            rebuilt,
+            focus_nodes=(EX.record,),
+            use_shapes=(EX.RecordShape,),
+            mode="pairs",
+            preflight=True,
+        )
+        assert ordinary.report.verified and ordinary.conforms is True
+        data.add((EX.record, RDF.type, EX.Record))
+        typed = validate_shapes(
+            data,
+            rebuilt,
+            focus_nodes=(EX.record,),
+            use_shapes=(EX.RecordShape,),
+            mode="pairs",
+        )
+        assert typed.report.complete and typed.conforms is (
+            not policy.enabled or bool(policy.ignored_properties)
+        )
+        data.add((EX.record, EX.unexpected, Literal("extra")))
+        extra = validate_shapes(
+            data,
+            rebuilt,
+            focus_nodes=(EX.record,),
+            use_shapes=(EX.RecordShape,),
+            mode="pairs",
+        )
+        assert extra.report.complete and extra.conforms is (not policy.enabled)
+    broken = source.graph()
+    head = BNode()
+    broken.add((EX.RecordShape, SH.ignoredProperties, head))
+    broken.add((head, RDF.first, Literal("not a predicate")))
+    broken.add((head, RDF.rest, RDF.nil))
+    from bijux_ontology.rdf.loading import prepare_rdf
+
+    assert not inspect_shapes(prepare_rdf(broken), (EX.RecordShape,)).report.verified
 
 
 def _consumer_shapes() -> list[ShaclNodeShape | ShaclPropertyShape]:

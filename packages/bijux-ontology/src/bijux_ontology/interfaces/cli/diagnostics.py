@@ -28,6 +28,13 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "shape-interchange": frozenset("unsupported unverified behavior_changed".split()),
+    "pattern": frozenset("expected_missing unexpected_binding unverified".split()),
+    "biosamples": frozenset(
+        "schema_mismatch value_disallowed value_unverified binding_missing "
+        "value_missing term_invalid characteristic_missing vocabulary_missing "
+        "semantics_unchecked contract_unverified".split()
+    ),
     "xkos": frozenset(
         "assignment_missing assignment_unmapped assignment_unverified "
         "assignments_open association_invalid association_type "
@@ -331,6 +338,13 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "relation_graph_scope relation_identity_collision "
+        "relation_input_invalid relation_negative_unrepresentable "
+        "relation_occurrence_absent relation_occurrence_collision "
+        "relation_occurrence_overlap relation_occurrence_shared "
+        "relation_qualifier_duplicate relation_qualifier_loss "
+        "relation_qualifier_role_collision relation_representation_unverified "
+        "relation_role_cardinality relation_role_kind relation_type_loss "
         "template_not_entailed containment_unverified "
         "answer_changed answer_correspondence_unverified answer_external_unverified "
         "answer_input answer_source_unverified answer_identity_lost "
@@ -461,6 +475,7 @@ _CODES = {
         "no_contracts contract_persistent contract_resolved contract_introduced".split()
     ),
     "vocabulary": frozenset(
+        "allocation_conflict allocation_rejected allocation_unverified "
         "allowed_scope_unverified allowed_invalid binding_invalid "
         "binding_trait_unverified binding_no_case binding_cases_unverified "
         "binding_ambiguous binding_record_invalid "
@@ -478,6 +493,28 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "shape-interchange": (
+        "fixed explicit SHACL and ShEx record bindings",
+        "Compilation is unsupported, execution is unverified or validators disagree.",
+        "Inspect the retained original shapes, unsupported remainder and exact "
+        "pair outcomes; preserve authored targets and open or closed policies.",
+        "check_interchange(translation, prepared_data)",
+    ),
+    "pattern": (
+        "selected syntactic DOSDP patterns and exact expected assignments",
+        "An expected assignment differs or local pattern execution is unverified.",
+        "Inspect original query and filler assignments, the explicit physical "
+        "scope, complete local imports and selected extra-binding policy.",
+        "check_patterns(backend, source, patterns, expected, scope=scope)",
+    ),
+    "biosamples": (
+        "versioned local BioSamples sample and checklist resources",
+        "A native schema or explicit characteristic obligation fails or is unverified.",
+        "Inspect the exact characteristic array path; supply the selected local "
+        "draft-07 resources, explicit sidecar bindings and vocabulary declarations.",
+        "check_sample(sample, core=core, checklist=checklist, bindings=bindings, "
+        "vocabulary=vocabulary)",
+    ),
     "xkos": (
         "selected classification levels and finite population contracts",
         "A selected classification rule fails or lacks complete scoped evidence.",

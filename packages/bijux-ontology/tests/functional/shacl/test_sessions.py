@@ -15,6 +15,7 @@ from rdflib.namespace import RDF, SH, XSD
 from bijux_ontology import InputError, prepare_source
 from bijux_ontology.errors import LimitExceeded
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.shacl import ShaclCoverageContract, validate_shapes
 from bijux_ontology.shacl.session import ShaclSession
 
@@ -240,6 +241,47 @@ def test_deadline_and_crashed_worker_restart_without_mixed_batch_state(
         process.wait(timeout=2)
         assert session.validate(_data()).report.verified
         assert session.worker_launches == 3
+
+
+def test_shared_operation_deadline_caps_native_session_jobs() -> None:
+    """A reused worker cannot reset the enclosing operation's native deadline."""
+    outer = Operation(None, None, 2.0, None)
+    operation = Operation(None, Operation(None, outer, 30, None), 30, None)
+    started = time.monotonic()
+    with ShaclSession(
+        _slow_shapes(), trusted_sparql=True, timeout=10, budget=operation
+    ) as session:
+        assert session.validate(_data()).report.verified
+        stopped = session.validate(_slow_data())
+        assert stopped.report.outcome == "exhausted" and stopped.conforms is None
+    assert time.monotonic() - started < 4
+
+
+def test_nested_operation_cancellation_reaches_native_session_work() -> None:
+    """An inherited owner event interrupts the native job, then a fresh scope works."""
+    cancel = threading.Event()
+    outer = Operation(None, None, 10, cancel)
+    operation = Operation(None, Operation(None, outer, 30, None), 30, None)
+    with pytest.raises(InputError, match="same Event"):
+        Operation(None, operation, 30, threading.Event())
+    with ShaclSession(
+        _slow_shapes(), trusted_sparql=True, timeout=5, budget=operation
+    ) as session:
+        assert session.validate(_data(), cancel=cancel).report.verified
+        with pytest.raises(InputError, match="same Event"):
+            session.validate(_slow_data(), cancel=threading.Event())
+        process = session._backend._process
+        assert process is not None
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            active = executor.submit(session.validate, _slow_data())
+            time.sleep(0.1)
+            cancel.set()
+            stopped = active.result(timeout=2)
+        assert stopped.report.outcome == "exhausted" and stopped.conforms is None
+        assert process.poll() is not None
+    with ShaclSession(_shapes()) as recovered:
+        assert recovered.validate(_data()).report.verified
+        assert recovered.validate(_data("wrong")).conforms is False
 
 
 def test_malformed_wire_request_and_response_discard_owned_worker(

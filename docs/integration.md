@@ -1789,3 +1789,50 @@ markers, scalar keys and foreign keys; semantic checks run on each selected row.
 Cells retain original text, native values and record/column locations. Missing
 values emit nothing. Unsupported descriptor semantics and truncated validation
 remain unqualified; no remote resource or scientific identifier is inferred.
+
+`interfaces.adapters.biosamples.check_sample` is a read-only `[biosamples]`
+consumer. Supply `SchemaResource(uri, version, content)` for the
+[BioSamples core at `9e552cf`](https://github.com/EBIBioSamples/biosamples-v4/blob/9e552cf60451ad2b6dad20a1234bb07a111a4948/webapps/core/src/main/resources/schemas/core/sample.json),
+a versioned local draft-07 checklist and every referenced resource. Actual
+`jsonschema` validation uses an offline registry and asserts date-time formats.
+`CharacteristicBinding` explicitly selects ontology declarations, finite allowed
+terms, literal texts and units; prose supplies no ontology rules. The result
+retains checked sample JSON, resource versions/digests, separate raw schema and
+semantic reports, and every characteristic array occurrence. The finite profile
+supports the four published core regexes; other regexes, unknown assertions,
+recursion and missing resources remain unverified. There is no submission or
+implicit checklist acquisition.
+
+`rdf.migrations.relations.migrate_relations` converts exact `BinaryOccurrence`
+quads to caller-allocated event IRIs using an explicit positive `RelationPattern`,
+directed subject/object roles and supplied qualifiers. `RelationOccurrence`
+supports an inverse only for isolated, unqualified events with one participant
+per role. Distinct events, extra types/qualifiers, datatype references, shared
+identity and existing binary-edge collisions cannot disappear. Scope and graph
+selection are explicit; event freshness concerns only the authorized snapshot.
+Original input stays untouched. Required `after_checks` qualify the candidate;
+use ordinary explicit migration acceptance/export after inspecting its report.
+
+`vocabulary.authoring.allocations.AllocationStore(path, policy)` owns one local
+SQLite ontology snapshot and allocation history. Explicit registry contributions,
+curator ranges, padding, reserved/retired identifiers and alternate-ID policies
+control allocation. `prepare_allocations(..., after_checks=...)` proposes native
+OWL class or SKOS concept/scheme declarations with exact optional labels;
+`store.commit(proposal, accept=True)` atomically checks the base revision and
+content before persisting both additions and history. Named graph/blank/literal
+identity stays exact. Original, request-metadata and committed references block
+reuse. Portable drafts need fresh checks when reimported; reconciliation exposes
+conflicts without renumbering or `sameAs`. Reopen with the same explicit policy.
+Separate RDF exports remain ordinary snapshots outside the SQLite transaction.
+
+`interfaces.adapters.shape_interchange.shacl_to_shex` and `shex_to_shacl` compile
+one nonrecursive record with distinct outgoing predicates, cardinalities and the
+supported native string/integer or node-kind constraints. Supply a nonempty
+`ShexBinding` map and an explicit open/closed rule. The default target policy
+requires exactly those authored target nodes; `pairs` requires an untargeted
+shape. Original resources, preservation scope and unsupported remainder remain
+available. Class closure, overlapping consumption, EXTRA and semantic actions
+prevent a claimed translation. Install `[shacl,shex]` and call
+`check_interchange(translation, prepared_data)` to compare each pair through
+actual pySHACL and pyrudof. Agreement can mean both reject: raw negative results
+remain separate from correspondence and never certify the data as valid.
