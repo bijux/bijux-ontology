@@ -204,7 +204,7 @@ def check_output_counts(
         requirement.minimum_list_members is not None
         or requirement.maximum_list_members is not None
     ):
-        if not list_lengths or non_list:
+        if non_list or not list_lengths and (requirement.minimum_values or 0) > 0:
             issues.append(
                 Issue(
                     "emission.list_required",
