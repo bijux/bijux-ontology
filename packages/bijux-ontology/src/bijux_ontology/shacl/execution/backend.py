@@ -7,7 +7,7 @@ from typing import Any
 from rdflib import BNode, Dataset, Graph, URIRef
 from rdflib.namespace import RDF, SH
 
-from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.shacl.bindings import read_bindings

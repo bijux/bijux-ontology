@@ -6,10 +6,10 @@ from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
 
 from .preparation import _included, _mapped, _view
 from .types import SchemaOrgView, SchemaPropertyExpectation, Triple, _iri

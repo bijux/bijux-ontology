@@ -11,10 +11,10 @@ from rdflib import BNode, Literal
 from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Issue, Report
 
 from .types import (
     DatatypeConversion,

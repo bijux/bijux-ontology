@@ -5,7 +5,7 @@ from typing import Literal as Role
 
 from rdflib import BNode, Literal, URIRef
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.vocabulary.browsing.results import Edge
 
 _XREF = URIRef("http://www.geneontology.org/formats/oboInOwl#hasDbXref")

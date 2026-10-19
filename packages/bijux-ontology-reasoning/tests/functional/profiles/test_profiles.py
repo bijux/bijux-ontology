@@ -23,7 +23,7 @@ from bijux_ontology_reasoning.profiles import check_profile
 from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, URIRef
 from rdflib.namespace import OWL, RDF
 
-from bijux_ontology.errors import LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource

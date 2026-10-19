@@ -5,7 +5,8 @@ from dataclasses import replace
 
 from rdflib import URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, _result
@@ -13,7 +14,6 @@ from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import term_data
 from bijux_ontology.rdf.stores.protocol import failure
 from bijux_ontology.rdf.stores.queries import query_native
-from bijux_ontology.reports import Report
 
 from .types import ExternalStore
 

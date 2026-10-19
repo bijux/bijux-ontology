@@ -6,10 +6,10 @@ from types import MappingProxyType
 
 from rdflib.namespace import RDFS, SKOS
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.pages import (
     _comparison_text,

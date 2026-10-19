@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import cast
 
 from bijux_ontology._json import object_value
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.documents.export import export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.interfaces.cli.inputs import (
     command_limits,
     input_paths,
@@ -25,7 +26,6 @@ from bijux_ontology.rdf.transforms import (
     recheck_transformation,
     remap_iris,
 )
-from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
 

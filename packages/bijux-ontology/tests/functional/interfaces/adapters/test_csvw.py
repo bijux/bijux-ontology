@@ -15,12 +15,12 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.interfaces.adapters.csvw import CsvwCheck, extract_csvw
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 
 pytest.importorskip("csvw")
 EX = Namespace("https://csvw.example/")

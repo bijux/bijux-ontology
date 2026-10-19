@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.biolink import (
     BiolinkAssociation,
     BiolinkModel,

@@ -6,7 +6,8 @@ import time
 from dataclasses import asdict, replace
 
 from bijux_ontology._json import decode_json
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report, report_from_data
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
@@ -19,7 +20,6 @@ from bijux_ontology.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.reports import Issue, Report, report_from_data
 from bijux_ontology.workflows.projects.acquisition.types import (
     AcquiredResource,
     AcquisitionPolicy,

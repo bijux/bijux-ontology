@@ -7,7 +7,8 @@ from typing import Literal
 from rdflib import BNode, Graph, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,
@@ -17,7 +18,6 @@ from bijux_ontology.limits import (
 )
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.workflows.projects.contracts import ContractResult
 from bijux_ontology.workflows.projects.profiles.loading import _items, _text
 from bijux_ontology.workflows.projects.routing.qualification import (

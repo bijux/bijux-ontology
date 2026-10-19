@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from rdflib import URIRef
 from rdflib.namespace import RDFS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Edge
 from bijux_ontology.vocabulary.sources.view import Vocabulary

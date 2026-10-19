@@ -15,7 +15,7 @@ import pytest
 from rdflib import URIRef
 from rdflib.namespace import OWL, RDFS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.ols import (
     OlsPage,
     OlsQuery,

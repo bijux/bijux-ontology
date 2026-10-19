@@ -6,7 +6,8 @@ from threading import Event
 from rdflib import Graph
 
 from bijux_ontology._jsonpaths import bound_index
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import (
@@ -18,7 +19,6 @@ from bijux_ontology.limits import (
 )
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.bindings import TermSelection, transport_roles
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.coverage import ShaclCoverageContract

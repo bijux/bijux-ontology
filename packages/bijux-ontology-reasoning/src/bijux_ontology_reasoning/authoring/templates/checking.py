@@ -7,10 +7,10 @@ from dataclasses import replace
 from threading import Event
 from typing import cast
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.reports import Issue, Report
 
 from ...axioms.codec.encoding import ConstructionEncoder
 from ...axioms.inspection import inspect_axioms

@@ -8,24 +8,24 @@ import pytest
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, XSD
 
-from bijux_ontology.errors import (
+from bijux_ontology.diagnostics.errors import (
     InputError,
     InputFailure,
     LimitExceeded,
     SourceSpan,
     attach_input_failure,
 )
-from bijux_ontology.interfaces.cli import main
-from bijux_ontology.interfaces.exports.sarif import export_sarif, to_sarif
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.value_comparison import compare_literal_values
-from bijux_ontology.reports import (
+from bijux_ontology.diagnostics.reports import (
     AcceptancePolicy,
     Issue,
     IssueSelection,
     Location,
     Report,
 )
+from bijux_ontology.interfaces.cli import main
+from bijux_ontology.interfaces.exports.sarif import export_sarif, to_sarif
+from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.rdf.value_comparison import compare_literal_values
 from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import load_project
 

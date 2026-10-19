@@ -13,7 +13,8 @@ from rdflib import Graph
 from bijux_ontology._json import _measure, own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, Limits, bound_text
@@ -25,7 +26,6 @@ from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import Regime
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

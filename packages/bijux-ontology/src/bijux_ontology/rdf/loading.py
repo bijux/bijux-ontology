@@ -7,7 +7,7 @@ from typing import Literal as TypingLiteral
 
 from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, Literal, URIRef
 
-from bijux_ontology.errors import (
+from bijux_ontology.diagnostics.errors import (
     InputError,
     LimitExceeded,
     ResourceError,

@@ -9,7 +9,7 @@ from rdflib.namespace import XSD
 
 from bijux_ontology.data.keys import KeyRecord, check_record_keys
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource

@@ -8,7 +8,7 @@ from rdflib import RDF, URIRef
 from rdflib import Literal as RDFLiteral
 
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 
 from .resource_roles import ResourceRole

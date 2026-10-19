@@ -1,7 +1,7 @@
 """Maintained framing with owned JSON and one offline resource operation."""
 
 from bijux_ontology._json import _capture_json
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.resources import (
     ContextInputError,
     ContextResources,

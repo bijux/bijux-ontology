@@ -12,7 +12,7 @@ from bijux_ontology.data.query_usage import (
     check_query_usage,
     read_query_usage,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 
 EX = Namespace("urn:query-use:")

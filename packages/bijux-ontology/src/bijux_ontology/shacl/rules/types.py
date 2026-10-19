@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 
 RuleMode = Literal["ordered-pass", "global-fixed-point"]
 

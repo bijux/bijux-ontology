@@ -10,13 +10,13 @@ from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.data.query_usage.types import QueryUsage
 from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.resource_roles.checking import check_resource_roles
 from bijux_ontology.models.resource_roles.types import RoleUse
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Deprecation
 from bijux_ontology.vocabulary.checking import check_vocabulary

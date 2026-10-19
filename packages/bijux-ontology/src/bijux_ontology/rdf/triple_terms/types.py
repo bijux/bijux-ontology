@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 import pyoxigraph as ox
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 
 TRIPLE_TERM_CONTRACT = "rdf12-cr-20260407-pyoxigraph-0.5.11"
 TRIPLE_TERM_SPECIFICATION = "https://www.w3.org/TR/2026/CR-rdf12-concepts-20260407/"

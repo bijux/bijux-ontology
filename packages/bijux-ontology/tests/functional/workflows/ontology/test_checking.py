@@ -4,7 +4,7 @@ import pytest
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.vocabulary.builtins import Regime
 from bijux_ontology.vocabulary.sources.view import Vocabulary

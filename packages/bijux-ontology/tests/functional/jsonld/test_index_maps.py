@@ -6,7 +6,7 @@ from typing import Any, cast
 import pytest
 
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.index_maps import (

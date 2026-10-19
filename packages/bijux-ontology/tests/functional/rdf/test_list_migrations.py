@@ -8,8 +8,9 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDF, SKOS, XSD
 
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.documents.migrations import export_migration
-from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations import MigrationCheck
@@ -25,7 +26,6 @@ from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import literal_term, term_key
-from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.skos.collections import check_collection_sequence
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
@@ -160,7 +160,7 @@ def test_exact_insert_remove_preserves_duplicate_literals_and_empty_list() -> No
             graph = value.graph()
             heads = tuple(graph.objects(E.root, E.items))
             actual = read_rdf_list(graph, heads[0]) if len(heads) == 1 else ()
-            from bijux_ontology.reports import Issue
+            from bijux_ontology.diagnostics.reports import Issue
 
             return Report(
                 "exact-positions",

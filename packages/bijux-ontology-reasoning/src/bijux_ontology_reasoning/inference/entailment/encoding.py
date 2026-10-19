@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import cast
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 

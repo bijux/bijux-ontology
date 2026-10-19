@@ -10,8 +10,8 @@ from bijux_ontology.declarations import (
     TermDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Limits
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 
 EX = Namespace("https://example.org/")

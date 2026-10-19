@@ -7,7 +7,7 @@ from typing import Final
 import pytest
 from rdflib import XSD, Literal
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.datatype_evaluators import DatatypeEvaluator, DatatypeRegistry
 from bijux_ontology.rdf.terms import literal_term, term_key

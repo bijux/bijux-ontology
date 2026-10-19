@@ -21,6 +21,7 @@ from bijux_ontology.declarations.types import (
     TermDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget
@@ -32,7 +33,6 @@ from bijux_ontology.owl.classes import ClassContracts
 from bijux_ontology.owl.properties import PropertyContract
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals import Regime, check_literal, datatype_relation
-from bijux_ontology.reports import Issue
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

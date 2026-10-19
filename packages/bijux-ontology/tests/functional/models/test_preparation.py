@@ -15,7 +15,8 @@ from bijux_ontology.declarations import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.resource_roles import ResourceRole
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.contracts.preparation import PreparedModels
@@ -23,7 +24,6 @@ from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://example.org/catalogue/")

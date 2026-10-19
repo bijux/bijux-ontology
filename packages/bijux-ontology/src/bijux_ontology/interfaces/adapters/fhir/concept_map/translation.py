@@ -5,7 +5,8 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from typing import Literal
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import (
     Budget,
@@ -15,7 +16,6 @@ from bijux_ontology.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Report
 
 from ..code_system.checking import check_code_membership
 from ..code_system.reading import read_code_system

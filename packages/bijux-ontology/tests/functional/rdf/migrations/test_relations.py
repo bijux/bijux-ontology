@@ -7,6 +7,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, XSD
 from rdflib.term import Node
 
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.migrations import export_migration
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -21,7 +22,6 @@ from bijux_ontology.rdf.migrations.relations import (
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Issue, Report
 
 E = Namespace("urn:relation:")
 Triple = tuple[Node, Node, Node]

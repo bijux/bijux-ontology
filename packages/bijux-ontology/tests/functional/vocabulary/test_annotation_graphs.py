@@ -8,15 +8,15 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.migrations import export_migration
-from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.checking import check_axiom_annotations
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations import MigrationCheck
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.annotations.graphs import (
     AnnotationStatement,
     AnnotationValueEdit,

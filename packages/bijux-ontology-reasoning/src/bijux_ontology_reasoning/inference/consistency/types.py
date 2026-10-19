@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from rdflib import URIRef
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 from ...backend.types import BackendCapability, LoaderQualification, ProfileDocument
 from ...backend.types import ReasonerIdentity as ReasonerIdentity

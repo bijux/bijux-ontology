@@ -13,11 +13,11 @@ from rdflib import URIRef
 
 from bijux_ontology._json import _decode_json, array_value, owned_json
 from bijux_ontology._jsonschema import backend
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.reports import Issue, Report
 
 from .projection import (
     ImportProjection,

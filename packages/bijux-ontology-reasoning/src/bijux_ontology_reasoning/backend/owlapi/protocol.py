@@ -2,7 +2,7 @@
 
 from typing import cast
 
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.limits import Budget, bound_text
 
 

@@ -4,7 +4,16 @@ import json
 import sys
 from typing import cast
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import (
+    AcceptancePolicy,
+    CheckError,
+    Issue,
+    IssueSelection,
+    Location,
+    Report,
+    Severity,
+)
 from bijux_ontology.interfaces.cli.arguments import arguments
 from bijux_ontology.interfaces.cli.checking import project, run_command
 from bijux_ontology.interfaces.cli.execution import execute_bounded
@@ -17,15 +26,6 @@ from bijux_ontology.interfaces.cli.inputs import (
 from bijux_ontology.interfaces.cli.rendering import format_report
 from bijux_ontology.interfaces.exports.sarif.conversion import to_sarif
 from bijux_ontology.limits import Budget
-from bijux_ontology.reports import (
-    AcceptancePolicy,
-    CheckError,
-    Issue,
-    IssueSelection,
-    Location,
-    Report,
-    Severity,
-)
 
 
 def main(argv: list[str] | None = None) -> int:

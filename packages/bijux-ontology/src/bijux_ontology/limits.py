@@ -5,8 +5,8 @@ from dataclasses import dataclass, fields
 from itertools import chain, islice
 from typing import Literal
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 
 BudgetKind = Literal["bytes", "resources", "triples", "work", "issues", "states"]
 

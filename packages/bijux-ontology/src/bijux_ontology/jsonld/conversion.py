@@ -9,12 +9,12 @@ from pyoxigraph import Literal as RdfLiteral
 from pyoxigraph import RdfFormat, parse
 
 from bijux_ontology._jsonpaths import location
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.jsonld.observations import occurrences
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 
-from ..errors import InputError, LimitExceeded
-from ..reports import Issue, Report
 from .expansion import _drop_issues, _validate_allowed_drops, expand_document
 from .resources import (
     ContextInputError,

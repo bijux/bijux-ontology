@@ -13,7 +13,7 @@ import pytest
 from rdflib import Namespace
 
 from bijux_ontology.declarations import TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.jsonld.resources import OfflineDocument
 from bijux_ontology.limits import Limits

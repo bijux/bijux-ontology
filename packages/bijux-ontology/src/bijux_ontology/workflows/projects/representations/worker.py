@@ -8,8 +8,9 @@ from email.message import Message
 from typing import Any, cast
 
 from bijux_ontology._json import decode_json
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget, Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.jsonld.preparation import prepare_jsonld
@@ -25,7 +26,6 @@ from bijux_ontology.limits import (
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.projects.acquisition.closure import Closure
 from bijux_ontology.workflows.projects.acquisition.http import (

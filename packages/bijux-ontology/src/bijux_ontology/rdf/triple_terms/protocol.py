@@ -4,7 +4,7 @@ from typing import TypeAlias
 
 import pyoxigraph as ox
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, bound_text
 
 Term: TypeAlias = ox.NamedNode | ox.BlankNode | ox.Literal | ox.Triple

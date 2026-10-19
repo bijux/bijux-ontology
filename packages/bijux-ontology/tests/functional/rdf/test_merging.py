@@ -11,7 +11,8 @@ from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.declarations.path_fields import PathFieldDeclaration
 from bijux_ontology.declarations.types import ValueDeclaration
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -27,7 +28,6 @@ from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.patches.types import BlankNodePair
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Issue, Report
 
 EX = Namespace("urn:merge:")
 

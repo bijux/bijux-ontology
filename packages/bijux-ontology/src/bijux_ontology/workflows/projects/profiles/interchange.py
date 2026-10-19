@@ -4,12 +4,12 @@ from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import DCTERMS, RDF, XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
-from bijux_ontology.reports import Issue, Report
 
 from .loading import _qualify_profile, _text
 from .types import DescribedArtifact, ProfileDescription, ValidationProfile

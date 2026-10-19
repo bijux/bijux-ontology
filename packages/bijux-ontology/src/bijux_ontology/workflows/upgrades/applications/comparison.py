@@ -6,9 +6,9 @@ from dataclasses import replace
 from rdflib import Graph
 
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.comparison import (
     VocabularyChanges,
     compare_vocabularies,

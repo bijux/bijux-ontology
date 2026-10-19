@@ -7,14 +7,14 @@ from typing import cast
 from rdflib import BNode, Dataset, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.rdf.transforms import Transformation
-from bijux_ontology.reports import Issue
 
 from .codecs import patch_to_data
 from .correspondence import blank_tokens, compare_witnesses

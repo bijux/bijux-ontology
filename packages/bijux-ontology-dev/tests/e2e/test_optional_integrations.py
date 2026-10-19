@@ -186,7 +186,7 @@ def test_external_consumer_uses_installed_public_types(
         dedent("""
         from typing import assert_type
         from rdflib import Graph
-        from bijux_ontology.reports import Issue, Report
+        from bijux_ontology.diagnostics.reports import Issue, Report
         from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
         from bijux_ontology.models.emission.types import ModelUsage
         from bijux_ontology.rdf.snapshots import PreparedSource
@@ -259,7 +259,7 @@ def test_external_consumer_uses_installed_public_types(
         )
         from bijux_ontology.interfaces.adapters.pydantic import model_declarations
         from bijux_ontology.declarations import ModelDeclaration, ValueDeclaration
-        from bijux_ontology.reports import Report
+        from bijux_ontology.diagnostics.reports import Report
         class Image(BaseModel):
             name: Annotated[str, RdfField(
                 "https://example.org/name",
@@ -326,7 +326,7 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
             dedent("""
         from importlib.util import find_spec
         from rdflib import Graph
-        from bijux_ontology.errors import ResourceError
+        from bijux_ontology.diagnostics.errors import ResourceError
         from bijux_ontology.interfaces.adapters.pydantic import (
             model_declarations as pydantic_models,
         )

@@ -10,10 +10,11 @@ from rdflib import Literal as RdfLiteral
 
 from bijux_ontology._json import owned_json
 from bijux_ontology._jsonpaths import bound_path
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.documents.export import RDFExport
 from bijux_ontology.documents.forms.checking import check_document_form
 from bijux_ontology.documents.forms.types import DocumentFormCheck, FormRequirement
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
@@ -31,7 +32,6 @@ from bijux_ontology.limits import (
 )
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Issue, Location, Report
 
 from .preparation import _Unsupported, candidate, declarations, resources
 from .types import DocumentRelocation

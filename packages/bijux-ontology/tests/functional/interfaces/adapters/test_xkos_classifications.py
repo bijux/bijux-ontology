@@ -7,6 +7,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SKOS, XSD
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.interfaces.adapters.xkos.classifications import (
     ClassificationPolicy,
     LevelCodePolicy,
@@ -17,7 +18,6 @@ from bijux_ontology.interfaces.adapters.xkos.classifications import (
 from bijux_ontology.interfaces.adapters.xkos.classifications.types import XKOS
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.reports import Report
 from bijux_ontology.skos.checking import check_skos
 
 N = Namespace("urn:classification:")

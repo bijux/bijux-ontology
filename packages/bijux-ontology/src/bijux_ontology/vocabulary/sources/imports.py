@@ -6,8 +6,12 @@ from dataclasses import dataclass, replace
 from rdflib import Dataset, Graph, URIRef
 from rdflib.namespace import OWL
 
+from bijux_ontology.diagnostics.errors import (
+    InputError,
+    ResourceError,
+    attach_input_failure,
+)
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, ResourceError, attach_input_failure
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri

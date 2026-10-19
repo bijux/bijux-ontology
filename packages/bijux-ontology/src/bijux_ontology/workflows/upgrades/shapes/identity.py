@@ -5,7 +5,7 @@ from collections.abc import Sequence
 
 from rdflib import BNode, Graph, URIRef
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.paths import RdfPath
 from bijux_ontology.rdf.terms import bound_node, term_key

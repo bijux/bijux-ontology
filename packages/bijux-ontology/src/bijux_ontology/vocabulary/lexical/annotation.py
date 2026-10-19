@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from threading import Event
 from typing import Literal
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.pages import _comparison_text, _PageBudget
 from bijux_ontology.vocabulary.browsing.results import SearchMatch
 

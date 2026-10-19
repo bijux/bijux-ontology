@@ -9,7 +9,7 @@ from rdflib.namespace import OWL
 from rdflib.term import Node
 
 from bijux_ontology._json import decode_json
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Limits

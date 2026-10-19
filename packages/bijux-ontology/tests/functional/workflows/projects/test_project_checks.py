@@ -6,7 +6,7 @@ from typing import cast
 
 import pytest
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig, load_project
 
@@ -571,7 +571,7 @@ def test_replacement_owns_graphs_and_bounds_retained_storage_with_fresh_budgets(
     from rdflib import Dataset, Graph, URIRef
     from rdflib.namespace import OWL, RDF
 
-    from bijux_ontology.errors import LimitExceeded
+    from bijux_ontology.diagnostics.errors import LimitExceeded
     from bijux_ontology.rdf.sources import RdfSource
 
     (tmp_path / "terms.ttl").write_text(f"<{EX}Record> a <{OWL.Class}> .")

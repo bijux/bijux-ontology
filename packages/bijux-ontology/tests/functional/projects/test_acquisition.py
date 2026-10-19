@@ -18,7 +18,7 @@ import pytest
 from rdflib import URIRef
 from rdflib.namespace import RDF, RDFS
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.limits import Limits

@@ -8,9 +8,9 @@ from typing import Literal
 
 from rdflib import BNode, URIRef
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.stores.seals import StoreFile
-from bijux_ontology.reports import Report
 
 OwlProfile = Literal["owl2-dl", "owl2-el", "owl2-ql", "owl2-rl"]
 

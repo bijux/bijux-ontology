@@ -6,7 +6,7 @@ from typing import IO, Literal
 
 from rdflib import BNode, Graph
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 
 from .identifiers import absolute_iri
 

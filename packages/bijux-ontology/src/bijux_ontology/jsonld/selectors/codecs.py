@@ -11,7 +11,7 @@ from bijux_ontology._json import (
     string_value,
     string_values,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.jsonld.selectors.types import (
     ArrayItems,
     CoverageUnit,

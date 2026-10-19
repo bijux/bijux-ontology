@@ -5,11 +5,11 @@ from typing import Literal
 
 from rdflib import URIRef
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
-from bijux_ontology.reports import Report
 from bijux_ontology.shacl.coverage import ShaclTarget
 from bijux_ontology.shacl.execution.results import ShaclResult
 

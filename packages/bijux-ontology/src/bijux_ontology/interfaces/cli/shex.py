@@ -5,8 +5,8 @@ from pathlib import Path
 
 from rdflib import URIRef
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.interfaces.cli.inputs import (
     command_limits,
     protect_inputs,

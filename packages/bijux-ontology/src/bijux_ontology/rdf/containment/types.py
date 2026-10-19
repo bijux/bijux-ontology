@@ -4,9 +4,9 @@ from dataclasses import dataclass
 
 from rdflib import BNode
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.queries.protocol import QueryTerm
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.reports import Report
 
 
 @dataclass(frozen=True)

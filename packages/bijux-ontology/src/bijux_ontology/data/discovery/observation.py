@@ -11,13 +11,13 @@ from bijux_ontology.data.projection.reading import project_records
 from bijux_ontology.data.projection.types import ReadBinding, ReadField
 from bijux_ontology.declarations.path_fields import PathFieldDeclaration
 from bijux_ontology.declarations.types import OutputRequirement, ValueDeclaration
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.paths import capture_path
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
-from bijux_ontology.reports import Issue, Report
 
 from .types import DiscoveryField, FieldObservation, ObservedField, RecordObservation
 

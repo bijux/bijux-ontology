@@ -6,8 +6,8 @@ from typing import TypeVar
 from rdflib import BNode, Graph, URIRef
 
 from bijux_ontology.declarations.codecs import models_from_data
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.patches.operations import snapshot
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.limits import Budget, Limits, bound_text

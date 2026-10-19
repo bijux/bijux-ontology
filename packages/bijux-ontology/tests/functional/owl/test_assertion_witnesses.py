@@ -7,7 +7,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, XSD
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.owl.assertions import check_assertion_witnesses
 from bijux_ontology.rdf.loading import prepare_rdf

@@ -5,8 +5,8 @@ from dataclasses import replace
 
 import pytest
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import (
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import (
     AcceptancePolicy,
     CheckError,
     Issue,

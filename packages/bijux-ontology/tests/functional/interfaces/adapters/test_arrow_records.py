@@ -18,7 +18,7 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.interfaces.adapters.arrow import (
     ArrowColumn,
     ArrowContract,

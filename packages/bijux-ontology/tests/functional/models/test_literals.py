@@ -4,7 +4,7 @@ import pytest
 from rdflib import Literal, URIRef
 from rdflib.namespace import RDF, XSD
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
 

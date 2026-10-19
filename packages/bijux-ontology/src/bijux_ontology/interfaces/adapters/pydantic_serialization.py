@@ -16,7 +16,8 @@ from bijux_ontology.declarations.types import (
     OutputRequirement,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
@@ -36,7 +37,6 @@ from bijux_ontology.models.emission.serialization import (
     check_serialized,
 )
 from bijux_ontology.models.emission.types import ModelUsage
-from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

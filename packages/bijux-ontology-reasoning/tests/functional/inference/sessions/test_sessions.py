@@ -34,10 +34,10 @@ from bijux_ontology_reasoning.inference.sessions import (
 from rdflib import BNode, Dataset, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.restrictions import project_restrictions
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary

@@ -7,7 +7,7 @@ from rdflib import BNode, URIRef
 from rdflib.paths import AlternativePath, InvPath, MulPath, Path, SequencePath
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 

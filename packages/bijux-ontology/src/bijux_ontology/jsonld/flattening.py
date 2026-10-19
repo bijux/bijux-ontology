@@ -8,10 +8,10 @@ from typing import cast
 
 from bijux_ontology._json import own_json
 from bijux_ontology._jsonpaths import SourcePath, location
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.reports import Issue, Report, combine_reports
 
 from .conversion import DirectionPolicy
 from .expansion import _drop_issues, expand_document

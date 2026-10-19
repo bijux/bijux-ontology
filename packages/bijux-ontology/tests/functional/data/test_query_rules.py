@@ -18,8 +18,8 @@ from bijux_ontology.data.query_rules import (
     query_rules_from_data,
     run_query_rules,
 )
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, ResourceError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.queries import QueryScope
 from bijux_ontology.rdf.sources import RdfSource

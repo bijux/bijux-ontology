@@ -8,7 +8,7 @@ from dataclasses import replace
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, SH
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.codecs import read_witness

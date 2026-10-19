@@ -7,7 +7,7 @@ from rdflib import Graph, Literal
 from rdflib.namespace import XSD
 
 from bijux_ontology._json import decode_json, object_value, owned_json
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.entailment.protocol import encode_rows

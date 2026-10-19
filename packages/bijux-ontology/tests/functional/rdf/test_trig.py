@@ -6,9 +6,9 @@ from rdflib import BNode, Literal, URIRef
 from rdflib.graph import DATASET_DEFAULT_GRAPH_ID
 from rdflib.namespace import XSD
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 

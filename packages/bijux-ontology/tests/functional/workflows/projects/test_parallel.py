@@ -13,7 +13,7 @@ from typing import cast
 import pytest
 
 import bijux_ontology.workflows.projects.parallel.checking as parallel_checks
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import (
     Budget,

@@ -3,8 +3,8 @@
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.reports import (
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import (
     AcceptancePolicy,
     CheckError,
     Issue,

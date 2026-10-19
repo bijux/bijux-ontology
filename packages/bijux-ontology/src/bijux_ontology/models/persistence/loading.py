@@ -14,14 +14,14 @@ from bijux_ontology._json import (
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.rdf.literals import Regime
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary, _VocabularyPreparation

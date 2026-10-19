@@ -6,6 +6,8 @@ from itertools import islice
 from rdflib import BNode, Literal, Variable
 
 from bijux_ontology._json import _measure
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.forms.types import FormRequirement
 from bijux_ontology.documents.patches.checking import apply_document_patch
 from bijux_ontology.documents.patches.operations import (
@@ -17,7 +19,6 @@ from bijux_ontology.documents.patches.operations import (
     snapshot,
 )
 from bijux_ontology.documents.patches.types import DocumentPatch, RetainedUsage
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.preparation import prepare_jsonld
@@ -35,7 +36,6 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.codecs import patch_from_data, patch_to_data
 from bijux_ontology.rdf.patches.types import DatasetPatch
-from bijux_ontology.reports import Issue, Report
 
 from .binding import AmbiguousSourceEdit, capture_bindings, project_operations
 from .types import RDFSourcePatch, SourceEditBinding

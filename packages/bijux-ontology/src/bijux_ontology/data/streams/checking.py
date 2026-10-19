@@ -11,7 +11,9 @@ from typing import Any, cast
 from rdflib import BNode, Graph
 
 from bijux_ontology._json import decode_json, object_value
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.diagnostics.reports import issue_from_data as read_issue
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
@@ -29,8 +31,6 @@ from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.stores.seals import verify_files
 from bijux_ontology.rdf.stores.types import StoredRdf
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.reports import issue_from_data as read_issue
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

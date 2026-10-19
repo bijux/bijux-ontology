@@ -12,7 +12,8 @@ import pytest
 from rdflib import BNode, Graph, Literal, URIRef
 
 from bijux_ontology.declarations import TermDeclaration
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Location
 from bijux_ontology.interfaces.adapters.bioregistry import (
     BioregistryOverride,
     BioregistrySnapshot,
@@ -20,7 +21,6 @@ from bijux_ontology.interfaces.adapters.bioregistry import (
     read_bioregistry_bundle,
 )
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.reports import Location
 from bijux_ontology.vocabulary.accessions import (
     AccessionRule,
     AccessionValue,

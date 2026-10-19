@@ -11,8 +11,8 @@ from bijux_ontology.declarations import (
     ModelDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.sources import RdfSource

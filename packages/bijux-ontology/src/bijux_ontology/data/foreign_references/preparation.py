@@ -9,9 +9,9 @@ from rdflib import BNode
 from bijux_ontology.data.keys.evidence import compare_keys, key_evidence
 from bijux_ontology.data.keys.extraction import _Key, _KeyExtraction
 from bijux_ontology.data.keys.types import KeyRecord
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.reports import Issue, Report
 
 from .types import ForeignReferenceContract, ForeignTargetIndex
 

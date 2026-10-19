@@ -6,7 +6,7 @@ from typing import cast
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.patches.planning import Captured
 from bijux_ontology.rdf.patches.types import (

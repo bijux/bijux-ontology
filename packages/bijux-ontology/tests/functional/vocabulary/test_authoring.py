@@ -7,6 +7,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
 from bijux_ontology.absence import ABSENT
+from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.documents.migrations import export_migration
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -14,7 +15,6 @@ from bijux_ontology.rdf.migrations import MigrationCheck
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import literal_term, term_key
-from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.vocabulary.annotations import (
     AnnotationRequirement,
@@ -171,7 +171,7 @@ def _obo_contract(expected: int) -> MigrationCheck:
 
     def check(source: PreparedSource) -> Report:
         records = read_obo_records(inspect_vocabulary(source.graph()), str(E.concept))
-        from bijux_ontology.reports import Issue
+        from bijux_ontology.diagnostics.reports import Issue
 
         return Report(
             "obo-attachments",

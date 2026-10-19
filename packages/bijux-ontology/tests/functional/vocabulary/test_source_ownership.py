@@ -4,7 +4,7 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Namespace
 from rdflib.namespace import OWL
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource

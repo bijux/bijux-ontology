@@ -10,7 +10,8 @@ from rdflib import Literal
 from bijux_ontology._jsonpaths import SourcePath, at_path, location
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import EntityKey, object_key
@@ -31,7 +32,6 @@ from bijux_ontology.models.emission.matching import (
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.reports import Issue
 
 if TYPE_CHECKING:
     from bijux_ontology.models.corpus.types import _CorpusEvidence

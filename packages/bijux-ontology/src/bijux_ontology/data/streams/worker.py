@@ -14,12 +14,13 @@ from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.errors import (
+from bijux_ontology.diagnostics.errors import (
     InputError,
     LimitExceeded,
     ResourceError,
     attach_input_failure,
 )
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import IssueCollector, Limits, bound_text
@@ -28,7 +29,6 @@ from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.stores.native import DeclarationReader
 from bijux_ontology.rdf.terms import bound_node, oxigraph_term
-from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.types import OwnedSource

@@ -8,7 +8,8 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import SKOS, XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
     compile_allowed,
@@ -24,7 +25,6 @@ from bijux_ontology.rdf.literals import _lexical, datatype_relation
 from bijux_ontology.rdf.patterns import matches_pattern
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, term_key
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.skos.structure import reachability
 
 from .reading import reserve, values

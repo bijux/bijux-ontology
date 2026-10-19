@@ -6,7 +6,8 @@ from typing import cast
 
 from rdflib import BNode, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import (
     Budget,
@@ -17,7 +18,6 @@ from bijux_ontology.limits import (
 )
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.profiles.comparison import _coverage

@@ -7,8 +7,8 @@ from rdflib import BNode, Dataset, Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.browsing.results import Selection
 from bijux_ontology.vocabulary.relation_paths import (

@@ -5,7 +5,7 @@ from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.limits import Budget
 
 from .terminology import SdrfTerminology, _fold

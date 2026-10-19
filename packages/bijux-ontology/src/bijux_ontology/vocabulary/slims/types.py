@@ -5,7 +5,7 @@ from typing import Literal
 
 from rdflib import URIRef
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.vocabulary.relation_paths.types import RelationPathResult
 
 

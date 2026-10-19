@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Literal, cast
 
 from bijux_ontology._json import known_keys, text_value
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 
 CheckKind = Literal[
     "vocabulary",

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import SKOS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate
 from bijux_ontology.rdf.patches.types import PatchQuad, PatchResource

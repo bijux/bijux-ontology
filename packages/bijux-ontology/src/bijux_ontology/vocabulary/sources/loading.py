@@ -4,8 +4,8 @@ from collections.abc import Mapping, Sequence
 
 from rdflib import Graph
 
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import _charge_graph

@@ -19,7 +19,8 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
 from bijux_ontology.limits import (
@@ -32,7 +33,6 @@ from bijux_ontology.limits import (
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.terms import bound_node, literal_term
-from bijux_ontology.reports import Issue, Report
 
 from .types import CompiledOutputSchema, JsonRepresentation, SchemaTranslation
 from .validation import DIALECT, backend, capture, operation, owned_json, validator

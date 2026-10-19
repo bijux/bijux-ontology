@@ -6,7 +6,8 @@ from typing import Literal, cast
 
 from rdflib import Dataset, Graph, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import (
     Budget,
@@ -24,7 +25,6 @@ from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.rdf.workloads.qualification import _engine, _plan
 from bijux_ontology.rdf.workloads.types import EngineConfig, WorkloadQuery
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.sources.imports import required_imports
 from bijux_ontology.vocabulary.sources.types import OwnedSource
 

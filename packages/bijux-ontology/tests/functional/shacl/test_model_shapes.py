@@ -20,13 +20,13 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.model_shapes import ModelShapeBinding, compile_model_shapes
 

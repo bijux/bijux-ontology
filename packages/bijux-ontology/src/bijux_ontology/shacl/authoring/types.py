@@ -8,7 +8,7 @@ from rdflib import Literal as RDFLiteral
 from rdflib.paths import Path
 
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.paths import RdfPath, capture_path
 

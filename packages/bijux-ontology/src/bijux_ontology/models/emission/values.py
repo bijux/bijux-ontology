@@ -8,7 +8,8 @@ from rdflib import Literal, URIRef
 from rdflib.term import Node
 
 from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import EntityInventory, object_key
 from bijux_ontology.jsonld.observations import ObservedOccurrence
@@ -23,7 +24,6 @@ from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.reports import Issue, Report
 
 
 def _matches(

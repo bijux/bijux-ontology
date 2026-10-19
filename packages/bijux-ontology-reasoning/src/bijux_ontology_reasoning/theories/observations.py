@@ -4,9 +4,9 @@ from dataclasses import replace
 
 from rdflib import URIRef
 
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import IssueCollector, retain_report
-from bijux_ontology.reports import Issue, Report
 
 from ..axioms.types import ProjectedAxiom
 from ..backend.types import OwlProfileBackend

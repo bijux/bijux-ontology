@@ -4,7 +4,7 @@ from importlib.metadata import PackageNotFoundError, version
 from types import ModuleType
 from typing import cast
 
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.diagnostics.errors import ResourceError
 
 
 def processor() -> ModuleType:

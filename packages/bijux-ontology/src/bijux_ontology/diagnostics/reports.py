@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from dataclasses import KW_ONLY, dataclass, replace
 from typing import Literal, cast
 
-from .errors import InputError, InputFailure, SourceSpan
+from bijux_ontology.diagnostics.errors import InputError, InputFailure, SourceSpan
 
 IssueKind = Literal["finding", "unverified", "input_error", "exhausted"]
 Severity = Literal["error", "warning", "info"]

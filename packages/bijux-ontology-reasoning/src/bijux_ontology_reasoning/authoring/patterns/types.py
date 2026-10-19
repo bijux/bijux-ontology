@@ -6,12 +6,12 @@ from typing import Literal
 
 from rdflib import URIRef
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.queries import QueryScope
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.stores.seals import StoreFile
 from bijux_ontology.rdf.workloads.types import EngineAnswer
-from bijux_ontology.reports import Report
 
 
 @dataclass(frozen=True, init=False)

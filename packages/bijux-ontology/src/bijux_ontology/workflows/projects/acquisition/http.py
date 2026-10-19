@@ -12,7 +12,7 @@ from urllib.request import (
     build_opener,
 )
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import bound_text
 from bijux_ontology.rdf.compression import decode_gzip

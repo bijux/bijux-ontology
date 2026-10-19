@@ -3,7 +3,7 @@
 import pytest
 from rdflib import Namespace
 
-from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.observations import occurrences

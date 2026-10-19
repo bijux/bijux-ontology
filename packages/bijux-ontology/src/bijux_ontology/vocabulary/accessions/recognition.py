@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.vocabulary.registry.types import (
@@ -112,7 +112,7 @@ def resolve(
             return None, None, True, False
         expanded = len(namespace.encode("utf-8")) + len(local.encode("utf-8"))
         if expanded > budget.limits.max_bytes:
-            from bijux_ontology.errors import LimitExceeded
+            from bijux_ontology.diagnostics.errors import LimitExceeded
 
             raise LimitExceeded("Expanded accession exceeds max_bytes")
         budget.consume("bytes", expanded)

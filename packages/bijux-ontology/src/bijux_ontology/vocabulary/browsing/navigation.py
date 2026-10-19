@@ -9,11 +9,11 @@ from rdflib import BNode, URIRef
 from rdflib.namespace import RDFS, SKOS
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.structure import iter_rdf_list
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 

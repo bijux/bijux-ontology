@@ -8,8 +8,8 @@ from types import MappingProxyType
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from bijux_ontology._json import decode_json, object_value, text_value
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.archive import bundle_reader, resource_path
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.resources import (
     DocumentLoader,
     DocumentLocation,

@@ -10,7 +10,8 @@ from rdflib import Graph, Literal
 from bijux_ontology._json import own_json
 from bijux_ontology._jsonpaths import bound_path, location
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.expectations import ContextExpectation
@@ -22,7 +23,6 @@ from bijux_ontology.models.emission.direction import DirectionCheck
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

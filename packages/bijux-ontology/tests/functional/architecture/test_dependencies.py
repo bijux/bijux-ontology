@@ -12,9 +12,8 @@ import pytest
 FOUNDATION = {
     "execution",
     "absence",
-    "errors",
+    "diagnostics",
     "limits",
-    "reports",
     "processes",
     "_json",
     "_jsonpaths",
@@ -234,7 +233,7 @@ def test_library_dependencies_follow_feature_ownership(
         forbidden = []
         if module in {
             "bijux_ontology.interfaces.cli.inputs",
-            "bijux_ontology.reports",
+            "bijux_ontology.diagnostics.reports",
             "bijux_ontology.interfaces.cli.vocabularies",
             "bijux_ontology.interfaces.cli.transforms",
         }:
@@ -296,7 +295,7 @@ assert "bijux_ontology.models.contracts.checking" not in sys.modules
 assert "bijux_ontology.shacl.checking" not in sys.modules
 assert "__getattr__" not in vars(bijux_ontology)
 assert "__getattr__" not in vars(bijux_ontology.shacl)
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 assert issubclass(InputError, Exception)
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary

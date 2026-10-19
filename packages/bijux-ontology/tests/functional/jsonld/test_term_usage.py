@@ -7,7 +7,7 @@ import pytest
 from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector
 from bijux_ontology.jsonld.term_usage import TermUsageRegion, check_term_usages

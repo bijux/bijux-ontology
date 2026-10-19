@@ -8,9 +8,9 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.export import export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, ResourceError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource

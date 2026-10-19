@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, cast
 from xml.parsers.expat import ExpatError, ParserCreate
 from xml.sax.saxutils import escape
 
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.diagnostics.errors import ResourceError
 
 if TYPE_CHECKING:
     from elementpath.datatypes import AbstractDateTime, AnyAtomicType

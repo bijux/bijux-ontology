@@ -8,8 +8,8 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.compare import isomorphic
 from rdflib.namespace import OWL, RDF, RDFS
 
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.interfaces.adapters.obo_graphs import (
     OboGraphsDocument,
     read_obo_graphs,

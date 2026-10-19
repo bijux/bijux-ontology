@@ -10,10 +10,10 @@ from rdflib import Literal as RdfLiteral
 from rdflib import URIRef
 
 from bijux_ontology._json import object_value
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.archive import resource_path
 from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.comparison import compare_rdf

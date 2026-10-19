@@ -9,7 +9,7 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import XSD
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf

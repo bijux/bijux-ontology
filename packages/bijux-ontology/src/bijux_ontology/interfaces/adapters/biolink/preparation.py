@@ -9,13 +9,13 @@ from hashlib import sha256
 from typing import cast
 
 from bijux_ontology._json import decode_json, object_value
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report, report_from_data
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, Limits, bound_text
-from bijux_ontology.reports import Issue, Report, report_from_data
 
 from .types import BiolinkIdentity, BiolinkModel, BiolinkResource
 

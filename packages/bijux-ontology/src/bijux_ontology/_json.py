@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn, cast
 
 from bijux_ontology._jsonpaths import bound_index
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Limits, bound_text
 

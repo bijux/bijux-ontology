@@ -4,8 +4,8 @@ import pytest
 from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, XSD
 
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.shacl.checking import validate_shapes
 
 EX = Namespace("https://example.org/")

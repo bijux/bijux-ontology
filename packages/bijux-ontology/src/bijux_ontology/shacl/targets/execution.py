@@ -4,7 +4,7 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, SH
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.targets.preparation import _definitions, _objects, _roots

@@ -15,7 +15,8 @@ from typing import (
 )
 
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction, RdfField
 from bijux_ontology.interfaces.adapters.field_contracts import (
     declare_field,
@@ -23,7 +24,6 @@ from bijux_ontology.interfaces.adapters.field_contracts import (
     select_contract,
 )
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.reports import Issue, Report
 
 
 def _contract(annotation: object, *, location: str) -> RdfField | None:

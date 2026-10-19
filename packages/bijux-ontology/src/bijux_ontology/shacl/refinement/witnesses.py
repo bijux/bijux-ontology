@@ -6,7 +6,7 @@ from rdflib import BNode, Dataset, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.loading import prepare_rdf

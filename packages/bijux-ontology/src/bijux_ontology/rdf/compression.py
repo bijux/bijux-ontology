@@ -4,7 +4,7 @@ import gzip
 import zlib
 from io import BytesIO
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
 
 

@@ -6,8 +6,8 @@ from rdflib import BNode, URIRef
 from rdflib.namespace import SKOS
 from rdflib.term import Node
 
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.reports import Issue
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 

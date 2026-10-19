@@ -7,11 +7,17 @@ from dataclasses import replace
 from typing import cast
 
 from bijux_ontology._json import known_keys, object_value
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import (
+    Issue,
+    IssueKind,
+    Location,
+    Report,
+    combine_reports,
+)
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Issue, IssueKind, Location, Report, combine_reports
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.inputs import ShaclJobInput, capture_job_inputs

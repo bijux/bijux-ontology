@@ -6,9 +6,9 @@ from typing import Literal
 from rdflib import BNode, URIRef
 from rdflib.term import Node
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.reports import Report
 
 
 @dataclass(frozen=True, slots=True)

@@ -7,7 +7,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.data.compatibility import check_data_compatibility
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.datatype_evaluators import DatatypeEvaluator, DatatypeRegistry
 from bijux_ontology.rdf.loading import prepare_rdf

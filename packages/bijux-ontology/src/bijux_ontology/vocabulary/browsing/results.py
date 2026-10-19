@@ -7,7 +7,7 @@ from typing import Literal as Direction
 from rdflib import Literal, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 T = TypeVar("T")
 

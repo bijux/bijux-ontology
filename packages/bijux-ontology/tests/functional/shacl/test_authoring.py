@@ -8,7 +8,7 @@ from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDF, SH, XSD
 from rdflib.paths import SequencePath
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.paths import RdfPath, capture_path
 from bijux_ontology.shacl.authoring import (

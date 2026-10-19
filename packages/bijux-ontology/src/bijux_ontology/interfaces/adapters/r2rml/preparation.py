@@ -18,7 +18,7 @@ from rdflib.namespace import RDF, RDFS, XSD
 from rdflib.term import Node
 
 from bijux_ontology._json import decode_json, object_value
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits, bound_text

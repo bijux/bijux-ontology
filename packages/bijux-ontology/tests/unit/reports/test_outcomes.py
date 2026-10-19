@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import (
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import (
     AcceptancePolicy,
     Issue,
     IssueSelection,
@@ -31,7 +31,7 @@ def test_unverified_child_remains_unverified_when_policy_allows_it() -> None:
 def test_public_report_construction_preserves_descendant_truth_without_recounting() -> (
     None
 ):
-    from bijux_ontology.reports import report_from_data
+    from bijux_ontology.diagnostics.reports import report_from_data
 
     failure = Issue("emission.missing", "Missing value", "/label")
     leaf = Report("emission", 1, (failure,))
@@ -153,7 +153,7 @@ def test_structured_output_preserves_distinct_occurrences_and_child_scope() -> N
 def test_excluded_scope_and_accepted_findings_remain_distinct_in_nested_reports() -> (
     None
 ):
-    from bijux_ontology.reports import AcceptancePolicy, IssueSelection
+    from bijux_ontology.diagnostics.reports import AcceptancePolicy, IssueSelection
 
     finding = Issue("convention.choice", "Consumer convention differs", "title")
     child = Report("mapping", 1, (finding,), exclusions=("legacy aliases",))

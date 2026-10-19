@@ -10,7 +10,8 @@ from bijux_ontology._json import owned_json
 from bijux_ontology._jsonpaths import bounded_location
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import operation
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
@@ -24,7 +25,6 @@ from bijux_ontology.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

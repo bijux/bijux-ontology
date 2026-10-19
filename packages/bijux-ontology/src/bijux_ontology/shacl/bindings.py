@@ -7,7 +7,7 @@ from typing import cast
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import operation
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, Limits, bound_text

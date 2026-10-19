@@ -5,7 +5,7 @@ from typing import Literal as Choice
 
 from rdflib import Literal
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 MarkupCanonicalization = Choice["xml-exc-c14n-with-comments"]
 MarkupRelation = Choice["equal", "different", "indeterminate"]

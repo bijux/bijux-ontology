@@ -2,10 +2,10 @@
 
 from threading import Event
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.reports import Report
 
 from .preparation import _execute, _failure
 from .protocol import encode_quads

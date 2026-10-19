@@ -362,7 +362,7 @@ def test_limits_and_predispatch_cancellation(tmp_path: Path) -> None:
 
 def test_bad_public_arguments_are_input_errors(tmp_path: Path) -> None:
     """Wrong caller types do not become framework absence or successful empty data."""
-    from bijux_ontology.errors import InputError
+    from bijux_ontology.diagnostics.errors import InputError
 
     descriptor, contents, bindings = package()
     with pytest.raises(InputError):

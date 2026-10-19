@@ -12,14 +12,14 @@ from rdflib.compare import isomorphic
 from rdflib.term import Node
 
 from bijux_ontology._json import decode_json
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.processes.transport import checkpoint
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
-from bijux_ontology.reports import Issue, Report
 
 _Record = tuple[str, tuple[tuple[str | None, ...], ...]]
 

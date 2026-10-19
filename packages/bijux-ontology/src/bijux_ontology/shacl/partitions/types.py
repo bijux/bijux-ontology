@@ -6,12 +6,12 @@ from typing import Literal
 from rdflib import BNode, URIRef
 from rdflib import Literal as RDFLiteral
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Report
 from bijux_ontology.shacl.execution.results import ShaclResult
 
 

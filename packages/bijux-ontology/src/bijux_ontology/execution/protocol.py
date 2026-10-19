@@ -1,6 +1,6 @@
 """Prepaid bounds for the closed JSON worker protocol."""
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
 
 

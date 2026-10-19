@@ -4,7 +4,7 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, BudgetKind, bound_text
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.jobs import check_kind

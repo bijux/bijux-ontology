@@ -3,7 +3,7 @@
 import sys
 import threading
 
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget
 from bijux_ontology.processes.sessions import FramedSession

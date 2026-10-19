@@ -11,14 +11,14 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.term import Node
 
 from bijux_ontology._jsonpaths import SourcePath, location
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 
-from ..errors import InputError, LimitExceeded
-from ..reports import Issue, Report, combine_reports
 from .checking import PreparedUsages, prepare_usages
 from .conversion import DirectionPolicy, convert_to_rdf
 from .resources import DocumentLoader

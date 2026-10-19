@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 
 from ..backend.types import BackendCapability, OwlProfile
 

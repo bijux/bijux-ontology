@@ -13,8 +13,8 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.interfaces.adapters.fhir.code_system import (
     FhirCodeSystem,
     read_code_system,

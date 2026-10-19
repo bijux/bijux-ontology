@@ -2,7 +2,7 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
-from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.limits import Budget, bound_text
 
 from .types import Checksum

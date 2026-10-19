@@ -8,7 +8,7 @@ from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF
 
 from bijux_ontology.declarations import TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.vocabulary.checking import check_vocabulary

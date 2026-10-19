@@ -9,6 +9,7 @@ from rdflib.namespace import XSD
 
 from bijux_ontology.data.query_rules.checking import run_query_rules
 from bijux_ontology.data.query_rules.types import QueryRule
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.documents.migrations import export_migration
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -18,7 +19,6 @@ from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.reports import Report
 
 E = Namespace("https://graphs.example/")
 _NATIVE_TIMEOUT = 60.0

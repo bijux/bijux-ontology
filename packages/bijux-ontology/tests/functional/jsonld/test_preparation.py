@@ -10,8 +10,8 @@ import rdflib
 from pyld import jsonld  # type: ignore[import-untyped]
 from rdflib import XSD, BNode, Literal, URIRef
 
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, ResourceError
 from bijux_ontology.jsonld.conversion import convert_to_rdf
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import context_document_loader

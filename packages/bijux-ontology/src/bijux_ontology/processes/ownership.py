@@ -5,7 +5,7 @@ import signal
 import subprocess
 import sys
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 
 
 def _signal_group(process: subprocess.Popen[bytes], sig: signal.Signals) -> None:

@@ -11,7 +11,8 @@ from bijux_ontology.declarations.codecs import (
     models_from_data,
     terms_from_data,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.interfaces.cli.arguments import vocabulary_input
 from bijux_ontology.interfaces.cli.inputs import (
     command_limits,
@@ -28,7 +29,6 @@ from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.rdf.literals import Regime as ModelRegime
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.builtins import Regime
 from bijux_ontology.vocabulary.checking import check_vocabulary

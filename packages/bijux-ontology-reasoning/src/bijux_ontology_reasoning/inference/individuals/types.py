@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 
 from ...axioms.types import DataProperty, NamedEntity, NativeLiteral, ObjectProperty
 from ...backend.types import (

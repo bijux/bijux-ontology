@@ -7,7 +7,7 @@ from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import RDF, SKOS
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.skos.collections import check_collection_sequence

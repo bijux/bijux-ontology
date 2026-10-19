@@ -9,10 +9,10 @@ from rdflib import BNode, Literal
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.absence import Absent
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Report
 
 DatatypeRelation = Choice["equal", "subset", "overlap", "disjoint", "unknown"]
 Regime = Choice["application", "rdf", "owl-dl"]

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 TermKey = tuple[str | None, ...]
 Statement = tuple[TermKey, TermKey, TermKey]

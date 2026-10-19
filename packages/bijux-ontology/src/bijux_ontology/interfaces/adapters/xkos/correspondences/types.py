@@ -6,11 +6,11 @@ from typing import Literal
 from rdflib import BNode, Namespace, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.migrations.values.types import ValueMap
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 XKOS = Namespace("http://rdf-vocabulary.ddialliance.org/xkos#")

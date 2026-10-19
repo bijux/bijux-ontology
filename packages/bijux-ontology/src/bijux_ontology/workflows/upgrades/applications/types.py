@@ -15,7 +15,8 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     TermDeclaration,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.limits import Budget, bound_text
@@ -25,7 +26,6 @@ from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.comparison import VocabularyChanges
 from bijux_ontology.workflows.upgrades.anonymous import AnonymousAffectedUse
 from bijux_ontology.workflows.upgrades.assessment import AffectedUse, ContractChange

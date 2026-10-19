@@ -8,7 +8,7 @@ import pytest
 from rdflib import URIRef
 from rdflib.namespace import RDFS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.fhir.code_system import (
     check_code_membership,
     read_code_system,

@@ -13,7 +13,7 @@ from bijux_ontology._json import (
     string_values,
 )
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.jsonld.expectations import ContainerKind, ContextExpectation
 from bijux_ontology.jsonld.lists import ExpectedList
 from bijux_ontology.jsonld.values import ValueKind as ContextValueKind

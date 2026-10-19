@@ -6,8 +6,9 @@ from threading import Event
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, SH
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import (
@@ -21,7 +22,6 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.coverage import ShaclCoverageContract, ShaclTarget
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.profiles.execution import portable_roles, remaining_deadline

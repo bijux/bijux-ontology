@@ -10,7 +10,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.selectors.checking import resolve_selection

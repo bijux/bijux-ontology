@@ -4,14 +4,14 @@ from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import RDF, SKOS
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.navigation import scheme_members
 

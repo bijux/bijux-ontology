@@ -3,9 +3,9 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 
 from ...axioms.types import NamedEntity, ObjectProperty
 from ...backend.types import OwlProfileBackend, ProfileDocument

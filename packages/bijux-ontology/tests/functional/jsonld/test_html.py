@@ -11,7 +11,7 @@ from bijux_ontology.declarations import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.html import extract_html_jsonld

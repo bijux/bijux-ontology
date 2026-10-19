@@ -11,6 +11,7 @@ from rdflib import RDF, Literal, URIRef
 
 from bijux_ontology._jsonpaths import at_path, location
 from bijux_ontology.declarations.types import EmissionGroup, ModelDeclaration
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.jsonld.entities import subject_key
 from bijux_ontology.jsonld.observations import ObservedOccurrence
 from bijux_ontology.limits import Budget
@@ -18,7 +19,6 @@ from bijux_ontology.models.emission.bindings import same_contribution
 from bijux_ontology.models.emission.coverage import source_properties
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.terms import literal_term, term_key
-from bijux_ontology.reports import Issue
 
 from .context import EmissionContext
 from .values import _literal_result, _matches

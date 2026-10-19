@@ -7,6 +7,7 @@ from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.containers import (
@@ -21,7 +22,6 @@ from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.reports import Issue, Report
 
 S, P, C, NOTE, OTHER, G, H = (
     URIRef("urn:container:" + n) for n in ("s", "p", "c", "note", "other", "G", "H")

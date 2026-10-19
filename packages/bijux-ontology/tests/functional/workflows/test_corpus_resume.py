@@ -17,7 +17,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.sources import RdfSource

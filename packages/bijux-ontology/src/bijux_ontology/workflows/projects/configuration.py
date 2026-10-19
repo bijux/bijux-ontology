@@ -13,12 +13,16 @@ from bijux_ontology._json import (
     read_json,
     text_value,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import (
+    AcceptancePolicy,
+    IssueSelection,
+    Severity,
+)
 from bijux_ontology.jsonld.resources import DocumentLocation
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import AcceptancePolicy, IssueSelection, Severity
 from bijux_ontology.workflows.projects.jobs import (
     APPLICATION_KINDS,
     check_kind,

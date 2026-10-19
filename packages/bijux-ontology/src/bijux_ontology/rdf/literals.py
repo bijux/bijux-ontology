@@ -6,11 +6,11 @@ from calendar import monthrange
 from rdflib import Literal
 from rdflib.namespace import RDF, XSD
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import bound_text
 
-from ..errors import InputError, LimitExceeded, ResourceError
 from ..limits import Budget, IssueCollector
-from ..reports import Issue, Report
 from .datatype_evaluators.registry import DatatypeRegistry
 from .datatype_evaluators.types import DatatypeRelation as DatatypeRelation
 from .datatype_evaluators.types import Regime as Regime

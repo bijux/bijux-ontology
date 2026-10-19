@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from typing import Literal
 
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.jsonld.composition.types import ContextCase
 from bijux_ontology.jsonld.contexts.types import ContextInspection
-from bijux_ontology.reports import Report
 
 
 @dataclass(frozen=True)

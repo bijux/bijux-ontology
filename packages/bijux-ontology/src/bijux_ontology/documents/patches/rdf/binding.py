@@ -13,8 +13,8 @@ from bijux_ontology._jsonpaths import (
     bound_path,
     bounded_location,
 )
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.patches.operations import _Unsupported
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.expectations import ContextExpectation

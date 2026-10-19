@@ -6,7 +6,7 @@ from dataclasses import asdict
 from typing import Any
 
 from bijux_ontology._json import decode_json
-from bijux_ontology.errors import LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker

@@ -13,7 +13,7 @@ from bijux_ontology.declarations.types import (
     OutputRequirement,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.pydantic import (
     check_instance,
     model_declarations,

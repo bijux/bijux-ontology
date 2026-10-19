@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.conversion import convert_to_rdf
 from bijux_ontology.jsonld.expansion import expand_document

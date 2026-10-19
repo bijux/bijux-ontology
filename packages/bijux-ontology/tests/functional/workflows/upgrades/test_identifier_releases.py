@@ -7,9 +7,9 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF
 
 from bijux_ontology.declarations import TermDeclaration
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Location
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.reports import Location
 from bijux_ontology.vocabulary.accessions import AccessionRule, AccessionValue
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.registry import IdentifierRegistry, NamespaceContribution

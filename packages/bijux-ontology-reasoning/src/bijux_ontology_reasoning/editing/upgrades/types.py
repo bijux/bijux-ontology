@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 from ...axioms.types import ProjectedAxiom
 from ...documents.types import OwlDocument

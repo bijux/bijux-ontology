@@ -5,8 +5,8 @@ import tracemalloc
 import pytest
 from rdflib import Dataset, Literal, Namespace, URIRef
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.patches import plan_rdf_patch
 from bijux_ontology.rdf.sources import RdfSource

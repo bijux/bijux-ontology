@@ -8,7 +8,7 @@ from rdflib import BNode
 from rdflib import Literal as RdfLiteral
 from rdflib.namespace import RDF, SKOS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri

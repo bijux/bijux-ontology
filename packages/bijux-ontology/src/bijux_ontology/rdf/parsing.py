@@ -8,9 +8,9 @@ import pyoxigraph as ox
 from rdflib import BNode, Dataset, URIRef
 from rdflib.graph import DATASET_DEFAULT_GRAPH_ID
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget
 
-from ..errors import InputError, LimitExceeded, ResourceError
 from .terms import oxigraph_term
 from .trig import retain_trig_inventory
 from .xml.preparation import prepare_xml

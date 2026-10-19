@@ -6,9 +6,9 @@ from dataclasses import field as record_field
 from rdflib import BNode, URIRef
 
 from bijux_ontology.declarations.path_fields import PathFieldDeclaration
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Location
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Location
 
 
 @dataclass(frozen=True)

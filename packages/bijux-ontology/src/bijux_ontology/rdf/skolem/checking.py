@@ -7,7 +7,8 @@ from uuid import uuid4
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -26,7 +27,6 @@ from bijux_ontology.rdf.transforms import (
     _bind,
     _budget,
 )
-from bijux_ontology.reports import Issue, Report
 
 
 def _contexts(

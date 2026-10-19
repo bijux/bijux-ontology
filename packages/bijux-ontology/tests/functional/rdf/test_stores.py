@@ -9,7 +9,8 @@ from rdflib import BNode, Dataset, Namespace
 from rdflib.namespace import OWL
 
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.loading import prepare_rdf
@@ -22,7 +23,6 @@ from bijux_ontology.rdf.stores import (
 )
 from bijux_ontology.rdf.stores.native import DeclarationReader
 from bijux_ontology.rdf.stores.protocol import scope_data
-from bijux_ontology.reports import Issue
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.storage import (

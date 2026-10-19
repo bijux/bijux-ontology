@@ -6,12 +6,13 @@ from typing import cast
 from rdflib import BNode, Dataset, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import (
+from bijux_ontology.diagnostics.errors import (
     InputError,
     LimitExceeded,
     ResourceError,
     attach_input_failure,
 )
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.jsonld.conversion import DirectionPolicy, _convert_to_rdf_dataset
 from bijux_ontology.jsonld.resources import (
     DocumentLoader,
@@ -27,7 +28,6 @@ from bijux_ontology.limits import (
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.reports import Issue, Location, Report
 
 
 @dataclass(frozen=True)

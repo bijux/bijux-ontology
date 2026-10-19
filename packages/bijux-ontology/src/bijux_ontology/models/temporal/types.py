@@ -6,9 +6,9 @@ from rdflib import Literal, URIRef
 
 from bijux_ontology._json import decode_json
 from bijux_ontology._jsonpaths import SourcePath, validate_path
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Limits
-from bijux_ontology.reports import Report
 
 
 @dataclass(frozen=True)

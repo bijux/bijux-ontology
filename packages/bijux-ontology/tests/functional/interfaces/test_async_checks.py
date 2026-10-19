@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.interfaces.execution.async_checks import (
     AsyncChecks,
     PreparedWorkerCheck,

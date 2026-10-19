@@ -4,10 +4,10 @@ from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import RDF, SKOS, XSD
 from rdflib.term import Node
 
+from bijux_ontology.diagnostics.errors import LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.limits import Budget, IssueCollector
 
-from ..errors import LimitExceeded
-from ..reports import Issue
 from .collections import collection_memberships
 from .selection import RuleSelection, SkosScope, collection_scope
 from .xl import ROLES, XL, describe_xl_label, xl_labels

@@ -6,10 +6,10 @@ from typing import Literal as Kind
 from rdflib import BNode, Literal, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 from bijux_ontology.shacl.authoring.parameters import ShaclParameter
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import ShaclResult

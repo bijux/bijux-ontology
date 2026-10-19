@@ -9,7 +9,7 @@ from rdflib import Literal
 from rdflib.namespace import XSD
 
 from bijux_ontology._json import decode_json
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.jsonld.numbers import (
     NumericProjection,
     decode_numeric_json,

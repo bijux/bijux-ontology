@@ -17,7 +17,7 @@ from bijux_ontology.declarations.types import (
     SubjectIdentity,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.rdfa import (
     RdfaRuntime,
     extract_rdfa,

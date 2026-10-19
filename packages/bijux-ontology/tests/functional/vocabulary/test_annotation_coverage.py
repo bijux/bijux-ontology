@@ -8,7 +8,7 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.vocabulary.annotations import (

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 from ...axioms.changes.types import AxiomCandidate
 from ...axioms.types import ProjectedAxiom

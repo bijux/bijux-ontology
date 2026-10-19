@@ -12,13 +12,13 @@ from rdflib import Literal
 
 from bijux_ontology._json import owned_json
 from bijux_ontology._jsonpaths import at_path, bound_path, location
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.literals import check_literal
 from bijux_ontology.rdf.terms import bound_node, literal_term
-from bijux_ontology.reports import Issue, Report
 
 from .calendar import add_duration, calendar_value
 from .types import (

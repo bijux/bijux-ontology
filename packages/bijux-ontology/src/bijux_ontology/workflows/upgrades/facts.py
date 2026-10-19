@@ -7,10 +7,10 @@ from typing import Literal
 from rdflib import URIRef
 from rdflib.namespace import RDF
 
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import TermRole, TermRoleOccurrence
-from bijux_ontology.reports import Issue
 from bijux_ontology.vocabulary.comparison import Change
 from bijux_ontology.vocabulary.facts.types import (
     FactSelection,

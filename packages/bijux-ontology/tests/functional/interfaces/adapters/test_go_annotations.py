@@ -9,7 +9,7 @@ import pytest
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.go.annotations import (
     GoAnnotationDocument,
     GoAnnotationPolicy,

@@ -8,7 +8,7 @@ from zipfile import ZipFile
 
 import pytest
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.workflows.projects.bundles import load_bundle
 from bijux_ontology.workflows.projects.profiles import (

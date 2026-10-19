@@ -12,7 +12,7 @@ from dataclasses import replace
 from typing import cast
 
 from bijux_ontology._jsonpaths import SourcePath, at_path, location
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.observations import (
     ObservedOccurrence,
     ObservedUsage,

@@ -7,7 +7,7 @@ from typing import cast
 from rdflib import BNode, URIRef
 
 from bijux_ontology._json import object_value
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, bound_text

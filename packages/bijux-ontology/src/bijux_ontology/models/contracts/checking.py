@@ -17,7 +17,8 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     TermDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.contracts.constraints import (
@@ -38,7 +39,6 @@ from bijux_ontology.owl.obligations import (
 )
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals import Regime, check_literal
-from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

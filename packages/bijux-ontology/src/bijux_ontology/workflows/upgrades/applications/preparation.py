@@ -7,7 +7,8 @@ from bijux_ontology._jsonpaths import bound_index, bound_path
 from bijux_ontology.declarations.types import (
     ModelDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.jsonld.preparation import prepare_jsonld
@@ -23,7 +24,6 @@ from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.checking import check_resource_roles
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses

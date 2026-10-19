@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from rdflib import URIRef
 from rdflib.namespace import OWL
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 

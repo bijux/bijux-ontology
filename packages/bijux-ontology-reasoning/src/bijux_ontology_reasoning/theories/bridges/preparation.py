@@ -5,11 +5,11 @@ from typing import cast
 
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, bound_text
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.types import MappingSet
 

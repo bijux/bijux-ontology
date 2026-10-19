@@ -7,12 +7,12 @@ from typing import TypeVar
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.constructs import unsupported_constructs
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.snapshots import copy_graph
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.results import (
     Annotation,
     Deprecation,

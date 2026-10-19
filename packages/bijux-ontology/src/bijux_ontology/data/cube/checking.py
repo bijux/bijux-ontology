@@ -9,7 +9,8 @@ from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,
@@ -22,7 +23,6 @@ from bijux_ontology.rdf.literals import check_literal, datatype_relation
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.skos.subsets.selection import select_concepts
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.navigation import traverse

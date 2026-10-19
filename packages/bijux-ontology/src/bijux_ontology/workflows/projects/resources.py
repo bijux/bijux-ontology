@@ -13,8 +13,8 @@ from types import MappingProxyType
 from rdflib import ConjunctiveGraph, Dataset, Graph
 
 from bijux_ontology._json import _decode_json, own_json
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.resources import (
     ContextResources,
     DocumentLoader,

@@ -5,6 +5,7 @@ from typing import Protocol, cast
 from rdflib import BNode, URIRef
 from rdflib.namespace import OWL
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.patches.planning import Captured, Rejected
@@ -15,7 +16,6 @@ from bijux_ontology.rdf.patches.types import (
     PatchValue,
 )
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 
 from .reading import _bound, _same, inspect_annotation_graph
 from .types import AnnotationValue, AnnotationValueEdit

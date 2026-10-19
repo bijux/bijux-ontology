@@ -14,15 +14,15 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.documents.migrations import export_migration
-from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Report
 from bijux_ontology.skos.subsets import select_concepts
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.facts.types import FactPredicate

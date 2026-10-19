@@ -4,7 +4,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from threading import Event
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import (
     Budget,
@@ -13,7 +14,6 @@ from bijux_ontology.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.reports import Issue, Report
 
 from ...axioms.changes.checking import prepare_axiom_change
 from ...axioms.changes.preconditions import source_base

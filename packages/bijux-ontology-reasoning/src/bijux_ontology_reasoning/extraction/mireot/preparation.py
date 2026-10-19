@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.limits import Budget
 
 from ...axioms.codec.decoding import ProjectionDecoder

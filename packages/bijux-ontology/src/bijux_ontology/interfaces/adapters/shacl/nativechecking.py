@@ -6,7 +6,8 @@ from typing import cast
 from rdflib import URIRef
 from rdflib.namespace import RDF
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,
@@ -18,7 +19,6 @@ from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report, combine_reports
 
 from .types import ShapeContractImport
 

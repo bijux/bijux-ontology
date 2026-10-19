@@ -5,7 +5,7 @@ from typing import Literal
 
 from rdflib import Literal as RdfLiteral
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 
 @dataclass(frozen=True)

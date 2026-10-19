@@ -22,8 +22,9 @@ from bijux_ontology.data.keys.extraction import _KeyExtraction
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.keys import KeyContract
 from bijux_ontology.declarations.types import ModelDeclaration
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.export import export_rdf
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import (
@@ -43,7 +44,6 @@ from bijux_ontology.rdf.paths import capture_path
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import bound_node, term_key
-from bijux_ontology.reports import Issue, Report
 
 from .preparation import _call, _identifier, _Map, inspect_mapping
 from .types import (

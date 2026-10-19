@@ -5,7 +5,8 @@ from typing import get_args
 
 from rdflib import BNode, Graph, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import (
     Budget,
@@ -17,7 +18,6 @@ from bijux_ontology.limits import (
 from bijux_ontology.rdf.roles.types import TermRole
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.facts.comparison import (
     _collect,

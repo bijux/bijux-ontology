@@ -3,7 +3,7 @@
 from pyoxigraph import Literal as OxLiteral
 from pyoxigraph import NamedNode
 
-from ..errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 
 
 def absolute_iri(value: str, *, location: str = "") -> str:

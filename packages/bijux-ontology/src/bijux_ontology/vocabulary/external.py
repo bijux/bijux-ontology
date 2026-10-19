@@ -3,7 +3,8 @@
 from collections.abc import Sequence
 
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import (
     Budget,
@@ -15,7 +16,6 @@ from bijux_ontology.limits import (
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.stores.external.checking import read_external_declarations
 from bijux_ontology.rdf.stores.external.types import ExternalStore
-from bijux_ontology.reports import Report
 
 from .checking import check_vocabulary
 

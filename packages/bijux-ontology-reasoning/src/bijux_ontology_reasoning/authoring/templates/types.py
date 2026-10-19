@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 from ...axioms.types import AxiomInspection, NamedEntity
 from ...backend.robot.types import RobotBackend

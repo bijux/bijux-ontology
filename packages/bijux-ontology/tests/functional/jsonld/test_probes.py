@@ -12,7 +12,7 @@ from bijux_ontology.declarations import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.context_probes import (
     ContextProbe,

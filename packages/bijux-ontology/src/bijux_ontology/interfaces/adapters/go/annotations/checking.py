@@ -6,7 +6,8 @@ from threading import Event
 from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import (
     Budget,
@@ -16,7 +17,6 @@ from bijux_ontology.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.obo.identifiers import resolve_alternative_ids
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry

@@ -18,8 +18,9 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled import (
     AllowedDifference,
     AllowedIntersection,
@@ -35,7 +36,6 @@ from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (
     ShaclCount,

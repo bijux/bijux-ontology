@@ -7,7 +7,7 @@ from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, DefinedNamespace
 
 from bijux_ontology.declarations import TermDeclaration
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.namespaces import namespace_inventory
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 

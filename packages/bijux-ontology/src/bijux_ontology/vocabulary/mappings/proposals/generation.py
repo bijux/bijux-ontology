@@ -3,10 +3,10 @@
 from threading import Event
 from typing import Literal
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, bound_text
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.pages import _comparison_text
 from bijux_ontology.vocabulary.browsing.results import SearchMatch
 from bijux_ontology.vocabulary.lexical.types import LexicalIndex

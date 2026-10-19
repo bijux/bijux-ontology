@@ -6,8 +6,8 @@ from rdflib.namespace import OWL, RDF, XSD
 
 from bijux_ontology.data.rules import DataView, run_rules
 from bijux_ontology.data.usage import check_data_usage
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Issue
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
 
 EX = Namespace("https://example.org/")
 
@@ -84,7 +84,7 @@ def test_custom_rules_receive_owned_graph_exports_and_preserve_exceptions() -> N
 def test_rule_result_budgets_preserve_prior_scopes_and_callback_exceptions() -> None:
     from collections.abc import Iterator
 
-    from bijux_ontology.errors import LimitExceeded
+    from bijux_ontology.diagnostics.errors import LimitExceeded
     from bijux_ontology.limits import Limits
 
     data = Graph().add((EX.record, EX.related, EX.value))

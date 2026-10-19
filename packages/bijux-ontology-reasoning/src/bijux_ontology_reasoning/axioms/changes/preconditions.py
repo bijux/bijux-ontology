@@ -1,6 +1,6 @@
 """Exact source identity preconditions for checked native axiom changes."""
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, Limits, bound_text
 

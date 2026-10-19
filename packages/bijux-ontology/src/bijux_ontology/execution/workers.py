@@ -4,7 +4,7 @@ import sys
 from collections.abc import Callable
 from threading import Event
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.processes.transport import exchange_worker
 
 

@@ -5,7 +5,8 @@ from collections.abc import Sequence
 from rdflib import Graph, URIRef
 
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import (
     Budget,
@@ -19,7 +20,6 @@ from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.stores.queries import query_snapshot
 from bijux_ontology.rdf.stores.types import StoredRdf
 from bijux_ontology.rdf.terms import validate_triple
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Selection, TermInfo
 from bijux_ontology.vocabulary.checking import check_vocabulary

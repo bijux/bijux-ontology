@@ -4,8 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget
-from bijux_ontology.reports import Report
 from bijux_ontology.workflows.ontology.modules.types import ModuleContract
 
 from ...axioms.changes.types import AxiomBase

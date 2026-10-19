@@ -7,7 +7,8 @@ from typing import Literal
 from rdflib import URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SH
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import (
     Budget,
@@ -20,7 +21,6 @@ from bijux_ontology.rdf.loading import _charge_graph
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Report
 from bijux_ontology.shacl.coverage import ShaclTarget
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.profiles.execution import remaining_deadline

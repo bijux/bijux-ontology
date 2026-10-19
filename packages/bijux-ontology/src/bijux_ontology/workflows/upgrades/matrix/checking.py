@@ -6,7 +6,8 @@ from typing import cast
 
 from rdflib import Graph
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,
@@ -14,7 +15,6 @@ from bijux_ontology.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.upgrades.applications.checking import check_application

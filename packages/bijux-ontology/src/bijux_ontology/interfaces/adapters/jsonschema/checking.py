@@ -8,7 +8,8 @@ from rdflib import Graph
 
 from bijux_ontology._jsonpaths import SourcePath, location
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.interfaces.adapters.jsonschema.extraction import (
     _backend,
     _charge,
@@ -22,7 +23,6 @@ from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.emission.serialization import InstanceCheck, check_serialized
 from bijux_ontology.models.emission.types import ModelUsage
-from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 

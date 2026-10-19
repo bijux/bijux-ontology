@@ -7,7 +7,7 @@ import pytest
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, SKOS, XSD
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.labels import Comparison, LabelHomonym, check_label_collisions

@@ -9,8 +9,8 @@ from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.declarations import ValueDeclaration as Value
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.dataclasses import (
     model_declarations as dataclass_declarations,

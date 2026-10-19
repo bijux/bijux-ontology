@@ -4,11 +4,11 @@ from collections.abc import Mapping, Sequence
 
 from rdflib import Graph
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
-from bijux_ontology.reports import Issue
 from bijux_ontology.shacl.bindings import TermSelection, resolve_terms
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.coverage import ShaclCoverageContract

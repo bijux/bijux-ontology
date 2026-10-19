@@ -8,7 +8,8 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF
 from rdflib.term import Node
 
-from ..errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+
 from ..limits import Budget
 from .terms import bound_node, term_key
 

@@ -4,8 +4,9 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, XSD
 
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
@@ -15,7 +16,6 @@ from bijux_ontology.rdf.transforms import (
     recheck_transformation,
     remap_iris,
 )
-from bijux_ontology.reports import Issue, Report
 
 EX = "https://example.org/"
 A, B, P, G = (URIRef(EX + name) for name in ("A", "B", "p", "graph"))

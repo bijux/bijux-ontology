@@ -7,10 +7,10 @@ from typing import Literal, TypeAlias
 from rdflib import BNode, URIRef
 from rdflib.namespace import RDF
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.reports import Report
 
 
 class PatchUnavailable(InputError):

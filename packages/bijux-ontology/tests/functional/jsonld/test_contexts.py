@@ -364,7 +364,7 @@ def test_native_processing_defects_withhold_proof_and_preserve_caller_type_error
     None
 ):
     """Actual malformed native input cannot crash or become a semantic success."""
-    from bijux_ontology.errors import ResourceError
+    from bijux_ontology.diagnostics.errors import ResourceError
     from bijux_ontology.jsonld.preparation import prepare_jsonld
 
     document = {"@context": {"label": {"@id": []}}, "label": "x"}

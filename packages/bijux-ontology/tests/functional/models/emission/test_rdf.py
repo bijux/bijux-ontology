@@ -23,8 +23,8 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.declarations.types import (
     ValueDeclaration as Value,
 )
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.dataclasses import model_declarations
 from bijux_ontology.limits import Limits

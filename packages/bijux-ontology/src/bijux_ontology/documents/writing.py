@@ -6,7 +6,7 @@ from contextlib import suppress
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 
 
 def write_bytes(content: bytes, destination: Path, *, overwrite: bool = False) -> None:

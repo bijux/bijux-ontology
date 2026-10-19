@@ -4,7 +4,7 @@ from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import RDF, SH
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.paths import RdfPath as ShaclPath
 from bijux_ontology.rdf.structure import iter_rdf_list

@@ -9,7 +9,8 @@ from rdflib import BNode, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import (
@@ -33,7 +34,6 @@ from bijux_ontology.rdf.patches.types import (
 )
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.accessions.recognition import prepare_rules
 
 from .storage import (

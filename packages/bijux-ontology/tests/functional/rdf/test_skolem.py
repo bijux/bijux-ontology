@@ -9,8 +9,8 @@ from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import XSD
 from rdflib.term import Node
 
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.patches.types import BlankNodePair

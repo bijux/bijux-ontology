@@ -39,7 +39,7 @@ from bijux_ontology.declarations.types import (
     ValueKind,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.literals import check_literal

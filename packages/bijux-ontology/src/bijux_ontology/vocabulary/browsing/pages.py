@@ -6,10 +6,10 @@ from typing import TypeVar
 
 from rdflib.namespace import RDFS, SKOS
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, BudgetKind, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Edge, SearchMatch, TermInfo
 from bijux_ontology.vocabulary.sources.view import _LexicalCandidate

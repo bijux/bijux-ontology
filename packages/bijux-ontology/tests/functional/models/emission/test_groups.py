@@ -14,6 +14,7 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
@@ -21,7 +22,6 @@ from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Report
 
 EX = Namespace("https://example.org/groups/")
 
@@ -294,7 +294,7 @@ def test_ingested_discriminator_preserves_exact_literal_and_rejects_bad_fields()
     import pytest
 
     from bijux_ontology.declarations.codecs import models_from_data
-    from bijux_ontology.errors import InputError
+    from bijux_ontology.diagnostics.errors import InputError
 
     data: list[dict[str, object]] = [
         {
@@ -684,7 +684,7 @@ def test_guaranteed_emission_cannot_forbid_every_rdf_value() -> None:
     import pytest
 
     from bijux_ontology.declarations.types import OutputRequirement
-    from bijux_ontology.errors import InputError
+    from bijux_ontology.diagnostics.errors import InputError
 
     output = OutputRequirement(maximum_values=0, allow_empty=True, allow_null=True)
     with pytest.raises(InputError, match="Guaranteed emission"):

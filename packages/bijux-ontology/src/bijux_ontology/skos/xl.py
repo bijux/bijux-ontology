@@ -4,12 +4,11 @@ from dataclasses import dataclass
 
 from rdflib import BNode, Namespace, URIRef
 
+from bijux_ontology.diagnostics.errors import LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Edge, Selection
-
-from ..errors import LimitExceeded
-from ..reports import Issue, Report
 
 XL = Namespace("http://www.w3.org/2008/05/skos-xl#")
 ROLES = (XL.prefLabel, XL.altLabel, XL.hiddenLabel)

@@ -10,7 +10,8 @@ from bijux_ontology._jsonpaths import (
     bound_pointer_text,
     bounded_location,
 )
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.entities import source_entity
@@ -21,7 +22,6 @@ from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import SourceSelector
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Issue, Report, combine_reports
 
 from .types import DocumentFormCheck, FormRequirement
 

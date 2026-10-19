@@ -38,9 +38,9 @@ from bijux_ontology_reasoning.documents import (
 from bijux_ontology_reasoning.inference.consistency import check_consistency
 from bijux_ontology_reasoning.inference.entailment import check_entailments
 
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.diagnostics.errors import ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.reports import Issue, Report
 
 _BASE = """Ontology(<urn:changes>
  Declaration(Class(<urn:C>)) Declaration(Class(<urn:D>))

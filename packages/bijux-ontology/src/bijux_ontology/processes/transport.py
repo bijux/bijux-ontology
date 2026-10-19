@@ -8,7 +8,7 @@ from collections.abc import Callable
 from threading import Event, Thread
 from typing import BinaryIO
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 
 from .ownership import spawn_owned_process
 from .ownership import stop_owned_process as stop_process

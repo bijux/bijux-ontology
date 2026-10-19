@@ -5,7 +5,7 @@ import threading
 import time
 from contextlib import suppress
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget
 from bijux_ontology.processes.ownership import spawn_owned_process, stop_owned_process
 

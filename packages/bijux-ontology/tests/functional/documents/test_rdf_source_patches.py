@@ -8,6 +8,7 @@ import pytest
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import XSD
 
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.forms.types import FormRequirement
 from bijux_ontology.documents.patches import RetainedUsage
 from bijux_ontology.documents.patches.rdf import (
@@ -15,7 +16,6 @@ from bijux_ontology.documents.patches.rdf import (
     SourceEditBinding,
     project_rdf_patch,
 )
-from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader, OfflineDocumentLoader
 from bijux_ontology.jsonld.selectors.types import SourceSelector

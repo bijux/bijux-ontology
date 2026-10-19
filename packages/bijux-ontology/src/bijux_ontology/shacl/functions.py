@@ -13,11 +13,11 @@ from rdflib.namespace import RDF, SH
 from rdflib.plugins.sparql.sparql import SPARQLError
 from rdflib.term import Identifier
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import copy_graph
-from bijux_ontology.reports import Issue
 from bijux_ontology.shacl.authoring.parameters import (
     ShaclParameter,
 )

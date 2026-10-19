@@ -9,10 +9,10 @@ from rdflib import Graph, Literal
 from rdflib.namespace import RDF, RDFS, SKOS
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 from ..identity import FhirCodeBinding, FhirCodeIdentity, capture_code_bindings

@@ -11,14 +11,14 @@ from rdflib import Graph
 from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.serialization import InstanceCheck, check_instance
 from bijux_ontology.models.emission.types import ModelUsage
-from bijux_ontology.reports import Issue, Report, combine_reports
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .types import (

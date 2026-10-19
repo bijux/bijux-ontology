@@ -17,8 +17,8 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission

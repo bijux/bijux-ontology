@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.vocabulary.facts.types import FactGraph, SelectedFact
 
 

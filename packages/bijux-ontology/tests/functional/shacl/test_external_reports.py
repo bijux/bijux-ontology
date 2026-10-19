@@ -6,7 +6,7 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, XSD
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, BudgetKind, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource

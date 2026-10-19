@@ -3,7 +3,7 @@
 from typing import Any, cast
 
 from bijux_ontology._json import object_value
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.limits import Budget
 
 from ..backend.owlapi.protocol import result_text

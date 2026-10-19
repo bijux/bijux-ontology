@@ -6,7 +6,7 @@ from typing import Literal
 
 from rdflib import URIRef
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 from ..axioms.types import ProjectedAxiom
 from ..documents.types import OwlDocument

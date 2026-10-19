@@ -9,7 +9,8 @@ from typing import cast
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 
 from bijux_ontology._json import decode_json
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
@@ -26,7 +27,6 @@ from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.queries.protocol import QueryTerm
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
-from bijux_ontology.reports import Issue, Report
 
 from .protocol import decode_rows, decode_term, encode_rows, encode_term
 from .types import EntailmentRegime, EntailmentResult, GeneralizedTriple

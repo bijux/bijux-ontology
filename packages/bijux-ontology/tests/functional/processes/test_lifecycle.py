@@ -211,7 +211,7 @@ def test_normal_exit_cleanup_denial_retains_completed_findings(
     program = """import sys
 from pathlib import Path
 from bijux_ontology.interfaces.execution.checkpoints import retain_completed
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.diagnostics.reports import Issue, Report
 retain_completed(Report('completed', 1, (Issue('vocabulary.term_missing',
     'retained finding'),)), Path(sys.argv[1]).parent, max_bytes=50000)
 """
@@ -353,7 +353,7 @@ def test_one_shot_shacl_timeout_reaps_its_real_nested_worker(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The one-shot boundary owns descendants even after its leader exits."""
-    from bijux_ontology.errors import LimitExceeded
+    from bijux_ontology.diagnostics.errors import LimitExceeded
 
     ready = tmp_path / "descendant.pid"
     child = (

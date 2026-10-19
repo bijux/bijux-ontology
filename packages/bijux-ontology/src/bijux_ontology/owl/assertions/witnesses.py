@@ -8,7 +8,7 @@ from typing import cast
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import OWL, RDF
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.owl.obligations import OntologyObligation
 
 from .context import AssertionContext, _Row

@@ -7,8 +7,9 @@ from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
+from bijux_ontology.diagnostics.errors import InputError
+
 from .. import limits
-from ..errors import InputError
 from ..limits import Budget
 from .identifiers import absolute_iri, language_tag
 

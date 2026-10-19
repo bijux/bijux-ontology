@@ -12,8 +12,8 @@ from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.declarations.types import ValueDeclaration
+from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import ResourceError
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.linkml import model_declarations
 from bijux_ontology.interfaces.adapters.linkml_rdf import (

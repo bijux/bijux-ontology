@@ -9,7 +9,7 @@ from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.declarations import ValueDeclaration as Value
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
 from bijux_ontology.models.contracts.checking import check_models

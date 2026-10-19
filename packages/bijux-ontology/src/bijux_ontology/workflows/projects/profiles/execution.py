@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from bijux_ontology._json import object_value
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import AcceptancePolicy, Issue, Report
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.reports import AcceptancePolicy, Issue, Report
 from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.contracts import (

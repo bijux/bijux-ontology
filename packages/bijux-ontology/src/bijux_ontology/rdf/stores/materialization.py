@@ -5,14 +5,14 @@ import threading
 from rdflib import BNode, Dataset, URIRef
 from rdflib.graph import DATASET_DEFAULT_GRAPH_ID
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import read_term
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import validate_triple
-from bijux_ontology.reports import Report
 
 from .protocol import execute, failure, scope_data
 from .types import MaterializedRdf, StoredRdf

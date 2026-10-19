@@ -17,7 +17,7 @@ from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from typing import Any, cast
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 
 _DWORD = ct.c_uint32
 _HANDLE = ct.c_void_p

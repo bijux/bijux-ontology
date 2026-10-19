@@ -6,7 +6,8 @@ from dataclasses import dataclass, replace
 from bijux_ontology._json import own_json
 from bijux_ontology._jsonpaths import SourcePath
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.comparison import compare_context_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
@@ -18,7 +19,6 @@ from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Issue, Report, combine_reports
 
 from .assessment import ContractChange, _contract_changes
 

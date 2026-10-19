@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from bijux_ontology._jsonpaths import SourcePath
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 
 @dataclass(frozen=True)

@@ -2,10 +2,10 @@
 
 from dataclasses import replace
 
-from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.diagnostics.errors import LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.comparison import VocabularyChanges
 from bijux_ontology.vocabulary.facts.types import SelectedFact
 

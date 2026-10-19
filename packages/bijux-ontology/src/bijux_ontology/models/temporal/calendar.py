@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from rdflib import Literal
 from rdflib.namespace import XSD
 
-from bijux_ontology.errors import LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.value_comparison.comparing import _calendar_value
 from bijux_ontology.rdf.xsd_lexicals import _datatypes

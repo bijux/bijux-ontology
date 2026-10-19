@@ -5,7 +5,7 @@ from typing import Any, cast
 
 import pytest
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.vocabulary.registry import (
     IdentifierRegistry,
     NamespaceContribution,

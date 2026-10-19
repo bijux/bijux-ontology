@@ -14,7 +14,8 @@ from typing import cast
 from rdflib import Dataset, URIRef
 
 from bijux_ontology._json import decode_json, object_value, string_value
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
@@ -37,7 +38,6 @@ from bijux_ontology.rdf.patches.types import PatchLiteral, PatchUnavailable
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, literal_term
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.accessions.recognition import prepare_rules, resolve
 from bijux_ontology.vocabulary.accessions.types import AccessionRule
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry

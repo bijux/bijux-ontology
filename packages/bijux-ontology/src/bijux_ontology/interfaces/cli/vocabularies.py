@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import cast
 
 from bijux_ontology._json import known_keys, object_value, text_value
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.cli.arguments import VocabularyInput
 from bijux_ontology.interfaces.cli.inputs import protect_paths, rdf_input, source_map
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader

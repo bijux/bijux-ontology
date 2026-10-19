@@ -4,7 +4,7 @@ import sys
 import threading
 import time
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
 from bijux_ontology.processes.transport import checkpoint
 

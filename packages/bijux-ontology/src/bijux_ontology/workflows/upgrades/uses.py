@@ -9,7 +9,8 @@ from rdflib import URIRef
 from bijux_ontology._jsonpaths import SourcePath, location
 from bijux_ontology.data.query_usage.types import QueryUsage
 from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.limits import (
     Budget,
@@ -21,7 +22,6 @@ from bijux_ontology.limits import (
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
 
 UseRole = Literal["term", "class", "predicate", "datatype", "concept", "individual"]
 

@@ -7,12 +7,12 @@ from typing import Literal, cast
 from bijux_ontology._json import own_json
 from bijux_ontology._jsonpaths import SourcePath, bound_pointer_text, location
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.jsonld.observations import ObservedUsage
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.reports import Issue
 
-from ..errors import InputError
 from .lists import ExpectedList, compare_list_values, compare_lists
 from .values import ValueKind
 

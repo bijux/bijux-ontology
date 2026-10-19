@@ -9,10 +9,13 @@ from typing import cast
 from urllib.parse import urljoin
 
 from bijux_ontology._json import _capture_json, _measure_json, decode_json, own_json
+from bijux_ontology.diagnostics.errors import (
+    InputError,
+    LimitExceeded,
+    attach_input_failure,
+)
 from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-
-from ..errors import InputError, LimitExceeded, attach_input_failure
 
 DocumentLoader = Callable[[str, dict[str, object]], dict[str, object]]
 

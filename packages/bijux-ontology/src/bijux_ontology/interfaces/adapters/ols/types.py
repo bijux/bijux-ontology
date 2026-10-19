@@ -6,8 +6,8 @@ from typing import Literal, cast
 from rdflib import URIRef
 from rdflib.namespace import RDFS
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 CONTROLLER_REVISION = "493545801ca8f5c86f7d15650eed1f2a4cd765ef"

@@ -4,13 +4,13 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.jsonld.conversion import DirectionPolicy, _convert_to_rdf_dataset
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import language_tag
-from bijux_ontology.reports import Issue, Report
 
 _I18N = "https://www.w3.org/ns/i18n#"
 _LANGUAGE = URIRef(str(RDF) + "language")

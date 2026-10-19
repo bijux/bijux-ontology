@@ -18,7 +18,7 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.persistence import (

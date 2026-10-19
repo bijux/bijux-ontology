@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from threading import Event, RLock
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage

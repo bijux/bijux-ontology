@@ -4,9 +4,9 @@ import json
 from dataclasses import dataclass
 
 from bijux_ontology._jsonpaths import SourcePath
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 
 
 @dataclass(frozen=True)

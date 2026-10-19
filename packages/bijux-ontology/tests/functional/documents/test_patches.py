@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.export import write_export
 from bijux_ontology.documents.forms.types import FormRequirement
 from bijux_ontology.documents.patches import (
@@ -17,7 +18,6 @@ from bijux_ontology.documents.patches import (
     apply_document_patch,
     export_document_patch,
 )
-from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector

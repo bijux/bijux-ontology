@@ -10,7 +10,7 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata

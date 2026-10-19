@@ -3,12 +3,12 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.limits import Budget, bound_text
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, MigrationCheck
 from bijux_ontology.rdf.patches.types import SnapshotWitness
 from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
 
 
 @dataclass(frozen=True)

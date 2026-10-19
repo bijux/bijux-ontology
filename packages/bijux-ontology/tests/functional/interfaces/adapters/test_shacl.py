@@ -8,7 +8,7 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.shacl import (
     ShapeContractImport,
     ShapeFieldBinding,

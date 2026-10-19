@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 
 AlgebraPosition: TypeAlias = tuple[str | int, ...]
 QueryRole = Literal["class", "predicate", "datatype", "data", "function", "graph"]

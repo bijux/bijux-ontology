@@ -1,7 +1,7 @@
 """Explicit cross-format preparation into owned RDF graph and dataset snapshots."""
 
 from bijux_ontology._json import decode_json
-from bijux_ontology.errors import (
+from bijux_ontology.diagnostics.errors import (
     InputError,
     LimitExceeded,
     ResourceError,
