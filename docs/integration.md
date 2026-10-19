@@ -1399,3 +1399,42 @@ cells retain original text, row, column, physical start line and emitted RDF;
 report. Shared subjects are legal without declared uniqueness. Decimals retain
 native exact values independently of caller Decimal settings; split/default
 amplification is bounded before native parsing. No external resources are fetched.
+
+
+`bijux_ontology.shacl.skos_profiles` exports selected plain-label policies as
+portable typed SHACL. Supply `SkosProfile` with explicit named targets, required
+languages and rules, then `compile_skos_profile(..., trusted_sparql=True)` for
+exact label integrity and language coverage. Execute the returned components
+with the existing trusted SHACL APIs against the same asserted physical graph.
+Keep the translation report: unsupported rules, XL-dependent combinations and
+unpreserved scope remain untranslated, even when an RDF artifact is available.
+
+`bijux_ontology.models.temporal.check_temporal` checks concrete emitted text fields
+using explicit `TemporalInterval`, `TemporalOrder` and `RelativeTemporal` rules.
+The `[xsd]` extra supplies maintained calendar arithmetic. Supported timezoned
+dates/dateTimes retain calendar months, exact chronology and explicit open ends;
+partial dates, absent timezones and excess precision remain unknown. Only relative
+rules use a supplied clock. Input spellings remain in the returned owned document.
+
+`bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled` composes
+selected subsets and explicit enumerations with union, intersection and difference.
+Open-set absence cannot establish exclusion. `compile_bindings` prepares finite
+text-discriminator cases; `select_binding` captures an actual record without a
+fallback. Reuse its owned `.document`, or retain ordinary emission conditions and
+SHACL `hasValue` trait guards when checking other records. An enumeration alone
+does not reselect a changed trait. `closed_values()` requires complete evidence.
+
+`bijux_ontology.shacl.external_reports.ingest_external_report` reads an ordinary
+external SHACL report with its raw graph, typed findings and nested details.
+Producer scope/backend claims remain descriptive; even a conforming report cannot
+certify fresh local execution or omitted coverage. `aggregate_shacl_reports` keeps
+external and local report scopes separate, including equal blank labels, and
+retains required unknowns and externally asserted failures.
+
+`bijux_ontology.models.quantities.prepare_quantities` prepares explicit unit-code
+or IRI bindings for repeated checks with optional `[quantities]`. Use
+`QuantityContract` value/unit paths and Decimal bounds in a declared reference unit.
+The supported atomic names are meter, millimeter, centimeter, kilometer, second,
+minute, hour, kelvin and degree_Celsius. Unsupported or inexact conversions remain
+unknown. `.check(record, contract, convert=True)` exposes a separate `.converted`
+record only after intrinsic rechecks; `.source` preserves the actual input.

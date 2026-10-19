@@ -28,6 +28,13 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "quantity": frozenset(
+        "unit_unverified backend_unverified field_missing dimension_mismatch "
+        "bound_mismatch unverified".split()
+    ),
+    "temporal": frozenset(
+        "order_unverified value_missing order_violation invalid".split()
+    ),
     "csvw": frozenset(
         "cell_invalid duplicate_key extraction_unverified input_invalid".split()
     ),
@@ -252,10 +259,13 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "external_aggregate_empty external_nonconformance "
+        "external_detail_unverified external_projection_incomplete "
+        "external_scope_missing external_proof_unverified external_structure_invalid "
         "partition_scope_unverified partition_input_error "
         "rules_unverified rules_input_error "
         "target_unavailable upgrade_unverified upgrade_target_removed "
-        "component_unverified "
+        "component_unverified skos_scope_untranslated skos_rule_untranslated "
         "analysis_metadata_unverified analysis_profile_unverified "
         "analysis_qualification_unverified analysis_recursion_unverified "
         "static_incompatibility "
@@ -335,6 +345,9 @@ _CODES = {
         "no_contracts contract_persistent contract_resolved contract_introduced".split()
     ),
     "vocabulary": frozenset(
+        "allowed_scope_unverified allowed_invalid binding_invalid "
+        "binding_trait_unverified binding_no_case binding_cases_unverified "
+        "binding_ambiguous binding_record_invalid "
         "accession_invalid accession_unverified accession_input_error "
         "authoring_rejected authoring_unverified "
         "fact_role_unverified fact_attribution_unverified fact_graph_unverified "
@@ -349,6 +362,21 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "quantity": (
+        "explicit selected-record quantity contracts",
+        "A quantity differs from its reference-unit contract "
+        "or lacks exact conversion.",
+        "Install bijux-ontology[quantities], supply explicit unit bindings and "
+        "inspect the actual value, dimension and reference-unit bounds.",
+        'prepare_quantities((UnitBinding("mm", "millimeter"),))',
+    ),
+    "temporal": (
+        "explicit emitted-record calendar contracts",
+        "A selected interval or chronology disagrees or lacks a determinate order.",
+        "Inspect the actual field text, declared datatype, timezone and explicit "
+        "clock; keep unsupported precision or calendar arithmetic unknown.",
+        "check_temporal(record, intervals=(interval,))",
+    ),
     "csvw": (
         "explicit CSVW-described table extraction",
         "A selected cell, declared key or required conversion rule is unqualified.",
