@@ -11,7 +11,10 @@ from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_r
 from bijux_ontology.rdf.sources.loading import _charge_graph
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
-from bijux_ontology.vocabulary.sources.imports import required_imports
+from bijux_ontology.vocabulary.sources.imports import (
+    _required_imports_owned,
+    required_imports,
+)
 from bijux_ontology.vocabulary.sources.types import OwnedSource
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
@@ -29,15 +32,76 @@ def load_vocabulary(
     budget: Budget | None = None,
     preserve_literals: bool = True,
     document_loader: DocumentLoader | None = None,
-    _owned_worker: bool = False,
 ) -> Vocabulary:
     """Load explicit scoped resources without implicit file/network resolution.
 
     Text/bytes/streams require a syntax; datasets require graph selection or
     explicit union. Snapshot files keep their logical base. Lookup documents do
-    not form a required import closure. Limits apply before owned source copies.
-    """
-    if type(_owned_worker) is not bool:
+    not form a required import closure. Limits apply before owned source copies."""
+    return _load_vocabulary(
+        source,
+        base=base,
+        format=format,
+        graph_name=graph_name,
+        union=union,
+        imports=imports,
+        lookup=lookup,
+        limits=limits,
+        budget=budget,
+        preserve_literals=preserve_literals,
+        document_loader=document_loader,
+        owned_worker=False,
+    )
+
+
+def _load_vocabulary_owned(
+    source: PreparedSource | RdfSource | Payload,
+    *,
+    base: str | None = None,
+    format: str | None = None,
+    graph_name: GraphSelection | None = None,
+    union: bool = False,
+    imports: Mapping[str, RdfSource | Payload] | None = None,
+    lookup: Sequence[Graph | PreparedSource | RdfSource] = (),
+    limits: Limits | None = None,
+    budget: Budget | None = None,
+    preserve_literals: bool = True,
+    document_loader: DocumentLoader | None = None,
+) -> Vocabulary:
+    """Prepare actual required sources inside the supervising disposable worker."""
+    return _load_vocabulary(
+        source,
+        base=base,
+        format=format,
+        graph_name=graph_name,
+        union=union,
+        imports=imports,
+        lookup=lookup,
+        limits=limits,
+        budget=budget,
+        preserve_literals=preserve_literals,
+        document_loader=document_loader,
+        owned_worker=True,
+    )
+
+
+def _load_vocabulary(
+    source: PreparedSource | RdfSource | Payload,
+    *,
+    base: str | None = None,
+    format: str | None = None,
+    graph_name: GraphSelection | None = None,
+    union: bool = False,
+    imports: Mapping[str, RdfSource | Payload] | None = None,
+    lookup: Sequence[Graph | PreparedSource | RdfSource] = (),
+    limits: Limits | None = None,
+    budget: Budget | None = None,
+    preserve_literals: bool = True,
+    document_loader: DocumentLoader | None = None,
+    owned_worker: bool,
+) -> Vocabulary:
+    """Share original input and result qualification for fixed owned routes."""
+    if type(owned_worker) is not bool:
         raise InputError("Owned vocabulary loading selection must be a boolean")
     resources = context_resources(document_loader, limits=limits, budget=budget)
     budget = resources.budget
@@ -66,14 +130,14 @@ def load_vocabulary(
     if isinstance(source, PreparedSource):
         budget.consume("resources")
         _charge_graph(local.selected, budget, selected.max_bytes)
-    imported = required_imports(
+    import_closure = _required_imports_owned if owned_worker else required_imports
+    imported = import_closure(
         prepared,
         local,
         imports,
         budget=budget,
         preserve_literals=preserve_literals,
         document_loader=resources,
-        _owned_worker=_owned_worker,
     )
     lookups = []
     for item in lookup:

@@ -17,10 +17,7 @@ from bijux_ontology.rdf.sources.types import RdfSource
 EX = Namespace("https://example.org/")
 
 
-@pytest.mark.parametrize("owned_worker", (False, True))
-def test_blank_node_renaming_is_ignored_but_changed_list_order_is_visible(
-    owned_worker: bool,
-) -> None:
+def test_blank_node_renaming_is_ignored_but_changed_list_order_is_visible() -> None:
     left = Graph()
     head = BNode("left")
     Collection(left, head, [EX.A, EX.B])
@@ -29,13 +26,15 @@ def test_blank_node_renaming_is_ignored_but_changed_list_order_is_visible(
     other = BNode("right")
     Collection(right, other, [EX.A, EX.B])
     right.add((EX.record, EX.values, other))
-    assert compare_rdf(left, right, _owned_worker=owned_worker).verified
+    assert compare_rdf(left, right).verified
     changed = Graph()
     Collection(changed, other, [EX.B, EX.A])
     changed.add((EX.record, EX.values, other))
-    different = compare_rdf(left, changed, _owned_worker=owned_worker)
+    different = compare_rdf(left, changed)
     assert different.outcome == "disagreement" and not different.verified
-    assert compare_rdf(Graph(), Graph(), _owned_worker=owned_worker).verified
+    assert compare_rdf(Graph(), Graph()).verified
+    with pytest.raises(TypeError, match="_owned_worker"):
+        compare_rdf(left, right, _owned_worker=True)  # type: ignore[call-arg]
 
 
 def test_dataset_names_empty_graphs_and_cross_graph_blank_identity_survive() -> None:

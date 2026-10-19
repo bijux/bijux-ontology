@@ -198,10 +198,7 @@ def test_required_aliases_reject_conflicting_requested_sources_without_reading_u
     assert (EX.Document, RDF.type, OWL.Ontology) in view.imports[0]
 
 
-@pytest.mark.parametrize("owned_worker", (False, True))
-def test_required_graph_aliases_use_blank_node_aware_agreement(
-    owned_worker: bool,
-) -> None:
+def test_required_graph_aliases_use_blank_node_aware_agreement() -> None:
     root = Graph().add((EX.Root, OWL.imports, EX.A))
     root.add((EX.Root, OWL.imports, EX.B))
     left = Graph().add((EX.Class, EX.metadata, BNode("left")))
@@ -209,9 +206,10 @@ def test_required_graph_aliases_use_blank_node_aware_agreement(
     view = load_vocabulary(
         root,
         imports={str(EX.A): RdfSource(left, effective_url=str(EX.B)), str(EX.B): right},
-        _owned_worker=owned_worker,
     )
     assert len(view.imports) == 1
+    with pytest.raises(TypeError, match="_owned_worker"):
+        load_vocabulary(root, _owned_worker=True)  # type: ignore[call-arg]
     changed = Graph().add((EX.OtherClass, EX.metadata, BNode("right")))
     with pytest.raises(ResourceError, match="alias"):
         load_vocabulary(
@@ -220,7 +218,6 @@ def test_required_graph_aliases_use_blank_node_aware_agreement(
                 str(EX.A): RdfSource(left, effective_url=str(EX.B)),
                 str(EX.B): changed,
             },
-            _owned_worker=owned_worker,
         )
 
 

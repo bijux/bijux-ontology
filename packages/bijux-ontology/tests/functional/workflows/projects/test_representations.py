@@ -745,3 +745,57 @@ def test_native_receipts_survive_cancellation_and_missing_receipts_forfeit(
             assert (
                 fresh.report.complete and fresh.report.issues == baseline.report.issues
             )
+
+
+def test_redirected_import_aliases_agree_in_the_actual_representation_worker() -> None:
+    """Required aliases retain native blank/list comparison and reject conflicts."""
+    mode = {"conflict": False, "shared": 0}
+
+    def dispatch(path: str, accept: str, base: str) -> Response:
+        if path in ("/aliases/a", "/aliases/b"):
+            return 302, {"Location": "/shared"}, b""
+        if path == "/shared":
+            mode["shared"] += 1
+            tail = (
+                b'"changed"'
+                if mode["conflict"] and mode["shared"] % 2 == 0
+                else b'"same"'
+            )
+            return (
+                200,
+                {"Content-Type": "text/turtle"},
+                b"<urn:Term> <urn:metadata> _:shared . "
+                b'_:shared <urn:values> ("a" "b"); <urn:name> ' + tail + b" .",
+            )
+        return (
+            200,
+            {"Content-Type": "text/turtle"},
+            (
+                "<urn:publication> <http://www.w3.org/2002/07/owl#imports> "
+                f"<{base}/aliases/a>, <{base}/aliases/b> ."
+            ).encode(),
+        )
+
+    with _server(dispatch) as (base, contacts):
+        variants = (
+            RepresentationVariant("first", "text/turtle", "text/turtle"),
+            RepresentationVariant("second", "text/turtle;q=.9", "text/turtle"),
+        )
+        contract = PublishedResource("urn:publication", base + "/resource", variants)
+        actual = check_representations(
+            contract,
+            policy=AcquisitionPolicy((base,)),
+            limits=Limits(max_work=2_000_000),
+        )
+        assert actual.report.verified
+        assert mode["shared"] == 4 and len(contacts) == 10
+        assert all(value.requests == 5 for value in actual.variants)
+        mode["shared"] = 0
+        mode["conflict"] = True
+        conflict = check_representations(
+            contract,
+            policy=AcquisitionPolicy((base,)),
+            limits=Limits(max_work=2_000_000),
+        )
+        assert not conflict.report.verified
+        assert conflict.report.outcome == "unverified"
