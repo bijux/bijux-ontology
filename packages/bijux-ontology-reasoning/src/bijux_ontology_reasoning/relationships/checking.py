@@ -32,9 +32,9 @@ from ..backend.qualification import (
     qualify_reasoning_result,
     reasoning_header,
 )
-from ..backend.rdf_sources import stage_documents
 from ..backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
-from ..documents.preparation import stage_native_documents
+from ..documents.sources.native import stage_native_documents
+from ..documents.sources.rdf import stage_documents
 from ..documents.types import OwlDocument
 from .types import (
     InferredAnswer,

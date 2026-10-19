@@ -18,7 +18,7 @@ from ...backend.bundles import PROFILES, qualify_backend
 from ...backend.execution import invoke_worker, qualify_capability, result_counter
 from ...backend.types import OwlProfile, OwlProfileBackend
 from ...documents.conversion import _profiles
-from ...documents.preparation import prepare_owl_document, stage_native_documents
+from ...documents.sources.native import prepare_owl_document, stage_native_documents
 from ...documents.types import NativeProfile, OwlDocument
 from ..decoding import ProjectionDecoder
 from ..types import ProjectedAxiom

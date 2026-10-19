@@ -29,7 +29,7 @@ from ..axioms.types import (
     SubPropertyOf,
 )
 from ..backend.types import OwlProfileBackend
-from ..documents.preparation import prepare_owl_document
+from ..documents.sources.native import prepare_owl_document
 from ..documents.types import OwlDocument
 from ..integration.preparation import reserve
 from ..integration.types import TheoryComponent

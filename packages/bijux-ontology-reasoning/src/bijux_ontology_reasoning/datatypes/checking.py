@@ -28,9 +28,9 @@ from ..backend.execution import (
     result_text,
 )
 from ..backend.qualification import _records, qualify_reasoning_result, reasoning_header
-from ..backend.rdf_sources import stage_documents
 from ..backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
-from ..documents.preparation import stage_native_documents
+from ..documents.sources.native import stage_native_documents
+from ..documents.sources.rdf import stage_documents
 from ..documents.types import OwlDocument
 from .encoding import capture_requests, encode_request
 from .types import (

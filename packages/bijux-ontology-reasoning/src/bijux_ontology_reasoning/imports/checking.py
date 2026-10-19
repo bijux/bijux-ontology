@@ -21,7 +21,7 @@ from ..axioms.types import (
     ProjectedAxiom,
 )
 from ..backend.types import OwlProfileBackend
-from ..documents.preparation import prepare_owl_document
+from ..documents.sources.native import prepare_owl_document
 from ..documents.types import OwlDocument
 from ..entailment.checking import check_entailments
 from ..relationships.checking import query_inferred_contracts

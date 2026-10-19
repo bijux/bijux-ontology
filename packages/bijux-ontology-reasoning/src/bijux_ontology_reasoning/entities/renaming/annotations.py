@@ -6,7 +6,7 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget
 
-from ...documents.preparation import native_iri
+from ...documents.sources.native import native_iri
 from .types import AnnotationRole
 
 

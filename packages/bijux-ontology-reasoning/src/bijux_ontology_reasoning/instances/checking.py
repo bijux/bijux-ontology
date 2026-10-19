@@ -16,9 +16,9 @@ from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Issue, Location, Report
 
-from ..backend.rdf_sources import capture_rdf_closure
 from ..backend.types import OwlProfileBackend
 from ..diagnosis import check_consistency
+from ..documents.sources.rdf import capture_rdf_closure
 from .preparation import capture_bindings, joint_source, participation, selected_scope
 from .types import EmittedConsistency, EmittedRecord
 

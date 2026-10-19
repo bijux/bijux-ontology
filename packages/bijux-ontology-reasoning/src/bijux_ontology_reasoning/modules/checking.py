@@ -34,7 +34,7 @@ from ..backend.bundles import qualify_backend
 from ..backend.execution import invoke_worker, qualify_capability, result_counter
 from ..backend.types import OwlProfileBackend
 from ..diagnosis.checking import _classes
-from ..documents.preparation import prepare_owl_document, stage_native_documents
+from ..documents.sources.native import prepare_owl_document, stage_native_documents
 from ..documents.types import OwlDocument
 from ..entailment.checking import check_entailments
 from ..entities.renaming.checking import _interfaces

@@ -22,7 +22,7 @@ from ..backend.execution import (
     result_text,
 )
 from ..backend.types import OwlProfile, OwlProfileBackend
-from .preparation import native_syntax, stage_native_documents
+from .sources.native import native_syntax, stage_native_documents
 from .types import (
     ConversionChange,
     NativeExport,

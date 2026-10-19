@@ -29,7 +29,7 @@ from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources import GraphKind, source_role
 from bijux_ontology.vocabulary.view import Vocabulary
 
-from .types import ProfileDocument
+from ...backend.types import ProfileDocument
 
 
 class _ImportOrigins(Mapping[str, RdfSource | Payload]):

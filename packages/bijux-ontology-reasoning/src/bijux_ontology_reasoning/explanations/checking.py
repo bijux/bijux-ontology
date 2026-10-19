@@ -28,7 +28,7 @@ from ..backend.qualification import _records, qualify_reasoning_result, reasonin
 from ..backend.types import OwlProfileBackend
 from ..diagnosis import check_consistency
 from ..diagnosis.types import ConsistencyCheck
-from ..documents.preparation import prepare_owl_document, stage_native_documents
+from ..documents.sources.native import prepare_owl_document, stage_native_documents
 from ..documents.types import OwlDocument
 from ..entailment import check_entailments
 from ..entailment.types import EntailmentCheck

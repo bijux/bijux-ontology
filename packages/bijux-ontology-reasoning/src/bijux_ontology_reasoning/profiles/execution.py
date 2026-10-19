@@ -22,7 +22,7 @@ from ..backend.execution import invoke_worker as _invoke
 from ..backend.execution import qualify_capability as _capability
 from ..backend.execution import result_counter as _integer
 from ..backend.execution import result_text as _text
-from .preparation import stage_documents
+from ..documents.sources.rdf import stage_documents
 from .types import (
     LoaderQualification,
     OwlProfile,

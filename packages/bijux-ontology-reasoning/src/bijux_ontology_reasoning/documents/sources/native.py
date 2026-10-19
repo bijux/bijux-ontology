@@ -15,7 +15,7 @@ from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_text
 
-from .types import OwlDocument, OwlSyntax
+from ..types import OwlDocument, OwlSyntax
 
 SYNTAXES = ("owlxml", "functional", "manchester", "obo")
 

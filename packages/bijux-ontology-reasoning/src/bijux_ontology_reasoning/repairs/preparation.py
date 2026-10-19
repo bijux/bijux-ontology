@@ -15,7 +15,7 @@ from ..axioms.changes.encoding import ConstructionEncoder
 from ..axioms.inspection import inspect_axioms
 from ..axioms.types import AxiomInspection, ProjectedAxiom
 from ..backend.types import OwlProfileBackend
-from ..documents.preparation import prepare_owl_document
+from ..documents.sources.native import prepare_owl_document
 from ..documents.types import OwlDocument
 from ..entailment.encoding import capture_obligations, encode_axiom
 from ..explanations.types import SourceAxiom

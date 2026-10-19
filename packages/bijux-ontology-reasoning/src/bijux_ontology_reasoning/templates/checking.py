@@ -24,7 +24,7 @@ from ..axioms.types import (
 from ..backend.bundles import PROFILES
 from ..backend.types import OwlProfile, OwlProfileBackend
 from ..documents.conversion import convert_ontology
-from ..documents.preparation import prepare_owl_document
+from ..documents.sources.native import prepare_owl_document
 from ..documents.types import OwlDocument
 from ..entailment.checking import check_entailments
 from .backend import execute_table

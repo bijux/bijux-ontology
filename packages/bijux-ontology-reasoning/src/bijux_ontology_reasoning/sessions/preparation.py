@@ -18,9 +18,9 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 
 from ..backend.bundles import LOADER_PROFILE, qualify_backend
-from ..backend.rdf_sources import capture_rdf_closure, stage_documents
 from ..backend.types import OwlProfileBackend, ProfileDocument
-from ..documents.preparation import stage_native_documents
+from ..documents.sources.native import stage_native_documents
+from ..documents.sources.rdf import capture_rdf_closure, stage_documents
 from ..documents.types import OwlDocument
 from .types import PreparedReasoningTheory, TheoryDocument
 

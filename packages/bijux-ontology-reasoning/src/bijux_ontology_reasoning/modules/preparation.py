@@ -13,7 +13,7 @@ from ..axioms.changes.checking import _base, _expected, _imports, _owned, receip
 from ..axioms.changes.encoding import ConstructionEncoder
 from ..axioms.changes.types import AxiomBase
 from ..axioms.types import ProjectedAxiom
-from ..documents.preparation import native_iri
+from ..documents.sources.native import native_iri
 from ..documents.types import OwlDocument
 from ..entailment.encoding import encode_axiom
 from ..integration.preparation import assemble_theory, reserve

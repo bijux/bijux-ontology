@@ -24,9 +24,9 @@ from ..backend.execution import (
     result_counter,
     result_text,
 )
-from ..backend.rdf_sources import stage_documents
 from ..backend.types import OwlProfileBackend, ProfileDocument
-from ..documents.preparation import stage_native_documents
+from ..documents.sources.native import stage_native_documents
+from ..documents.sources.rdf import stage_documents
 from ..documents.types import OwlDocument
 from . import types as t
 from .decoding import ProjectionDecoder
