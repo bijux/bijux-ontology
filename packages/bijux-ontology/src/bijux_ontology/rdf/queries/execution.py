@@ -26,7 +26,7 @@ def evaluate(request: dict[str, Any], cap: int) -> dict[str, Any]:
     budget = Budget(limits)
     text = request["query"]
     namespaces = {prefix: URIRef(iri) for prefix, iri in request["namespaces"]}
-    query = prepare_local_query(text, namespaces, budget)
+    query = prepare_local_query(text, namespaces, budget, rdflib_execution=True)
     graph = Dataset(default_union=False)
     blanks: dict[str, BNode] = {}
     for name, triples in request["graphs"]:

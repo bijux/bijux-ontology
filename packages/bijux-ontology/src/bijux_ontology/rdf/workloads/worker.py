@@ -174,7 +174,12 @@ def evaluate(request: dict[str, object], budget: Budget) -> dict[str, object]:
             raise InputError("Workload bindings require IRI or literal terms")
         bound_node(value, budget)
         bindings[name] = value
-    query = cast(Query, prepare_local_query(text, namespaces, budget))
+    query = cast(
+        Query,
+        prepare_local_query(
+            text, namespaces, budget, rdflib_execution=config["engine"] == "rdflib"
+        ),
+    )
     _profile(query, bindings, budget)
     dataset = Dataset(default_union=config["default_graph"] == "union")
     store = ox.Store() if config["engine"] == "pyoxigraph" else None

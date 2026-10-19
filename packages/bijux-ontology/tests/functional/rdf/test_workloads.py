@@ -263,3 +263,27 @@ def test_empty_corpora_and_invalid_public_shapes_cannot_qualify() -> None:
         qualify_workload(_source(), cast(tuple[WorkloadQuery, ...], []), scope=SCOPE)
     with pytest.raises(InputError):
         QueryBinding("blank", cast(URIRef, BNode()))
+
+
+def test_native_filter_loss_keeps_the_capable_engine_observation() -> None:
+    """Unsupported execution cannot be published as a disagreeing completed answer."""
+    result = qualify_workload(
+        _source(),
+        (
+            WorkloadQuery("lost-filter", "ASK {FILTER(false)}"),
+            WorkloadQuery("expression", "ASK {FILTER(1=2)}"),
+        ),
+        scope=SCOPE,
+    )
+    assert [item.status for item in result.queries] == ["unsupported", "agreeing"]
+    assert not result.report.verified
+    limited, capable = result.queries[0].engines
+    assert limited.config.engine == "rdflib" and limited.status == "unsupported"
+    assert limited.answer is None and limited.report.outcome == "unverified"
+    assert capable.config.engine == "pyoxigraph" and capable.status == "completed"
+    assert capable.report.verified and capable.answer is not None
+    assert capable.answer.answer is False and capable.answer.external_complete is True
+    assert all(
+        engine.answer is not None and engine.answer.answer is False
+        for engine in result.queries[1].engines
+    )

@@ -11,6 +11,10 @@ from rdflib.plugins.sparql.parserutils import CompValue
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.rdf.queries.filters import (
+    capture_lone_filter,
+    require_filter_preservation,
+)
 from bijux_ontology.rdf.queries.literals import check_literal_scope
 
 
@@ -44,15 +48,24 @@ def check_query_syntax(
 
 
 def prepare_local_query(
-    text: str, namespaces: Mapping[str, URIRef], budget: Budget
+    text: str,
+    namespaces: Mapping[str, URIRef],
+    budget: Budget,
+    *,
+    rdflib_execution: bool = False,
 ) -> Any:
-    """Reject retrieval in every maintained parse-tree branch before evaluation."""
+    """Reject retrieval and qualify only the explicitly selected native boundary.
+
+    Syntax admission remains independent of RDFLib's execution limitations for
+    capable engines that evaluate the original supplied query text themselves.
+    """
     budget.consume("work", len(text))
     try:
         parsed = parseQuery(text)
         if parsed[1].name not in {"AskQuery", "SelectQuery"}:
             raise InputError("Local queries support ASK and SELECT only")
         pending: list[tuple[object, int]] = [(parsed, 0)]
+        lone_filters: list[CompValue] = []
         while pending:
             value, depth = pending.pop()
             budget.consume("work")
@@ -60,6 +73,10 @@ def prepare_local_query(
             if depth > budget.limits.max_depth:
                 raise LimitExceeded("SPARQL query exceeds max_depth")
             if isinstance(value, CompValue):
+                if rdflib_execution:
+                    original = capture_lone_filter(value, budget)
+                    if original is not None:
+                        lone_filters.append(original)
                 if value.name in {"ServiceGraphPattern", "DatasetClause"}:
                     raise InputError(
                         "Local queries disallow SERVICE and FROM/FROM NAMED"
@@ -76,6 +93,7 @@ def prepare_local_query(
             unavailable = error
         translated = translateQuery(parsed, initNs=namespaces)
         check_literal_scope(translated.algebra, budget)
+        require_filter_preservation(lone_filters, budget)
         if unavailable is not None:
             raise unavailable
         return translated
