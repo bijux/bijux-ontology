@@ -50,6 +50,8 @@ def export_rdf(
     Unknown source empty-graph fidelity cannot become a verified full-dataset
     claim. Namespace prefixes aid readability; exact IRIs define identity.
     """
+    if not isinstance(source, PreparedSource):
+        raise InputError("RDF 1.1 export requires an owned PreparedSource")
     if not isinstance(format, str) or format not in _FORMATS:
         raise InputError(f"Unsupported RDF export format: {format}")
     if type(union) is not bool or type(preserve_graphs) is not bool:

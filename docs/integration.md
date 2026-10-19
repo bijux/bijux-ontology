@@ -304,7 +304,36 @@ Every retained quad keeps its graph. Independent anonymous inputs require
 complete owned `blank_pairs` or explicit `named_only=True`; one snapshot shares
 identity across its graph selections. No logical equivalence is inferred.
 
+`rdf.reification.inspect_reifications(source)` inventories exact per-graph
+statement descriptions and annotations without asserting their described triples.
+Missing or ambiguous components remain visible. Use `check_reifications(source,
+ReificationContract(...))` for explicit completeness, component uniqueness,
+`rdf:Statement` typing or per-graph statement uniqueness. Separate reifiers
+retain their identities even when their described triples match.
+
+`rdf.containers.inspect_containers(source)` retains numbered membership in
+numeric order, including gaps, ambiguous slots and repeated values. Closure is
+an explicit `ContainerContract("sequence")` or `ContainerContract("bag")`.
+`container_to_list` rewires one selected `ListTarget` after matching exact
+`expected_values`; a bag also needs explicit numbered ordering. Original
+container data remains intact. Selected migration checks gate final export.
+
+The opt-in `rdf.triple_terms` API uses the explicit
+`TRIPLE_TERM_CONTRACT` for the RDF 1.2 April 2026 Candidate Recommendation and
+PyOxigraph 0.5.11. Call `prepare_triple_terms(RdfSource(...), contract=...)`,
+then inspect its `.snapshot` or `export_triple_terms(snapshot, format="nt-1.2")`.
+This graph-only snapshot retains actual nested terms and exact literals without
+asserting described triples. RDF 1.1 export, canonicalization, SHACL and
+reasoning APIs reject it; broader RDF 1.2 compatibility is not implied.
+
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
+
+`jsonld.html.extract_html_jsonld(content, document_url)` extracts JSON-LD
+scripts through the maintained HTML processor and returns `.scripts` locations,
+independently owned `.document`, effective `.base` and prepared RDF `.source`.
+Choose an exact `script_id`, media-type `profile`, first or all scripts, and
+`html_base="honor"` or `"ignore"`. Selected duplicate JSON keys and missing
+scripts fail; contexts still require the ordinary supplied offline loader.
 
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.
 Its report checks RDF preservation, including named empty graphs; its owned

@@ -25,6 +25,7 @@ jsonschema = [
 ]
 jsonld = [
     "pyld>=3.3,<4",
+    "lxml>=6,<7",
 ]
 shacl = [
     "owlrl>=7.6.2,<8",

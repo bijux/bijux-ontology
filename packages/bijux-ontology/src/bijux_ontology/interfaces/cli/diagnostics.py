@@ -86,6 +86,7 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "html_extraction_unverified "
         "frame_unverified frame_input_error "
         "term_usage_disallowed term_usage_membership "
         "term_usage_unverified term_usage_input_error "
@@ -186,6 +187,7 @@ _CODES = {
         "value_unverified".split()
     ),
     "owl": frozenset(
+        "axiom_input_loss axiom_input_unverified axiom_unsupported axioms_unverified "
         "conversion_loss conversion_unverified "
         "assertion_contradiction assertion_unverified backend_unavailable "
         "loader_unverified profile_unverified profile_violation".split()
@@ -205,6 +207,9 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "triple_terms_unverified "
+        "container_contract container_unverified container_conversion_rejected "
+        "reification_contract reification_unverified "
         "merge_conflict merge_unverified merge_resolution_required "
         "algebra_identity_unverified "
         "skolem_unverified "

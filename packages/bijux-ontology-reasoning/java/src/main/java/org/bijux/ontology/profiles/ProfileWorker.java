@@ -3,6 +3,7 @@ package org.bijux.ontology.profiles;
 import static org.bijux.ontology.backend.WorkerProtocol.*;
 
 import org.bijux.ontology.documents.NativeDocuments;
+import org.bijux.ontology.axioms.AxiomProjection;
 import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,6 +42,7 @@ public final class ProfileWorker {
         String mode = text(request.path("operation"), 32);
         if (mode.equals("capability")) return result;
         if (mode.equals("convert")) return NativeDocuments.evaluate(request, job, result);
+        if (mode.equals("axioms")) return AxiomProjection.evaluate(request, job, result);
         if (!mode.equals("profile")) throw new IOException("Unsupported operation");
         int cap = positive(request.path("max_bytes"));
         int maximum = positive(request.path("max_issues"));
