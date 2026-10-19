@@ -506,7 +506,9 @@ def at_input_location(source: str, path: tuple[str | int, ...]) -> Iterator[None
     except InputError as error:
         if source and not error.location.startswith(source):
             raise type(error)(
-                str(error), location=input_location(source, path)
+                str(error),
+                location=input_location(source, path),
+                failure=error.failure,
             ) from error
         raise
 

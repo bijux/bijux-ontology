@@ -111,3 +111,32 @@ def test_raw_json_size_is_checked_before_allocating_its_utf8_copy() -> None:
     assert failure.value.location == "oversized.json"
     assert peak - current < 100_000
     assert decode_json(" {} ", max_bytes=32) == {}
+
+
+def test_input_context_preserves_the_original_native_parse_failure() -> None:
+    """Configuration paths cannot erase the actual failing content and parser span."""
+    from bijux_ontology.diagnostics.reports import Location
+    from bijux_ontology.json.values import at_input_location
+    from bijux_ontology.rdf.sources.loading import prepare_rdf
+    from bijux_ontology.rdf.sources.types import RdfSource
+
+    with pytest.raises(InputError) as original:
+        prepare_rdf(
+            RdfSource(
+                b"broken RDF",
+                format="turtle",
+                document_iri="https://example.org/data.ttl",
+            )
+        )
+    evidence = original.value.failure
+    assert evidence is not None and evidence.span is not None
+    with (
+        pytest.raises(type(original.value)) as wrapped,
+        at_input_location("model.json", ("models", 0)),
+    ):
+        raise original.value
+    assert wrapped.value.location == "model.json#/models/0"
+    assert wrapped.value.failure is evidence
+    location = Location.from_error(wrapped.value)
+    assert location is not None and location.failure is evidence
+    assert location.source == "https://example.org/data.ttl"
