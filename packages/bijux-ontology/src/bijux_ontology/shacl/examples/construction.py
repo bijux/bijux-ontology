@@ -8,7 +8,7 @@ from rdflib.term import Node
 
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.execution.limits import Budget, bound_text
-from bijux_ontology.rdf.paths import RdfPath
+from bijux_ontology.rdf.paths.types import RdfPath
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.authoring.types import (
     ShaclCount,

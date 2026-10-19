@@ -9,7 +9,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.literals import check_literal, datatype_relation
-from bijux_ontology.rdf.path_traversal import finite_path_steps
+from bijux_ontology.rdf.paths.traversal import finite_path_steps
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.paths import decode_path

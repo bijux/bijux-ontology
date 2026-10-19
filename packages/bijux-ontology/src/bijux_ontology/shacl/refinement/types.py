@@ -7,7 +7,7 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.rdf.paths import RdfPath
+from bijux_ontology.rdf.paths.types import RdfPath
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.checking import ShaclResult
 

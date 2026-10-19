@@ -16,7 +16,7 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.rdf.paths import RdfPath, capture_path
+from bijux_ontology.rdf.paths.types import RdfPath, capture_path
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, term_key
 

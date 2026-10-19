@@ -17,8 +17,8 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.rdf.path_traversal import finite_path_steps, path_values
-from bijux_ontology.rdf.paths import capture_path
+from bijux_ontology.rdf.paths.traversal import finite_path_steps, path_values
+from bijux_ontology.rdf.paths.types import capture_path
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource

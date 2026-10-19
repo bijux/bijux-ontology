@@ -6,7 +6,7 @@ from typing import Literal
 from rdflib import URIRef
 from rdflib.paths import Path
 
-from bijux_ontology.rdf.paths import RdfPath
+from bijux_ontology.rdf.paths.types import RdfPath
 
 
 @dataclass(frozen=True)

@@ -10,7 +10,7 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.paths import RdfPath, capture_path
+from bijux_ontology.rdf.paths.types import RdfPath, capture_path
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term

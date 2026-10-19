@@ -21,12 +21,12 @@ from bijux_ontology.models.emission.counts import check_output_counts
 from bijux_ontology.models.emission.matching import identity_matches, matches_value
 from bijux_ontology.models.emission.rdf import _traits
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.path_traversal import (
+from bijux_ontology.rdf.paths.traversal import (
     PathIdentityUnavailable,
     finite_path_steps,
     path_values,
 )
-from bijux_ontology.rdf.paths import capture_path
+from bijux_ontology.rdf.paths.types import capture_path
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 

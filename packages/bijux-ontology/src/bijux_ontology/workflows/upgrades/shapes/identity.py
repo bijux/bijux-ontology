@@ -7,7 +7,7 @@ from rdflib import BNode, Graph, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, bound_text
-from bijux_ontology.rdf.paths import RdfPath
+from bijux_ontology.rdf.paths.types import RdfPath
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.findings import ShaclFinding
 

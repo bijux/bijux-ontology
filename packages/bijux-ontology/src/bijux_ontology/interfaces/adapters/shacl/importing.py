@@ -27,7 +27,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.paths import RdfPath
+from bijux_ontology.rdf.paths.types import RdfPath
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
 from bijux_ontology.shacl.authoring.types import (

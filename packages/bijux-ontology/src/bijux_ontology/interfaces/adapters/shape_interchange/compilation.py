@@ -22,7 +22,7 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import object_value
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.paths import RdfPath
+from bijux_ontology.rdf.paths.types import RdfPath
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
