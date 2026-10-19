@@ -149,7 +149,7 @@
           "python-version": "${{ matrix.python }}"
       - "uses": "astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884"
         "with":
-          "version": "0.11.17"
+          "version": "0.13.1"
           "enable-cache": false
       - "name": "Verify frozen installation, source, tests and distributions"
         "run": "make install lint quality test-ci build PYTHON=python"
@@ -169,6 +169,117 @@
             artifacts/bijux-ontology-dev/build
           "if-no-files-found": "error"
           "retention-days": 7
+  "windows":
+    "name": "python / windows 3.13"
+    "runs-on": "windows-latest"
+    "timeout-minutes": 15
+    "env":
+      "WINDOWS_PROOF_ROOT": "${{ github.workspace }}/artifacts/ci/windows"
+      "UV_CACHE_DIR": "${{ github.workspace }}/artifacts/ci/windows/uv-cache"
+    "steps":
+      - "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+        "with":
+          "fetch-depth": 0
+      - "name": "Prepare workspace-owned runtime outputs"
+        "shell": "pwsh"
+        run: |-
+          $proof = $env:WINDOWS_PROOF_ROOT
+          $runtimeTmp = Join-Path $proof 'runtime-tmp'
+          New-Item -ItemType Directory -Force "$proof/tests", "$proof/uv-cache", $runtimeTmp | Out-Null
+          "TEMP=$runtimeTmp" >> $env:GITHUB_ENV
+          "TMP=$runtimeTmp" >> $env:GITHUB_ENV
+          "TMPDIR=$runtimeTmp" >> $env:GITHUB_ENV
+      - "uses": "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97"
+        "with":
+          "python-version": "3.13"
+      - "uses": "astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884"
+        "with":
+          "version": "0.13.1"
+          "enable-cache": false
+      - "name": "Build and install the wheel into workspace artifacts"
+        "shell": "pwsh"
+        run: |-
+          $ErrorActionPreference = 'Stop'
+          $evidence = Join-Path $env:GITHUB_WORKSPACE 'artifacts/ci/windows'
+          $proof = $env:WINDOWS_PROOF_ROOT
+          New-Item -ItemType Directory -Force $evidence, "$proof/tests" | Out-Null
+          uv build --wheel --package bijux-ontology --out-dir "$evidence/dist" 2>&1 | Tee-Object "$evidence/build.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $wheels = @(Get-ChildItem "$evidence/dist/bijux_ontology-*.whl")
+          if ($wheels.Count -ne 1) { throw 'Expected exactly one built core wheel' }
+          $wheel = $wheels[0].FullName
+          Get-FileHash $wheel -Algorithm SHA256 | ConvertTo-Json | Set-Content "$evidence/wheel.json"
+          uv venv --python 3.13 "$proof/venv" 2>&1 | Tee-Object "$evidence/venv.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $python = "$proof/venv/Scripts/python.exe"
+          uv pip install --python $python "${wheel}[jsonld,shacl]" pytest==9.1.1 pytest-timeout==2.4.0 2>&1 | Tee-Object "$evidence/install.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv pip check --python $python 2>&1 | Tee-Object "$evidence/pip-check.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item 'configs/pytest.ini' "$proof/pytest.ini"
+          Copy-Item 'packages/bijux-ontology/tests/functional/interfaces/test_windows_processes.py' "$proof/tests"
+          Copy-Item 'packages/bijux-ontology/tests/functional/interfaces/test_execution.py' "$proof/tests"
+          Copy-Item 'packages/bijux-ontology/tests/functional/processes/test_transport.py' "$proof/tests"
+          Get-ChildItem "$proof/tests/*.py" | Get-FileHash -Algorithm SHA256 | ConvertTo-Json | Set-Content "$evidence/test-sources.json"
+      - "name": "Exercise native Windows ownership and portable worker contracts"
+        "shell": "pwsh"
+        run: |-
+          $ErrorActionPreference = 'Stop'
+          $evidence = Join-Path $env:GITHUB_WORKSPACE 'artifacts/ci/windows'
+          $proof = $env:WINDOWS_PROOF_ROOT
+          $python = "$proof/venv/Scripts/python.exe"
+          Set-Location (Split-Path $env:GITHUB_WORKSPACE -Parent)
+          $versions = @'
+          import importlib.metadata as metadata
+          import json, os, platform, sys, sysconfig
+          from pathlib import Path
+          import bijux_ontology
+          assert os.name == 'nt'
+          workspace = Path(os.environ['GITHUB_WORKSPACE']).resolve()
+          venv = (Path(os.environ['WINDOWS_PROOF_ROOT']) / 'venv').resolve()
+          installed = Path(bijux_ontology.__file__).resolve()
+          site_packages = Path(sysconfig.get_path('purelib')).resolve()
+          assert Path.cwd().resolve() == workspace.parent
+          assert Path(sys.prefix).resolve() == venv
+          assert site_packages.is_relative_to(venv) and installed.is_relative_to(site_packages)
+          source_roots = [source.resolve() for source in (workspace / 'packages').glob('*/src')]
+          assert all(not installed.is_relative_to(source) for source in source_roots)
+          assert all(not Path(entry).resolve().is_relative_to(source) for entry in sys.path if entry for source in source_roots)
+          assert all(Path(entry).resolve().is_relative_to(site_packages) for entry in bijux_ontology.__path__)
+          print(json.dumps({'python': sys.version, 'executable': sys.executable, 'platform': platform.platform(), 'package': bijux_ontology.__file__, 'packages': {d.metadata['Name']: d.version for d in metadata.distributions()}}, indent=2))
+          '@
+          $versions | & $python -I -B - | Set-Content "$evidence/environment.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $python -I -B -m pytest -c "$proof/pytest.ini" --import-mode=importlib -rA --basetemp="$proof/pytest-tmp" -o "cache_dir=$proof/pytest-cache" --junitxml="$evidence/junit.xml" "$proof/tests/test_windows_processes.py" "$proof/tests/test_execution.py" "$proof/tests/test_transport.py" 2>&1 | Tee-Object "$evidence/pytest.log"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $coverage = @'
+          import sys, xml.etree.ElementTree as ET
+          cases = [case for case in ET.parse(sys.argv[1]).iter('testcase') if case.get('name', '').startswith('test_real_windows_nested_workers_and_recovery[')]
+          assert len(cases) == 2, 'Both native Windows ownership cases must execute'
+          assert all(not any(case.find(tag) is not None for tag in ('skipped', 'failure', 'error')) for case in cases), 'Native Windows ownership may not pass through skipped cases'
+          '@
+          $coverage | & $python -I -B - "$evidence/junit.xml"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - "name": "Retain Windows wheel and native verification evidence"
+        "if": "${{ always() }}"
+        "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9"
+        "with":
+          "name": "windows-python-3.13"
+          path: |-
+            artifacts/ci/windows/*.log
+            artifacts/ci/windows/*.json
+            artifacts/ci/windows/junit.xml
+            artifacts/ci/windows/dist/*.whl
+          "if-no-files-found": "error"
+          "retention-days": 7
+      - "name": "Release the installed verification environment"
+        "if": "${{ always() }}"
+        "shell": "pwsh"
+        run: |-
+          $venv = Join-Path $env:WINDOWS_PROOF_ROOT 'venv'
+          if (Test-Path $venv) {
+            Remove-Item -Recurse -Force $venv
+          }
   "report":
     "name": "std / report"
     "if": "${{ always() }}"
@@ -176,6 +287,7 @@
       - "standard"
       - "policy"
       - "python"
+      - "windows"
     "runs-on": "ubuntu-latest"
     "timeout-minutes": 2
     "steps":
