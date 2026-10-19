@@ -4,18 +4,17 @@ import unicodedata
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 
-from rdflib import BNode, Literal, URIRef
+from rdflib import BNode, Literal
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
+from bijux_ontology.data.records.reading import RecordReader, read_records
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.paths.traversal import (
-    PathIdentityUnavailable,
     finite_path_steps,
-    path_values,
 )
 from bijux_ontology.rdf.paths.types import capture_path
 from bijux_ontology.rdf.terms import bound_node, term_key
@@ -31,6 +30,7 @@ class _Key:
     source_index: int
     values: tuple[Node, ...]
     tokens: tuple[tuple[str | None, ...], ...]
+    reader: RecordReader
 
 
 def _token(
@@ -57,21 +57,15 @@ def _token(
     return (token[0], text, *token[2:])
 
 
-def _scope(record: KeyRecord) -> tuple[object, bool]:
-    """Canonicalize aliases for the same explicit selected snapshot scope."""
-    name = (
-        record.source.graph_name
-        if record.source.graph_name is not None
-        else record.graph_name
-    )
-    union = record.source.union or record.union
-    if not record.source.is_dataset:
+def _scope(reader: RecordReader) -> tuple[object, bool]:
+    """Canonicalize key aliases from the qualified original source scope."""
+    reader.selected.read()
+    if not reader.metadata.is_dataset:
         return "@default", False
-    if union:
+    if reader.selected.kind == "union":
         return None, True
-    if name is None or name == "@default":
-        return "@default", False
-    return name if isinstance(name, BNode) else URIRef(str(name)), False
+    name = reader.selected.graph_name
+    return name if name is not None else "@default", False
 
 
 @dataclass
@@ -137,17 +131,12 @@ class _KeyExtraction:
             ):
                 if text is not None:
                     bound_text(text, operation)
-            selection, union = _scope(record)
-            if selection is not None:
-                bound_text(str(selection), operation)
-            binding = (id(record.source), selection, union, record.subject)
-            if record.identifier in identifiers or binding in bindings:
+            if record.identifier in identifiers:
                 raise InputError(
                     "Key records require unique identifiers and subject bindings"
                 )
             operation.consume("states", 2)
             identifiers.add(record.identifier)
-            bindings.add(binding)
             if id(record.source) not in source_indexes:
                 operation.consume("resources")
                 operation.consume("states")
@@ -166,27 +155,35 @@ class _KeyExtraction:
                 )
                 self.checked += 1
                 continue
-            graph = record.source._read(
-                record.graph_name, union=record.union, budget=operation
+            reader = read_records(
+                record.source,
+                operation,
+                graph_name=record.graph_name,
+                union=record.union,
             )
-            if isinstance(record.subject, BNode):
-                owned = False
-                for triple in graph:
-                    operation.consume("work")
-                    if any(node is record.subject for node in triple):
-                        owned = True
-                        break
-                if not owned:
-                    issues.append(
-                        Issue(
-                            "data.key_binding_unverified",
-                            "Blank record binding lacks exact snapshot ownership",
-                            record.identifier,
-                            kind="unverified",
-                        )
+            if (
+                isinstance(record.subject, BNode)
+                and not reader.presence(record.subject, operation).owned
+            ):
+                issues.append(
+                    Issue(
+                        "data.key_binding_unverified",
+                        "Blank record binding lacks exact snapshot ownership",
+                        record.identifier,
+                        kind="unverified",
                     )
-                    self.checked += 1
-                    continue
+                )
+                self.checked += 1
+                continue
+            selection, union = _scope(reader)
+            if selection is not None:
+                bound_text(str(selection), operation)
+            binding = (id(record.source), selection, union, record.subject)
+            if binding in bindings:
+                raise InputError(
+                    "Key records require unique identifiers and subject bindings"
+                )
+            bindings.add(binding)
             values: list[Node] = []
             tokens: list[tuple[str | None, ...]] = []
             usable = True
@@ -196,16 +193,8 @@ class _KeyExtraction:
                 if steps is None:
                     usable = False
                     continue
-                try:
-                    endpoints = path_values(
-                        graph,
-                        record.subject,
-                        steps,
-                        operation,
-                        literal_identity=record.source.literal_fidelity
-                        in ("source_terms", "supplied_terms"),
-                    )
-                except PathIdentityUnavailable:
+                observed = reader.values(record.subject, steps, operation)
+                if not observed.complete:
                     issues.append(
                         Issue(
                             "literal.lexical_unverified",
@@ -216,6 +205,7 @@ class _KeyExtraction:
                     )
                     usable = False
                     continue
+                endpoints = observed.values
                 if not endpoints:
                     if contract.absence == "exclude":
                         excluded = True
@@ -245,12 +235,7 @@ class _KeyExtraction:
                     usable = False
                 else:
                     value = endpoints[0]
-                    if isinstance(
-                        value, Literal
-                    ) and record.source.literal_fidelity not in {
-                        "source_terms",
-                        "supplied_terms",
-                    }:
+                    if isinstance(value, Literal) and not observed.exact_literals:
                         issues.append(
                             Issue(
                                 "literal.lexical_unverified",
@@ -283,6 +268,12 @@ class _KeyExtraction:
                 self.exclusions.append(record.identifier)
             if not usable:
                 continue
+            operation.consume("states")
+            operation.consume("bytes", 16)
             yield _Key(
-                record, source_indexes[id(record.source)], tuple(values), tuple(tokens)
+                record,
+                source_indexes[id(record.source)],
+                tuple(values),
+                tuple(tokens),
+                reader,
             )

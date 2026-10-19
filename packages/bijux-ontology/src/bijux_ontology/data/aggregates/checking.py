@@ -5,19 +5,18 @@ from fractions import Fraction
 from threading import Event
 
 from rdflib import BNode, Literal, URIRef
-from rdflib.paths import Path
+from rdflib.term import Node
 
-from bijux_ontology.data.keys.extraction import _KeyExtraction, _scope
 from bijux_ontology.data.keys.types import KeyRecord
+from bijux_ontology.data.records.reading import FiniteSteps, RecordReader, read_records
 from bijux_ontology.declarations.aggregates import AggregateContract
-from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.rdf.paths.types import RdfPath, capture_path
-from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.paths.traversal import finite_path_steps
+from bijux_ontology.rdf.paths.types import capture_path
 from bijux_ontology.rdf.terms import bound_node, term_key
 
 from .preparation import arithmetic, contract, number, owned_literal, reserve
@@ -34,36 +33,88 @@ def _issue(issues: IssueCollector, message: str, group: str) -> None:
     issues.append(Issue("data.aggregate_unverified", message, group, kind="unverified"))
 
 
-def _component(path: URIRef | Path | RdfPath, operation: Operation) -> KeyComponent:
-    """Reuse the typed key extractor with a path owned by this same allowance."""
-    owned = capture_path(path, budget=operation)
-    reserve(operation)
-    result = object.__new__(KeyComponent)
-    object.__setattr__(result, "path", owned)
-    object.__setattr__(result, "equality", "rdf-term")
-    object.__setattr__(result, "normalization", "none")
-    return result
+def _entity_scope(reader: RecordReader) -> tuple[object, bool]:
+    """Retain aggregate blank identity without applying key equality policy."""
+    if not reader.metadata.is_dataset:
+        return "@default", False
+    if reader.selected.kind == "union":
+        return None, True
+    name = reader.selected.graph_name
+    return name if name is not None else "@default", False
 
 
-def _key_contract(
+def _scalar(
+    reader: RecordReader,
+    record: KeyRecord,
+    steps: FiniteSteps | None,
     selected: AggregateContract,
-    path: URIRef | Path | RdfPath,
     operation: Operation,
+    issues: IssueCollector,
+    excluded: list[str],
     *,
     unit: bool = False,
-) -> KeyContract:
-    """Reuse scoped extraction without applying quantity exclusions to units."""
-    reserve(operation)
-    result = object.__new__(KeyContract)
-    object.__setattr__(result, "name", selected.name)
-    object.__setattr__(result, "components", (_component(path, operation),))
-    object.__setattr__(result, "absence", "unverified" if unit else selected.missing)
-    object.__setattr__(
-        result,
-        "multiplicity",
-        "unverified" if unit else selected.multiplicity,
-    )
-    return result
+) -> Node | None:
+    """Apply quantity or unit coverage, absence and multiplicity independently."""
+    observed = reader.values(record.subject, steps, operation)
+    if not observed.complete:
+        issues.append(
+            Issue(
+                "data.key_path_unverified"
+                if observed.coverage == "unsupported_path"
+                else "literal.lexical_unverified",
+                "Key paths require finite sequences and inverse predicates"
+                if observed.coverage == "unsupported_path"
+                else "Key path requires exact intermediate literal identity",
+                selected.name
+                if observed.coverage == "unsupported_path"
+                else record.identifier,
+                kind="unverified",
+            )
+        )
+        return None
+    if not observed.values:
+        if not unit and selected.missing == "exclude":
+            operation.consume("states")
+            excluded.append(record.identifier)
+        else:
+            issues.append(
+                Issue(
+                    "data.key_absent",
+                    "A record has no value for a required key component",
+                    record.identifier,
+                    kind="finding"
+                    if not unit and selected.missing == "reject"
+                    else "unverified",
+                )
+            )
+        return None
+    if len(observed.values) != 1:
+        issues.append(
+            Issue(
+                "data.key_multiple",
+                "A record has multiple RDF values for a key component",
+                record.identifier,
+                kind="finding"
+                if not unit and selected.multiplicity == "reject"
+                else "unverified",
+            )
+        )
+        return None
+    value = observed.values[0]
+    if isinstance(value, Literal) and not observed.exact_literals:
+        issues.append(
+            Issue(
+                "literal.lexical_unverified",
+                "Exact source literal identity was not retained",
+                record.identifier,
+                kind="unverified",
+                actual=reader.metadata.literal_fidelity,
+            )
+        )
+        return None
+    bound_node(value, operation)
+    operation.consume("states")
+    return value
 
 
 def _records(
@@ -79,15 +130,19 @@ def _records(
     identifiers: set[str] = set()
     entities: dict[object, Fraction | tuple[object, ...]] = {}
     values: list[tuple[object, Fraction | tuple[object, ...]]] = []
-    key_contract = (
+    member_steps = (
         None
         if selected.member_path is None
-        else _key_contract(selected, selected.member_path, operation)
+        else finite_path_steps(
+            capture_path(selected.member_path, budget=operation), operation
+        )
     )
-    unit_contract = (
+    unit_steps = (
         None
         if selected.unit_path is None
-        else _key_contract(selected, selected.unit_path, operation, unit=True)
+        else finite_path_steps(
+            capture_path(selected.unit_path, budget=operation), operation
+        )
     )
     for raw in records:
         reserve(operation, 3)
@@ -103,44 +158,57 @@ def _records(
             graph_name=raw.graph_name,
             union=raw.union,
         )
-        metadata = SnapshotMetadata.capture(record.source, operation)
-        if metadata.graph_fidelity != "complete":
+        if isinstance(record.graph_name, BNode) and not any(
+            node is record.graph_name
+            for node in record.source._graph_names(budget=operation)
+        ):
+            if selected.member_path is None:
+                raise ResourceError(
+                    "Blank graph binding lacks exact snapshot ownership"
+                )
+            issues.append(
+                Issue(
+                    "data.key_binding_unverified",
+                    "Blank graph selection lacks exact snapshot ownership",
+                    record.identifier,
+                    kind="unverified",
+                )
+            )
+            continue
+        reader = read_records(
+            record.source, operation, graph_name=record.graph_name, union=record.union
+        )
+        if reader.metadata.graph_fidelity != "complete":
             raise ResourceError("Aggregate record graph coverage is incomplete")
-        scope, union = _scope(record)
+        scope, union = _entity_scope(reader)
         entity: object = (
             str(record.subject)
             if isinstance(record.subject, URIRef)
             else (id(record.source), scope, union, record.subject)
         )
-        if key_contract is not None:
-            extraction = _KeyExtraction((record,), key_contract, operation, issues, 1)
-            keys = tuple(extraction)
-            if extraction.exclusions:
-                excluded.extend(extraction.exclusions)
-            if not keys:
-                continue
-            row = keys[0].values
-        else:
-            if isinstance(record.graph_name, BNode) and not any(
-                node is record.graph_name
-                for node in record.source._graph_names(budget=operation)
+        row: tuple[Node, ...]
+        if selected.member_path is not None:
+            if (
+                isinstance(record.subject, BNode)
+                and not reader.presence(record.subject, operation).owned
             ):
-                raise ResourceError(
-                    "Blank graph binding lacks exact snapshot ownership"
+                issues.append(
+                    Issue(
+                        "data.key_binding_unverified",
+                        "Blank record binding lacks exact snapshot ownership",
+                        record.identifier,
+                        kind="unverified",
+                    )
                 )
-            graph = record.source._read(
-                record.graph_name,
-                union=record.union,
-                budget=operation,
+                continue
+            member = _scalar(
+                reader, record, member_steps, selected, operation, issues, excluded
             )
-            present = False
-            for triple in graph.triples((record.subject, None, None)):
-                operation.consume("work")
-                operation.consume("triples")
-                if not isinstance(record.subject, BNode) or triple[0] is record.subject:
-                    present = True
-                    break
-            if not present:
+            if member is None:
+                continue
+            row = (member,)
+        else:
+            if not reader.described(record.subject, operation):
                 _issue(
                     issues,
                     "A selected record subject is absent from its owned scope",
@@ -149,13 +217,20 @@ def _records(
                 continue
             row = ()
         retained.append(AggregateContribution(record, row))
-        if unit_contract is not None:
-            unit_values = tuple(
-                _KeyExtraction((record,), unit_contract, operation, issues, 1)
+        if selected.unit_path is not None:
+            unit_value = _scalar(
+                reader,
+                record,
+                unit_steps,
+                selected,
+                operation,
+                issues,
+                excluded,
+                unit=True,
             )
-            if not unit_values:
+            if unit_value is None:
                 continue
-            row = (*row, *unit_values[0].values)
+            row = (*row, unit_value)
             retained[-1] = AggregateContribution(record, row)
         if selected.unit is not None and row[-1] != selected.unit:
             _issue(

@@ -34,7 +34,7 @@ def _retain(key: _Key, budget: Budget) -> None:
     bound_node(record.subject, budget)
     for value in key.values:
         bound_node(value, budget)
-    name, _ = _scope(record)
+    name, _ = _scope(key.reader)
     if name is not None:
         bound_text(str(name), budget)
     for text in (record.source.document_iri, record.source.effective_url):
@@ -54,7 +54,7 @@ def _evidence(source: _Key, targets: Sequence[_Key], budget: Budget) -> str:
     budget.consume("bytes", 64 + 32 * (len(targets) + 1))
     for role, key in (("source", source), *(("target", target) for target in targets)):
         _retain(key, budget)
-        name, union = _scope(key.record)
+        name, union = _scope(key.reader)
         allowance += 256 + 12 * sum(
             len(part or "")
             for token in (

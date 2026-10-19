@@ -7,18 +7,17 @@ from dataclasses import dataclass
 from typing import Literal as Choice
 from typing import cast
 
-from rdflib import BNode, Graph, Literal, URIRef
+from rdflib import BNode, Literal, URIRef
 from rdflib.term import Node
 
+from bijux_ontology.data.records.reading import RecordReader, read_records
 from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.json.paths import bound_index, bounded_location
 from bijux_ontology.rdf.paths.traversal import (
-    PathIdentityUnavailable,
     finite_path_steps,
-    path_values,
 )
 from bijux_ontology.rdf.paths.types import capture_path
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
@@ -103,33 +102,11 @@ def _place(record: TopologyRecord, budget: Budget) -> str:
     )
 
 
-def _presence(
-    graph: Graph, subject: URIRef | BNode, budget: Budget
-) -> tuple[bool, bool]:
-    """Check actual graph presence and strict blank identity without a new index."""
-    if isinstance(subject, BNode):
-        for triple in graph:
-            budget.consume("work")
-            if triple[0] is subject or triple[2] is subject:
-                return True, True
-        return False, False
-    for pattern in ((subject, None, None), (None, None, subject)):
-        for _ in graph.triples(pattern):
-            budget.consume("work")
-            return True, True
-    return False, True
-
-
-def _context(
-    source: PreparedSource, name: GraphSelection | None, union: bool, budget: Budget
-) -> tuple[dict[str, object], int]:
+def _context(reader: RecordReader, budget: Budget) -> tuple[dict[str, object], int]:
     """Retain exact operation scope, not guessed graph names or source paths."""
-    if name is not None:
-        bound_text(name, budget)
-    if source.graph_name is not None:
-        bound_text(source.graph_name, budget)
-    name = source.graph_name if source.graph_name is not None else name
-    union = source.union or union
+    source = reader.metadata
+    name = reader.selected.graph_name
+    kind = reader.selected.kind
     for value in (
         source.document_iri,
         source.effective_url,
@@ -138,15 +115,7 @@ def _context(
     ):
         if value is not None:
             bound_text(value, budget)
-    kind = (
-        "union"
-        if union
-        else "named"
-        if name is not None and name != "@default"
-        else "default"
-        if source.is_dataset
-        else "graph"
-    )
+
     graph = (
         term_key(name if isinstance(name, URIRef | BNode) else URIRef(name))
         if kind == "named" and name is not None
@@ -327,7 +296,6 @@ def check_record_topology(
         for value in (contract.min_owners, contract.max_owners):
             if value is not None:
                 bound_index(value, operation)
-        scope, scope_size = _context(source, graph_name, union, operation)
         selected_name = (
             source.graph_name if source.graph_name is not None else graph_name
         )
@@ -349,7 +317,8 @@ def check_record_topology(
                 complete=False,
                 regime="application-topology",
             )
-        graph = source._read(graph_name, union=union, budget=operation)
+        reader = read_records(source, operation, graph_name=graph_name, union=union)
+        scope, scope_size = _context(reader, operation)
         focuses: dict[str, _Focus] = {}
         nodes: dict[tuple[str | None, ...], _Focus] = {}
         bindings: set[object] = set()
@@ -370,7 +339,8 @@ def check_record_topology(
                 raise InputError("Topology record subjects must be unique")
             operation.consume("states")
             bindings.add(binding)
-            present, owned = _presence(graph, record.subject, operation)
+            presence = reader.presence(record.subject, operation)
+            present, owned = presence.present, presence.owned
             if not owned:
                 unknown_inventory = True
                 checked += 1
@@ -437,20 +407,13 @@ def check_record_topology(
             for relation, steps, readable in relations:
                 if steps is None:
                     continue
-                try:
-                    endpoints = path_values(
-                        graph,
-                        focus.record.subject,
-                        steps,
-                        operation,
-                        literal_identity=source.literal_fidelity
-                        in {"source_terms", "supplied_terms"},
-                    )
-                except PathIdentityUnavailable as error:
+                observed = reader.values(focus.record.subject, steps, operation)
+                if not observed.complete:
                     issues.append(
                         Issue(
                             "data.topology_path_unverified",
-                            str(error),
+                            observed.reason
+                            or "Topology requires finite sequence/inverse paths",
                             focus.where,
                             kind="unverified",
                             expected=readable,
@@ -460,6 +423,7 @@ def check_record_topology(
                     reach_unknown = reach_unknown or relation.reachability
                     owner_unknown = owner_unknown or relation.ownership
                     continue
+                endpoints = observed.values
                 for endpoint in endpoints:
                     operation.consume("work")
                     target = nodes.get(term_key(endpoint))
