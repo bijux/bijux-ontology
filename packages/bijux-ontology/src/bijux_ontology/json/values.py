@@ -65,6 +65,7 @@ def own_json(
 
     Parsed mappings cannot reveal duplicate names discarded by another decoder.
     Size is the compact UTF-8 JSON representation, not Python object overhead.
+    String subclasses use their exact JSON wire strings; name collisions are rejected.
     An optional enclosing budget also prepays traversal, container copies and
     scalar serialization workspace before allocating them. Its limits remain
     independent of any narrower explicit input-size/depth policy.
@@ -92,7 +93,7 @@ def _capture_json(
         copy_workspace=True,
     )
     try:
-        return deepcopy(value), size.size
+        return deepcopy(value, size.string_memo), size.size
     except RecursionError as error:
         raise LimitExceeded(
             "JSON copy exceeds the Python runtime nesting limit", location=source
@@ -101,11 +102,12 @@ def _capture_json(
 
 @dataclass(frozen=True)
 class _JsonMeasurement:
-    """Exact compact bytes, default separator spaces and Unicode storage kind."""
+    """Exact wire size, separator spaces, storage kind and bounded string copies."""
 
     size: int
     ascii_only: bool
     separating_spaces: int
+    string_memo: dict[int, object] | None = None
 
 
 def encode_json(value: object, *, budget: Budget) -> str:
@@ -160,6 +162,21 @@ def _measure_json(
     size = 0
     ascii_only = True
     separating_spaces = 0
+    string_memo: dict[int, object] | None = None
+
+    def canonical_string(value: str) -> str:
+        """Prepay the actual JSON spelling without caller string conversion hooks."""
+        nonlocal string_memo
+        if budget is not None:
+            budget.consume("work", len(value) + 1)
+            budget.reserve_storage(256 + 4 * len(value))
+        name = str.__str__(value)
+        if copy_workspace:
+            if string_memo is None:
+                string_memo = {}
+            string_memo[id(value)] = name
+        return name
+
     try:
         while stack:
             if budget is not None:
@@ -196,6 +213,7 @@ def _measure_json(
                     raise LimitExceeded("JSON input exceeds max_bytes", location=source)
                 if isinstance(item, dict):
                     separating_spaces += len(item)
+                    subclass_names = False
                     for key in item:
                         if not isinstance(key, str):
                             raise InputError(
@@ -205,12 +223,29 @@ def _measure_json(
                             raise LimitExceeded(
                                 "JSON input exceeds max_bytes", location=source
                             )
+                        subclass_names |= type(key) is not str
                         ascii_only &= key.isascii()
                         size += _string_bytes(key, budget, workspace) + 1
                         if size > max_bytes:
                             raise LimitExceeded(
                                 "JSON input exceeds max_bytes", location=source
                             )
+                    if subclass_names:
+                        # Python key equality may differ from the JSON string name.
+                        # Only subclass-bearing objects need another name inventory.
+                        if budget is not None:
+                            budget.consume("work", len(item))
+                            budget.consume("states", len(item))
+                            budget.reserve_storage(256 + 80 * len(item))
+                        names: set[str] = set()
+                        for key in item:
+                            name = key if type(key) is str else canonical_string(key)
+                            if name in names:
+                                raise InputError(
+                                    "JSON object names collide on the wire",
+                                    location=source,
+                                )
+                            names.add(name)
                     stack.append((iter(item.values()), depth + 1, id(item)))
                 else:
                     stack.append((iter(item), depth + 1, id(item)))
@@ -219,6 +254,8 @@ def _measure_json(
                     raise LimitExceeded("JSON input exceeds max_bytes", location=source)
                 ascii_only &= item.isascii()
                 size += _string_bytes(item, budget, workspace)
+                if copy_workspace and type(item) is not str:
+                    canonical_string(item)
             elif item is None or type(item) is bool:
                 length = 4 if item is None or item is True else 5
                 size += length
@@ -242,7 +279,7 @@ def _measure_json(
         if isinstance(error, InputError):
             raise
         raise InputError(str(error), location=source) from error
-    return _JsonMeasurement(size, ascii_only, separating_spaces)
+    return _JsonMeasurement(size, ascii_only, separating_spaces, string_memo)
 
 
 def _measure(value: object, budget: Budget) -> int:

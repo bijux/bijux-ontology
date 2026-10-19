@@ -213,3 +213,20 @@ def test_absent_document_base_survives_context_resets() -> None:
     with pytest.raises(ValueError) as captured:
         expand_document({"ignored": "value"}, on_property_dropped=fail)
     assert captured.value is callback_error
+
+
+def test_string_subclass_names_preserve_the_actual_jsonld_wire_context() -> None:
+    """In-memory RDF names must have the same meaning as their encoded JSON."""
+    from bijux_ontology.execution.limits import Budget
+    from bijux_ontology.json.values import decode_json, encode_json
+
+    document = {
+        "@context": {URIRef("p"): "urn:p"},
+        "@id": "urn:s",
+        URIRef("p"): "value",
+    }
+    wire = decode_json(encode_json(document, budget=Budget()))
+    actual = convert_to_rdf(document)
+    expected = convert_to_rdf(wire)
+    assert actual.report.verified and expected.report.verified
+    assert actual.nquads == expected.nquads == '<urn:s> <urn:p> "value" .\n'

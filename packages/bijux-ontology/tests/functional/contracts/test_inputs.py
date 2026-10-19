@@ -1,11 +1,12 @@
 """Owned decoding rejects ambiguity and bounds before copying caller data."""
 
 import pytest
+from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.json.values import decode_json, own_json
+from bijux_ontology.json.values import decode_json, encode_json, own_json
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 
 
@@ -140,3 +141,55 @@ def test_input_context_preserves_the_original_native_parse_failure() -> None:
     location = Location.from_error(wrapped.value)
     assert location is not None and location.failure is evidence
     assert location.source == "https://example.org/data.ttl"
+
+
+def test_owned_json_names_are_unique_exact_wire_strings() -> None:
+    """JSON names cannot inherit RDF key equality or produce duplicate output."""
+    supplied = {URIRef("name"): [{URIRef("value"): URIRef("urn:value")}]}
+    owned = own_json(supplied)
+    assert isinstance(owned, dict) and type(next(iter(owned))) is str
+    children = owned["name"]
+    assert isinstance(children, list) and isinstance(children[0], dict)
+    assert type(next(iter(children[0]))) is str
+    assert decode_json(encode_json(owned, budget=Budget())) == {
+        "name": [{"value": "urn:value"}]
+    }
+    supplied[URIRef("name")].append({})
+    assert len(children) == 1
+    shared = URIRef("shared")
+    aliases = own_json({shared: shared})
+    assert isinstance(aliases, dict)
+    assert type(next(iter(aliases))) is str and type(aliases["shared"]) is str
+    assert aliases == {"shared": "shared"}
+    for aliases in ({URIRef("p"): 1, "p": 2}, {"p": 2, URIRef("p"): 1}):
+        for value in (aliases, {"nested": [aliases]}):
+            with pytest.raises(InputError, match="collide"):
+                own_json(value, source="names.json")
+            with pytest.raises(InputError, match="collide"):
+                encode_json(value, budget=Budget())
+    stopped = Budget(Limits(max_states=1))
+    with pytest.raises(LimitExceeded):
+        own_json({URIRef("p"): "value"}, budget=stopped)
+
+
+def test_string_subclass_value_storage_is_paid_before_copying() -> None:
+    """Deepcopy of a string subclass cannot allocate outside its shared grant."""
+    import tracemalloc
+
+    value = URIRef("p" * 250_000)
+    limits = Limits(max_bytes=1_000_000, max_total_bytes=1024, max_work=1_000_000)
+    tracing = tracemalloc.is_tracing()
+    if not tracing:
+        tracemalloc.start()
+    current, _ = tracemalloc.get_traced_memory()
+    tracemalloc.reset_peak()
+    try:
+        with pytest.raises(LimitExceeded):
+            own_json({"value": value}, budget=Budget(limits))
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        if not tracing:
+            tracemalloc.stop()
+    assert peak - current < 100_000
+    ordinary = str.__str__(value)
+    assert own_json({"value": ordinary}, budget=Budget(limits)) == {"value": ordinary}
