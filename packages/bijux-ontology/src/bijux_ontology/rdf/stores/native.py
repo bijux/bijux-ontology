@@ -14,9 +14,9 @@ from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import QueryTerm
 from bijux_ontology.rdf.terms import literal_term
+from bijux_ontology.resources.files import verify_files
 
 from .protocol import scope_data
-from .seals import verify_files
 from .types import StoredRdf
 
 

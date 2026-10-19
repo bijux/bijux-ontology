@@ -16,8 +16,8 @@ from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import term_data
+from bijux_ontology.resources.files import verify_files
 
-from .seals import verify_files
 from .types import StoredRdf
 
 

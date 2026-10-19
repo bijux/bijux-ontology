@@ -14,6 +14,7 @@ FOUNDATION = {
     "absence",
     "diagnostics",
     "json",
+    "resources",
 }
 PACKAGES = {
     "rdf",

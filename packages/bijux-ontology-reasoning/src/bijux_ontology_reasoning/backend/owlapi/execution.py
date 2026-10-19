@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, boun
 from bijux_ontology.execution.processes.transport import run_worker
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.rdf.stores.seals import verify_files
+from bijux_ontology.resources.files import verify_files
 
 from ..types import BackendCapability, OwlProfile, OwlProfileBackend
 from .bundles import (

@@ -10,7 +10,7 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.rdf.stores.seals import StoreFile
+from bijux_ontology.resources.files import FileSnapshot
 
 OwlProfile = Literal["owl2-dl", "owl2-el", "owl2-ql", "owl2-rl"]
 
@@ -23,7 +23,7 @@ class OwlProfileBackend:
     directory: Path
     manifest_sha256: str
     jars: tuple[str, ...]
-    files: tuple[StoreFile, ...]
+    files: tuple[FileSnapshot, ...]
     artifacts: Path
 
     def __init__(self) -> None:

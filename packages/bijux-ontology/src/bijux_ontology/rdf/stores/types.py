@@ -10,8 +10,7 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-
-from .seals import StoreFile
+from bijux_ontology.resources.files import FileSnapshot
 
 if TYPE_CHECKING:
     from bijux_ontology.rdf.sources.snapshots import PreparedSource
@@ -22,7 +21,7 @@ class StoredRdf:
     """A closed database revision; no mutable native store object escapes."""
 
     directory: Path
-    files: tuple[StoreFile, ...]
+    files: tuple[FileSnapshot, ...]
     source_sha256: str
     source_format: str
     quads: int
