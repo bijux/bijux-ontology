@@ -1394,6 +1394,13 @@ base-two information content and all tied shared-ancestor witnesses.
 Results carry actual corpus/hierarchy fingerprints. Unknown terms, zero frequency,
 cycles, disconnected pairs and incomplete propagation withhold required scores.
 
+`enrich_annotations` uses that population, an explicit study and a prespecified
+term family. Install `[analysis]` for SciPy Fisher tests with the `greater`
+alternative and whole-family BY or explicitly qualified BH correction. Results
+retain contingency counts, population/method identities and exclusions; partial
+execution withholds adjusted values. Sampling/dependence declarations concern the
+supplied sets and do not establish biological conclusions.
+
 `bijux_ontology.models.persistence.compile_model_artifact` captures ordinary
 `RdfSource` text/bytes, declarations and closed context resources as inert data.
 Compute `model_preparation_identity` from current inputs before loading; pass it

@@ -30,7 +30,9 @@ class DiagnosticExplanation:
 _CODES = {
     "analysis": frozenset(
         "annotation_unknown term_unknown parent_unknown projection_unknown "
-        "hierarchy_cycle zero_frequency disconnected input".split()
+        "hierarchy_cycle zero_frequency disconnected input "
+        "family_unknown native_capacity backend_unavailable backend_unsupported "
+        "backend_failed".split()
     ),
     "projection": frozenset(
         "term_unverified value_invalid reference_unverified conversion_unverified "

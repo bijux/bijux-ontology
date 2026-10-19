@@ -104,3 +104,53 @@ class TermSetSimilarity:
     identity: PopulationIdentity | None
     report: Report
     aggregation: str = "symmetric-mean-directional-best"
+
+
+@dataclass(frozen=True)
+class EnrichmentCounts:
+    """Auditable fixed-universe contingency counts for a prespecified term."""
+
+    term: URIRef
+    study_and_term: int
+    study_count: int
+    term_count: int
+    background_count: int
+    table: tuple[tuple[int, int], tuple[int, int]]
+
+
+@dataclass(frozen=True)
+class EnrichmentTerm:
+    """Actual maintained-library p and whole-family adjusted p, without rounding."""
+
+    counts: EnrichmentCounts
+    raw_p: float
+    adjusted_p: float
+
+
+@dataclass(frozen=True)
+class EnrichmentIdentity:
+    """Counted population, study, fixed family and actual numerical method."""
+
+    population: PopulationIdentity
+    study_fingerprint: str
+    family_id: str
+    family_fingerprint: str
+    correction: str
+    dependence: str
+    outside_background: str
+    scipy_version: str
+    numpy_version: str
+    test: str = "fisher-exact/greater/fixed-margins"
+    sampling: str = "supplied-snapshot/eligible-fixed-universe/fixed-margins"
+
+
+@dataclass(frozen=True)
+class EnrichmentRead:
+    """No adjusted values are published from a partial or failed family."""
+
+    tests: tuple[EnrichmentTerm, ...]
+    counts: tuple[EnrichmentCounts, ...]
+    identity: EnrichmentIdentity | None
+    excluded: tuple[str, ...]
+    unannotated_study: tuple[str, ...]
+    report: Report

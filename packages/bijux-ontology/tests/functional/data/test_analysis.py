@@ -293,3 +293,156 @@ def test_shared_bounds_cancel_and_cross_product_withhold_unpaid_results() -> Non
         ).report.outcome
         == "input_error"
     )
+
+
+class _EnrichmentOptions(TypedDict):
+    family: tuple[URIRef, ...]
+    family_id: str
+    correction: str
+    dependence: str
+
+
+def test_enrichment_matches_direct_native_fixed_family_and_changed_background() -> None:
+    scipy = pytest.importorskip("scipy.stats")
+    from bijux_ontology.data.analysis import enrich_annotations
+
+    population = _population()
+    options: _EnrichmentOptions = {
+        "family": (EX.M, EX.A, EX.Zero),
+        "family_id": "prespecified",
+        "correction": "by",
+        "dependence": "arbitrary",
+    }
+    result = enrich_annotations(population, ("e1", "e2", "e1"), **options)
+    assert result.report.verified, result.report.to_dict()
+    assert [row.table for row in result.counts] == [
+        ((2, 0), (0, 2)),
+        ((1, 1), (0, 2)),
+        ((0, 2), (0, 2)),
+    ]
+    raw = [
+        float(scipy.fisher_exact(row.table, alternative="greater", method=None).pvalue)
+        for row in result.counts
+    ]
+    adjusted = [
+        float(value) for value in scipy.false_discovery_control(raw, method="by")
+    ]
+    assert [row.raw_p for row in result.tests] == raw
+    assert [row.adjusted_p for row in result.tests] == adjusted
+    assert result.tests[-1].raw_p == 1.0 and result.tests[-1].counts.term == EX.Zero
+    assert result.identity is not None
+    assert result.identity.scipy_version == "1.17.1"
+    assert result.identity.test == "fisher-exact/greater/fixed-margins"
+    changed = enrich_annotations(
+        _population(background=("e1", "e2", "e3", "e4", "unannotated")),
+        ("e1", "e2"),
+        **options,
+    )
+    assert changed.report.verified and changed.identity != result.identity
+    assert changed.counts[0].background_count == 5 and changed.counts[0].table == (
+        (2, 0),
+        (0, 3),
+    )
+    assert changed.tests[0].raw_p != result.tests[0].raw_p
+    bh_options = options.copy()
+    bh_options["correction"] = "bh"
+    bh_options["dependence"] = "independent-or-prds"
+    bh = enrich_annotations(
+        population,
+        ("e1", "e2"),
+        **bh_options,
+    )
+    assert bh.report.verified
+    assert [row.adjusted_p for row in bh.tests] == list(
+        map(float, scipy.false_discovery_control(raw, method="bh"))
+    )
+    assert bh.identity != result.identity
+
+
+def test_enrichment_optional_backend_and_explicit_selection_qualification() -> None:
+    import importlib.util
+
+    from bijux_ontology.data.analysis import enrich_annotations
+
+    population = _population(background=("e1", "e2", "e3", "e4", "unannotated"))
+    options: _EnrichmentOptions = {
+        "family": (EX.M,),
+        "family_id": "prespecified",
+        "correction": "by",
+        "dependence": "arbitrary",
+    }
+    rejected = enrich_annotations(population, ("e1", "outside"), **options)
+    assert rejected.report.outcome == "input_error" and rejected.excluded == (
+        "outside",
+    )
+    selected = enrich_annotations(
+        population,
+        ("e1", "unannotated", "outside"),
+        outside_background="exclude",
+        **options,
+    )
+    assert selected.excluded == ("outside",) and selected.unannotated_study == (
+        "unannotated",
+    )
+    assert (
+        selected.counts[0].study_count == 2 and selected.counts[0].background_count == 5
+    )
+    if importlib.util.find_spec("scipy") is None:
+        assert not selected.tests and selected.report.outcome == "unverified"
+        assert selected.report.issues[0].code == "analysis.backend_unavailable"
+        assert "bijux-ontology[analysis]" in selected.report.issues[0].message
+    else:
+        assert selected.report.verified and len(selected.tests) == 1
+    assert resnik_similarity(population, EX.A, EX.B).score == -math.log2(2 / 5)
+    unknown_options = options.copy()
+    unknown_options["family"] = (EX.M, EX.Unknown)
+    bh_options = options.copy()
+    bh_options["correction"] = "bh"
+    empty_options = options.copy()
+    empty_options["family"] = ()
+    for invalid_options in (unknown_options, bh_options, empty_options):
+        result = enrich_annotations(population, ("e1",), **invalid_options)
+        assert not result.tests and not result.report.verified
+    assert not enrich_annotations(
+        population, ("outside",), outside_background="exclude", **options
+    ).tests
+
+
+def test_enrichment_owned_deadline_cancel_budget_and_fresh_recovery() -> None:
+    import time
+    from threading import Timer
+
+    pytest.importorskip("scipy.stats")
+    from bijux_ontology.data.analysis import enrich_annotations
+
+    population = _population()
+    options: _EnrichmentOptions = {
+        "family": (EX.M, EX.A),
+        "family_id": "prespecified",
+        "correction": "by",
+        "dependence": "arbitrary",
+    }
+    started = time.monotonic()
+    expired = enrich_annotations(population, ("e1", "e2"), timeout=0.05, **options)
+    assert expired.report.outcome == "exhausted" and not expired.tests
+    assert time.monotonic() - started < 3
+    cancelled = Event()
+    timer = Timer(0.05, cancelled.set)
+    timer.start()
+    try:
+        result = enrich_annotations(
+            population, ("e1", "e2"), cancel=cancelled, **options
+        )
+        assert result.report.outcome == "exhausted" and not result.tests
+    finally:
+        timer.cancel()
+    for name in ("max_work", "max_states", "max_total_bytes"):
+        result = enrich_annotations(
+            population, ("e1", "e2"), limits=replace(Limits(), **{name: 1}), **options
+        )
+        assert result.report.outcome == "exhausted" and not result.tests
+    recovered = enrich_annotations(population, ("e1", "e2"), **options)
+    assert recovered.report.verified and [row.raw_p for row in recovered.tests] == [
+        1 / 6,
+        0.5,
+    ]
