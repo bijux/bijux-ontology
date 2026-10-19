@@ -20,7 +20,11 @@ import pytest
 from rdflib import URIRef
 from rdflib.namespace import RDF, RDFS
 
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import (
+    InputError,
+    LimitExceeded,
+    ResourceError,
+)
 from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import ControlBudget, Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
@@ -988,3 +992,156 @@ def test_failed_http_cache_publication_preserves_existing_entries(stop: str) -> 
         )
         assert fresh.get(base + "/alias").payload == b"final"
         assert len(seen) == 5
+
+
+@pytest.mark.parametrize(
+    "meaning", ("conflict", "equivalent", "irrelevant", "fresh", "ld", "multiple")
+)
+def test_http_alias_identity_includes_resolved_context_meaning(meaning: str) -> None:
+    """Actual alias admission compares context meaning and preserves fresh policy."""
+    if importlib.util.find_spec("pyld") is None:
+        pytest.skip("Context-link qualification requires the maintained JSON-LD extra")
+    seen: list[tuple[str, dict[str, str]]] = []
+    media = "application/ld+json" if meaning == "ld" else "application/json"
+    relation = 'rel="http://www.w3.org/ns/json-ld#context"'
+    routes: dict[str, Route] = {
+        "/a": (302, {"Location": "/final"}, b""),
+        "/b": (302, {"Location": "/final"}, b""),
+        "/final": (
+            200,
+            {"Content-Type": media, "Link": "<./first>; " + relation},
+            b'{"@context":{}}',
+        ),
+    }
+    with server(routes, seen) as base:
+        client = HttpAcquisition(
+            AcquisitionPolicy((base,)), Operation(None, None, 10, None)
+        )
+        original = client.get(base + "/a")
+        target = (
+            "/second"
+            if meaning in ("conflict", "fresh", "ld")
+            else "./first"
+            if meaning == "irrelevant"
+            else "/first"
+        )
+        routes["/final"] = (
+            200,
+            {
+                "Content-Type": media,
+                "Link": "<" + target + ">; " + relation,
+                "ETag": '"different"',
+                "X-Trace": "different",
+            },
+            b'{"@context":{}}',
+        )
+        if meaning == "multiple":
+            routes["/final"][1]["Link"] = (
+                "</first>; " + relation + ",</second>; " + relation
+            )
+            with pytest.raises(InputError, match="Multiple HTTP JSON-LD context links"):
+                client.get(base + "/b")
+            assert base + "/b" not in client.responses
+        elif meaning == "conflict":
+            with pytest.raises(
+                ResourceError, match="Conflicting acquired effective URL"
+            ):
+                client.get(base + "/b")
+            assert base + "/b" not in client.responses
+        elif meaning == "fresh":
+            observed = client.get(base + "/a", fresh=True)
+            assert observed.resource.context_url == base + "/second"
+            assert client.get(base + "/a") is original
+            assert (
+                client.responses[base + "/final"].resource.context_url
+                == base + "/first"
+            )
+        else:
+            observed = client.get(base + "/b")
+            assert observed.resource.context_url == (
+                None if meaning == "ld" else base + "/first"
+            )
+        assert original.resource.context_url == (
+            None if meaning == "ld" else base + "/first"
+        )
+        assert [path for path, _ in seen] == [
+            "/a",
+            "/final",
+            "/a" if meaning == "fresh" else "/b",
+            "/final",
+        ]
+
+
+def test_conflicting_context_aliases_fail_before_closure_expansion(
+    tmp_path: Path,
+) -> None:
+    """A real acquired bundle cannot retain conflicting effective context receipts."""
+    if importlib.util.find_spec("pyld") is None:
+        pytest.skip("Context-link qualification requires the maintained JSON-LD extra")
+    relation = 'rel="http://www.w3.org/ns/json-ld#context"'
+
+    class ChangingRoutes(dict[str, Route]):
+        """Serve different processing metadata on two actual alias retrievals."""
+
+        visits = 0
+
+        def get(self, key: str, default: Any = None) -> Any:
+            if key == "/final":
+                self.visits += 1
+                target = "/first" if self.visits == 1 else "/second"
+                return (
+                    200,
+                    {
+                        "Content-Type": "application/json",
+                        "Link": "<" + target + ">; " + relation,
+                    },
+                    b'{"@context":{}}',
+                )
+            return super().get(key, default)
+
+    routes = ChangingRoutes(
+        {
+            "/root": (200, {"Content-Type": "text/turtle"}, ROOT),
+            "/child": (200, {"Content-Type": "text/turtle"}, CHILD),
+            "/a": (302, {"Location": "/final"}, b""),
+            "/b": (302, {"Location": "/final"}, b""),
+            "/first": (
+                200,
+                {"Content-Type": "application/ld+json"},
+                b'{"@context":{}}',
+            ),
+            "/second": (
+                200,
+                {"Content-Type": "application/ld+json"},
+                b'{"@context":{}}',
+            ),
+        }
+    )
+    seen: list[tuple[str, dict[str, str]]] = []
+    with server(routes, seen) as base:
+        source = skeleton(tmp_path / "source", base)
+        manifest = json.loads((source / "project.json").read_text())
+        manifest["contexts"] = {base + "/a": "a.json", base + "/b": "b.json"}
+        (source / "project.json").write_text(json.dumps(manifest))
+        destination = tmp_path / "conflicting.zip"
+        result = acquire_bundle(
+            source,
+            requests=tuple(
+                AcquisitionRequest(path, base + target)
+                for path, target in (
+                    ("root.ttl", "/root"),
+                    ("a.json", "/a"),
+                    ("b.json", "/b"),
+                )
+            ),
+            policy=AcquisitionPolicy((base,)),
+            destination=destination,
+        )
+        assert not result.report.verified and result.archive is None
+        assert not destination.exists()
+        assert any(
+            "Conflicting acquired effective URL" in issue.message
+            for issue in result.report.issues
+        )
+        assert all(item.requested_url != base + "/b" for item in result.resources)
+        assert [path for path, _ in seen] == ["/root", "/a", "/final", "/b", "/final"]

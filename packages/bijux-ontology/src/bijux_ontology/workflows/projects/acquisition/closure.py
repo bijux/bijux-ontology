@@ -7,7 +7,6 @@ from dataclasses import replace
 from io import BytesIO
 from pathlib import Path
 from typing import cast
-from urllib.parse import urljoin
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
@@ -29,8 +28,6 @@ from bijux_ontology.workflows.projects.jobs.inputs import input_paths
 
 from .http import HttpAcquisition, _Response
 from .types import _Unavailable
-
-_CONTEXT_REL = "http://www.w3.org/ns/json-ld#context"
 
 
 class Closure(Mapping[str, RdfSource]):
@@ -126,9 +123,9 @@ class Closure(Mapping[str, RdfSource]):
         return path, alias
 
     def _json_response(self, response: _Response) -> dict[str, object]:
-        """Apply maintained Link parsing while PyLD owns all context semantics."""
+        """Use admitted HTTP metadata while PyLD owns all context semantics."""
         try:
-            maintained = processor()
+            processor()
         except ResourceError as error:
             raise _Unavailable(str(error)) from error
         item = response.resource
@@ -137,43 +134,13 @@ class Closure(Mapping[str, RdfSource]):
             and item.media_type.endswith("+json")
         ):
             raise InputError("Context retrieval requires a supported JSON media type")
-        context_url = None
-        if response.link and item.media_type != "application/ld+json":
-            self.budget.consume("work", len(response.link) + 1)
-            links = maintained.parse_link_header(response.link)
-            linked = links.get(_CONTEXT_REL)
-            if isinstance(linked, list):
-                raise InputError("Multiple HTTP JSON-LD context links are unsupported")
-            if linked is not None:
-                if not isinstance(linked, dict) or not isinstance(
-                    linked.get("target"), str
-                ):
-                    raise InputError("Malformed HTTP JSON-LD context link")
-                context_url = urljoin(item.effective_url, linked["target"])
-                self.http.authorize(context_url)
+        context_url = item.context_url
         document = decode_json(
             response.payload,
             source=item.requested_url,
             max_bytes=self.budget.limits.max_bytes,
             max_depth=self.budget.limits.max_depth,
         )
-        aliases = []
-        for key, cached in self.http.responses.items():
-            self.budget.consume(
-                "work", len(cached.resource.effective_url) + len(item.effective_url) + 1
-            )
-            if (
-                cached.payload is response.payload
-                and cached.resource.effective_url == item.effective_url
-            ):
-                self.budget.consume("states")
-                aliases.append(key)
-        self.budget.consume("states", 2 * len(aliases))
-        for key in aliases:
-            cached = self.http.responses[key]
-            self.http.responses[key] = replace(
-                cached, resource=replace(cached.resource, context_url=context_url)
-            )
         return {
             "document": document,
             "documentUrl": item.effective_url,

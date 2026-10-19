@@ -1,16 +1,24 @@
 """Operation-local HTTP retrieval without ambient credentials or proxies."""
 
 import hashlib
+import re
 from dataclasses import dataclass, replace
 from email.message import Message
+from urllib.parse import urljoin
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.sources.compression import decode_gzip
 
 from .http_transport import read_hop
 from .types import AcquiredResource, AcquisitionPolicy, _http_url
+
+_CONTEXT_RELATION = "http://www.w3.org/ns/json-ld#context"
+_CONTEXT_ATTRIBUTE = re.compile(
+    r'(?:^|;)\s*rel="' + re.escape(_CONTEXT_RELATION) + r'"'
+)
 
 
 @dataclass(frozen=True)
@@ -146,6 +154,34 @@ class HttpAcquisition:
             )
         return actual
 
+    def _context_url(self, effective: str, media_type: str, link: str) -> str | None:
+        """Qualify processing-relevant Link meaning before admitting an alias."""
+        if (
+            media_type == "application/ld+json"
+            or not (
+                media_type == "application/json"
+                or media_type.startswith("application/")
+                and media_type.endswith("+json")
+            )
+            or _CONTEXT_ATTRIBUTE.search(link) is None
+        ):
+            return None
+        # This candidate gate preserves core retrieval for unrelated Link headers;
+        # only the maintained parser selects relations, targets and ambiguity.
+        self.budget.consume("work", len(link) + 1)
+        self.budget.consume("bytes", 128 * len(link) + 4096)
+        self.budget.consume("states", len(link) + 1)
+        linked = processor().parse_link_header(link).get(_CONTEXT_RELATION)
+        if isinstance(linked, list):
+            raise InputError("Multiple HTTP JSON-LD context links are unsupported")
+        if linked is None:
+            return None
+        if not isinstance(linked, dict) or not isinstance(linked.get("target"), str):
+            raise InputError("Malformed HTTP JSON-LD context link")
+        target = linked["target"]
+        self.budget.consume("bytes", 4 * (len(effective) + len(target)) + 64)
+        return self.authorize(urljoin(effective, target))
+
     def request(self) -> None:
         """Count all network requests, including redirect hops, cumulatively."""
         self.budget.consume("work")
@@ -218,11 +254,12 @@ class HttpAcquisition:
         )
         self.budget.consume("work", len(expanded) + 1)
         self.budget.consume("states")
+        context_url = self._context_url(effective, media_type, link)
         resource = AcquiredResource(
             url,
             effective,
             media_type,
-            None,
+            context_url,
             encoding,
             len(raw),
             len(expanded),
@@ -235,7 +272,11 @@ class HttpAcquisition:
         before = self.responses.get(effective)
         if before is not None:
             self.budget.consume("work", len(expanded) + 1)
-            if before.payload != expanded or before.resource.media_type != media_type:
+            if (
+                before.payload != expanded
+                or before.resource.media_type != media_type
+                or before.resource.context_url != context_url
+            ):
                 raise ResourceError(
                     "Conflicting acquired effective URL", location=effective
                 )
