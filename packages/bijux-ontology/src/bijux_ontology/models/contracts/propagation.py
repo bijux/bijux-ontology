@@ -7,7 +7,7 @@ from rdflib import Graph, URIRef
 
 from bijux_ontology.declarations.types import FieldDeclaration, ModelDeclaration
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.owl.properties import PropertyContract, property_contract
+from bijux_ontology.owl.relations.properties import PropertyContract, property_contract
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals.checking import Regime
 

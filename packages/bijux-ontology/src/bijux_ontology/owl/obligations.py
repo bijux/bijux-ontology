@@ -11,6 +11,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.owl.relations.classes import ClassContracts
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals.checking import (
     DatatypeRelation,
@@ -23,8 +24,6 @@ from bijux_ontology.rdf.sources.snapshots import (
     copy_graph,
 )
 from bijux_ontology.rdf.structure import read_rdf_list
-
-from .classes import ClassContracts
 
 ObligationKind = Literal[
     "subsumption",
