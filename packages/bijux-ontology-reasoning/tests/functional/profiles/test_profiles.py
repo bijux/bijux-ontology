@@ -236,8 +236,14 @@ def test_native_output_and_ambient_option_boundaries(
     source = _source(
         " ".join(f"<urn:C{i}> rdfs:subClassOf <urn:D{i}> ." for i in range(80))
     )
+    classpath_bytes = sum(
+        len(str(backend.directory / name).encode()) + 1 for name in backend.jars
+    )
     result = check_profile(
-        backend, source, profile="owl2-dl", limits=Limits(max_bytes=8000)
+        backend,
+        source,
+        profile="owl2-dl",
+        limits=Limits(max_bytes=max(8000, classpath_bytes + 1)),
     )
     assert result.report.outcome == "exhausted" and result.in_profile is None
     assert any("OWL worker exhausted" in item.message for item in result.report.issues)
