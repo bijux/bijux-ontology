@@ -146,11 +146,15 @@ def check_emission(
                                 actual=branch.model,
                             )
                         )
-        snapshot = own_json(
-            document,
-            max_bytes=selected.max_bytes,
-            max_depth=selected.max_depth,
-            budget=budget,
+        snapshot = (
+            _prepared._document
+            if _prepared is not None
+            else own_json(
+                document,
+                max_bytes=selected.max_bytes,
+                max_depth=selected.max_depth,
+                budget=budget,
+            )
         )
         prepared = (
             _prepared

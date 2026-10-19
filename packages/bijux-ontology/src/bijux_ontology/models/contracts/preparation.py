@@ -15,13 +15,13 @@ from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
-from bijux_ontology.json.comparison import same_json
 from bijux_ontology.json.values import capture_json, encode_json
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.samples import compose_context
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals.checking import Regime
@@ -162,15 +162,12 @@ class PreparedModels:
         operation.consume("bytes", 128 + 64 * len(self._context_json))
         context = json.loads(self._context_json)
         output = _prepared_json(document, operation)
-        if isinstance(output, dict):
-            if "@context" in output and not same_json(
-                output["@context"], context, operation
-            ):
-                raise InputError("Prepared context conflicts with actual output")
-            return {**output, "@context": context}
-        if isinstance(output, list):
-            return {"@context": context, "@graph": output}
-        raise InputError("An external context requires object or array output")
+        return compose_context(
+            output,
+            context,
+            operation,
+            conflict_message="Prepared context conflicts with actual output",
+        )
 
     def _result(self, report: Report, *, scope: str = "models.prepared") -> Report:
         """Retain raw declaration failures in every individually scoped result."""

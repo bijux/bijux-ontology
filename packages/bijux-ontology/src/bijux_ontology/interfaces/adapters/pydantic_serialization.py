@@ -1,6 +1,5 @@
 """Sample ordinary Pydantic JSON output using one semantic mapping source."""
 
-import json
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import TYPE_CHECKING, Literal, cast, get_args
@@ -29,18 +28,15 @@ from bijux_ontology.jsonld.evidence.entities import object_key
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_resources
-from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages
+from bijux_ontology.jsonld.usages.checking import PreparedUsages
 from bijux_ontology.models.emission.bindings import (
     candidate_paths,
     source_entity,
     source_node_traits,
 )
 from bijux_ontology.models.emission.counts import check_occurrences
-from bijux_ontology.models.emission.serialization import (
-    InstanceCheck,
-    _failure,
-    check_serialized,
-)
+from bijux_ontology.models.emission.samples import SampledOutput, serialization_failure
+from bijux_ontology.models.emission.serialization import InstanceCheck
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
@@ -444,7 +440,7 @@ def check_instance(
             == "@context"
         ):
             raise InputError("Context definitions are not output property requirements")
-    output_json = None
+    output_sample = SampledOutput(budget)
     reports: list[Report] = []
     sample: _Sample | None = None
     try:
@@ -464,32 +460,19 @@ def check_instance(
                 )
                 raise
             reports.append(inventory.report)
-        if context is not ABSENT:
-            context = own_json(
-                context, max_bytes=selected.max_bytes, max_depth=selected.max_depth
-            )
+        output_sample.capture_context(context)
         raw = instance.model_dump(**supplied)
-        output = own_json(
-            raw, max_bytes=selected.max_bytes, max_depth=selected.max_depth
-        )
-        output_json = json.dumps(output, ensure_ascii=False, allow_nan=False)
+        output = output_sample.capture_output(raw)
         sources = (
             vocabulary
             if isinstance(vocabulary, Vocabulary)
             else load_vocabulary(vocabulary, budget=budget)
         )
-        document = output
-        if context is not ABSENT:
-            if not isinstance(output, dict):
-                raise InputError("Ordinary Pydantic profile requires object output")
-            if "@context" in output and output["@context"] != context:
-                raise InputError(
-                    "Supplied context conflicts with actual serializer output"
-                )
-            document = {**output, "@context": context}
-        prepared = prepare_usages(
-            document, base=base, document_loader=loader, budget=budget
-        )
+        if context is not ABSENT and not isinstance(output, dict):
+            raise InputError("Ordinary Pydantic profile requires object output")
+        output_sample.apply_context()
+        prepared = output_sample.prepare(base=base, document_loader=loader)
+        document = output_sample.document
         if inventory is None:
             if model is not None:
                 raise InputError(
@@ -522,25 +505,24 @@ def check_instance(
                 raise InputError(
                     "Independent inventory requires one selected root model"
                 )
-        return check_serialized(
-            output,
+        report = output_sample.check(
             models,
             [ModelUsage(root)],
             vocabulary=sources,
-            context=context,
             declaration_report=combine_reports("pydantic.sample", *reports)
             if reports
             else None,
             base=base,
             document_loader=loader,
             rdf_direction=rdf_direction,
-            limits=selected,
-            budget=budget,
+        )
+        return InstanceCheck(
+            output_sample.output_json, output_sample.document_json, report
         )
     except Exception as error:
         if sample is not None and not reports:
             reports.append(replace(sample.extraction().report, complete=False))
-        failure = _failure(error, budget)
+        failure = serialization_failure(error, budget)
         retained = IssueCollector(budget)
         try:
             retain_report(failure, budget, retained)
@@ -551,5 +533,7 @@ def check_instance(
             )
         reports.append(failure)
         return InstanceCheck(
-            output_json, None, combine_reports("pydantic.sample", *reports)
+            output_sample.output_json,
+            None,
+            combine_reports("pydantic.sample", *reports),
         )
