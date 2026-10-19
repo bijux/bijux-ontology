@@ -290,6 +290,20 @@ For JSON-LD, pass original usages and expectations to `check_context`. Reuse exp
 
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
+`rdf.skolem.skolemize(source, caller_owned_base)` names blank resources with
+fresh scoped IRIs across subject, object and graph roles. Retain its `.mapping`
+for `deskolemize(result.source, result.mapping)` on that exact output snapshot.
+Independent operations share names only through explicit owned `BlankNodePair`
+correspondence. Naming changes RDF identity; reversal preserves original sharing
+and exact literals. Similar IRI spellings never authorize reversal.
+
+`rdf.algebra.rdf_set_operation(left, right, operation, ...)` computes exact
+intersection, difference or symmetric difference. Explicit graph selections
+operate on triples; whole datasets retain quad and empty-graph inventories.
+Every retained quad keeps its graph. Independent anonymous inputs require
+complete owned `blank_pairs` or explicit `named_only=True`; one snapshot shares
+identity across its graph selections. No logical equivalence is inferred.
+
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
 
 Use `flatten_document(document, base=logical_base)` for checked flat JSON-LD.
@@ -823,6 +837,13 @@ return no candidate. Exact numeric lexical forms, shared blanks and selected
 empty graphs survive; union projections and unqualified fidelity remain unknown.
 The same cumulative budget covers host and owned worker bookkeeping; maintained
 isomorphism internals are bounded by the operation's wall-clock deadline.
+
+`rdf.merging.plan_rdf_merge(base, left, right)` records disjoint edits and
+property, connected-list or graph conflicts. Pass that exact plan to
+`apply_rdf_merge`, supplying a `MergeResolution` for every conflict and selected
+before/after contracts. Raw conflicts remain in `.plan.report`; structural
+agreement and application acceptance are separate. Anonymous correspondence
+requires actual owned witnesses, and stale bases cannot apply.
 
 `migrate_values(source, ValueSelection((predicate,)), action, ...)` proposes
 an exact object-position migration within the supplied snapshot's scope.

@@ -205,6 +205,9 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "merge_conflict merge_unverified merge_resolution_required "
+        "algebra_identity_unverified "
+        "skolem_unverified "
         "store_unverified entailment_unverified "
         "graph_inventory_conflict graph_route_scope graph_route_collision "
         "migration_contracts_unverified migration_acceptance_unverified "
