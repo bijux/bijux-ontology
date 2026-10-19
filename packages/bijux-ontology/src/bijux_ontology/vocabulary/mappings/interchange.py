@@ -15,6 +15,7 @@ from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json, object_value
 
+from .admission import decode_metadata
 from .types import MappingExport, MappingRead, MappingRow, MappingSet, _iri
 
 
@@ -85,14 +86,7 @@ def _adopt(
         _iri(pair[1], operation)
         prefixes.append((pair[0], pair[1]))
     metadata = _text(data.get("metadata"), operation)
-    object_value(
-        decode_json(
-            metadata,
-            max_bytes=operation.limits.max_bytes,
-            max_depth=operation.limits.max_depth,
-        ),
-        location="mapping metadata",
-    )
+    decode_metadata(metadata, operation)
     encoded = _text(data.get("content"), operation)
     operation.consume("bytes", len(encoded))
     content = base64.b64decode(encoded, validate=True)

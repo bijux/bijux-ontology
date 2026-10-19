@@ -17,10 +17,9 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.mappings.admission import admit_mapping, decode_metadata
 from bijux_ontology.vocabulary.mappings.checking import check_mappings
-from bijux_ontology.vocabulary.mappings.composition.checking import _input
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.interchange import read_sssom
 from bijux_ontology.vocabulary.mappings.types import (
@@ -52,19 +51,11 @@ _PROVENANCE = frozenset(
 )
 
 
-def _context(source: MappingSet, budget: Budget) -> dict[str, object]:
-    """Reuse bounded native metadata, retaining all interpretation-bearing fields."""
-    bound_text(source.metadata_json, budget)
-    budget.consume("states", len(source.metadata_json))
-    budget.consume("bytes", 4 * len(source.metadata_json))
-    metadata = object_value(
-        decode_json(
-            source.metadata_json,
-            max_bytes=budget.limits.max_bytes,
-            max_depth=budget.limits.max_depth,
-        ),
-        location="mapping context",
-    )
+def _context(metadata: dict[str, object], budget: Budget) -> dict[str, object]:
+    """Filter only reconciliation provenance from already qualified metadata."""
+    budget.consume("work", len(metadata))
+    budget.consume("states", len(metadata))
+    budget.consume("bytes", 64 + 32 * len(metadata))
     return {key: value for key, value in metadata.items() if key not in _PROVENANCE}
 
 
@@ -78,6 +69,8 @@ def _produce(
     mapping_set_id: str,
     license: str,
     operation: Operation,
+    *,
+    contexts: dict[int, dict[str, object]] | None = None,
 ) -> MappingRead:
     """Frame original cells; the existing maintained producer qualifies the result.
 
@@ -97,7 +90,11 @@ def _produce(
     known_columns: set[str] = set()
     for group in groups:
         source = group.occurrences[0].mapping_set
-        current = _context(source, operation)
+        current = contexts.get(id(source)) if contexts is not None else None
+        if current is None:
+            current = _context(
+                decode_metadata(source.metadata_json, operation), operation
+            )
         serialized = json.dumps(current, sort_keys=True, separators=(",", ":"))
         bound_text(serialized, operation)
         if context is not None and current != context:
@@ -230,6 +227,7 @@ def reconcile_mappings(
     issues = IssueCollector(operation)
     reports: list[Report] = []
     owned: list[MappingSet] = []
+    contexts: dict[int, dict[str, object]] = {}
     occurrences: list[list[MappingOccurrence]] = []
     groups: tuple[MappingGroup, ...] = ()
     production = None
@@ -242,13 +240,14 @@ def reconcile_mappings(
             )
         index: dict[tuple[object, ...], int] = {}
         for source in supplied:
-            captured, _ = _input(source, operation, issues, reports)
-            assert captured is not None
+            admitted = admit_mapping(source, operation)
+            captured = admitted.mapping_set
             _reserve(operation)
             owned.append(captured)
-            context = json.dumps(
-                _context(source, operation), sort_keys=True, separators=(",", ":")
-            )
+            current_context = _context(admitted.metadata, operation)
+            _reserve(operation)
+            contexts[id(source)] = current_context
+            context = json.dumps(current_context, sort_keys=True, separators=(",", ":"))
             bound_text(context, operation)
             width = len(source.prefixes)
             size = sum(len(key) + len(value) for key, value in source.prefixes)
@@ -282,7 +281,9 @@ def reconcile_mappings(
         groups = tuple(MappingGroup(tuple(items)) for items in occurrences)
         complete = True
         _reserve(operation)
-        production = _produce(groups, mapping_set_id, license, operation)
+        production = _produce(
+            groups, mapping_set_id, license, operation, contexts=contexts
+        )
         _check(
             production,
             subject_vocabulary,

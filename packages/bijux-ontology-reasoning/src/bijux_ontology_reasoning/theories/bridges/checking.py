@@ -14,7 +14,7 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.vocabulary.mappings.composition.checking import _input
+from bijux_ontology.vocabulary.mappings.admission import admit_mapping
 from bijux_ontology.vocabulary.mappings.types import MappingRead, MappingSet
 
 from ...axioms.codec.encoding import ConstructionEncoder
@@ -201,20 +201,21 @@ def check_mapping_bridges(
             raise InputError("Select nonempty required consumer entailments")
         for query in queries:
             encode_axiom(query, operation)
-        # Reserve the producer reference before shared input adoption can stop.
-        # The shared helper's local child list otherwise publishes it only after
-        # retaining metadata, which may already have paid a diagnostic prefix.
+        # Publish the producer reference before retaining its diagnostics or
+        # qualifying mapping metadata; either operation can stop after a paid
+        # diagnostic prefix that must remain visible in the bridge result.
         if isinstance(mappings, MappingRead):
             reserve(operation, 2)
             reports.append(mappings.report)
-        mapping_set, metadata_unknown = _input(
-            mappings,
-            operation,
-            issues,
-            [] if isinstance(mappings, MappingRead) else reports,
+            retain_report(mappings.report, operation, issues)
+            if not mappings.report.verified or mappings.mapping_set is None:
+                raise ResourceError("The selected mapping producer did not complete")
+        admitted = admit_mapping(mappings, operation)
+        mapping_set = admitted.mapping_set
+        metadata_unknown = bool(
+            admitted.metadata.get("predicate_modifier")
+            or admitted.metadata.get("other")
         )
-        if mapping_set is None:
-            raise ResourceError("The selected mapping producer did not complete")
         selected = capture_interpretations(interpretations, mapping_set, operation)
         if type(subject) is not TheoryComponent or type(object_) is not TheoryComponent:
             raise InputError(

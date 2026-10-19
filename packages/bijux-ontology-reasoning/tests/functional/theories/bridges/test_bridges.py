@@ -1,8 +1,10 @@
 """Actual row approvals, native bridge interactions and honest baseline controls."""
 
 import os
+import sys
 from pathlib import Path
 from threading import Event
+from types import FrameType
 from typing import cast
 
 import pytest
@@ -17,7 +19,7 @@ from bijux_ontology_reasoning.theories.bridges import (
 from bijux_ontology_reasoning.theories.integration import TheoryComponent
 from rdflib import URIRef
 
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits, retain_report
 from bijux_ontology.vocabulary.mappings import read_sssom
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.types import MappingSet
@@ -409,3 +411,49 @@ def test_original_occurrence_binding_missing_imports_and_bounds(
             cancel=cancel,
         )
         assert not bounded.scope_complete and not bounded.observations
+
+
+def test_native_producer_paid_prefix_survives_bridge_adoption_exhaustion(
+    backend: OwlProfileBackend,
+) -> None:
+    """A later admission stop cannot erase a native producer's paid diagnostic."""
+    owner = Budget()
+    failed = read_sssom(
+        b"subject_id\tpredicate_id\tobject_id\nrelative\tbad\tbad\n",
+        mapping_set_id="urn:bridge:mappings",
+        license="https://creativecommons.org/publicdomain/zero/1.0/",
+        budget=owner,
+    )
+    assert not failed.report.verified and failed.report.issues
+    entered = []
+
+    def observe(frame: FrameType, event: str, argument: object) -> None:
+        if (
+            event == "call"
+            and frame.f_code is retain_report.__code__
+            and frame.f_locals.get("report") is failed.report
+        ):
+            entered.append(True)
+            owner.consume("work", owner.remaining("work"))
+
+    original = sys.getprofile()
+    sys.setprofile(observe)
+    try:
+        result = check_mapping_bridges(
+            backend,
+            failed,
+            component("left"),
+            component("right"),
+            (),
+            protected_entailments=PROTECTED,
+            budget=owner,
+        )
+    finally:
+        sys.setprofile(original)
+    assert entered == [True] and not result.scope_complete and not result.observations
+    assert failed.report in result.report.children
+    assert all(
+        any(issue is retained for retained in result.report.issues)
+        for issue in failed.report.issues
+    )
+    assert any(issue.kind == "exhausted" for issue in result.report.issues)
