@@ -10,8 +10,8 @@ from rdflib.namespace import XSD
 
 from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget
+from bijux_ontology.rdf.literals.xsd import _datatypes
 from bijux_ontology.rdf.value_comparison.comparing import _calendar_value
-from bijux_ontology.rdf.xsd_lexicals import _datatypes
 
 if TYPE_CHECKING:
     from elementpath.datatypes import Date, DateTime, DayTimeDuration, YearMonthDuration

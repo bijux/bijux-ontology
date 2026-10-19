@@ -15,7 +15,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
+from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCheck,
     finish_migration,

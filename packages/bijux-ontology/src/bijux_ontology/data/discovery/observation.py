@@ -19,7 +19,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.paths.types import capture_path
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key

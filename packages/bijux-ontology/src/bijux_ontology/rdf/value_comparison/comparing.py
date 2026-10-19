@@ -19,7 +19,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.terms import validate_node
 
 from .types import ComparisonRegime, LiteralValueComparison, ValueRelation

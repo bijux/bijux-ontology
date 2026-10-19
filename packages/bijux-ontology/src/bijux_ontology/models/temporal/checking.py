@@ -22,7 +22,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.json.paths import at_path, bound_path, location
 from bijux_ontology.json.values import owned_json
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.terms import bound_node, literal_term
 
 from .calendar import add_duration, calendar_value

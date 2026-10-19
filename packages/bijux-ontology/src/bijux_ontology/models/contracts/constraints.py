@@ -32,7 +32,11 @@ from bijux_ontology.models.emission.matching import matches_value
 from bijux_ontology.owl.classes import ClassContracts
 from bijux_ontology.owl.properties import PropertyContract
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.literals import Regime, check_literal, datatype_relation
+from bijux_ontology.rdf.literals.checking import (
+    Regime,
+    check_literal,
+    datatype_relation,
+)
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

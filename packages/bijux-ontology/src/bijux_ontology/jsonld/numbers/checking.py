@@ -24,7 +24,7 @@ from bijux_ontology.json.paths import SourcePath, bounded_location
 from bijux_ontology.json.values import _decode_json
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.terms import bound_node, literal_term
 
 from .types import NumberPolicy, NumericJSON, NumericObservation, NumericProjection

@@ -38,7 +38,7 @@ from bijux_ontology.owl.obligations import (
     prove_obligations,
 )
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.literals import Regime, check_literal
+from bijux_ontology.rdf.literals.checking import Regime, check_literal
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

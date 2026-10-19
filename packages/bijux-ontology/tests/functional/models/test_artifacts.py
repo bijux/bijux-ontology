@@ -27,7 +27,7 @@ from bijux_ontology.models.persistence import (
     load_model_artifact,
     model_preparation_identity,
 )
-from bijux_ontology.rdf.literals import Regime
+from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.types import RdfSource
 
 E = "https://example.org/contracts/"

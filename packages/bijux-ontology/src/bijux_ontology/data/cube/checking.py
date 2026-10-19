@@ -19,7 +19,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
+from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype

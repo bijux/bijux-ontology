@@ -12,7 +12,11 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.literals import DatatypeRelation, Regime, datatype_relation
+from bijux_ontology.rdf.literals.checking import (
+    DatatypeRelation,
+    Regime,
+    datatype_relation,
+)
 from bijux_ontology.rdf.sources.snapshots import (
     PreparedSource,
     _is_owned_reader,

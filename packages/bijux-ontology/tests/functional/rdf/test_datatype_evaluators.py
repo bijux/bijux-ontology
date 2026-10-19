@@ -33,7 +33,7 @@ from bijux_ontology.rdf.datatype_evaluators.types import (
     RelationEvaluator,
     Validator,
 )
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
+from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
 from bijux_ontology.rdf.terms import term_key
 
 EX = Namespace("https://example.org/custom-datatype/")

@@ -22,7 +22,7 @@ from bijux_ontology.models.emission.matching import matches_value
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.terms import literal_term
 
 

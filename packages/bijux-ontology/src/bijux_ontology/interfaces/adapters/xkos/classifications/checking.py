@@ -21,8 +21,8 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
     compile_allowed,
 )
-from bijux_ontology.rdf.literals import _lexical, datatype_relation
-from bijux_ontology.rdf.patterns import matches_pattern
+from bijux_ontology.rdf.literals.checking import _lexical, datatype_relation
+from bijux_ontology.rdf.literals.patterns import matches_pattern
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.skos.structure import reachability

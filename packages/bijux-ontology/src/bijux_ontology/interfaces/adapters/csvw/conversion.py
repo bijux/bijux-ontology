@@ -22,7 +22,7 @@ from bijux_ontology.diagnostics.reports import Issue, Location
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.json.values import owned_json
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.terms import bound_node
 
 from .types import CsvwCell

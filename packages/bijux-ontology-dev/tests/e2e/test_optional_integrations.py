@@ -106,7 +106,7 @@ import pytest
         """
         from rdflib import Literal
         from rdflib.namespace import XSD
-        from bijux_ontology.rdf.literals import check_literal
+        from bijux_ontology.rdf.literals.checking import check_literal
         assert check_literal(Literal("P1Y2M", datatype=XSD.yearMonthDuration,
                                      normalize=False)).verified
         bad = check_literal(Literal("P0D", datatype=XSD.yearMonthDuration,
@@ -364,7 +364,7 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
                                       (RdfModelUsage("record", ex.record),))
         assert requested.outcome == "unverified"
         assert compare_rdf(Graph(), Graph()).verified
-        from bijux_ontology.rdf.literals import check_literal
+        from bijux_ontology.rdf.literals.checking import check_literal
         lexical = check_literal(Literal("P1Y", datatype=XSD.duration, normalize=False))
         assert lexical.outcome == "unverified"
         assert "[xsd]" in lexical.issues[0].message

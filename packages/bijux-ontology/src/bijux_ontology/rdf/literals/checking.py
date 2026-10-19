@@ -9,13 +9,14 @@ from rdflib.namespace import RDF, XSD
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
-
-from .datatype_evaluators.registry import DatatypeRegistry
-from .datatype_evaluators.types import DatatypeRelation as DatatypeRelation
-from .datatype_evaluators.types import Regime as Regime
-from .identifiers import absolute_iri
-from .terms import bound_node
-from .xsd_lexicals import XSD_LEXICAL_TYPES, xsd_lexical
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
+from bijux_ontology.rdf.datatype_evaluators.types import (
+    DatatypeRelation as DatatypeRelation,
+)
+from bijux_ontology.rdf.datatype_evaluators.types import Regime as Regime
+from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.rdf.literals.xsd import XSD_LEXICAL_TYPES, xsd_lexical
+from bijux_ontology.rdf.terms import bound_node
 
 _PARENT = {
     "integer": "decimal",

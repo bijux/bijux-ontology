@@ -20,7 +20,7 @@ from bijux_ontology.models.emission.application import (
 from bijux_ontology.models.emission.counts import check_output_counts
 from bijux_ontology.models.emission.matching import identity_matches, matches_value
 from bijux_ontology.models.emission.rdf import _traits
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.paths.traversal import (
     PathIdentityUnavailable,
     finite_path_steps,

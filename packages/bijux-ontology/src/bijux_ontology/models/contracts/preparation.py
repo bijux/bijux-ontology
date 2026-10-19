@@ -24,7 +24,7 @@ from bijux_ontology.models.emission.context import same_context
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.literals import Regime
+from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

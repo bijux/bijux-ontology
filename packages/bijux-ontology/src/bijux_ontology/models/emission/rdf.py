@@ -27,7 +27,7 @@ from bijux_ontology.models.emission.matching import identity_matches, matches_va
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import bound_node, term_key

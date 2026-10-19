@@ -42,7 +42,7 @@ from bijux_ontology.json.values import (
     string_values,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 
 
 def terms_from_data(value: object, *, source: str = "") -> tuple[TermDeclaration, ...]:

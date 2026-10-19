@@ -6,7 +6,7 @@ from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
+from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
 
 
 def test_value_space_relations_are_directional_and_regime_explicit() -> None:

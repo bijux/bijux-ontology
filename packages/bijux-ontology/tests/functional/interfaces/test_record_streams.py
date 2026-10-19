@@ -14,7 +14,7 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.interfaces.execution.record_streams import AsyncJSONLDRecords
 from bijux_ontology.jsonld.streams import JSONLDRecord, check_jsonld_records
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 

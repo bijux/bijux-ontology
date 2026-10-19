@@ -12,7 +12,7 @@ from bijux_ontology.execution.limits import (
     _issue_metadata,
     bound_text,
 )
-from bijux_ontology.rdf.patterns import matches_pattern
+from bijux_ontology.rdf.literals.patterns import matches_pattern
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
 
 from .checksums import valid_checksum

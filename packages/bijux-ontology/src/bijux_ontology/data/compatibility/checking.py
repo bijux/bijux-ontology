@@ -13,7 +13,11 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.obligations import OntologyObligation, _NativeProofs
 from bijux_ontology.owl.properties import PropertyContract, property_contract
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.literals import Regime, check_literal, datatype_relation
+from bijux_ontology.rdf.literals.checking import (
+    Regime,
+    check_literal,
+    datatype_relation,
+)
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import term_key

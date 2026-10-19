@@ -31,7 +31,7 @@ from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
 from bijux_ontology.json.paths import bound_index, bound_pointer_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.terms import bound_node, literal_term
 
 from .types import CompiledOutputSchema, JsonRepresentation, SchemaTranslation

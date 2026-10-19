@@ -25,7 +25,7 @@ from bijux_ontology.json.values import (
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.models.contracts.preparation import PreparedModels
-from bijux_ontology.rdf.literals import Regime
+from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
