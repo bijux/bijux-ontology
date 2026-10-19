@@ -283,6 +283,9 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "answer_changed answer_correspondence_unverified answer_external_unverified "
+        "answer_input answer_source_unverified answer_identity_lost "
+        "answer_output_unverified "
         "materialization_input_error "
         "triple_terms_unverified "
         "container_contract container_unverified container_conversion_rejected "

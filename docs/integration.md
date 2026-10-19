@@ -1670,3 +1670,13 @@ retains base, language, prefix, reverse and list semantics; its owned graph work
 with ordinary record and vocabulary checks. JSON-LD extraction remains separate.
 Source association is document-level; unsupported XHTML5, unresolved copy
 expansion, empty extraction and failed bounded execution withhold the source.
+
+`rdf.answers.read_answers` and `write_answers` preserve finite ASK/SELECT JSON,
+XML and TSV artifacts, including exact RDF terms, unbound cells, duplicate rows
+and result-scoped blank sharing. `compare_answers` selects bag, set or sequence
+semantics; variable names align independently of header order unless strict
+column order is requested. Exact RDF identity is the default; native scalar
+value regimes require explicit row and blank correspondence. CSV output needs
+explicit lossy opt-in. A valid supplied artifact does not establish external
+query completeness; require that separate caller evidence when necessary.
+XML-inexpressible RDF literal characters withhold output as unsupported.
