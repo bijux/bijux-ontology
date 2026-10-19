@@ -23,7 +23,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
-    from ..sessions.checking import ReasoningSession
+    from ..sessions.runtime import NativeSession
 
 
 def _groups(
@@ -149,7 +149,7 @@ def _answer(
 
 
 def realize(
-    session: "ReasoningSession",
+    session: "NativeSession",
     queries: Sequence[IndividualQuery],
     *,
     max_results: int = 10_000,

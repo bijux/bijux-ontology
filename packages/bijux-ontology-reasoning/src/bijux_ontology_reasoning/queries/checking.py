@@ -18,7 +18,7 @@ from ..sessions.types import PreparedReasoningTheory
 from .types import ClassQueryGroup, ClassQueryResult
 
 if TYPE_CHECKING:
-    from ..sessions.checking import ReasoningSession
+    from ..sessions.runtime import NativeSession
 
 _THING = "http://www.w3.org/2002/07/owl#Thing"
 _NOTHING = "http://www.w3.org/2002/07/owl#Nothing"
@@ -61,7 +61,7 @@ def _groups(
 
 
 def query_classes(
-    session: "ReasoningSession",
+    session: "NativeSession",
     expression: ClassExpression,
     *,
     direct: bool = False,

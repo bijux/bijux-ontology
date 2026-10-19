@@ -14,6 +14,7 @@ from bijux_ontology.reports import Report
 from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import NamedEntity, ObjectProperty, ObjectQuantifier, SubClassOf
 from ..entailment.encoding import encode_axiom
+from ..entailment.session import check_entailments
 from ..entailment.types import EntailmentCheck
 from .types import (
     InferenceProjection,
@@ -23,7 +24,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
-    from .checking import ReasoningSession
+    from .runtime import NativeSession
 
 
 def _selection(
@@ -102,7 +103,7 @@ def _selection(
 
 
 def project_inferences(
-    session: "ReasoningSession",
+    session: "NativeSession",
     selection: InferenceSelection,
     *,
     expected: PreparedReasoningTheory | None,
@@ -123,7 +124,8 @@ def project_inferences(
         # Publication storage is reserved before a native answer can establish it.
         operation.consume("states", 8 * len(queries) + 16)
         operation.consume("bytes", 512 + 768 * len(queries))
-        checked = session.check_entailments(
+        checked = check_entailments(
+            session,
             queries,
             theory=bound,
             budget=operation,
