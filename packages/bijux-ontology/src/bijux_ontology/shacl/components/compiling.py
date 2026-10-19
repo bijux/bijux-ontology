@@ -3,6 +3,7 @@
 import sys
 import threading
 from collections.abc import Sequence
+from types import MappingProxyType
 
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import RDF, SH, XSD
@@ -16,19 +17,15 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
-from bijux_ontology.shacl.authoring.parameters import parameter_name
+from bijux_ontology.shacl.authoring.parameters import ShaclParameter, parameter_name
 from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.profiles.resources import _capture, _owned
 from bijux_ontology.shacl.profiles.types import Triple
 
+from .catalogue import ROLES, Definition, Use, Validator, bind_use
 from .types import ComponentShapes, ComponentUse, ShaclComponent
 
 _RESERVED = frozenset(("this", "shapesGraph", "currentShape", "path", "PATH", "value"))
-_ROLES = {
-    "generic": SH.validator,
-    "node": SH.nodeValidator,
-    "property": SH.propertyValidator,
-}
 
 
 def _iri(value: str, budget: Budget) -> URIRef:
@@ -70,7 +67,7 @@ def compile_components(
     roots: list[URIRef | BNode] = []
     root_set: set[URIRef | BNode] = set()
     requirements: list[ShaclConstraintRequirement] = []
-    query_jobs: list[tuple[ComponentUse, ShaclComponent, Node]] = []
+    query_jobs: list[Use] = []
     checked = 0
     try:
         if shapes.union or shapes.literal_fidelity not in (
@@ -100,9 +97,8 @@ def compile_components(
         applications = _capture(uses, operation)
         if not definitions or not applications:
             raise InputError("Components require explicit definitions and uses")
-        catalog: dict[URIRef, ShaclComponent] = {}
+        catalog: dict[URIRef, Definition] = {}
         parameters: dict[URIRef, URIRef] = {}
-        validators: dict[tuple[URIRef, str], Node] = {}
 
         def add(subject: Node, predicate: URIRef, value: Node) -> None:
             """Retain bounded new triples without touching source graph storage."""
@@ -124,15 +120,14 @@ def compile_components(
                 raise InputError(
                     "Component identities cannot shadow existing definitions"
                 )
-            catalog[component] = raw
             names: set[str] = set()
+            by_path: dict[URIRef, ShaclParameter] = {}
+            validators: list[Validator] = []
+            roles: set[str] = set()
             if not raw.parameters or all(p.optional for p in raw.parameters):
                 raise InputError("A component needs at least one mandatory parameter")
             add(component, RDF.type, SH.ConstraintComponent)
             for parameter in _capture(raw.parameters, operation):
-                # The constructor already captured typed immutable parameter records.
-                from bijux_ontology.shacl.authoring.parameters import ShaclParameter
-
                 if not isinstance(parameter, ShaclParameter):
                     raise InputError("Expected typed component parameters")
                 path = _iri(parameter.path, operation)
@@ -150,6 +145,9 @@ def compile_components(
                             )
                 names.add(name)
                 parameters[path] = component
+                operation.consume("states")
+                operation.reserve_storage(96)
+                by_path[path] = parameter
                 node = BNode()
                 add(component, SH.parameter, node)
                 add(node, SH.path, path)
@@ -218,19 +216,21 @@ def compile_components(
                 )
             for validator in raw.validators:
                 operation.consume("work")
-                key = component, validator.role
-                if key in validators:
+                if validator.role in roles:
                     raise InputError(
                         "A component needs one unambiguous validator per role"
                     )
                 node = BNode()
-                validators[key] = node
+                operation.consume("states")
+                operation.reserve_storage(128)
+                roles.add(validator.role)
+                validators.append(Validator(node, ROLES[validator.role], validator))
                 query_text = (
                     validator.ask if validator.ask is not None else validator.select
                 )
                 assert query_text is not None
                 bound_text(query_text, operation)
-                add(component, _ROLES[validator.role], node)
+                add(component, ROLES[validator.role], node)
                 add(
                     node,
                     RDF.type,
@@ -247,6 +247,11 @@ def compile_components(
                     add(node, SH.prefixes, prefix_node)
             if not raw.validators:
                 raise InputError("A component needs an explicit validator")
+            operation.consume("states")
+            operation.reserve_storage(192 + 32 * len(names) + 8 * len(validators))
+            catalog[component] = Definition(
+                MappingProxyType(by_path), frozenset(names), tuple(validators)
+            )
 
         use_keys: set[tuple[Node, URIRef]] = set()
         for raw in applications:
@@ -269,14 +274,15 @@ def compile_components(
             if definition is None or (shape, component) in use_keys:
                 raise InputError("Component use needs one supplied unique definition")
             use_keys.add((shape, component))
-            by_path = {_iri(p.path, operation): p for p in definition.parameters}
+            declared_parameters = definition.parameters
+            bound_values: list[Node] = []
             supplied: dict[URIRef, Node] = {}
             for pair in _capture(raw.bindings, operation):
                 assert isinstance(pair, tuple)
                 path, value = pair
                 path = _iri(path, operation)
                 bound_node(value, operation)
-                if path not in by_path or path in supplied:
+                if path not in declared_parameters or path in supplied:
                     raise InputError(
                         "Binding requires one declared component parameter"
                     )
@@ -285,7 +291,7 @@ def compile_components(
                 if not isinstance(value, URIRef | Literal | BNode):
                     raise InputError("Component bindings require supported RDF terms")
                 supplied[path] = value
-            for path, parameter in by_path.items():
+            for path, parameter in declared_parameters.items():
                 value = supplied.get(path)
                 existing = []
                 for previous in graph.objects(shape, path):
@@ -317,19 +323,25 @@ def compile_components(
                             "Component parameter lexical qualification failed"
                         )
                 add(shape, path, value)
+                operation.reserve_storage(8)
+                bound_values.append(value)
                 if isinstance(shape, URIRef):
                     requirements.append(
                         ShaclConstraintRequirement(
                             str(shape), str(path), str(component)
                         )
                     )
-            role = "property" if (shape, SH.path, None) in graph else "node"
-            validator_node = validators.get(
-                (component, role), validators.get((component, "generic"))
+            property_shape = (shape, SH.path, None) in graph
+            query_jobs.append(
+                bind_use(
+                    shape,
+                    definition,
+                    bound_values,
+                    property_shape=property_shape,
+                    path=graph.value(shape, SH.path) if property_shape else None,
+                    budget=operation,
+                )
             )
-            if validator_node is None:
-                raise InputError("No applicable validator exists for this shape role")
-            query_jobs.append((raw, definition, validator_node))
             if shape not in root_set:
                 operation.consume("states")
                 root_set.add(shape)
