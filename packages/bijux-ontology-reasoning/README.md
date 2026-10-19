@@ -188,3 +188,11 @@ theories. Proposals need joint verification with `prepare_reduction`: individual
 redundancy does not authorize the union. Choose retained annotations and read-only
 imports, and supply nonempty consumer entailments. Original inconsistency blocks
 proof; publish only verified candidates with `axioms.changes.write_axiom_change`.
+
+`upgrades.assess_logical_upgrade` compares explicit stable consumer IDs across
+owned before/after logical snapshots: entailments, satisfiability, model contracts
+and selected role-separation groups. Inspect `.transitions` and finite
+`.compatible` separately from the raw `.report`, which retains prior findings.
+Changed contract fingerprints stay visible; unmatched consumers remain unknown.
+Selected explanations provide actual positive support and cannot erase a proved
+regression when unavailable. No ontology-wide compatibility is asserted.
