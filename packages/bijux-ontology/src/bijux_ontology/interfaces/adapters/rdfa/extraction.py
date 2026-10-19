@@ -13,16 +13,18 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.execution.budgets import operation
+from bijux_ontology.execution.allowances import DelegatedAllowance
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import (
+    BUDGET_KINDS,
     Budget,
-    BudgetKind,
     IssueCollector,
     Limits,
     bound_text,
 )
 from bijux_ontology.execution.processes.transport import checkpoint, exchange_worker
-from bijux_ontology.json.values import decode_json, measure_json
+from bijux_ontology.json.receipts import TerminalResponse
+from bijux_ontology.json.values import measure_json
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
@@ -30,14 +32,6 @@ from bijux_ontology.rdf.terms import literal_term, validate_triple
 
 from .types import RdfaExtraction, RdfaProducer, RdfaRuntime
 
-_KINDS: tuple[BudgetKind, ...] = (
-    "bytes",
-    "states",
-    "work",
-    "triples",
-    "resources",
-    "issues",
-)
 _KEYS = {
     "protocol",
     "status",
@@ -96,9 +90,7 @@ def _run(
     text: str,
     document_url: str,
     runtime: RdfaRuntime,
-    budget: Budget,
-    deadline: float,
-    cancel: threading.Event | None,
+    budget: Operation,
 ) -> dict[str, object]:
     """Reserve host decoding before dispatching the native process allowance."""
     bound_text(runtime.executable, budget)
@@ -111,7 +103,7 @@ def _run(
         "document_url": document_url,
         "max_depth": budget.limits.max_depth,
         "output_cap": 1,
-        "allowances": dict.fromkeys(_KINDS, 0),
+        "allowances": dict.fromkeys(BUDGET_KINDS, 0),
     }
     size = measure_json(
         request,
@@ -127,34 +119,32 @@ def _run(
     )
     if cap < 1024:
         raise LimitExceeded("RDFa reply has no reserved adoption allowance")
-    allowances = {key: budget.remaining(key) // 4 for key in _KINDS}
-    request["allowances"] = allowances
-    request["output_cap"] = cap
+    terminal = TerminalResponse(budget, cap, max_depth=16)
+    allowances = {key: terminal.available(key) // 4 for key in BUDGET_KINDS}
+    # Native error observations are data; the enclosing host owns all Issues.
+    allowances["issues"] = 0
+    delegated = DelegatedAllowance(budget, allowances)
+    request["allowances"] = delegated.to_data()
+    request["output_cap"] = terminal.cap
     payload = json.dumps(request, ensure_ascii=False, separators=(",", ":")).encode()
-    checkpoint(deadline, cancel)
     dispatched = received = False
     try:
+        terminal.admit(payload)
         with as_file(files(__package__).joinpath("worker.cjs")) as worker:
             dispatched = True
             raw = exchange_worker(
                 [
                     runtime.executable,
                     str(worker),
-                    str(max(cap, len(payload))),
+                    str(terminal.cap),
                     directory,
                 ],
                 payload,
-                cap=max(cap, len(payload)),
-                timeout=max(0.000001, deadline - time.monotonic()),
-                cancel=cancel,
+                cap=terminal.cap,
+                timeout=max(0.000001, budget.deadline - time.monotonic()),
+                cancel=budget.cancel,
             )
-        checkpoint(deadline, cancel)
-        if len(raw) > cap:
-            raise ResourceError("Native RDFa exceeded its reserved response cap")
-        # JSON scalars and vectors are reserved before the maintained decoder allocates.
-        budget.consume("bytes", 32 * len(raw) + 1024)
-        budget.consume("work", len(raw) + 1)
-        response = _object(decode_json(raw, max_bytes=cap, max_depth=16))
+        response = _object(terminal.decode(raw))
         if (
             set(response) != _KEYS
             or type(response["protocol"]) is not int
@@ -169,25 +159,16 @@ def _run(
             or not isinstance(response["diagnostics"], list)
         ):
             raise ResourceError("Native RDFa returned an invalid observation receipt")
-        consumed = _object(response["consumed"])
-        if set(consumed) != set(_KINDS):
-            raise ResourceError("Native RDFa omitted its cumulative counters")
-        for key in _KINDS:
-            count = consumed[key]
-            if type(count) is not int or not 0 <= count <= allowances[key]:
-                raise ResourceError(
-                    "Native RDFa returned an invalid cumulative counter"
-                )
-        for key in _KINDS:
-            budget.consume(key, cast(int, consumed[key]))
+        delegated.settle(response.get("consumed"))
         received = True
-        return response
     finally:
-        if dispatched and not received:
-            # Missing native receipts cannot restore the allowance delegated to
-            # a crashed, cancelled or malformed producer on a shared Budget.
-            for key in _KINDS:
-                budget.consume(key, allowances[key])
+        try:
+            terminal.close()
+        finally:
+            if dispatched and not received:
+                delegated.forfeit()
+    budget.consume("work", 0)
+    return response
 
 
 def extract_rdfa(
@@ -221,13 +202,14 @@ def extract_rdfa(
         raise InputError("RDFa cancellation requires threading.Event")
     if limits is not None and not isinstance(limits, Limits):
         raise InputError("RDFa limits require Limits")
-    current = operation(limits, budget)
+    current = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(current)
     diagnostics: list[str] = []
     producer = None
     source = None
     complete = False
-    deadline = time.monotonic() + timeout
+    deadline = current.deadline
+    cancel = current.cancel
     try:
         bound_text(document_url, current)
         absolute_iri(document_url)
@@ -250,7 +232,7 @@ def extract_rdfa(
         else:
             text = content
         bound_text(text, current)
-        response = _run(text, document_url, runtime, current, deadline, cancel)
+        response = _run(text, document_url, runtime, current)
         status = response["status"]
         if status not in ("result", "exhausted", "unavailable", "input_error"):
             raise ResourceError("Native RDFa returned an invalid status")

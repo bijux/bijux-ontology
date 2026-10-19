@@ -9,22 +9,23 @@ from collections.abc import Mapping
 from dataclasses import fields
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import cast
 
 from rdflib import Graph
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
-from bijux_ontology.execution.budgets import operation
+from bijux_ontology.execution.allowances import DelegatedAllowance
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import (
+    BUDGET_KINDS,
     Budget,
-    BudgetKind,
     IssueCollector,
     Limits,
     bound_text,
 )
 from bijux_ontology.execution.processes.transport import checkpoint, exchange_worker
-from bijux_ontology.json.values import decode_json, measure_json
+from bijux_ontology.json.receipts import TerminalResponse
+from bijux_ontology.json.values import measure_json
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
@@ -33,22 +34,11 @@ from .projection import bindings as capture_bindings
 from .projection import rows as project_rows
 from .types import PackageCell, PackageExtraction, PackageProducer, ResourceBinding
 
-_KINDS: tuple[BudgetKind, ...] = (
-    "bytes",
-    "resources",
-    "triples",
-    "work",
-    "issues",
-    "states",
-)
-
 
 def _run(
     descriptor: dict[str, object],
     directory: str,
-    budget: Budget,
-    deadline: float,
-    cancel: threading.Event | None,
+    budget: Operation,
 ) -> dict[str, object]:
     """Delegate native allowances once, retaining no credit after a missing receipt."""
     request: dict[str, object] = {
@@ -57,7 +47,7 @@ def _run(
         "limits": {
             field.name: getattr(budget.limits, field.name) for field in fields(Limits)
         },
-        "allowances": dict.fromkeys(_KINDS, 0),
+        "allowances": dict.fromkeys(BUDGET_KINDS, 0),
         "max_errors": max(1, budget.remaining("issues")),
         "output_cap": 1,
     }
@@ -78,13 +68,17 @@ def _run(
         raise LimitExceeded(
             "Package native response has no reserved adoption allowance"
         )
-    allowances = {key: budget.remaining(key) // 4 for key in _KINDS}
-    request["allowances"] = allowances
-    request["output_cap"] = cap
+    terminal = TerminalResponse(budget, cap)
+    allowances = {key: terminal.available(key) // 4 for key in BUDGET_KINDS}
+    # Native error observations are data; the enclosing host owns all Issues.
+    allowances["issues"] = 0
+    delegated = DelegatedAllowance(budget, allowances)
+    request["allowances"] = delegated.to_data()
+    request["output_cap"] = terminal.cap
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
-    checkpoint(deadline, cancel)
     dispatched = received = False
     try:
+        terminal.admit(payload)
         dispatched = True
         raw = exchange_worker(
             [
@@ -93,21 +87,14 @@ def _run(
                 "-B",
                 "-m",
                 "bijux_ontology.interfaces.adapters.frictionless.worker",
-                str(max(cap, len(payload))),
+                str(terminal.cap),
             ],
             payload,
-            cap=max(cap, len(payload)),
-            timeout=max(0.000001, deadline - time.monotonic()),
-            cancel=cancel,
+            cap=terminal.cap,
+            timeout=max(0.000001, budget.deadline - time.monotonic()),
+            cancel=budget.cancel,
         )
-        checkpoint(deadline, cancel)
-        if len(raw) > cap:
-            raise ResourceError("Native package response exceeded its reserved cap")
-        budget.consume("bytes", 32 * len(raw) + 1024)
-        budget.consume("work", len(raw) + 1)
-        reply = object_value(
-            decode_json(raw, max_bytes=cap, max_depth=budget.limits.max_depth)
-        )
+        reply = object_value(terminal.decode(raw))
         if (
             set(reply)
             != {
@@ -136,25 +123,16 @@ def _run(
             raise ResourceError(
                 "Native package returned an invalid observation receipt"
             )
-        consumed = object_value(reply["controls"])
-        if set(consumed) != set(_KINDS):
-            raise ResourceError("Native package omitted cumulative counters")
-        for key in _KINDS:
-            if (
-                type(consumed[key]) is not int
-                or not 0 <= cast(int, consumed[key]) <= allowances[key]
-            ):
-                raise ResourceError(
-                    "Native package returned an invalid cumulative counter"
-                )
-        for key in _KINDS:
-            budget.consume(key, cast(int, consumed[key]))
+        delegated.settle(reply.get("controls"))
         received = True
-        return reply
     finally:
-        if dispatched and not received:
-            for key in _KINDS:
-                budget.consume(key, allowances[key])
+        try:
+            terminal.close()
+        finally:
+            if dispatched and not received:
+                delegated.forfeit()
+    budget.consume("work", 0)
+    return reply
 
 
 def _native_errors(values: object, budget: Budget, issues: IssueCollector) -> None:
@@ -235,7 +213,7 @@ def extract_package(
         raise InputError("Cancellation requires threading.Event")
     if limits is not None and not isinstance(limits, Limits):
         raise InputError("Package limits require Limits")
-    current = operation(limits, budget)
+    current = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(current)
     native_issues = IssueCollector(current)
     cells: list[PackageCell] = []
@@ -244,7 +222,8 @@ def extract_package(
     source: PreparedSource | None = None
     native_complete = finished = False
     checked = 0
-    deadline = time.monotonic() + timeout
+    deadline = current.deadline
+    cancel = current.cancel
     graph = Graph(bind_namespaces="none")
     try:
         checkpoint(deadline, cancel)
@@ -262,7 +241,7 @@ def extract_package(
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 with destination.open("xb") as output:
                     output.write(content)
-            response = _run(descriptor, directory, current, deadline, cancel)
+            response = _run(descriptor, directory, current)
         raw_producer = response["producer"]
         if raw_producer is not None:
             identity = object_value(raw_producer)
