@@ -1,16 +1,28 @@
-"""Bounded local ASK/SELECT against sealed native disk snapshots."""
+"""Shared bounded ASK/SELECT for sealed snapshots and caller-owned stores."""
 
 import json
 import threading
+from collections.abc import Mapping
 from dataclasses import replace
+from typing import Any
+
+import pyoxigraph as ox
+from rdflib import Literal
+from rdflib.namespace import XSD
+from rdflib.plugins.sparql.parserutils import CompValue
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, _result
+from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
+from bijux_ontology.rdf.queries.protocol import term_data
+from bijux_ontology.rdf.queries.syntax import prepare_local_query
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
+from .native import native_term, qualify_literal, rdf_term
 from .protocol import execute, failure, scope_data
 from .types import StoredRdf
 
@@ -87,3 +99,84 @@ def query_snapshot(
         )
     except InputError as error:
         return QueryResult(failure(error, operation, "rdf.query"), scope)
+
+
+def query_native(
+    request: dict[str, Any], store: ox.Store, budget: Budget
+) -> dict[str, object]:
+    """Parse the same finite local query profile, then execute the maintained store."""
+    query = prepare_local_query(request["query"], {}, budget)
+    pending = [query.algebra]
+    probe = ox.Store()
+    while pending:
+        budget.consume("work")
+        budget.consume("states")
+        value = pending.pop()
+        if isinstance(value, Literal):
+            encoded = native_term(value)
+            assert isinstance(encoded, ox.Literal)
+            qualify_literal(encoded, probe)
+        elif isinstance(value, CompValue):
+            if value.name == "Builtin_STRDT" or (
+                value.name == "Function" and str(value.get("iri")).startswith(str(XSD))
+            ):
+                raise LiteralScopeUnsupported(
+                    "Datatype constructors are outside the disk query lexical profile"
+                )
+            pending.extend(value.values())
+        elif isinstance(value, Mapping):
+            pending.extend(value.values())
+        elif isinstance(value, (tuple, list)):
+            pending.extend(value)
+    scope = request["scope"]
+    options: dict[str, Any] = {}
+    if scope == "default":
+        options = {"default_graph": ox.DefaultGraph(), "named_graphs": []}
+    elif scope == "named":
+        name = request["graph"]
+        graph = (
+            ox.BlankNode(name["value"])
+            if name["kind"] == "blank"
+            else ox.NamedNode(name["value"])
+        )
+        options = {"default_graph": graph, "named_graphs": []}
+    elif scope == "union":
+        options = {"use_default_graph_as_union": True, "named_graphs": []}
+    elif scope != "dataset":
+        raise InputError("Unknown native query graph scope")
+    result = store.query(request["query"], **options)
+    if isinstance(result, ox.QueryBoolean):
+        return {
+            "status": "result",
+            "kind": "ASK",
+            "answer": bool(result),
+            "complete": True,
+        }
+    if not isinstance(result, ox.QuerySolutions):
+        raise InputError("Only ASK and SELECT are supported")
+    variables = [value.value for value in result.variables]
+    budget.consume("states", len(variables))
+    rows: list[list[dict[str, object] | None]] = []
+    complete, message = True, ""
+    try:
+        for solution in result:
+            budget.consume("work")
+            if len(rows) >= request["max_rows"]:
+                raise LimitExceeded("SELECT result exceeds max_rows")
+            budget.consume("states", len(variables))
+            row = [
+                term_data(rdf_term(value)) if value is not None else None
+                for value in solution
+            ]
+            budget.consume("bytes", json_bound(row, budget))
+            rows.append(row)
+    except LimitExceeded as error:
+        complete, message = False, str(error)
+    return {
+        "status": "result",
+        "kind": "SELECT",
+        "variables": variables,
+        "rows": rows,
+        "complete": complete,
+        "message": message,
+    }
