@@ -16,8 +16,11 @@ import pytest
 from rdflib import Graph
 
 import bijux_ontology.processes.ownership as processes
+from bijux_ontology.errors import LimitExceeded, ResourceError
 from bijux_ontology.interfaces.execution.transport import stop_process
 from bijux_ontology.limits import Limits
+from bijux_ontology.processes import transport as worker_transport
+from bijux_ontology.rdf.execution import execute_worker
 from bijux_ontology.rdf.queries.access import QueryScope, query_rdf
 from bijux_ontology.shacl import transport as shacl_transport
 
@@ -416,3 +419,179 @@ def test_owned_query_module_cannot_be_replaced_by_the_working_directory(
     result = query_rdf(Graph(), "ASK {}", scope=QueryScope("default"))
     assert result.report.verified and result.answer is True
     assert not marker.exists()
+
+
+@pytest.mark.parametrize("retain", [False, True])
+def test_completed_byte_handoff_precedes_late_cancel_without_suppressing_it(
+    retain: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A real successful byte exchange can be retained without ignoring its stop."""
+    actual_popen, actual_reap = subprocess.Popen, worker_transport.stop_process
+    processes_seen: list[subprocess.Popen[bytes]] = []
+    stop = threading.Event()
+    receipts: list[bytes] = []
+    payload = b"immutable native receipt"
+
+    def launch(
+        args: Sequence[str],
+        *,
+        stdin: int | None = None,
+        stdout: int | None = None,
+        stderr: int | None = None,
+        start_new_session: bool = False,
+    ) -> subprocess.Popen[bytes]:
+        """Use an actual owned echo producer at the opaque transport boundary."""
+        process = actual_popen(
+            [
+                sys.executable,
+                "-I",
+                "-B",
+                "-c",
+                "import sys; sys.stdout.buffer.write(sys.stdin.buffer.read())",
+            ],
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            start_new_session=start_new_session,
+        )
+        processes_seen.append(process)
+        return process
+
+    def reap(
+        process: subprocess.Popen[bytes], *, failure: BaseException | None = None
+    ) -> None:
+        """Stop after real exit and cleanup, rather than synthesizing a reply."""
+        actual_reap(process, failure=failure)
+        assert failure is None and process.returncode == 0
+        stop.set()
+
+    monkeypatch.setattr(subprocess, "Popen", launch)
+    monkeypatch.setattr(worker_transport, "stop_process", reap)
+    with pytest.raises(LimitExceeded, match="cancelled"):
+        execute_worker(
+            "bijux_ontology.rdf.queries.worker",
+            payload,
+            cap=1024,
+            timeout=10,
+            cancel=stop,
+            completed=receipts.append if retain else None,
+        )
+    assert receipts == ([payload] if retain else [])
+    assert len(processes_seen) == 1 and processes_seen[0].returncode == 0
+
+
+@pytest.mark.parametrize(
+    "fault",
+    ["nonzero", "overflow", "cleanup", "undelivered", "cancel", "deadline", "callback"],
+)
+def test_completed_byte_handoff_rejects_failed_exchange_and_reaps_worker(
+    fault: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only one bounded successful exchange may reach its domain handoff."""
+    actual_popen, actual_reap = subprocess.Popen, worker_transport.stop_process
+    owned: list[subprocess.Popen[bytes]] = []
+    seen: list[bytes] = []
+    stop, watch_stop, ready_seen = (
+        threading.Event(),
+        threading.Event(),
+        threading.Event(),
+    )
+    ready = tmp_path / "ready"
+    callback_error = RuntimeError("native receipt consumer failed")
+    payload = b"request" if fault != "undelivered" else b"x" * 2_000_000
+    program = "import sys; data=sys.stdin.buffer.read(); sys.stdout.buffer.write(data)"
+    if fault == "nonzero":
+        program += "; sys.stdout.buffer.flush(); sys.exit(7)"
+    elif fault == "overflow":
+        program = (
+            "import sys; sys.stdin.buffer.read(); sys.stdout.buffer.write(b'x'*20000)"
+        )
+    elif fault == "undelivered":
+        program = (
+            "import sys; sys.stdout.buffer.write(b'unrequested'); "
+            "sys.stdout.buffer.flush()"
+        )
+    elif fault in ("cancel", "deadline"):
+        program = (
+            "import sys,time; from pathlib import Path; sys.stdin.buffer.read(); "
+            f"Path({str(ready)!r}).write_text('ready'); "
+            "sys.stdout.buffer.write(b'partial'); sys.stdout.buffer.flush(); "
+            "time.sleep(30)"
+        )
+
+    def launch(
+        args: Sequence[str],
+        *,
+        stdin: int | None = None,
+        stdout: int | None = None,
+        stderr: int | None = None,
+        start_new_session: bool = False,
+    ) -> subprocess.Popen[bytes]:
+        """Inject a real owned process failure, never an accepted semantic result."""
+        process = actual_popen(
+            [sys.executable, "-I", "-B", "-c", program],
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            start_new_session=start_new_session,
+        )
+        owned.append(process)
+        return process
+
+    def reap(
+        process: subprocess.Popen[bytes], *, failure: BaseException | None = None
+    ) -> None:
+        """Retain actual cleanup while testing a failed cleanup qualification."""
+        actual_reap(process, failure=failure)
+        if fault == "cleanup":
+            raise ResourceError("Owned cleanup qualification failed")
+
+    def observe() -> None:
+        """Establish actual worker admission before testing interruption."""
+        while not watch_stop.wait(0.005):
+            if ready.exists():
+                ready_seen.set()
+                if fault == "cancel":
+                    stop.set()
+                return
+
+    def handoff(response: bytes) -> None:
+        """A failing receiver is called once and its original exception survives."""
+        seen.append(response)
+        if fault == "callback":
+            raise callback_error
+
+    monkeypatch.setattr(subprocess, "Popen", launch)
+    monkeypatch.setattr(worker_transport, "stop_process", reap)
+    watcher = threading.Thread(target=observe, daemon=True)
+    if fault in ("cancel", "deadline"):
+        watcher.start()
+    expected: type[Exception] = (
+        LimitExceeded
+        if fault in ("overflow", "cancel", "deadline")
+        else RuntimeError
+        if fault == "callback"
+        else ResourceError
+    )
+    try:
+        with pytest.raises(expected) as failure:
+            execute_worker(
+                "bijux_ontology.rdf.queries.worker",
+                payload,
+                cap=3_000_000 if fault == "undelivered" else 1024,
+                timeout=3 if fault == "deadline" else 10,
+                cancel=stop,
+                completed=handoff,
+            )
+    finally:
+        watch_stop.set()
+        if watcher.ident is not None:
+            watcher.join(timeout=2)
+    assert len(owned) == 1 and owned[0].poll() is not None
+    with pytest.raises(ProcessLookupError):
+        os.kill(owned[0].pid, 0)
+    assert len(seen) == int(fault == "callback")
+    if fault == "callback":
+        assert failure.value is callback_error
+    if fault in ("cancel", "deadline"):
+        assert ready_seen.is_set()

@@ -21,6 +21,7 @@ from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Report
 
 E = Namespace("https://graphs.example/")
+_NATIVE_TIMEOUT = 60.0
 
 
 def test_export_requires_the_scope_origin_and_fidelity_that_passed_after_checks() -> (
@@ -119,6 +120,7 @@ def test_intentional_merge_preserves_shared_roles_and_explicit_empty_inventory()
         removed_graphs=(E.G, E.H, E.old_empty),
         before_checks=(_check(E.G, E.root, E.child),),
         after_checks=(_check(E.merged, E.root, E.child),),
+        timeout=_NATIVE_TIMEOUT,
     )
     assert (
         result.report.verified
@@ -155,6 +157,7 @@ def test_subject_and_predicate_partition_leaves_unrelated_quads_and_inventory() 
         added_graphs=(E.selected,),
         before_checks=(_check(E.G, E.root, E.child),),
         after_checks=(_check(E.selected, E.root, E.child),),
+        timeout=_NATIVE_TIMEOUT,
     )
     assert (
         result.report.verified
@@ -211,11 +214,12 @@ def test_graph_local_failure_and_missing_contracts_block_acceptance() -> None:
         added_graphs=(E.selected,),
         before_checks=(_check(E.G, E.root, E.child),),
         after_checks=(_check(E.G, E.root, E.child),),
+        timeout=_NATIVE_TIMEOUT,
     )
     assert result.source is not None and not result.report.verified
     assert result.before[0].verified and result.after[0].outcome == "disagreement"
     assert export_migration(result, accept=True, format="trig").content is None
-    unchecked = migrate_graphs(source, (GraphRoute(E.G, E.G),))
+    unchecked = migrate_graphs(source, (GraphRoute(E.G, E.G),), timeout=_NATIVE_TIMEOUT)
     assert unchecked.source is not None and not unchecked.report.verified
 
 
@@ -227,6 +231,7 @@ def test_authorized_pinned_scope_union_bounds_cancellation_and_fresh_recovery() 
         (GraphRoute(E.G, E.G),),
         before_checks=(_check(E.G, E.root, E.child),),
         after_checks=(_check(E.G, E.root, E.child),),
+        timeout=_NATIVE_TIMEOUT,
     )
     assert unchanged.source is not None and unchanged.report.verified
     assert str(unchanged.source.graph_name) == str(E.G)
@@ -253,4 +258,5 @@ def test_authorized_pinned_scope_union_bounds_cancellation_and_fresh_recovery() 
         (GraphRoute(E.G, E.G),),
         before_checks=(_check(E.G, E.root, E.child),),
         after_checks=(_check(E.G, E.root, E.child),),
+        timeout=_NATIVE_TIMEOUT,
     ).report.verified

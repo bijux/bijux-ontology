@@ -376,7 +376,7 @@ def test_isolated_project_native_jobs_stay_owned_and_honor_timeout(
             rows = [
                 line.strip().split(None, 2)
                 for line in subprocess.check_output(
-                    ["ps", "-axo", "pid=,ppid=,command="], text=True
+                    ["ps", "-ww", "-axo", "pid=,ppid=,command="], text=True
                 ).splitlines()
             ]
             owned.update(
