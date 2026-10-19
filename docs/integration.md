@@ -389,6 +389,14 @@ targets. Select a returned target explicitly before changing application data.
 justification; unsupported scopes/conditions/relationships reject export or
 produce an explicitly partial result with omitted paths.
 
+`fhir.coding_bindings.check_coding_bindings` applies explicit field paths,
+datatypes and required/extensible/preferred/example bindings to actual R5 values.
+Each repeated CodeableConcept needs one qualifying coding; additional valid
+translations retain their own system identities. Identity and selected display
+checks stay separate from binding conformance. Inspect `.recommendations` for
+preferred findings and supply exact justified extensibility decisions when needed.
+Required bare codes additionally need unambiguous strings and qualified versions.
+
 `workflows.ontology.ownership.check_ownership` applies explicit `OwnerClaim`
 declarations to protected outgoing `FactSelection` predicates and exact terms.
 Claims supply actual authoritative views; exact terms and the longest declared
