@@ -12,7 +12,7 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.planning import _plan_captured_patch, capture_source
+from bijux_ontology.rdf.patches.planning import capture_source, plan_captured_patch
 from bijux_ontology.rdf.patches.types import (
     BlankNodePair,
     DatasetPatch,
@@ -326,7 +326,7 @@ def plan_rdf_merge(
                     "Branches cannot change the authorized named graph selection"
                 )
             patches.append(
-                _plan_captured_patch(
+                plan_captured_patch(
                     captured,
                     target,
                     pairs=pairs,

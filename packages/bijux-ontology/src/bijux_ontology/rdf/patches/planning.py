@@ -297,7 +297,7 @@ def report(scope: str, issues: IssueCollector, *, complete: bool) -> Report:
     )
 
 
-def _plan_captured_patch(
+def plan_captured_patch(
     left: Captured,
     right: Captured,
     *,
@@ -464,7 +464,7 @@ def plan_rdf_patch(
             capture_source(base, "base:", operation),
             capture_source(target, "new:", operation),
         )
-        patch = _plan_captured_patch(
+        patch = plan_captured_patch(
             left,
             right,
             pairs=pairs,
