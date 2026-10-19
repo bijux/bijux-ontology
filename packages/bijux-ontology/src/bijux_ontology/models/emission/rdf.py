@@ -15,10 +15,6 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.jsonld.evidence.values import ValueTraits
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.models.contracts.registry import index_models
-from bijux_ontology.models.emission.application import (
-    application_matches,
-    retain_enumeration_report,
-)
 from bijux_ontology.models.emission.counts import check_output_counts
 from bijux_ontology.models.emission.coverage import predicate_issues
 from bijux_ontology.models.emission.direction import project_direction
@@ -26,6 +22,10 @@ from bijux_ontology.models.emission.groups import TermKey, check_groups
 from bijux_ontology.models.emission.matching import identity_matches, matches_value
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
+from bijux_ontology.models.value_constraints.checking import (
+    application_matches,
+    retain_enumeration_report,
+)
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource

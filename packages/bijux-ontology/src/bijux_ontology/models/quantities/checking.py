@@ -27,7 +27,7 @@ from bijux_ontology.json.paths import (
     validate_path,
 )
 from bijux_ontology.json.values import owned_json
-from bijux_ontology.models.emission.application import application_matches
+from bijux_ontology.models.value_constraints.checking import application_matches
 from bijux_ontology.rdf.literals.checking import check_literal
 
 from .types import QuantityCheck, QuantityContract, UnitBinding

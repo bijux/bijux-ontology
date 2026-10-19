@@ -18,10 +18,10 @@ from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages
 from bijux_ontology.models.contracts.registry import index_models
-from bijux_ontology.models.emission.application import retain_enumeration_report
 from bijux_ontology.models.emission.direction import DirectionCheck
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
+from bijux_ontology.models.value_constraints.checking import retain_enumeration_report
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.view import Vocabulary

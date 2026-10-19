@@ -19,10 +19,10 @@ from bijux_ontology.diagnostics.reports import AcceptancePolicy, IssueSelection,
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.contracts.checking import check_models
-from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
+from bijux_ontology.models.value_constraints.checking import application_matches
 from bijux_ontology.skos.publication.types import ConceptReachability
 from bijux_ontology.skos.subsets.selection import select_concepts
 from bijux_ontology.skos.subsets.types import ConceptSubset

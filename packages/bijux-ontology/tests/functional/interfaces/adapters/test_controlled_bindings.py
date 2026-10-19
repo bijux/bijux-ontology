@@ -32,10 +32,10 @@ from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled import (
     compile_bindings,
     select_binding,
 )
-from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
+from bijux_ontology.models.value_constraints.checking import application_matches
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (
     ShaclCount,

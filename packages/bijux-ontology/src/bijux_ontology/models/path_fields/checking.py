@@ -13,13 +13,13 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.jsonld.processing.preparation import JSONLDPreparation
-from bijux_ontology.models.emission.application import (
-    application_matches,
-    retain_enumeration_report,
-)
 from bijux_ontology.models.emission.counts import check_output_counts
 from bijux_ontology.models.emission.matching import identity_matches, matches_value
 from bijux_ontology.models.emission.rdf import _traits
+from bijux_ontology.models.value_constraints.checking import (
+    application_matches,
+    retain_enumeration_report,
+)
 from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.paths.traversal import (
     PathIdentityUnavailable,
