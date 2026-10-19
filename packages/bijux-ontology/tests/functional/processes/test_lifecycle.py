@@ -18,7 +18,6 @@ from rdflib import Graph
 import bijux_ontology.processes.ownership as processes
 from bijux_ontology.interfaces.execution.transport import stop_process
 from bijux_ontology.limits import Limits
-from bijux_ontology.rdf import execution as rdf_execution
 from bijux_ontology.rdf.queries.access import QueryScope, query_rdf
 from bijux_ontology.shacl import transport as shacl_transport
 
@@ -46,7 +45,7 @@ def _exited_unreaped(process: subprocess.Popen[bytes]) -> None:
 @pytest.mark.parametrize(
     "stop",
     [
-        rdf_execution._reap,
+        processes.stop_owned_process,
         shacl_transport._stop_group,
         stop_process,
     ],
@@ -84,7 +83,7 @@ def test_exited_leader_does_not_skip_term_ignoring_descendant(tmp_path: Path) ->
         process.wait(timeout=3)
         child_pid = int(child_file.read_text())
         os.kill(child_pid, 0)
-        rdf_execution._reap(process)
+        processes.stop_owned_process(process)
         deadline = time.monotonic() + 2
         while True:
             try:

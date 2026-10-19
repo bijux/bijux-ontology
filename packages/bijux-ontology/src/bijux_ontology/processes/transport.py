@@ -1,17 +1,19 @@
 """Bounded owned worker lifetime and process-group cancellation."""
 
 import contextlib
+import math
 import subprocess
 import time
 from collections.abc import Callable
 from threading import Event, Thread
+from typing import BinaryIO
 
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 
 from .ownership import spawn_owned_process
 from .ownership import stop_owned_process as stop_process
 
-__all__ = ["run_worker", "stop_process"]
+__all__ = ["checkpoint", "exchange_worker", "run_worker", "stop_process"]
 
 
 def run_worker(
@@ -90,3 +92,126 @@ def run_worker(
             raise cleanup_error
         detail = f"{cleanup_error}; {detail}"[:cap]
     return process.returncode, stopped, detail
+
+
+def checkpoint(deadline: float, cancel: Event | None) -> None:
+    """Bound caller preparation and worker computation by the same deadline."""
+    if cancel is not None and cancel.is_set():
+        raise LimitExceeded("Worker operation was cancelled")
+    if time.monotonic() >= deadline:
+        raise LimitExceeded("Worker operation exceeded its wall-clock deadline")
+
+
+def exchange_worker(
+    command: list[str],
+    payload: bytes,
+    *,
+    cap: int,
+    timeout: float,
+    cancel: Event | None = None,
+) -> bytes:
+    """Exchange opaque bounded bytes with one explicitly owned no-shell command.
+
+    Protocols and runtime identity belong to callers. This transport owns bounded
+    concurrent pipes, one deadline and descendant cleanup for every command.
+    """
+    if (
+        not isinstance(command, list)
+        or not command
+        or any(not isinstance(value, str) or "\x00" in value for value in command)
+    ):
+        raise InputError("Worker commands require a nonempty argument list")
+    if not isinstance(payload, bytes) or type(cap) is not int or cap <= 0:
+        raise InputError("Workers require bytes and a positive output cap")
+    if len(payload) > cap:
+        raise LimitExceeded("Worker input exceeds protocol byte bound")
+    if type(timeout) not in (int, float) or not math.isfinite(timeout) or timeout <= 0:
+        raise InputError("Worker timeout must be finite and positive")
+    if cancel is not None and not isinstance(cancel, Event):
+        raise InputError("Worker cancellation requires a Event")
+    deadline = time.monotonic() + timeout
+    checkpoint(deadline, cancel)
+    try:
+        process = spawn_owned_process(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except OSError as error:
+        raise ResourceError("Worker could not be started") from error
+    assert (
+        process.stdin is not None
+        and process.stdout is not None
+        and process.stderr is not None
+    )
+    output, diagnostics = bytearray(), bytearray()
+    overflow = Event()
+
+    def read(stream: BinaryIO, target: bytearray) -> None:
+        """Drain without buffering more than the declared protocol bound."""
+        try:
+            while chunk := stream.read(8192):
+                remaining = cap - len(target)
+                target.extend(chunk[:remaining])
+                if len(chunk) > remaining:
+                    overflow.set()
+                    break
+        finally:
+            stream.close()
+
+    def write(stream: BinaryIO) -> None:
+        """Write concurrently so a blocked input pipe cannot hide cancellation."""
+        try:
+            stream.write(payload)
+        except (BrokenPipeError, OSError):
+            pass
+        finally:
+            stream.close()
+
+    threads = (
+        Thread(target=write, args=(process.stdin,), daemon=True),
+        Thread(target=read, args=(process.stdout, output), daemon=True),
+        Thread(target=read, args=(process.stderr, diagnostics), daemon=True),
+    )
+    failure: BaseException | None = None
+    cleanup_error: ResourceError | None = None
+    try:
+        for thread in threads:
+            thread.start()
+        while process.poll() is None:
+            checkpoint(deadline, cancel)
+            if overflow.is_set():
+                raise LimitExceeded("Worker output exceeds protocol byte bound")
+            try:
+                process.wait(timeout=0.01)
+            except subprocess.TimeoutExpired:
+                continue
+    except BaseException as error:
+        failure = error
+        raise
+    finally:
+        try:
+            stop_process(process, failure=failure)
+        except ResourceError as error:
+            if failure is not None:
+                raise
+            cleanup_error = error
+        finally:
+            for thread in threads:
+                if thread.ident is not None:
+                    thread.join(timeout=1)
+    try:
+        checkpoint(deadline, cancel)
+        if overflow.is_set():
+            raise LimitExceeded("Worker output exceeds protocol byte bound")
+        if process.returncode:
+            detail = diagnostics.decode(errors="replace")[:2000]
+            raise ResourceError(f"Worker exited {process.returncode}: {detail}")
+    except InputError as error:
+        if cleanup_error is not None:
+            error.args = (f"{error}; {cleanup_error}",)
+        raise
+    if cleanup_error is not None:
+        raise cleanup_error
+    return bytes(output)
