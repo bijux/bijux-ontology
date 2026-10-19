@@ -331,6 +331,7 @@ _CODES = {
         "required_occurrence_missing types_mismatch value_mismatch "
         "value_unverified".split()
     ),
+    "revision": frozenset("preparation_unverified input_error".split()),
     "geospatial": frozenset(
         "invalid_lexical invalid_geometry unavailable relation input_error".split()
     ),
@@ -947,6 +948,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Check the selected output path and model alternatives; examples "
         "do not prove all outputs.",
         '{"@id":"https://example.org/item","@type":"https://example.org/Image"}',
+    ),
+    "revision": (
+        "complete prepared semantic revision",
+        "A required context, model, import or shape preparation did not verify.",
+        "Inspect exact closed inputs and preparation reports before activation; "
+        "keep the currently active revision for new requests.",
+        "prepare_revision(models, ontology, expected=identity)",
     ),
     "geospatial": (
         "explicit geometry values and spatial relationships",

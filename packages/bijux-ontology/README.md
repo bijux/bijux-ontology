@@ -60,3 +60,13 @@ with their actual axis order; distance requires explicit planar angular degrees.
 Original RDF literals, geometric equality and topology stay distinct. Invalid
 geometry is a completed negative; dependent operations, unavailable CRS transforms,
 other serializations and unsupported units remain unverified.
+
+`workflows.revisions.prepare_revision` seals immutable ontology/import descriptors,
+model declarations, closed contexts and optional selected shapes. Required shape
+preparation runs actual positive probes. Only verified preparation yields a
+`PreparedRevision`; its semantic `identity` binds all inputs and engines, while
+`revision` identifies one local activation. Supply `expected=identity` to require
+the same complete preparation. Mutable Paths and live graphs are unsupported.
+Use `RevisionManager.activate(candidate, expected_active=...)`, then `lease()` for
+ordinary model or shape checks against that exact revision. Explicit rollback,
+retirement, retained-count/byte caps and close-and-drain preserve in-flight runs.
