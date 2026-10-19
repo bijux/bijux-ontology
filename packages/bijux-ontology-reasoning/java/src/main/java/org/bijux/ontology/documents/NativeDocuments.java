@@ -262,18 +262,15 @@ public final class NativeDocuments {
 
         }
 
-        /** Actual selected native ontology headers, separate from RDF metadata. */
+        /** Actual selected ontology headers, separate from original RDF metadata. */
         public List<Map<String,Object>> records(int resources) throws Exception {
-            if (documents == null) throw new IOException("Native records require native input");
             OWLOntology first = ontology;
             List<Map<String,Object>> loaded = new ArrayList<>();
             Set<String> seen = new HashSet<>();
             for (OWLOntology member : first.getOWLOntologyManager().getOntologies()) {
                 String effective = first.getOWLOntologyManager().getOntologyDocumentIRI(member).toString();
-                int index = -1;
-                for (int i = 0; i < documents.size(); i++)
-                    if (documents.get(i).effective.equals(effective)) index = i;
-                if (index < 0 || !seen.add(effective)) throw new IOException("Ambiguous loaded document");
+                Integer index = owners.get(effective);
+                if (index == null || !seen.add(effective)) throw new IOException("Ambiguous loaded document");
                 Map<String,Object> record = new LinkedHashMap<>();
                 record.put("document", index);
                 record.put("ontology_iri", member.getOntologyID().getOntologyIRI().map(Object::toString).orElse(null));

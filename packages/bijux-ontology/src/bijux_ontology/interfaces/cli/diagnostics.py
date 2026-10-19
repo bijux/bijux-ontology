@@ -283,6 +283,9 @@ _CODES = {
         "value_unverified".split()
     ),
     "owl": frozenset(
+        "diagnosis_loader_unverified diagnosis_input_loss "
+        "diagnosis_profile_unsupported diagnosis_unverified inconsistent "
+        "unsatisfiable_class "
         "axiom_input_loss axiom_input_unverified axiom_unsupported axioms_unverified "
         "conversion_loss conversion_unverified "
         "assertion_contradiction assertion_unverified backend_unavailable "
