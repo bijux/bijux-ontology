@@ -88,9 +88,19 @@ def test_named_nested_references_duplicates_empty_lists_and_legacy_single_list()
     ).verified
 
 
-def test_exact_literal_terms_do_not_use_python_numeric_or_lexical_equality() -> None:
+@pytest.mark.parametrize("legacy", (False, True))
+def test_exact_literal_terms_do_not_use_python_numeric_or_lexical_equality(
+    legacy: bool,
+) -> None:
+    def expectation(values: tuple[object, ...]) -> ContextExpectation:
+        return (
+            ContextExpectation(("items",), P, ordered_values=values)
+            if legacy
+            else ContextExpectation(("items",), P, lists=(ExpectedList(values),))
+        )
+
     integer = {"@value": "01", "@type": XSD + "integer"}
-    expected = ContextExpectation(("items",), P, lists=(ExpectedList((integer,)),))
+    expected = expectation((integer,))
     assert check_context(_document([integer]), (expected,)).verified
     for changed in (
         {"@value": "1", "@type": XSD + "integer"},
@@ -102,13 +112,19 @@ def test_exact_literal_terms_do_not_use_python_numeric_or_lexical_equality() -> 
     assert (
         check_context(
             _document([True]),
-            (ContextExpectation(("items",), P, lists=(ExpectedList((1,)),)),),
+            (expectation(({"@value": 1},)),),
         ).outcome
         == "disagreement"
     )
-    language = ContextExpectation(
-        ("items",), P, lists=(ExpectedList(({"@value": "word", "@language": "EN"},)),)
+    assert (
+        check_context(_document([False]), (expectation(({"@value": 0.0},)),)).outcome
+        == "disagreement"
     )
+    assert check_context(
+        _document(["word"]),
+        (expectation(({"@value": "word", "@type": XSD + "string"},)),),
+    ).verified
+    language = expectation(({"@value": "word", "@language": "EN"},))
     assert check_context(
         _document([{"@value": "word", "@language": "en"}]), (language,)
     ).verified
