@@ -1661,3 +1661,12 @@ cannot fill missing local annotations; each release binds its own local imports.
 Explicit term/namespace exclusions remove support terms from the owned selection.
 The result retains scoped records and selected subset witnesses. This finite
 opt-in convention does not certify every OBO Foundry recommendation.
+
+`interfaces.adapters.rdfa.extract_rdfa(content, document_url, runtime=...)`
+extracts HTML5 RDFa through an explicitly selected optional Node runtime. Call
+`prepare_rdfa_runtime(directory)`, run ordinary `npm ci` there using the shipped
+lock, and supply `RdfaRuntime(node_executable, directory)`. The maintained parser
+retains base, language, prefix, reverse and list semantics; its owned graph works
+with ordinary record and vocabulary checks. JSON-LD extraction remains separate.
+Source association is document-level; unsupported XHTML5, unresolved copy
+expansion, empty extraction and failed bounded execution withhold the source.

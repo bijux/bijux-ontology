@@ -28,6 +28,9 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "rdfa": frozenset(
+        "expansion_unverified empty_extraction extraction_unverified".split()
+    ),
     "analysis": frozenset(
         "annotation_unknown term_unknown parent_unknown projection_unknown "
         "hierarchy_cycle zero_frequency disconnected input "
@@ -422,6 +425,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "rdfa": (
+        "explicit supplied HTML5 and optional maintained RDFa processor",
+        "The requested RDFa extraction lacks complete qualified assertions.",
+        "Supply HTML5, an explicit Node executable and the shipped locked npm "
+        "runtime; inspect native diagnostics and unsupported expansion resources.",
+        "extract_rdfa(content, document_url, runtime=runtime)",
+    ),
     "analysis": (
         "explicit finite annotation population and selected hierarchy",
         "A required analytical input or result is unavailable within its scope.",
