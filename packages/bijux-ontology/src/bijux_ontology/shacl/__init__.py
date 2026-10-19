@@ -13,6 +13,7 @@ if TYPE_CHECKING:
         analyze_shape_profile,
     )
     from bijux_ontology.shacl.authoring import (
+        ShaclClosed,
         ShaclComparison,
         ShaclConstraint,
         ShaclCount,
@@ -80,6 +81,7 @@ if TYPE_CHECKING:
     from bijux_ontology.shacl.session import ShaclBatchResult, ShaclSession
 
 __all__ = [
+    "ShaclClosed",
     "ProfileRefinement",
     "RefinementContract",
     "RefinementProof",
@@ -143,6 +145,7 @@ __all__ = [
 ]
 
 _EXPORT_MODULES = {
+    "ShaclClosed": "bijux_ontology.shacl.authoring",
     "LocalConflict": "bijux_ontology.shacl.analysis",
     "RootConflict": "bijux_ontology.shacl.analysis",
     "ShapeAnalysis": "bijux_ontology.shacl.analysis",

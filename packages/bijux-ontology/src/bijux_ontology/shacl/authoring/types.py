@@ -64,6 +64,18 @@ class ShaclCount:
 
 
 @dataclass(frozen=True)
+class ShaclClosed:
+    """Constrain outgoing predicates, with an explicitly authored ignored list."""
+
+    enabled: bool
+    ignored_properties: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        """Require the same bounded immutable inventory as other Core records."""
+        _inventories(self.ignored_properties)
+
+
+@dataclass(frozen=True)
 class ShaclComparison:
     """Compare property-shape values with one explicit counterpart predicate."""
 
@@ -96,6 +108,7 @@ class ShaclLogical:
 ShaclConstraint: TypeAlias = (
     ShaclValue
     | ShaclCount
+    | ShaclClosed
     | ShaclComparison
     | ShaclQualifiedCount
     | ShaclLogical

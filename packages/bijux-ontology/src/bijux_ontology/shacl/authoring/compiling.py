@@ -15,6 +15,7 @@ from bijux_ontology.rdf.paths import RdfPath, capture_path
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.shacl.authoring.types import (
+    ShaclClosed,
     ShaclComparison,
     ShaclCount,
     ShaclLogical,
@@ -28,6 +29,8 @@ from bijux_ontology.shacl.authoring.types import (
 _SINGLE = frozenset(
     (
         SH.datatype,
+        SH.closed,
+        SH.ignoredProperties,
         SH.nodeKind,
         SH.minCount,
         SH.maxCount,
@@ -216,6 +219,15 @@ class _Compiler:
         self.budget.consume("states")
         if type(value) is ShaclShapeRef:
             self.add(node, SH.node, self.reference(value, kind=ShaclNodeShape))
+        elif type(value) is ShaclClosed:
+            if type(value.enabled) is not bool:
+                raise InputError("SHACL closed policy requires an explicit boolean")
+            self.add(node, SH.closed, Literal(value.enabled))
+            if value.ignored_properties:
+                ignored = tuple(
+                    self.iri(item) for item in self.items(value.ignored_properties)
+                )
+                self.add(node, SH.ignoredProperties, self.rdf_list(ignored))
         elif type(value) is ShaclValue:
             if value.datatype is not None:
                 self.add(node, SH.datatype, self.iri(value.datatype))
