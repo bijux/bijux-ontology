@@ -583,6 +583,12 @@ selection requires explicit pair mode; findings retain report-local identities.
 
 For repeated datasets, use `with ShaclSession(shapes, ontology=ontology) as session:` from `bijux_ontology.shacl` and call `session.validate(data)`. The session owns its fixed resources and reuses one isolated worker; construct a new session to replace them. `validate_batch(datasets)` retains per-dataset results and explicit pending coverage. Deadlines include worker queueing and startup; cancellation, worker failure and close release owned processes. `scope="records"` preserves local conformance while leaving wider dataset conformance unverified. Sessions use shared platform process ownership; Windows runtime qualification remains pending.
 
+Pass `budget=operation` to share one cumulative budget across session construction
+and validation calls. Preparation, transport and result projection use its actual
+remaining allowances. Omitting it keeps calls independent; each batch still has
+one cumulative budget. Late coverage exhaustion retains the qualified raw report
+and completed negative findings.
+
 For checked RDF deltas, `prepare_incremental(data, shapes, use_shapes=(shape_iri,))`
 from `bijux_ontology.shacl.incremental` runs an actual baseline. Pass its owned
 `.state` and an exact `DatasetPatch` to `revalidate`. Complete passing local Core

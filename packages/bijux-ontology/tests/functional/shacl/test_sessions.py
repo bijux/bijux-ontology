@@ -13,7 +13,8 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, XSD
 
 from bijux_ontology import InputError, prepare_source
-from bijux_ontology.limits import Limits
+from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.shacl import ShaclCoverageContract, validate_shapes
 from bijux_ontology.shacl.session import ShaclSession
 
@@ -244,20 +245,26 @@ def test_malformed_wire_request_and_response_discard_owned_worker(
         sent = False
 
         def malformed(
-            payload: bytes, deadline: float | None, cancel: threading.Event | None
+            payload: bytes,
+            deadline: float | None,
+            cancel: threading.Event | None,
+            *,
+            budget: Budget | None = None,
         ) -> bytes:
             nonlocal sent
             if not sent and json.loads(payload).get("command") == "validate":
                 sent = True
                 payload = b'{"command":"unrecognized"}'
-            return exchange(payload, deadline, cancel)
+            return exchange(payload, deadline, cancel, budget=budget)
 
         monkeypatch.setattr(session._backend, "_exchange", malformed)
         invalid = session.validate(_data())
         assert invalid.report.outcome == "input_error" and invalid.conforms is None
         assert session.validate(_data()).report.verified
         assert session.worker_launches == 2
-        monkeypatch.setattr(session._backend, "_exchange", lambda *args: b'{"bad":')
+        monkeypatch.setattr(
+            session._backend, "_exchange", lambda *args, **kwargs: b'{"bad":'
+        )
         invalid_response = session.validate(_data())
         assert invalid_response.report.outcome == "input_error"
         monkeypatch.setattr(session._backend, "_exchange", exchange)
@@ -286,10 +293,14 @@ def test_malformed_result_truth_restarts_before_the_next_real_dataset(
         changed = False
 
         def malformed(
-            payload: bytes, deadline: float | None, cancel: threading.Event | None
+            payload: bytes,
+            deadline: float | None,
+            cancel: threading.Event | None,
+            *,
+            budget: Budget | None = None,
         ) -> bytes:
             nonlocal changed
-            raw = exchange(payload, deadline, cancel)
+            raw = exchange(payload, deadline, cancel, budget=budget)
             if not changed and json.loads(payload).get("command") == "validate":
                 changed = True
                 response = json.loads(raw)
@@ -314,10 +325,14 @@ def test_preparation_cannot_substitute_a_prior_dataset_result(
         previous: bytes | None = None
 
         def capture(
-            payload: bytes, deadline: float | None, cancel: threading.Event | None
+            payload: bytes,
+            deadline: float | None,
+            cancel: threading.Event | None,
+            *,
+            budget: Budget | None = None,
         ) -> bytes:
             nonlocal previous
-            raw = exchange(payload, deadline, cancel)
+            raw = exchange(payload, deadline, cancel, budget=budget)
             if json.loads(payload).get("command") == "validate":
                 previous = raw
             return raw
@@ -326,7 +341,9 @@ def test_preparation_cannot_substitute_a_prior_dataset_result(
         assert session.validate(_data()).report.verified
         assert previous is not None
         session._backend.reset()
-        monkeypatch.setattr(session._backend, "_exchange", lambda *args: previous)
+        monkeypatch.setattr(
+            session._backend, "_exchange", lambda *args, **kwargs: previous
+        )
         invalid = session.validate(_data("bad"))
         assert invalid.conforms is None
         assert invalid.report.outcome == "input_error"
@@ -336,7 +353,7 @@ def test_preparation_cannot_substitute_a_prior_dataset_result(
 
 
 def test_batch_budgets_preserve_completed_results_and_pending_required_scope() -> None:
-    with ShaclSession(_shapes(), limits=Limits(max_resources=3)) as session:
+    with ShaclSession(_shapes(), limits=Limits(max_resources=6)) as session:
         batch = session.validate_batch((_data(),) * 5)
         assert [result.conforms for result in batch.results] == [True, True, True, None]
         assert batch.report.outcome == "exhausted" and not batch.report.complete
@@ -413,7 +430,7 @@ def test_batch_combines_input_and_output_byte_bounds_without_losing_pending_scop
     None
 ):
     data = _data().add((EX.one, EX.unchecked, Literal("x" * 1000)))
-    with ShaclSession(_shapes(), limits=Limits(max_total_bytes=5000)) as session:
+    with ShaclSession(_shapes(), limits=Limits(max_total_bytes=500_000)) as session:
         batch = session.validate_batch((data,) * 6)
         assert 1 < len(batch.results) < 6
         assert batch.results[0].report.verified
@@ -480,3 +497,84 @@ def test_batch_captures_bounded_selection_before_worker_startup() -> None:
         assert result.results[0].conforms is True
         assert result.results[1].conforms is False
         assert result.report.complete and not result.report.verified
+
+
+def test_shared_constructor_and_calls_use_one_budget_without_double_issue_charges() -> (
+    None
+):
+    """Native failures remain paid once and fixed sessions do not renew grants."""
+    budget = Budget(Limits(max_issues=1))
+    with ShaclSession(_shapes(), budget=budget) as session:
+        prepared = dict(budget._counts)
+        assert prepared["work"] > 0 and prepared["states"] > 0
+        assert prepared["bytes"] > 0
+        first = session.validate(_data("wrong"))
+        assert first.conforms is False and first.report.outcome == "disagreement"
+        assert budget._counts["issues"] == 1
+        assert budget._counts["work"] > prepared["work"]
+        second = session.validate(_data("wrong"))
+        assert second.report.outcome == "exhausted"
+        assert budget._counts["issues"] == 1
+        assert all(
+            issue is not first.report.issues[0] for issue in second.report.issues
+        )
+    with ShaclSession(_shapes(), limits=Limits(max_issues=1)) as independent:
+        assert independent.validate(_data("wrong")).report.outcome == "disagreement"
+        assert independent.validate(_data("wrong")).report.outcome == "disagreement"
+        assert independent.worker_launches == 1
+
+
+def test_preconsumed_budget_cannot_prepare_or_launch_unpaid_session_work() -> None:
+    """Preparation and later data adoption honor the actual remaining allowance."""
+    starved = Budget(Limits(max_states=500))
+    starved.consume("states", 499)
+    with pytest.raises(LimitExceeded):
+        ShaclSession(_shapes(), budget=starved)
+    oversized = ShaclCoverageContract(focus_nodes=("urn:required:" + "x" * 500_000,))
+    with pytest.raises(LimitExceeded):
+        ShaclSession(
+            _shapes(), budget=Budget(Limits(max_bytes=4096)), coverage=oversized
+        )
+    budget = Budget()
+    with ShaclSession(_shapes(), budget=budget) as session:
+        budget.consume("states", budget.remaining("states") - 1)
+        stopped = session.validate(_data())
+        assert stopped.report.outcome == "exhausted" and stopped.conforms is None
+        assert session.worker_launches == 0
+        with pytest.raises(InputError, match="session-owned"):
+            session._validate(
+                _data(),
+                focus_nodes=(),
+                graph_name=None,
+                union=False,
+                source_usages=(),
+                scope="dataset",
+                cancel=None,
+                budget=Budget(budget.limits),
+            )
+    with pytest.raises(InputError, match="matching limits"):
+        ShaclSession(_shapes(), budget=Budget(), limits=Limits(max_states=10))
+
+
+def test_late_coverage_cut_keeps_paid_negative_and_raw_report() -> None:
+    """A real report is retained when its later required coverage cannot finish."""
+    budget = Budget(Limits(max_resources=2))
+    with ShaclSession(
+        _shapes(),
+        budget=budget,
+        coverage=ShaclCoverageContract(minimum_focus=1),
+    ) as session:
+        result = session.validate(_data("wrong"))
+        assert result.conforms is False and result.report.outcome == "exhausted"
+        assert not result.report.complete
+        assert any(
+            issue.code == "shacl.nonconformance" for issue in result.report.issues
+        )
+        assert result.findings and len(result.report_graph()) > 0
+        assert (
+            sum(
+                issue.code == "shacl.nonconformance"
+                for issue in budget._retained_issues.values()
+            )
+            == 1
+        )

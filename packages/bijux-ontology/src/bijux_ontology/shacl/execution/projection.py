@@ -9,7 +9,7 @@ from rdflib.term import Node
 from bijux_ontology._json import decode_json
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import IssueCollector
+from bijux_ontology.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.reports import Issue, IssueKind, Report, Severity, combine_reports
 from bijux_ontology.shacl.capabilities import (
@@ -23,6 +23,26 @@ from bijux_ontology.shacl.findings import ShaclSource, project_findings
 
 from .planning import _metadata, _ShapePlan
 from .results import ShaclResult
+
+
+def _retained_result(result: ShaclResult, budget: Budget | None) -> ShaclResult:
+    """Keep native diagnostics paid once across all supported result statuses."""
+    if budget is None:
+        return result
+    retained = IssueCollector(budget)
+    try:
+        retain_report(result.report, budget, retained)
+    except LimitExceeded:
+        retained.exhausted("SHACL report handoff exhausted its shared budget")
+        result.report = Report(
+            "shacl",
+            result.report.checked,
+            tuple(retained),
+            requested=result.report.requested,
+            complete=False,
+            families=result.report.families,
+        )
+    return result
 
 
 def _function_evidence(
@@ -267,31 +287,45 @@ def _project_result(
         and (shapes_count > 0 or allow_empty),
         families=families,
     )
-    evaluated_coverage = (
-        read_coverage(
-            response.get("coverage"),
-            coverage or ShaclCoverageContract(),
-            selected,
-            budget=plan.budget,
+    evaluated_coverage = None
+    constraint_report = None
+    additional: list[Report] = []
+    try:
+        if coverage is not None or required_constraints:
+            evaluated_coverage = read_coverage(
+                response.get("coverage"),
+                coverage or ShaclCoverageContract(),
+                selected,
+                budget=plan.budget,
+            )
+            additional.append(evaluated_coverage.report)
+        if required_constraints and evaluated_coverage is not None:
+            constraint_report = constraint_execution(
+                required_constraints,
+                evaluated_coverage,
+                budget=plan.budget,
+            )
+            additional.append(constraint_report)
+    except (InputError, ResourceError) as error:
+        # The native RDF report and its paid findings have already been qualified.
+        # A later required coverage failure cannot erase that completed evidence.
+        additional.append(
+            Report(
+                "shacl-required-coverage",
+                0,
+                (
+                    Issue(
+                        "shacl.execution_incomplete",
+                        str(error),
+                        kind="exhausted"
+                        if isinstance(error, LimitExceeded)
+                        else "input_error",
+                    ),
+                ),
+                requested=1,
+                complete=False,
+            )
         )
-        if coverage is not None or required_constraints
-        else None
-    )
-    constraint_report = (
-        constraint_execution(
-            required_constraints, evaluated_coverage, budget=plan.budget
-        )
-        if required_constraints and evaluated_coverage is not None
-        else None
-    )
-    additional = tuple(
-        item
-        for item in (
-            evaluated_coverage.report if evaluated_coverage is not None else None,
-            constraint_report,
-        )
-        if item is not None
-    )
     return ShaclResult(
         combine_reports("shacl", report, *additional) if additional else report,
         conforms=conforms,
