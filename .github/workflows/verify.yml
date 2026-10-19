@@ -221,6 +221,132 @@
           Copy-Item 'packages/bijux-ontology/tests/functional/interfaces/test_execution.py' "$proof/tests"
           Copy-Item 'packages/bijux-ontology/tests/functional/processes/test_transport.py' "$proof/tests"
           Get-ChildItem "$proof/tests/*.py" | Get-FileHash -Algorithm SHA256 | ConvertTo-Json | Set-Content "$evidence/test-sources.json"
+      - "name": "Record native handle lifecycle evidence"
+        "shell": "pwsh"
+        run: |-
+          $ErrorActionPreference = 'Stop'
+          $proof = $env:WINDOWS_PROOF_ROOT
+          $python = "$proof/venv/Scripts/python.exe"
+          New-Item -ItemType Directory -Force "$proof/handles" | Out-Null
+          $probe = @'
+          """Record actual current-process handle phases without changing tested assertions."""
+          import argparse
+          import ctypes as ct
+          import gc
+          import importlib.util
+          import io
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import sys
+          import tempfile
+          import threading
+
+
+          def child(mode, root, fixture):
+              import msvcrt
+              from bijux_ontology.processes.windows import parent_identity
+              assert os.name == 'nt'
+              kernel = ct.WinDLL('kernel32', use_last_error=True)
+              kernel.GetCurrentProcess.restype = ct.c_void_p
+              kernel.GetProcessHandleCount.argtypes = [ct.c_void_p, ct.POINTER(ct.c_uint32)]
+              kernel.GetProcessHandleCount.restype = ct.c_int
+              kernel.GetProcessId.argtypes = [ct.c_void_p]
+              kernel.GetProcessId.restype = ct.c_uint32
+              kernel.GetFileType.argtypes = [ct.c_void_p]
+              kernel.GetFileType.restype = ct.c_uint32
+              rows = []
+
+              def snapshot(label):
+                  gc.collect()
+                  count = ct.c_uint32()
+                  assert kernel.GetProcessHandleCount(kernel.GetCurrentProcess(), ct.byref(count))
+                  owners = {}
+                  for obj in gc.get_objects():
+                      if isinstance(obj, subprocess.Popen):
+                          handle = getattr(obj, '_handle', None)
+                          if handle is not None:
+                              owners[int(handle)] = {'owner': 'Popen', 'pid': obj.pid, 'returncode': obj.returncode}
+                      elif isinstance(obj, io.FileIO) and not obj.closed:
+                          try:
+                              handle = msvcrt.get_osfhandle(obj.fileno())
+                              owners[handle] = {'owner': 'FileIO', 'fd': obj.fileno()}
+                          except (OSError, ValueError):
+                              pass
+                  for handle, owner in owners.items():
+                      pid = kernel.GetProcessId(handle)
+                      file_type = kernel.GetFileType(handle)
+                      owner['kind'] = 'process' if pid else {1: 'disk', 2: 'character', 3: 'pipe'}.get(file_type, 'other-or-invalid')
+                  rows.append({'phase': label, 'handle_count': count.value,
+                               'known_python_owners': owners,
+                               'threads': [thread.name for thread in threading.enumerate()]})
+
+              snapshot('cold')
+              if mode == 'identity':
+                  for index in range(5):
+                      parent_identity()
+                      snapshot(f'parent_identity:{index}')
+              elif mode == 'capture':
+                  for index in range(5):
+                      result = subprocess.run([sys.executable, '-I', '-B', '-c', "print('native')"], capture_output=True, timeout=10)
+                      assert result.returncode == 0 and result.stdout == b'native\r\n'
+                      del result
+                      snapshot(f'stdlib_capture:{index}')
+              elif mode == 'fixture':
+                  spec = importlib.util.spec_from_file_location('windows_fixture', fixture)
+                  module = importlib.util.module_from_spec(spec)
+                  spec.loader.exec_module(module)
+                  original = module._handles
+                  measurements = []
+                  def observed(api):
+                      value = original(api)
+                      measurements.append(value)
+                      return value
+                  module._handles = observed
+                  snapshot('fixture_imported')
+                  for index in range(3):
+                      for stop in ('supervisor', 'caller'):
+                          before = len(measurements)
+                          with tempfile.TemporaryDirectory(dir=root) as directory:
+                              try:
+                                  module.test_real_windows_nested_workers_and_recovery(Path(directory), stop)
+                              except AssertionError as error:
+                                  rows.append({'fixture': f'{stop}:{index}', 'result': 'assertion_failed', 'error': str(error), 'measurements': measurements[before:]})
+                              else:
+                                  rows.append({'fixture': f'{stop}:{index}', 'result': 'passed', 'measurements': measurements[before:]})
+                          snapshot(f'fixture:{stop}:{index}')
+              else:
+                  raise AssertionError(mode)
+              (root / f'{mode}.json').write_text(json.dumps({'mode': mode, 'python': sys.version, 'rows': rows}, indent=2), encoding='utf-8')
+
+
+          def main():
+              parser = argparse.ArgumentParser(description=__doc__)
+              parser.add_argument('--root', type=Path, required=True)
+              parser.add_argument('--fixture', type=Path, required=True)
+              parser.add_argument('--child', choices=('identity', 'capture', 'fixture'))
+              args = parser.parse_args()
+              root = args.root.resolve()
+              root.mkdir(parents=True, exist_ok=True)
+              if args.child:
+                  child(args.child, root, args.fixture.resolve())
+              else:
+                  assert os.name == 'nt'
+                  for mode in ('identity', 'capture', 'fixture'):
+                      result = subprocess.run([sys.executable, '-I', '-B', str(Path(__file__).resolve()), '--root', str(root), '--fixture', str(args.fixture.resolve()), '--child', mode], capture_output=True, timeout=120)
+                      (root / f'{mode}.stdout').write_bytes(result.stdout)
+                      (root / f'{mode}.stderr').write_bytes(result.stderr)
+                      if result.returncode:
+                          raise SystemExit(f'Native handle diagnostic {mode} failed: {result.returncode}')
+
+
+          if __name__ == '__main__':
+              main()
+          '@
+          $probe | Set-Content -Encoding utf8 "$proof/handles/probe.py"
+          & $python -I -B "$proof/handles/probe.py" --root "$proof/handles" --fixture "$proof/tests/test_windows_processes.py"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - "name": "Exercise native Windows ownership and portable worker contracts"
         "shell": "pwsh"
         run: |-
@@ -269,6 +395,7 @@
             artifacts/ci/windows/*.log
             artifacts/ci/windows/*.json
             artifacts/ci/windows/junit.xml
+            artifacts/ci/windows/handles/**
             artifacts/ci/windows/dist/*.whl
           "if-no-files-found": "error"
           "retention-days": 7
