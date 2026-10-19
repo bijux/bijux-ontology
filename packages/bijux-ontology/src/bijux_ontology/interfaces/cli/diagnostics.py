@@ -28,6 +28,9 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "discovery": frozenset(
+        "identity_unverified types_unverified values_unverified input".split()
+    ),
     "workload": frozenset("unsupported engine_failed empty unqualified".split()),
     "query": frozenset(
         "dependencies_unverified usage_input vocabulary_deprecated "
@@ -435,6 +438,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "discovery": (
+        "explicit finite record population and observed contract candidates",
+        "The selected observations lack complete qualified candidate coverage.",
+        "Inspect every original record, value alternative and corpus check; "
+        "accept observed bounds explicitly only after full candidate verification.",
+        "discover_contracts(source, records, fields, shape=shape)",
+    ),
     "workload": (
         "supplied finite queries and two explicit maintained engine configurations",
         "The workload lacks a complete supported agreeing native answer pair.",

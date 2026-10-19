@@ -1708,3 +1708,13 @@ remain visible. Bag qualification makes no ORDER BY sequence claim. Unsupported
 extensions, nondeterminism, native term loss, failed execution and exhausted
 work cannot establish portability. Qualification applies to the supplied corpus
 and configurations, with explicit row and cumulative execution bounds.
+
+`data.discovery.discover_contracts(source, records, fields, shape=...)` observes
+an explicit finite record/path population. Candidates retain original endpoints,
+all type/datatype alternatives, per-record counts including zero and exceptions.
+Native declarations and independently authored SHACL shapes are checked against
+every selected record. `accept_candidate(..., accept_observed_bounds=True)` makes
+the qualified observed envelope an explicit application policy; `check_contract`
+then checks held-out records without retraining it. Empty, unsupported, incomplete
+or invalid observations cannot authorize that policy. Samples establish no
+universal requiredness or maxima, and optional SHACL absence remains unverified.
