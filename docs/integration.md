@@ -1087,3 +1087,49 @@ The initial profile requires one physical graph and named selected owners with
 distinct orders; unsupported rules, exhausted closure and missing required
 `MigrationCheck` callbacks prevent a verified publication candidate. The result
 uses the ordinary checked migration export and explicit acceptance gate.
+
+`workflows.upgrades.values.compare_controlled_values` checks the same actual
+stored record values against explicit before/after `ValueEnumeration` contracts.
+Reuse `select_concepts` for scheme, subtree and retirement policies. Inspect exact
+source statements and introduced/persistent/resolved/uncertain membership; a new
+break requires known old permission and known new exclusion. Open or incomplete
+membership remains unknown, and unused vocabulary changes do not create data
+breaks. `ValueReplacement` evaluates an advisory proposal without rewriting data
+or approving a migration. Every selected record/field pair requires an occurrence.
+
+`bijux_ontology.rdf.entailment.prepare_entailment(source, regime="rdfs")`
+or `regime="owl-rl"` uses maintained `owlrl` from `[shacl]` as an explicit
+preparation step. Inspect separate asserted, derived and effective snapshots,
+final generalized consequences, regime and backend. Pass a verified effective
+snapshot to ordinary `validate_shapes`; emitted JSON requirements stay separate.
+Physical graph pins remain scoped; explicit unions are flattened. For blank
+graph names, pass the actual returned `graph_name` to snapshot/check operations.
+Unsupported datatypes, unresolved imports and incomplete closure yield no checked
+derived/effective artifact. This finite rule closure does not certify OWL 2 DL.
+
+`bijux_ontology.shacl.partitions.check_partitions` takes a `PartitionPlan`
+selecting primary records and read-only support graphs from one owned dataset.
+Every `PartitionObligation` chooses `primary` or `merged` effective assertions;
+primary output fields cannot borrow support assertions. Support subjects do not
+become submissions. Cross-record constraints conservatively require declared
+complete primary data and actual complete target inventory/coverage. A partial
+conforming backend result cannot establish that scope. Inspect raw results,
+discovery and exact graph selectors alongside the required aggregate report.
+
+`workflows.upgrades.matrix.check_compatibility_matrix` checks explicit application,
+context and ontology combinations for every required `ConsumerVersion`. Supply
+each consumer's actual `ApplicationVersion` contract/corpus and closed context
+resources. Inspect original single-version checks, exact outputs and deployable
+cells; other known combinations and unused consumers remain visibly untested.
+Missing versions, inputs or representative corpora keep required cells incomplete.
+A passing majority cannot hide a failed or unknown selected obligation.
+
+`bijux_ontology.rdf.stores` creates/reopens sealed native disk snapshots from
+local N-Triples/N-Quads. `query_snapshot` runs bounded local ASK/SELECT with an
+explicit `QueryScope`; `vocabulary.storage` inspects selected terms and checks
+used declarations without copying the entire dataset. Native lexical changes,
+such as integer `01` normalization, are required unsupported. Snapshot reads
+verify their closed file revision; restart rechecks content hashes and inventory.
+`materialize_snapshot(..., max_triples=...)` explicitly bounds other consumers'
+in-memory projections. Nonempty-only graph inventory cannot prove empty named
+graph coverage, and unsupported physical graph identities cannot be collapsed.

@@ -27,6 +27,7 @@ jsonld = [
     "pyld>=3.3,<4",
 ]
 shacl = [
+    "owlrl>=7.6.2,<8",
     "pyparsing>=3.2,<4",
     "pyshacl>=0.40.1,<0.41",
 ]

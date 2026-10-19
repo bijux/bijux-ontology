@@ -196,6 +196,7 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "store_unverified entailment_unverified "
         "graph_inventory_conflict graph_route_scope graph_route_collision "
         "migration_contracts_unverified migration_acceptance_unverified "
         "value_migration_rejected value_migration_collision "
@@ -213,6 +214,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "partition_scope_unverified partition_input_error "
         "rules_unverified rules_input_error "
         "target_unavailable upgrade_unverified upgrade_target_removed "
         "component_unverified "
@@ -276,6 +278,8 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "matrix_unverified "
+        "value_inadmissible value_unverified value_scope_unverified "
         "plan_unverified plan_final_changed "
         "replacement_unverified replacement_kind_mismatch "
         "application_unverified application_declaration_changed "

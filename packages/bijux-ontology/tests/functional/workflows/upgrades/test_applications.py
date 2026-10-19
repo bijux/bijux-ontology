@@ -14,7 +14,7 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.corpus.checking import SerializerCase
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.types import RoleUse
@@ -23,6 +23,7 @@ from bijux_ontology.workflows.upgrades.applications import (
     ApplicationField,
     ApplicationOutput,
     ApplicationVersion,
+    check_application,
     compare_applications,
 )
 
@@ -139,6 +140,12 @@ def test_actual_serializer_once_with_owned_options_and_resources() -> None:
     assert result.before.verified and result.after.verified and result.report.verified
     assert not result.declarations and not result.samples[0].values
     assert result.samples[0].dataset.verified and result.samples[0].mapping.verified
+    calls.clear()
+    single = check_application(_schema(), version)
+    assert single.report.verified
+    assert calls == [(version.cases[0].instance, True)]
+    assert result.samples[0].before is not None
+    assert single.samples["sample"].document == result.samples[0].before.document
 
 
 def test_both_valid_predicate_and_field_name_changes_are_explicit() -> None:
@@ -556,3 +563,27 @@ def test_anonymous_attachments_keep_independent_consumer_roles_and_scope() -> No
     } == {"value"}
     assert not relevant.after_anonymous_uses
     assert relevant.candidate_report.verified
+
+
+def test_single_application_retains_actual_outputs_without_a_baseline() -> None:
+    """The public single-version path shares checks without a synthetic upgrade."""
+    version = _version()
+    budget = Budget()
+    result = check_application(_schema(), version, budget=budget)
+    assert result.report.verified
+    assert result.version is version
+    original = version.outputs["sample"].document
+    assert isinstance(original, dict)
+    assert result.samples["sample"].document == {
+        **original,
+        "@context": version.context,
+    }
+    assert "sample" in result.sources
+    assert result.parts["sample/sample"].verified
+    assert budget.remaining("work") < budget.limits.max_work
+    mismatch = check_application(_schema(), _version(str(E.absent)))
+    assert not mismatch.report.verified
+    assert mismatch.samples["sample"].document is not None
+    assert not check_application(_schema(), ApplicationVersion()).report.verified
+    stopped = check_application(_schema(), version, limits=Limits(max_work=1))
+    assert stopped.report.outcome == "exhausted"

@@ -23,12 +23,15 @@ def checkpoint(deadline: float, cancel: threading.Event | None) -> None:
 
 
 WorkerModule = Literal[
+    "bijux_ontology.rdf._comparison_worker",
+    "bijux_ontology.rdf.stores.worker",
     "bijux_ontology.rdf.queries.worker",
     "bijux_ontology.rdf.canonical.worker",
     "bijux_ontology.rdf.patches.correspondence",
     "bijux_ontology.workflows.projects.acquisition.worker",
     "bijux_ontology.vocabulary.mappings.worker",
     "bijux_ontology.shacl.rules.worker",
+    "bijux_ontology.rdf.entailment.worker",
 ]
 
 
@@ -46,12 +49,15 @@ def execute_worker(
     this transport owns bounded pipes, cancellation and the worker lifetime.
     """
     if module not in (
+        "bijux_ontology.rdf._comparison_worker",
+        "bijux_ontology.rdf.stores.worker",
         "bijux_ontology.rdf.queries.worker",
         "bijux_ontology.rdf.canonical.worker",
         "bijux_ontology.rdf.patches.correspondence",
         "bijux_ontology.workflows.projects.acquisition.worker",
         "bijux_ontology.vocabulary.mappings.worker",
         "bijux_ontology.shacl.rules.worker",
+        "bijux_ontology.rdf.entailment.worker",
     ):
         raise InputError("Unsupported RDF worker module")
     if not isinstance(payload, bytes) or type(cap) is not int or cap <= 0:

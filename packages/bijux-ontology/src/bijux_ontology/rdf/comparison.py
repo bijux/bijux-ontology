@@ -2,8 +2,8 @@
 
 import json
 import math
-import subprocess
-import sys
+import threading
+import time
 from collections.abc import Iterator
 from typing import cast
 
@@ -11,6 +11,7 @@ from rdflib import BNode, Graph, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.rdf.execution import checkpoint, execute_worker
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
@@ -42,8 +43,13 @@ def _contexts(
 
 
 def _records(
-    source: Graph | PreparedSource, budget: Budget, ignore_empty_graphs: bool
+    source: Graph | PreparedSource,
+    budget: Budget,
+    ignore_empty_graphs: bool,
+    deadline: float,
+    cancel: threading.Event | None,
 ) -> set[_Record]:
+    checkpoint(deadline, cancel)
     prepared = (
         source
         if isinstance(source, PreparedSource)
@@ -51,6 +57,7 @@ def _records(
     )
     records: set[_Record] = set()
     for name, graph in _contexts(prepared, budget):
+        checkpoint(deadline, cancel)
         budget.consume("work")
         if name is not None:
             bound_node(name, budget)
@@ -58,6 +65,7 @@ def _records(
                 budget.consume("states")
                 records.add(("graph", (term_key(name),)))
         for triple in graph:
+            checkpoint(deadline, cancel)
             budget.consume("work")
             budget.consume("triples")
             for node in triple:
@@ -69,30 +77,20 @@ def _records(
     return records
 
 
-def _isomorphic(payload: bytes, timeout_seconds: float) -> bool:
-    """Keep the backend in its caller's process group and kill it on deadline."""
-    process = subprocess.Popen(
-        [
-            sys.executable,
-            "-I",
-            "-B",  # Isolation ignores the environment-based bytecode safeguard.
-            "-m",
-            "bijux_ontology.rdf._comparison_worker",
-            str(len(payload)),
-        ],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+def _isomorphic(
+    payload: bytes, timeout_seconds: float, cancel: threading.Event | None
+) -> bool:
+    """Use the shared bounded transport to own cancellation and worker lifetime."""
+    if timeout_seconds <= 0:
+        raise LimitExceeded("RDF operation exceeded its wall-clock deadline")
+    output = execute_worker(
+        "bijux_ontology.rdf._comparison_worker",
+        payload,
+        cap=max(len(payload), 6),
+        timeout=timeout_seconds,
+        cancel=cancel,
     )
-    try:
-        output, _ = process.communicate(payload, timeout=timeout_seconds)
-    except subprocess.TimeoutExpired as error:
-        process.kill()
-        process.communicate(timeout=1)
-        raise LimitExceeded(
-            "RDF comparison exceeded its wall-clock deadline"
-        ) from error
-    if process.returncode != 0 or output not in (b"true\n", b"false\n"):
+    if output not in (b"true\n", b"false\n"):
         raise InputError("RDF comparison worker did not return a valid result")
     return output == b"true\n"
 
@@ -105,6 +103,7 @@ def compare_rdf(
     budget: Budget | None = None,
     timeout_seconds: float = 10.0,
     ignore_empty_graphs: bool = False,
+    cancel: threading.Event | None = None,
 ) -> Report:
     """Compare exact RDF structure, dataset membership and blank-node identity.
 
@@ -113,7 +112,8 @@ def compare_rdf(
     maintained isomorphism implementation in a disposable worker.
     Input and preparation work have explicit budgets; the comparator has a real
     wall-clock deadline because RDFLib exposes no internal work/state allowance.
-    The worker inherits the caller's process group for enclosing CLI deadlines.
+    Capture and worker execution share that deadline and support cancellation;
+    the owned worker process group is reaped before returning.
     Implicit RDF 1.1 string datatypes and language-tag case denote the same term.
     Numeric lexical forms stay distinct; OWL entailment is never evaluated.
     """
@@ -127,11 +127,15 @@ def compare_rdf(
         raise InputError("Comparison timeout must be a finite positive number")
     if budget is not None and limits is not None and budget.limits != limits:
         raise InputError("Explicit limits conflict with the shared operation budget")
+    if cancel is not None and not isinstance(cancel, threading.Event):
+        raise InputError("RDF cancellation requires a threading.Event")
+    deadline = time.monotonic() + timeout_seconds
     operation = budget if budget is not None else Budget(limits)
     issues = IssueCollector(operation)
     complete = True
     checked = 0
     try:
+        checkpoint(deadline, cancel)
         if not ignore_empty_graphs and any(
             isinstance(source, PreparedSource) and source.graph_fidelity != "complete"
             for source in (before, after)
@@ -154,12 +158,13 @@ def compare_rdf(
                 regime="rdf-structure",
                 families=("rdf.comparison",),
             )
-        left = _records(before, operation, ignore_empty_graphs)
-        right = _records(after, operation, ignore_empty_graphs)
+        left = _records(before, operation, ignore_empty_graphs, deadline, cancel)
+        right = _records(after, operation, ignore_empty_graphs, deadline, cancel)
         payload = json.dumps(
             [list(left), list(right)], ensure_ascii=False, separators=(",", ":")
         ).encode("utf-8")
         operation.consume("bytes", len(payload))
+        checkpoint(deadline, cancel)
         if len(left) != len(right):
             equal = False
         elif not any(
@@ -170,7 +175,8 @@ def compare_rdf(
         ):
             equal = set(left) == set(right)
         else:
-            equal = _isomorphic(payload, timeout_seconds)
+            equal = _isomorphic(payload, deadline - time.monotonic(), cancel)
+        checkpoint(deadline, cancel)
         checked = 1
         if not equal:
             issues.append(
