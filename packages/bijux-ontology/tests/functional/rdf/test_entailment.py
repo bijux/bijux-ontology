@@ -8,9 +8,9 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 
-from bijux_ontology.declarations import FieldDeclaration as Field
-from bijux_ontology.declarations import ModelDeclaration as Model
-from bijux_ontology.declarations import ValueDeclaration as Value
+from bijux_ontology.declarations.types import FieldDeclaration as Field
+from bijux_ontology.declarations.types import ModelDeclaration as Model
+from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.execution.workers import execute_worker

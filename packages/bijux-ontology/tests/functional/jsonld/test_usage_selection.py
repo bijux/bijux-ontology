@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 from rdflib import Graph, Literal, URIRef
 
-from bijux_ontology.declarations import ABSENT
+from bijux_ontology.absence import ABSENT
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.evidence.values import ValueKind

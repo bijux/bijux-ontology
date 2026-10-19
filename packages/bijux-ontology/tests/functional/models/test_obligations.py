@@ -7,7 +7,7 @@ from rdflib import BNode, Graph, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology.declarations import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     ValueDeclaration,

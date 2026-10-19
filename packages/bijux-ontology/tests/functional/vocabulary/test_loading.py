@@ -7,7 +7,7 @@ import pytest
 from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, XSD
 
-from bijux_ontology.declarations import TermDeclaration
+from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Limits

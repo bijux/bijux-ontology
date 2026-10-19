@@ -4,7 +4,7 @@ import pytest
 from linkml_runtime.utils.schemaview import SchemaView  # type: ignore[import-untyped]
 from rdflib.namespace import XSD
 
-from bijux_ontology.declarations import ValueDeclaration as Value
+from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.linkml import model_declarations

@@ -9,12 +9,12 @@ import pytest
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology.declarations import (
+from bijux_ontology.declarations.resource_roles import ResourceRole
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.declarations.resource_roles import ResourceRole
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits

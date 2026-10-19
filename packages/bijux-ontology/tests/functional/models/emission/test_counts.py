@@ -6,13 +6,13 @@ from dataclasses import asdict, replace
 import pytest
 from rdflib import RDF, BNode, Graph, Literal, URIRef
 
-from bijux_ontology.declarations import (
+from bijux_ontology.declarations.codecs import models_from_data
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
+    OutputRequirement,
     ValueDeclaration,
 )
-from bijux_ontology.declarations.codecs import models_from_data
-from bijux_ontology.declarations.types import OutputRequirement
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission

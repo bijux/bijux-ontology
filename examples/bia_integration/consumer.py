@@ -21,7 +21,7 @@ from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 import bijux_ontology
-from bijux_ontology.declarations import ValueDeclaration
+from bijux_ontology.declarations.types import ValueDeclaration
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.namespaces import namespace_inventory
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations

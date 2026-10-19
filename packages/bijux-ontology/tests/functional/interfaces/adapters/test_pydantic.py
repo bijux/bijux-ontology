@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, computed_field, field_serializer
 from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology.declarations import ValueDeclaration as Value
+from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations

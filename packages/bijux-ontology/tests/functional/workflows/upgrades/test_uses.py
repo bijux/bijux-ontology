@@ -2,7 +2,7 @@
 
 from rdflib.namespace import XSD
 
-from bijux_ontology.declarations import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     TermDeclaration,

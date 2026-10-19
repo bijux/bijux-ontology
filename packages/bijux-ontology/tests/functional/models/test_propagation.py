@@ -4,9 +4,9 @@ import pytest
 from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology.declarations import FieldDeclaration as Field
-from bijux_ontology.declarations import ModelDeclaration as Model
-from bijux_ontology.declarations import ValueDeclaration as Value
+from bijux_ontology.declarations.types import FieldDeclaration as Field
+from bijux_ontology.declarations.types import ModelDeclaration as Model
+from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.models.contracts.checking import check_models
 
 EX = Namespace("https://example.org/")

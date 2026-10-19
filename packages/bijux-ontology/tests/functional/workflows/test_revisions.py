@@ -6,7 +6,7 @@ from threading import Barrier, Event, Thread
 import pytest
 from rdflib import URIRef
 
-from bijux_ontology.declarations import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     ValueDeclaration,

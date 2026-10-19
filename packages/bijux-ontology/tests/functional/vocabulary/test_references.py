@@ -3,7 +3,7 @@
 from rdflib import BNode, Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology.declarations import TermDeclaration
+from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.vocabulary.checking import check_vocabulary
 
 EX = Namespace("https://example.org/vocabulary#")

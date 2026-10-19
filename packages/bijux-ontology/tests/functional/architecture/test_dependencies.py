@@ -282,6 +282,7 @@ def test_narrow_imports_load_only_explicit_owners() -> None:
 import sys
 import bijux_ontology
 import bijux_ontology.shacl
+import bijux_ontology.declarations
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
@@ -292,6 +293,8 @@ assert "bijux_ontology.models.contracts.checking" not in sys.modules
 assert "bijux_ontology.shacl.checking" not in sys.modules
 assert "__getattr__" not in vars(bijux_ontology)
 assert "__getattr__" not in vars(bijux_ontology.shacl)
+assert "__getattr__" not in vars(bijux_ontology.declarations)
+assert "bijux_ontology.declarations.types" not in sys.modules
 from bijux_ontology.diagnostics.errors import InputError
 assert issubclass(InputError, Exception)
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary

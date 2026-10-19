@@ -5,9 +5,9 @@ from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology.declarations import FieldDeclaration as Field
-from bijux_ontology.declarations import ModelDeclaration as Model
-from bijux_ontology.declarations import ValueDeclaration as Value
+from bijux_ontology.declarations.types import FieldDeclaration as Field
+from bijux_ontology.declarations.types import ModelDeclaration as Model
+from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 

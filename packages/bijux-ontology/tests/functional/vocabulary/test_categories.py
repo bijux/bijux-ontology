@@ -3,7 +3,7 @@
 from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
-from bijux_ontology.declarations import TermDeclaration
+from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.vocabulary.checking import check_vocabulary, declared_kinds
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

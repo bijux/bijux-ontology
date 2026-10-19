@@ -10,7 +10,7 @@ import pytest
 from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology.declarations import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     ValueDeclaration,

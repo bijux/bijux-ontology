@@ -4,7 +4,7 @@ import pytest
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology.declarations import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     ValueDeclaration,

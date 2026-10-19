@@ -7,9 +7,9 @@ import pytest
 from pydantic import BaseModel, field_serializer
 from rdflib.namespace import XSD
 
-from bijux_ontology.declarations import FieldDeclaration as Field
-from bijux_ontology.declarations import ModelDeclaration as Model
-from bijux_ontology.declarations import ValueDeclaration as Value
+from bijux_ontology.declarations.types import FieldDeclaration as Field
+from bijux_ontology.declarations.types import ModelDeclaration as Model
+from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.adapters.contracts import RdfField
