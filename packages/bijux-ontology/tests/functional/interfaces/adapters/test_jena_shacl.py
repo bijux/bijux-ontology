@@ -20,8 +20,8 @@ from bijux_ontology.interfaces.adapters.jena import (
 )
 from bijux_ontology.interfaces.adapters.jena.shacl import validate_jena_shapes
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import validate_shapes
+from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 EX = Namespace("urn:jena:")

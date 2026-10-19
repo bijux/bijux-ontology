@@ -22,8 +22,8 @@ from bijux_ontology.rdf.sources.snapshots import (
     copy_graph,
 )
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
-from bijux_ontology.shacl.bindings import TermSelection, resolve_terms
-from bijux_ontology.shacl.capabilities import (
+from bijux_ontology.shacl.execution.bindings import TermSelection, resolve_terms
+from bijux_ontology.shacl.execution.capabilities import (
     ShaclConstraintRequirement,
     prepare_capabilities,
 )

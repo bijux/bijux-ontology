@@ -10,11 +10,9 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
-from bijux_ontology.shacl.bindings import TermSelection, transport_roles
-from bijux_ontology.shacl.capabilities import (
-    ShaclConstraintRequirement,
-)
 from bijux_ontology.shacl.evidence import findings, results
+from bijux_ontology.shacl.execution.bindings import TermSelection, transport_roles
+from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.execution.planning import (
     _metadata,
     _options,

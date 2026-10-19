@@ -22,10 +22,14 @@ from bijux_ontology.rdf.sources.loading import _charge_graph
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.shacl.bindings import StaticBindings, TermSelection, transport_roles
-from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.evidence.findings import ShaclSource
 from bijux_ontology.shacl.evidence.results import ShaclResult
+from bijux_ontology.shacl.execution.bindings import (
+    StaticBindings,
+    TermSelection,
+    transport_roles,
+)
+from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.execution.planning import (
     _metadata,
     _options,

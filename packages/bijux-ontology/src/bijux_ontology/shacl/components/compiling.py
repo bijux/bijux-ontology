@@ -17,7 +17,7 @@ from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
 from bijux_ontology.shacl.authoring.parameters import parameter_name
-from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
+from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.profiles.resources import _capture, _owned
 from bijux_ontology.shacl.profiles.types import Triple
 
