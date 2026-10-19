@@ -1,5 +1,6 @@
 """Actual callable serializer samples retain explicit options and failed contracts."""
 
+import json
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Annotated
@@ -278,7 +279,9 @@ def test_serializer_checks_share_a_cumulative_operation_budget() -> None:
     usages = [ModelUsage("record")]
     limits = Limits(max_work=80)
     assert check_models([model], owned, limits=limits).verified
-    assert check_emission(document, [model], usages, limits=limits).verified
+    assert (
+        check_emission(document, [model], usages, limits=limits).outcome == "exhausted"
+    )
     exhausted = check_instance(
         None,
         lambda value: document,
@@ -290,7 +293,7 @@ def test_serializer_checks_share_a_cumulative_operation_budget() -> None:
     )
     assert exhausted.report.outcome == "exhausted"
     assert not exhausted.report.complete
-    assert exhausted.output == document
+    assert exhausted.output_json is None
     fresh = check_instance(
         None,
         lambda value: document,
@@ -300,7 +303,100 @@ def test_serializer_checks_share_a_cumulative_operation_budget() -> None:
         options={},
         limits=Limits(max_work=120),
     )
-    assert fresh.report.verified, fresh.report.to_dict()
+    assert fresh.report.outcome == "exhausted" and fresh.output_json is None
+    grant = Limits(max_work=256)
+    assert check_models([model], owned, limits=grant).verified
+    assert check_emission(document, [model], usages, limits=grant).verified
+    combined = check_instance(
+        None,
+        lambda value: document,
+        [model],
+        usages,
+        vocabulary=owned,
+        options={},
+        limits=grant,
+    )
+    assert combined.report.outcome == "exhausted"
+    assert combined.output == document
+    recovered = check_instance(
+        None,
+        lambda value: document,
+        [model],
+        usages,
+        vocabulary=owned,
+        options={},
+    )
+    assert recovered.report.verified, recovered.report.to_dict()
+    assert recovered.output == document
+
+
+def test_serializer_snapshots_require_storage_before_retaining_output() -> None:
+    """Large ordinary JSON inputs cannot be copied through a tiny shared grant."""
+    models = (ModelDeclaration("record", (str(EX.Record),)),)
+    usages = (ModelUsage("record"),)
+    owned = load_vocabulary(vocabulary())
+    limits = Limits(max_bytes=2_000_000, max_total_bytes=2048, max_states=200_000)
+    large = {"values": ["x"] * 150_000}
+    stopped = check_serialized(
+        large, models, usages, vocabulary=owned, budget=Budget(limits)
+    )
+    assert stopped.report.outcome == "exhausted"
+    assert stopped.output_json is None and stopped.document_json is None
+
+    calls: list[dict[str, object]] = []
+
+    def serialize(instance: object, **options: object) -> object:
+        """An actual caller callback runs only after options are owned."""
+        calls.append(options)
+        return {"@type": str(EX.Record)}
+
+    options = check_instance(
+        None,
+        serialize,
+        models,
+        usages,
+        vocabulary=owned,
+        options=large,
+        budget=Budget(limits),
+    )
+    assert options.report.outcome == "exhausted" and calls == []
+    assert options.output_json is None and options.document_json is None
+
+    whitespace = check_serialized(
+        {"values": ["µ"] * 40},
+        models,
+        usages,
+        vocabulary=owned,
+        limits=Limits(max_bytes=240),
+    )
+    assert whitespace.report.outcome == "exhausted"
+    assert whitespace.output_json is None and whitespace.document_json is None
+
+    output = {"@type": str(EX.Record)}
+    context = {f"field{index}": str(EX.name) for index in range(30_000)}
+    partial = check_serialized(
+        output,
+        models,
+        usages,
+        vocabulary=owned,
+        context=context,
+        budget=Budget(limits),
+    )
+    assert partial.report.outcome == "exhausted"
+    assert partial.output == output and partial.document_json is None
+    unicode_output = {
+        "@context": {"name": str(EX.name)},
+        "@type": str(EX.Record),
+        "name": "Name µ\n😀",
+    }
+    recovered = check_serialized(unicode_output, models, usages, vocabulary=owned)
+    assert (
+        recovered.report.verified
+        and recovered.output == recovered.document == unicode_output
+    )
+    assert recovered.output_json == json.dumps(
+        unicode_output, ensure_ascii=False, allow_nan=False
+    )
 
 
 def test_serializer_diagnostics_bound_owned_text_without_caller_formatting() -> None:

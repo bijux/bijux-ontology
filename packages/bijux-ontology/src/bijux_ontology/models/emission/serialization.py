@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, cast
 
 from rdflib import Graph
 
-from bijux_ontology._json import own_json
+from bijux_ontology._json import encode_json, own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
@@ -84,14 +84,28 @@ def check_instance(
         raise InputError("declaration_report requires a Report")
     operation = _operation(limits, budget)
     try:
+        if not isinstance(options, Mapping):
+            raise InputError("Serializer options require a named mapping")
+        count = len(options)
+        operation.consume("states", count)
+        operation.reserve_storage(256 + 72 * count)
+        captured: dict[str, object] = {}
+        for key in options:
+            operation.consume("work")
+            if len(captured) >= count:
+                raise InputError("Serializer option inventory changed during capture")
+            bound_text(key, operation)
+            captured[key] = options[key]
+        if len(captured) != count:
+            raise InputError("Serializer option inventory changed during capture")
         supplied = own_json(
-            dict(options),
+            captured,
             max_bytes=operation.limits.max_bytes,
             max_depth=operation.limits.max_depth,
+            budget=operation,
         )
         if not isinstance(supplied, dict):
             raise InputError("Serializer options require a named mapping")
-        operation.consume("bytes", len(json.dumps(supplied).encode("utf-8")))
         output = serializer(instance, **supplied)
     except Exception as error:
         reports = () if declaration_report is None else (declaration_report,)
@@ -133,18 +147,12 @@ def _failure(error: Exception, operation: Budget) -> Report:
     if len(arguments) == 1 and type(arguments[0]) is str:
         text = arguments[0]
         try:
-            if len(text) > operation.limits.max_bytes:
-                raise LimitExceeded("Failure detail exceeds max_bytes")
-            operation.consume("work", len(text) + 1)
-            size = len(text.encode("utf-8"))
-            if size > operation.limits.max_bytes:
-                raise LimitExceeded("Failure detail exceeds max_bytes")
-            operation.consume("bytes", size)
+            bound_text(text, operation)
             if text.strip():
                 message = text
         except LimitExceeded:
             exhausted = True
-        except UnicodeEncodeError:
+        except InputError:
             pass
     if exhausted and message == "Serialization or its contract checks failed":
         message = "Serialization stopped within its resource limits"
@@ -195,31 +203,30 @@ def check_serialized(
     output_json = document_json = None
     try:
         output = own_json(
-            output, max_bytes=selected.max_bytes, max_depth=selected.max_depth
+            output,
+            max_bytes=selected.max_bytes,
+            max_depth=selected.max_depth,
+            budget=operation,
         )
-        output_json = json.dumps(output, ensure_ascii=False, allow_nan=False)
-        operation.consume("bytes", len(output_json.encode("utf-8")))
+        output_json = encode_json(output, budget=operation)
         document = _contextualized_output(output, context, operation)
-        document = own_json(
-            document, max_bytes=selected.max_bytes, max_depth=selected.max_depth
-        )
-        document_json = json.dumps(document, ensure_ascii=False, allow_nan=False)
+        if document is output:
+            document_json = output_json
+        else:
+            document = own_json(
+                document,
+                max_bytes=selected.max_bytes,
+                max_depth=selected.max_depth,
+                budget=operation,
+            )
+            document_json = encode_json(document, budget=operation)
         if _prepared is not None:
             if (
                 not isinstance(_prepared, PreparedUsages)
                 or _prepared._budget is not operation
             ):
                 raise InputError("Prepared output must share its originating Budget")
-            bound_text(document_json, operation)
-            encoded_size = len(document_json.encode("utf-8"))
-            original = own_json(
-                _prepared._document,
-                max_bytes=encoded_size,
-                max_depth=selected.max_depth,
-            )
-            operation.consume("work", 4 * encoded_size + 1)
-            operation.consume("bytes", 2 * encoded_size)
-            exact = json.dumps(original, ensure_ascii=False, allow_nan=False)
+            exact = encode_json(_prepared._document, budget=operation)
             if exact != document_json:
                 raise InputError("Prepared output differs from the checked document")
             document = _prepared._document
@@ -270,13 +277,16 @@ def _contextualized_output(
         context,
         max_bytes=operation.limits.max_bytes,
         max_depth=operation.limits.max_depth,
+        budget=operation,
     )
     if isinstance(output, dict):
         if "@context" in output and not same_context(
             output["@context"], owned_context, operation
         ):
             raise InputError("Supplied context conflicts with actual serializer output")
+        operation.reserve_storage(256 + 72 * (len(output) + 1))
         return {**output, "@context": owned_context}
     if isinstance(output, list):
+        operation.reserve_storage(256 + 72 * 2)
         return {"@context": owned_context, "@graph": output}
     raise InputError("An external context requires object or array output")
