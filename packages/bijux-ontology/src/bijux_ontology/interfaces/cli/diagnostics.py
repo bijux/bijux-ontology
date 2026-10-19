@@ -220,6 +220,7 @@ _CODES = {
         "markup_invalid markup_unverified markup_value_changed".split()
     ),
     "models": frozenset(
+        "artifact_input_error artifact_incompatible "
         "direction_unverified contextual_direction_unverified "
         "emission_group_conflict emission_group_unverified "
         "scenario_coverage_unverified emission_scenario_conflict "

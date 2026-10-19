@@ -1394,6 +1394,15 @@ base-two information content and all tied shared-ancestor witnesses.
 Results carry actual corpus/hierarchy fingerprints. Unknown terms, zero frequency,
 cycles, disconnected pairs and incomplete propagation withhold required scores.
 
+`bijux_ontology.models.persistence.compile_model_artifact` captures ordinary
+`RdfSource` text/bytes, declarations and closed context resources as inert data.
+Compute `model_preparation_identity` from current inputs before loading; pass it
+and the compiler output's SHA256 from a trusted application/build manifest to
+`load_model_artifact`. A fresh `PreparedModels` reuses named source/index
+preparation and reruns declaration and output checks. Changed resources, contexts,
+selections, declarations or installed semantic code invalidate reuse. Unknown
+formats/extensions are rejected; successful submissions and callables are never saved.
+
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing
 owned worker enumerates each selected root once, then validates ordinary Core
