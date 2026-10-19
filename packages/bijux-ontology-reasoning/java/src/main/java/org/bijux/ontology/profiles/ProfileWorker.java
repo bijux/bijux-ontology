@@ -51,6 +51,8 @@ public final class ProfileWorker {
         if (mode.equals("model_compatibility")) return org.bijux.ontology.models.ModelCompatibility.evaluate(request, job, result);
         if (mode.equals("datatypes")) return org.bijux.ontology.datatypes.DatatypeCompatibility.evaluate(request, job, result);
         if (mode.equals("relationships")) return org.bijux.ontology.relationships.InferredRelationships.evaluate(request, job, result);
+        if (mode.equals("explanations")) return org.bijux.ontology.explanations.LogicalExplanations.evaluate(request, job, result);
+        if (mode.equals("locality")) return org.bijux.ontology.locality.LocalityModules.evaluate(request, job, result);
         if (mode.equals("entailment")) return EntailmentChecks.evaluate(request, job, result);
         if (!mode.equals("profile")) throw new IOException("Unsupported operation");
         int cap = positive(request.path("max_bytes"));

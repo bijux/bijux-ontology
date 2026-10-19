@@ -163,3 +163,28 @@ the graph or identify a uniquely guilty record. Original scopes stay separate
 from the derived joint input. Missing explicit existential values and different
 IRIs retain ordinary OWL semantics; submission conformance remains a separate
 model/output check.
+
+`explanations.explain_reasoning(backend, document, ExplanationQuestion(...))`
+returns one bounded maintained owlexplanation 5.0.1 justification for a selected
+entailment, named-class unsatisfiability or inconsistency. Original annotated
+structural axioms retain their source modules and rendering hashes; these are
+not physical source coordinates or universal canonical identities. Standalone
+proof bytes are independently reread and reasoned over. Inspect `.underlying`
+separately from `.explanation_report`: failed or capped explanation work retains
+proved logical findings. Smallest size, subset minimality and complete enumeration
+are not claimed. Anonymous support and unavailable tautology justifications remain
+unknown; generated signature declarations are separate replay scaffolding.
+
+`locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
+for an explicit typed signature. Choose flattened imports, retained annotations
+and a fresh module identity. Inspect original annotated axiom owners and separate
+before/after consumer entailment proofs; only the selected obligations are
+certified. Unsupported original axioms prevent a complete certificate. This
+operation stays separate from RDF neighborhoods and MIREOT selection.
+
+`reductions.analyze_redundancy` tests explicit unannotated root subclass,
+class-assertion and equivalent-class axioms against independent remaining
+theories. Proposals need joint verification with `prepare_reduction`: individual
+redundancy does not authorize the union. Choose retained annotations and read-only
+imports, and supply nonempty consumer entailments. Original inconsistency blocks
+proof; publish only verified candidates with `axioms.changes.write_axiom_change`.

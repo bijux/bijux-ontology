@@ -388,3 +388,28 @@ def test_parser_completeness_and_execution_bounds(backend: OwlProfileBackend) ->
     bounded = convert_ontology(backend, document, format="functional", budget=operation)
     assert bounded.report.outcome == "exhausted" and bounded.content is None
     assert convert_ontology(backend, document, format="owlxml").report.verified
+    expanded = prepare_owl_document(
+        "Ontology(<urn:bounded> "
+        + " ".join(
+            f"Declaration(Class(<urn:C{i}>)) Declaration(Class(<urn:D{i}>)) "
+            f"SubClassOf(<urn:C{i}> <urn:D{i}>)"
+            for i in range(80)
+        )
+        + ")",
+        format="functional",
+        document_iri="urn:bounded",
+    )
+    classpath_bytes = sum(
+        len(str(backend.directory / name).encode()) + 1 for name in backend.jars
+    )
+    limited_output = convert_ontology(
+        backend,
+        expanded,
+        format="functional",
+        limits=Limits(max_bytes=max(10000, classpath_bytes + 1)),
+    )
+    assert limited_output.report.outcome == "exhausted"
+    assert limited_output.content is None
+    assert any(
+        "Native conversion did not finish" in i.message for i in limited_output.report
+    )

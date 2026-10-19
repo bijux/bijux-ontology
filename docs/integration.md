@@ -379,6 +379,24 @@ ambiguous totals, unavailable versions and unsupported filters remain open;
 neither nesting nor an available parent supplies a missing identity. Export
 preserves the original presentation tree and parameters without declaring closure.
 
+`fhir.concept_map` reads and writes actual R5 ConceptMaps. Call
+`translate_concept_map` with original system/version/code, typed context and
+explicit local CodeSystems/ValueSets. All applicable directed targets retain
+conditions and products; missing context or expansion remains unresolved.
+`noMap` and negative relationships never become successful mappings or fallback
+targets. Select a returned target explicitly before changing application data.
+`export_concept_map_sssom` requires explicit RDF bindings, prefixes and mapping
+justification; unsupported scopes/conditions/relationships reject export or
+produce an explicitly partial result with omitted paths.
+
+`fhir.coding_bindings.check_coding_bindings` applies explicit field paths,
+datatypes and required/extensible/preferred/example bindings to actual R5 values.
+Each repeated CodeableConcept needs one qualifying coding; additional valid
+translations retain their own system identities. Identity and selected display
+checks stay separate from binding conformance. Inspect `.recommendations` for
+preferred findings and supply exact justified extensibility decisions when needed.
+Required bare codes additionally need unambiguous strings and qualified versions.
+
 `workflows.ontology.ownership.check_ownership` applies explicit `OwnerClaim`
 declarations to protected outgoing `FactSelection` predicates and exact terms.
 Claims supply actual authoritative views; exact terms and the longest declared

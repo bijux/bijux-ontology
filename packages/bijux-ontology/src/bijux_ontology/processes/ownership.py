@@ -76,7 +76,7 @@ def stop_owned_process(
 
 
 def spawn_owned_process(
-    command: list[str],
+    command: list[str] | tuple[str, ...],
     *,
     stdin: int | None = None,
     stdout: int | None = None,

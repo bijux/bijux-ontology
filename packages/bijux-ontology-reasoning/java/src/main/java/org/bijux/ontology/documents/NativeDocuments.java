@@ -392,15 +392,40 @@ public final class NativeDocuments {
     private static final class CappedOutput extends FilterOutputStream {
         private final long cap;
         private long used;
+        private boolean exhausted;
         CappedOutput(OutputStream output, long cap) { super(output); this.cap = cap; }
         @Override public void write(int value) throws IOException {
-            if (++used > cap) throw new WorkerProtocol.OutputLimit();
-            out.write(value);
+            if (used >= cap) { exhausted = true; throw new WorkerProtocol.OutputLimit(); }
+            used++; out.write(value);
         }
         @Override public void write(byte[] bytes, int start, int length) throws IOException {
-            if (length > cap - used) throw new WorkerProtocol.OutputLimit();
+            if (length > cap - used) { exhausted = true; throw new WorkerProtocol.OutputLimit(); }
             used += length; out.write(bytes, start, length);
         }
+        @Override public void close() throws IOException {
+            // Native text writers may swallow write failures; the owned close must retain exhaustion.
+            try { super.close(); }
+            finally { if (exhausted) throw new WorkerProtocol.OutputLimit(); }
+        }
+    }
+
+    /** Write an import-free structural result and independently reread its exact axioms. */
+    public static OWLOntology checkedWriteIsolated(OWLOntology original, Path output,
+            int cap, int maximum) throws Exception {
+        if (!original.getImportsDeclarations().isEmpty()
+                || original.anonymousIndividuals().findAny().isPresent())
+            throw new IOException("Isolated native output requires no imports or anonymous individuals");
+        try (OutputStream stream = new CappedOutput(
+                Files.newOutputStream(output, StandardOpenOption.CREATE_NEW), cap)) {
+            original.getOWLOntologyManager().saveOntology(original, format("functional"), stream);
+        }
+        String effective = "urn:bijux:ontology:structural-result";
+        OWLOntology reread = load(Collections.singletonList(new Document(output, effective, "functional")),
+                Collections.singletonMap(effective, 0), 0, 1);
+        List<Map<String,Object>> changes = new ArrayList<>();
+        compare(original, reread, changes, cap, maximum);
+        if (!changes.isEmpty()) throw new IOException("Native result changed during independent reread");
+        return reread;
     }
 
     private static final class ChangeLimit extends IOException {}
