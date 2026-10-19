@@ -30,8 +30,8 @@ from ..axioms.changes.checking import _base, _losses
 from ..axioms.changes.types import AxiomBase
 from ..axioms.decoding import ProjectionDecoder
 from ..axioms.types import ProjectedAxiom
-from ..backend.bundles import qualify_backend
-from ..backend.execution import invoke_worker, qualify_capability, result_counter
+from ..backend.owlapi.bundles import qualify_backend
+from ..backend.owlapi.execution import invoke_worker, qualify_capability, result_counter
 from ..backend.types import OwlProfileBackend
 from ..diagnosis.checking import _classes
 from ..documents.sources.native import prepare_owl_document, stage_native_documents

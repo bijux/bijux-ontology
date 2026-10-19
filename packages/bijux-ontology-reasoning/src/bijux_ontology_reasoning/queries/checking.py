@@ -11,8 +11,8 @@ from bijux_ontology.reports import Report
 from ..axioms.changes.encoding import ConstructionEncoder
 from ..axioms.decoding import ProjectionDecoder
 from ..axioms.types import ClassExpression, NamedEntity, SubClassOf
-from ..backend.execution import result_text
-from ..backend.qualification import QualifiedReceipt, _boolean, _records
+from ..backend.owlapi.execution import result_text
+from ..backend.owlapi.receipts import QualifiedReceipt, _boolean, _records
 from ..entailment.encoding import UnsupportedQuery, encode_axiom
 from ..sessions.types import PreparedReasoningTheory
 from .types import ClassQueryGroup, ClassQueryResult

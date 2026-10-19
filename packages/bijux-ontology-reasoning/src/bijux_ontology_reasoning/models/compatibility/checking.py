@@ -20,14 +20,14 @@ from bijux_ontology.reports import Issue, Report
 from ...axioms.changes.checking import _imports, _owned
 from ...axioms.decoding import ProjectionDecoder
 from ...axioms.types import ClassExpression, SubClassOf
-from ...backend.bundles import qualify_backend
-from ...backend.execution import (
+from ...backend.owlapi.bundles import qualify_backend
+from ...backend.owlapi.execution import (
     invoke_worker,
     qualify_capability,
     result_counter,
     result_text,
 )
-from ...backend.qualification import (
+from ...backend.owlapi.receipts import (
     _boolean,
     _records,
     qualify_reasoning_result,

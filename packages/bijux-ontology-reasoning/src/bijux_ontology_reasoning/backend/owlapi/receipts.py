@@ -9,9 +9,9 @@ from bijux_ontology.errors import ResourceError
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.reports import Issue
 
-from ..documents.types import OwlDocument
+from ...documents.types import OwlDocument
+from ..types import LoaderQualification, ProfileDocument, ReasonerIdentity
 from .execution import result_counter, result_text
-from .types import LoaderQualification, ProfileDocument, ReasonerIdentity
 
 
 def _records(raw: object, budget: Budget) -> list[object]:

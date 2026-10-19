@@ -21,7 +21,7 @@ from ..axioms.types import (
     NativeLiteral,
     ProjectedAxiom,
 )
-from ..backend.bundles import PROFILES
+from ..backend.owlapi.bundles import PROFILES
 from ..backend.types import OwlProfile, OwlProfileBackend
 from ..documents.conversion import convert_ontology
 from ..documents.sources.native import prepare_owl_document

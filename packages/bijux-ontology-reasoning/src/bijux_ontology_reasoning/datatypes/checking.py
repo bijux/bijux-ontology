@@ -20,14 +20,18 @@ from bijux_ontology.reports import Issue, Location, Report
 
 from ..axioms.decoding import ProjectionDecoder
 from ..axioms.types import DataProperty, DataRange, PropertyDomainRange
-from ..backend.bundles import qualify_backend
-from ..backend.execution import (
+from ..backend.owlapi.bundles import qualify_backend
+from ..backend.owlapi.execution import (
     invoke_worker,
     qualify_capability,
     result_counter,
     result_text,
 )
-from ..backend.qualification import _records, qualify_reasoning_result, reasoning_header
+from ..backend.owlapi.receipts import (
+    _records,
+    qualify_reasoning_result,
+    reasoning_header,
+)
 from ..backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
 from ..documents.sources.native import stage_native_documents
 from ..documents.sources.rdf import stage_documents

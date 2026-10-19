@@ -18,13 +18,17 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import Issue, Report
 
 from ..axioms.changes.checking import _imports, _owned
-from ..backend.execution import (
+from ..backend.owlapi.execution import (
     invoke_worker,
     qualify_capability,
     result_counter,
     result_text,
 )
-from ..backend.qualification import _records, qualify_reasoning_result, reasoning_header
+from ..backend.owlapi.receipts import (
+    _records,
+    qualify_reasoning_result,
+    reasoning_header,
+)
 from ..backend.types import OwlProfileBackend
 from ..diagnosis import check_consistency
 from ..diagnosis.types import ConsistencyCheck

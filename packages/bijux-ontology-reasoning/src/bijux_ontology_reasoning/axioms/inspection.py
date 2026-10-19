@@ -17,8 +17,8 @@ from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
-from ..backend.bundles import qualify_backend
-from ..backend.execution import (
+from ..backend.owlapi.bundles import qualify_backend
+from ..backend.owlapi.execution import (
     invoke_worker,
     qualify_capability,
     result_counter,

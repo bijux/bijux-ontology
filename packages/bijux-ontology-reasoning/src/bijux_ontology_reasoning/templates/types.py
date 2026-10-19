@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from bijux_ontology.reports import Report
 
 from ..axioms.types import AxiomInspection, NamedEntity
+from ..backend.robot.types import RobotBackend
 from ..documents.types import NativeExport, OwlDocument
 from ..entailment.types import EntailmentCheck
-from ..robot.types import RobotBackend
 
 TemplateBackend = RobotBackend
 
