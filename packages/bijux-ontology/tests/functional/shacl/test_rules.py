@@ -1,7 +1,9 @@
 """Actual maintained rule passes retain exact RDF and checked acceptance scope."""
 
+import subprocess
 import threading
-from typing import TypedDict
+from collections.abc import Sequence
+from typing import Any, TypedDict
 
 import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
@@ -370,3 +372,55 @@ def test_late_check_exhaustion_retains_known_failure() -> None:
     assert (
         export_migration(result.candidate, accept=True, format="turtle").content is None
     )
+
+
+def test_killed_rule_worker_is_unverified_and_original_inputs_recover(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Actual native execution failure must not accuse valid supplied RDF."""
+    pytest.importorskip("pyshacl")
+    data, rules = _data(), prepare_rdf(PROGRAM, format="turtle")
+    original_data, original_rules = set(data.graph()), set(rules.graph())
+    real_popen = subprocess.Popen
+    owned: list[subprocess.Popen[bytes]] = []
+
+    def launch(command: Sequence[str], **kwargs: Any) -> subprocess.Popen[bytes]:
+        """Kill only the actual isolated rule executor, preserving its native input."""
+        process = real_popen(command, **kwargs)
+        if "bijux_ontology.shacl.rules.worker" in command:
+            owned.append(process)
+            process.kill()
+        return process
+
+    with monkeypatch.context() as fault:
+        fault.setattr(subprocess, "Popen", launch)
+        failed = materialize_rules(
+            data,
+            rules,
+            use_shapes=(EX.Consumer, EX.Producer),
+            trusted=True,
+            checks=(_check("mid"),),
+        )
+    assert owned and all(process.poll() is not None for process in owned)
+    assert failed.report.outcome == "unverified" and not failed.report.complete
+    assert failed.candidate is None and failed.derived is None
+    assert any(issue.code == "shacl.rules_unverified" for issue in failed.report)
+    assert not any(issue.kind == "input_error" for issue in failed.report)
+    assert set(data.graph()) == original_data and set(rules.graph()) == original_rules
+    recovered = materialize_rules(
+        data,
+        rules,
+        use_shapes=(EX.Consumer, EX.Producer),
+        trusted=True,
+        checks=(_check("mid"),),
+    )
+    assert recovered.report.verified and recovered.candidate is not None
+    invalid = materialize_rules(
+        data,
+        rules,
+        use_shapes=(EX.Consumer, EX.Producer),
+        trusted=True,
+        max_passes=0,
+        checks=(_check("mid"),),
+    )
+    assert invalid.report.outcome == "input_error" and invalid.candidate is None

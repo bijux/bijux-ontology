@@ -149,8 +149,10 @@ def materialize_rules(
     retained term growth and protocol work are charged; the process deadline and
     output cap additionally bound backend execution. Application checks are normal
     in-process callbacks, as in finish_migration; they are not forcibly preempted.
-    No missing check, incomplete closure or rejected output publishes a verified
-    export candidate. An ordered pass does not claim global fixed-point closure.
+    Worker resource failures remain unavailable execution, distinct from invalid
+    supplied rule inputs. Missing checks, incomplete closure and rejected output
+    cannot publish a verified export candidate. An ordered pass does not claim
+    global fixed-point closure.
     """
     operation = Operation(limits, budget, timeout, cancel)
     selected_mode: RuleMode = "ordered-pass"
@@ -273,15 +275,6 @@ def materialize_rules(
         _diagnostic(
             issues, Issue("shacl.rules_unverified", str(error), kind="unverified")
         )
-    except InputError:
-        _diagnostic(
-            issues,
-            Issue(
-                "shacl.rules_input_error",
-                "Rule inputs do not satisfy the typed finite contract",
-                kind="input_error",
-            ),
-        )
     except ResourceError:
         _diagnostic(
             issues,
@@ -289,6 +282,15 @@ def materialize_rules(
                 "shacl.rules_unverified",
                 "The isolated rule worker did not return qualified completion",
                 kind="unverified",
+            ),
+        )
+    except InputError:
+        _diagnostic(
+            issues,
+            Issue(
+                "shacl.rules_input_error",
+                "Rule inputs do not satisfy the typed finite contract",
+                kind="input_error",
             ),
         )
     report = Report(
