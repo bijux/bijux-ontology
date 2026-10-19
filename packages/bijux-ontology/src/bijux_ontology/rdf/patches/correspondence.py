@@ -13,8 +13,8 @@ from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget, Operation
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget, BudgetKind, Limits
-from bijux_ontology.rdf.execution import execute_worker
 
 from .codecs import read_witness, term_data, witness_data
 from .types import PatchBlank, PatchUnavailable, PatchValue, SnapshotWitness

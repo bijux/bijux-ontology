@@ -12,7 +12,7 @@ from rdflib import URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.execution import checkpoint
+from bijux_ontology.processes.transport import checkpoint
 from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, query_rdf
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
 from bijux_ontology.rdf.snapshots import PreparedSource

@@ -12,7 +12,7 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.execution import checkpoint
+from bijux_ontology.processes.transport import checkpoint
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import Captured, Rejected, capture_source

@@ -13,6 +13,7 @@ from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import (
     Budget,
     BudgetKind,
@@ -20,7 +21,6 @@ from bijux_ontology.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.rdf.execution import execute_worker
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import _materialize

@@ -15,6 +15,7 @@ from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,
@@ -22,7 +23,6 @@ from bijux_ontology.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.execution import execute_worker
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.correspondence import _KINDS, compare_witnesses
 from bijux_ontology.rdf.patches.planning import Captured, capture_source, edited

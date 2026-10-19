@@ -12,10 +12,10 @@ from bijux_ontology.declarations import FieldDeclaration as Field
 from bijux_ontology.declarations import ModelDeclaration as Model
 from bijux_ontology.declarations import ValueDeclaration as Value
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models import ModelUsage, check_emission
 from bijux_ontology.rdf.entailment import preparation, prepare_entailment
-from bijux_ontology.rdf.execution import WorkerModule, execute_worker
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
@@ -230,7 +230,7 @@ def test_host_qualifies_worker_asserted_integrity_and_disjoint_derived_roles(
     mode = "lexical"
 
     def altered(
-        module: WorkerModule,
+        module: str,
         payload: bytes,
         *,
         cap: int,
