@@ -344,6 +344,9 @@ def _decode_json(
     """Decode through shared syntax and optional private scalar/key observation."""
     if not isinstance(payload, (str, bytes)):
         raise InputError("Expected JSON text or bytes", location=source)
+    # UTF-8 cannot be shorter than the original Unicode character inventory.
+    if len(payload) > max_bytes:
+        raise LimitExceeded("JSON input exceeds max_bytes", location=source)
     try:
         size = (
             len(payload) if isinstance(payload, bytes) else len(payload.encode("utf-8"))

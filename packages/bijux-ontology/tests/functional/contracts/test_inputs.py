@@ -89,3 +89,25 @@ def test_explicit_large_json_depth_cannot_leak_runtime_recursion() -> None:
         value = [value]
     with pytest.raises(LimitExceeded, match="runtime nesting"):
         own_json(value, max_depth=2000)
+
+
+def test_raw_json_size_is_checked_before_allocating_its_utf8_copy() -> None:
+    """A small admission limit cannot trigger a copy of the whole oversized input."""
+    import tracemalloc
+
+    payload = " " * 1_000_000 + "{}"
+    tracing = tracemalloc.is_tracing()
+    if not tracing:
+        tracemalloc.start()
+    current, _ = tracemalloc.get_traced_memory()
+    tracemalloc.reset_peak()
+    try:
+        with pytest.raises(LimitExceeded) as failure:
+            decode_json(payload, source="oversized.json", max_bytes=32)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        if not tracing:
+            tracemalloc.stop()
+    assert failure.value.location == "oversized.json"
+    assert peak - current < 100_000
+    assert decode_json(" {} ", max_bytes=32) == {}
