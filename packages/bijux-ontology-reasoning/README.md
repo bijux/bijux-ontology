@@ -188,6 +188,16 @@ proved logical findings. Smallest size, subset minimality and complete enumerati
 are not claimed. Anonymous support and unavailable tautology justifications remain
 unknown; generated signature declarations are separate replay scaffolding.
 
+`integration.check_integration` compares explicitly selected `TheoryCombination`
+deployments from separately owned `TheoryComponent` originals. Supply the named
+classes and consumer entailments that must hold. Original modules retain their
+native import identities; conflicting versions cannot overwrite one another.
+Inspect each original, the unbridged union and any explicitly authored OWL bridge
+separately. Newly established interactions have rechecked native justifications
+and exact source owners; pre-existing failures are preserved without new blame.
+Completion covers the selected combinations and obligations only; unselected
+subsets, absent imports or exhausted explanation work receive no certificate.
+
 `locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
 for an explicit typed signature. Choose flattened imports, retained annotations
 and a fresh module identity. Inspect original annotated axiom owners and separate
