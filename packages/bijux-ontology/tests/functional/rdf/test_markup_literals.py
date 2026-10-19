@@ -10,8 +10,8 @@ from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF
 
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.processes import transport
 from bijux_ontology.processes.ownership import spawn_owned_process
-from bijux_ontology.rdf import execution
 from bijux_ontology.rdf.literal_values.markup import (
     MarkupCanonicalization,
     compare_markup_values,
@@ -172,10 +172,10 @@ def test_live_owned_worker_cancellation_reaps_and_fresh_operation_recovers(
         cancel.set()
         return process
 
-    monkeypatch.setattr(execution, "spawn_owned_process", spawn)
+    monkeypatch.setattr(transport, "spawn_owned_process", spawn)
     stopped = inspect_markup_literal(_xml("<a/>"), cancel=cancel)
     assert stopped.report.outcome == "exhausted"
     assert processes and all(process.poll() is not None for process in processes)
-    monkeypatch.setattr(execution, "spawn_owned_process", original)
+    monkeypatch.setattr(transport, "spawn_owned_process", original)
     recovered = inspect_markup_literal(_xml("<a/>"), canonicalization=CANON)
     assert recovered.report.verified

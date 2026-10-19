@@ -7,7 +7,7 @@ from bijux_ontology._json import own_json
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 
-from ..errors import InputError, LimitExceeded
+from ..errors import InputError, LimitExceeded, ResourceError
 from ..reports import Issue
 from .resources import (
     ContextInputError,
@@ -46,6 +46,7 @@ def expand_document(
     if base is not None:
         absolute_iri(base)
     loader_failure: list[Exception] = []
+    callback_failure: list[Exception] = []
 
     def load(url: str, options: dict[str, object]) -> dict[str, object]:
         """Isolate loader-owned data and preserve unexpected caller failures."""
@@ -55,6 +56,15 @@ def expand_document(
             loader_failure.append(error)
             raise
         return response
+
+    def dropped(term: str | None) -> None:
+        """Keep consumer callback failures distinct from native processing defects."""
+        if on_property_dropped is not None:
+            try:
+                on_property_dropped(term)
+            except Exception as error:
+                callback_failure.append(error)
+                raise
 
     options: dict[str, object] = {
         "documentLoader": load,
@@ -72,15 +82,26 @@ def expand_document(
         expanded: object = jsonld.expand(
             document,
             options,
-            on_property_dropped=on_property_dropped or (lambda _: None),
+            on_property_dropped=dropped,
         )
-    except (jsonld.JsonLdError, RecursionError, OverflowError) as error:
+    except (jsonld.JsonLdError, RecursionError, OverflowError, TypeError) as error:
+        if callback_failure:
+            if callback_failure[0] is error:
+                raise
+            raise callback_failure[0] from error
         if loader_failure:
             failure = loader_failure[0]
             if isinstance(failure, (ContextInputError, OSError)):
                 raise ContextInputError(str(failure)) from failure
             if not isinstance(failure, jsonld.JsonLdError):
+                if failure is error:
+                    raise
                 raise failure from error
+        if isinstance(error, TypeError):
+            raise ResourceError(
+                "Maintained JSON-LD expansion failed without a semantic input "
+                "diagnostic: " + str(error)
+            ) from error
         if isinstance(error, (RecursionError, OverflowError)):
             raise LimitExceeded(f"JSON-LD processor range exceeded: {error}") from error
         raise ContextInputError(str(error)) from error

@@ -8,6 +8,7 @@ from typing import Literal
 from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
+from bijux_ontology.data.query_usage.types import QueryUsage
 from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.observations import ObservedUsage
@@ -357,6 +358,7 @@ def assess_upgrade(
     models: Sequence[ModelDeclaration] = (),
     observed_usages: Sequence[ObservedUsage] = (),
     role_uses: Sequence[RoleUse] = (),
+    query_usages: Sequence[QueryUsage] = (),
     fact_selection: FactSelection | None = None,
     contract_reports: Sequence[tuple[Report, Report]] = (),
     local_namespaces: Sequence[str] = (),
@@ -384,6 +386,7 @@ def assess_upgrade(
         models,
         observed_usages=observed_usages,
         role_uses=role_uses,
+        query_usages=query_usages,
         budget=budget,
     )
     preparation_failed = False

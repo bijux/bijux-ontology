@@ -1,0 +1,8 @@
+{
+  "name": "bijux-ontology-rdfa",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "rdfa-streaming-parser": "3.0.2"
+  }
+}

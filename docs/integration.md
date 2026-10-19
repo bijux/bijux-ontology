@@ -1661,3 +1661,50 @@ cannot fill missing local annotations; each release binds its own local imports.
 Explicit term/namespace exclusions remove support terms from the owned selection.
 The result retains scoped records and selected subset witnesses. This finite
 opt-in convention does not certify every OBO Foundry recommendation.
+
+`interfaces.adapters.rdfa.extract_rdfa(content, document_url, runtime=...)`
+extracts HTML5 RDFa through an explicitly selected optional Node runtime. Call
+`prepare_rdfa_runtime(directory)`, run ordinary `npm ci` there using the shipped
+lock, and supply `RdfaRuntime(node_executable, directory)`. The maintained parser
+retains base, language, prefix, reverse and list semantics; its owned graph works
+with ordinary record and vocabulary checks. JSON-LD extraction remains separate.
+Source association is document-level; unsupported XHTML5, unresolved copy
+expansion, empty extraction and failed bounded execution withhold the source.
+
+`rdf.answers.read_answers` and `write_answers` preserve finite ASK/SELECT JSON,
+XML and TSV artifacts, including exact RDF terms, unbound cells, duplicate rows
+and result-scoped blank sharing. `compare_answers` selects bag, set or sequence
+semantics; variable names align independently of header order unless strict
+column order is requested. Exact RDF identity is the default; native scalar
+value regimes require explicit row and blank correspondence. CSV output needs
+explicit lossy opt-in. A valid supplied artifact does not establish external
+query completeness; require that separate caller evidence when necessary.
+XML-inexpressible RDF literal characters withhold output as unsupported.
+
+`data.query_usage.read_query_usage(text, source=...)` uses maintained SPARQL
+query/update translation to resolve class, predicate, datatype, graph, function
+and data references. Locations identify algebra positions, without source-span
+claims. `check_query_usage` checks actual vocabulary roles and deprecation. Pass
+`query_usages=(usage,)` to `index_uses` or `assess_upgrade` to expose those consumer
+dependencies. Dynamic vocabulary positions, unsupported composite class paths
+and unestablished binding scopes retain required unknowns beside known constants;
+comments and string contents do not become predicate declarations.
+
+`rdf.containment.check_simple_entailment(data, template, data_graph=...)` checks
+a finite graph template against one complete selected physical graph using
+maintained SPARQL basic graph matching. Template blanks are existential variables:
+repeated occurrences share a binding, and distinct variables may coalesce.
+The returned substitution refers to actual template and data-owned terms. Ground
+literals retain exact RDF lexical identity; extra data is allowed, without RDFS,
+datatype or OWL inference. Exhaustion leaves entailment unknown. An empty template
+is mathematically entailed and makes no nonempty coverage claim.
+
+`rdf.workloads.qualify_workload(source, queries, scope=QueryScope(...))` runs
+a supplied finite ASK/SELECT corpus through maintained RDFLib and Pyoxigraph
+workers. Each result records actual engine/Python versions, asserted entailment,
+default-graph configuration and native binding policy. Exact answer bags/sets
+reuse `rdf.answers`; duplicate changes and actual default/binding differences
+remain visible. Bag qualification makes no ORDER BY sequence claim. Unsupported
+extensions, nondeterminism, native term loss, failed execution and exhausted
+work cannot establish portability. Qualification applies to the supplied corpus
+and configurations, with explicit row and cumulative execution bounds.

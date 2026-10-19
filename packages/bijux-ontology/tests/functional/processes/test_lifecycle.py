@@ -19,7 +19,8 @@ import bijux_ontology.processes.ownership as processes
 from bijux_ontology.errors import LimitExceeded, ResourceError
 from bijux_ontology.interfaces.execution.transport import stop_process
 from bijux_ontology.limits import Limits
-from bijux_ontology.rdf import execution as rdf_execution
+from bijux_ontology.processes import transport as worker_transport
+from bijux_ontology.rdf.execution import execute_worker
 from bijux_ontology.rdf.queries.access import QueryScope, query_rdf
 from bijux_ontology.shacl import transport as shacl_transport
 
@@ -47,7 +48,7 @@ def _exited_unreaped(process: subprocess.Popen[bytes]) -> None:
 @pytest.mark.parametrize(
     "stop",
     [
-        rdf_execution._reap,
+        processes.stop_owned_process,
         shacl_transport._stop_group,
         stop_process,
     ],
@@ -85,7 +86,7 @@ def test_exited_leader_does_not_skip_term_ignoring_descendant(tmp_path: Path) ->
         process.wait(timeout=3)
         child_pid = int(child_file.read_text())
         os.kill(child_pid, 0)
-        rdf_execution._reap(process)
+        processes.stop_owned_process(process)
         deadline = time.monotonic() + 2
         while True:
             try:
@@ -402,7 +403,7 @@ def test_completed_byte_handoff_precedes_late_cancel_without_suppressing_it(
     retain: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A real successful byte exchange can be retained without ignoring its stop."""
-    actual_popen, actual_reap = subprocess.Popen, rdf_execution._reap
+    actual_popen, actual_reap = subprocess.Popen, worker_transport.stop_process
     processes_seen: list[subprocess.Popen[bytes]] = []
     stop = threading.Event()
     receipts: list[bytes] = []
@@ -442,9 +443,9 @@ def test_completed_byte_handoff_precedes_late_cancel_without_suppressing_it(
         stop.set()
 
     monkeypatch.setattr(subprocess, "Popen", launch)
-    monkeypatch.setattr(rdf_execution, "_reap", reap)
+    monkeypatch.setattr(worker_transport, "stop_process", reap)
     with pytest.raises(LimitExceeded, match="cancelled"):
-        rdf_execution.execute_worker(
+        execute_worker(
             "bijux_ontology.rdf.queries.worker",
             payload,
             cap=1024,
@@ -464,7 +465,7 @@ def test_completed_byte_handoff_rejects_failed_exchange_and_reaps_worker(
     fault: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Only one bounded successful exchange may reach its domain handoff."""
-    actual_popen, actual_reap = subprocess.Popen, rdf_execution._reap
+    actual_popen, actual_reap = subprocess.Popen, worker_transport.stop_process
     owned: list[subprocess.Popen[bytes]] = []
     seen: list[bytes] = []
     stop, watch_stop, ready_seen = (
@@ -538,7 +539,7 @@ def test_completed_byte_handoff_rejects_failed_exchange_and_reaps_worker(
             raise callback_error
 
     monkeypatch.setattr(subprocess, "Popen", launch)
-    monkeypatch.setattr(rdf_execution, "_reap", reap)
+    monkeypatch.setattr(worker_transport, "stop_process", reap)
     watcher = threading.Thread(target=observe, daemon=True)
     if fault in ("cancel", "deadline"):
         watcher.start()
@@ -551,7 +552,7 @@ def test_completed_byte_handoff_rejects_failed_exchange_and_reaps_worker(
     )
     try:
         with pytest.raises(expected) as failure:
-            rdf_execution.execute_worker(
+            execute_worker(
                 "bijux_ontology.rdf.queries.worker",
                 payload,
                 cap=3_000_000 if fault == "undelivered" else 1024,

@@ -19,7 +19,7 @@ from bijux_ontology.jsonld.selectors.types import (
 )
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 
-from ..errors import InputError, LimitExceeded
+from ..errors import InputError, LimitExceeded, ResourceError
 from ..reports import Issue, Report
 from .entities import EntityInventory
 from .expansion import _drop_issues, _validate_allowed_drops, expand_document
@@ -389,7 +389,17 @@ def check_context(
     except InputError as error:
         return Report(
             "contexts",
-            issues=(Issue("context.input_error", str(error), kind="input_error"),),
+            issues=(
+                Issue(
+                    "context.processor_unverified"
+                    if isinstance(error, ResourceError)
+                    else "context.input_error",
+                    str(error),
+                    kind="unverified"
+                    if isinstance(error, ResourceError)
+                    else "input_error",
+                ),
+            ),
             requested=len(expectations),
             complete=False,
             regime="jsonld",

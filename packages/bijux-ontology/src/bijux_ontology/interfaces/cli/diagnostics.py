@@ -28,6 +28,14 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "workload": frozenset("unsupported engine_failed empty unqualified".split()),
+    "query": frozenset(
+        "dependencies_unverified usage_input vocabulary_deprecated "
+        "deprecation_unverified".split()
+    ),
+    "rdfa": frozenset(
+        "expansion_unverified empty_extraction extraction_unverified".split()
+    ),
     "analysis": frozenset(
         "annotation_unknown term_unknown parent_unknown projection_unknown "
         "hierarchy_cycle zero_frequency disconnected input "
@@ -149,6 +157,7 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "processor_unverified "
         "publication_mismatch publication_unverified "
         "composition_unverified "
         "html_extraction_unverified "
@@ -280,6 +289,10 @@ _CODES = {
         "self_restriction_shape version_ambiguous version_header version_shape".split()
     ),
     "rdf": frozenset(
+        "template_not_entailed containment_unverified "
+        "answer_changed answer_correspondence_unverified answer_external_unverified "
+        "answer_input answer_source_unverified answer_identity_lost "
+        "answer_output_unverified "
         "materialization_input_error "
         "triple_terms_unverified "
         "container_contract container_unverified container_conversion_rejected "
@@ -422,6 +435,27 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "workload": (
+        "supplied finite queries and two explicit maintained engine configurations",
+        "The workload lacks a complete supported agreeing native answer pair.",
+        "Inspect each engine identity, graph defaults, binding policy and actual "
+        "answer comparison; keep failed or unsupported queries unqualified.",
+        "qualify_workload(source, queries, scope=scope)",
+    ),
+    "query": (
+        "parsed SPARQL program vocabulary dependencies",
+        "A program dependency fails its inventory or remains unresolved.",
+        "Inspect resolved roles and algebra positions; supply finite required "
+        "bindings and explicit vocabulary inventories for supported terms.",
+        "check_query_usage(read_query_usage(text), vocabulary)",
+    ),
+    "rdfa": (
+        "explicit supplied HTML5 and optional maintained RDFa processor",
+        "The requested RDFa extraction lacks complete qualified assertions.",
+        "Supply HTML5, an explicit Node executable and the shipped locked npm "
+        "runtime; inspect native diagnostics and unsupported expansion resources.",
+        "extract_rdfa(content, document_url, runtime=runtime)",
+    ),
     "analysis": (
         "explicit finite annotation population and selected hierarchy",
         "A required analytical input or result is unavailable within its scope.",

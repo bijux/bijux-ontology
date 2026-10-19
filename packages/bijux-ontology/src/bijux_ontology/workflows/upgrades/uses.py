@@ -6,11 +6,12 @@ from typing import Literal
 
 from rdflib import URIRef
 
+from bijux_ontology.data.query_usage.types import QueryUsage
 from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.paths import SourcePath, location
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node, bound_text
@@ -76,6 +77,7 @@ def index_uses(
     *,
     observed_usages: Sequence[ObservedUsage] = (),
     role_uses: Sequence[RoleUse] = (),
+    query_usages: Sequence[QueryUsage] = (),
     limits: Limits | None = None,
     budget: Budget | None = None,
 ) -> UseIndex:
@@ -87,7 +89,7 @@ def index_uses(
     """
     if any(
         not isinstance(values, Sequence) or isinstance(values, (str, bytes))
-        for values in (terms, models, observed_usages, role_uses)
+        for values in (terms, models, observed_usages, role_uses, query_usages)
     ):
         raise InputError("Use inputs must be sequences of typed declarations or usages")
     if limits is not None and budget is not None and limits != budget.limits:
@@ -98,6 +100,7 @@ def index_uses(
     seen: set[Use] = set()
     checked = 0
     complete = True
+    children: list[Report] = []
 
     def retain(use: Use) -> None:
         """Validate and bound each distinct actual reference before retaining it."""
@@ -124,6 +127,29 @@ def index_uses(
             if not isinstance(term, TermDeclaration):
                 raise InputError("Use indexing requires typed term declarations")
             retain(Use(term.iri, "term", term.location))
+            checked += 1
+        for query_usage in query_usages:
+            operation.consume("work")
+            if type(query_usage) is not QueryUsage:
+                raise InputError("Query use indexing requires actual parsed QueryUsage")
+            retain_report(query_usage.report, operation, issues)
+            children.append(query_usage.report)
+            complete = complete and query_usage.report.complete
+            for reference in query_usage.references:
+                operation.consume("work")
+                if reference.role not in ("class", "predicate", "datatype"):
+                    continue
+                bound_text(reference.iri, operation)
+                bound_text(reference.location, operation)
+                operation.consume("bytes", 192)
+                retain(
+                    Use(
+                        reference.iri,
+                        reference.role,
+                        reference.location,
+                        reverse=reference.reverse,
+                    )
+                )
             checked += 1
         for use in role_uses:
             operation.consume("work")
@@ -287,6 +313,7 @@ def index_uses(
             allow_empty=True,
             requested=checked if complete else checked + 1,
             complete=complete,
+            children=tuple(children),
             families=("application.uses",),
             regime="supplied-application-references",
         ),
