@@ -286,6 +286,7 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "aggregate_unverified aggregate_mismatch aggregate_input_error "
         "stream_unverified stream_global_unverified "
         "consolidation_unverified consolidation_conflict consolidation_input_error "
         "layout_unverified layout_count_mismatch layout_graph_forbidden "
