@@ -126,3 +126,18 @@ class ContextComparison:
     def data(self) -> object:
         """Export the already bounded comparison as independent JSON data."""
         return json.loads(self.data_json)
+
+
+class UsageContextUnavailable(InputError):
+    """An actual source-object/context association cannot be established safely."""
+
+
+@dataclass(frozen=True)
+class SourceTerm:
+    """A key expanded under its actual maintained active context."""
+
+    term: str
+    iri: str | None
+    explicit: bool
+    compact: bool
+    vocabulary: str | None

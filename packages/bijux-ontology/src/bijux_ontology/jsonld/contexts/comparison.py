@@ -14,9 +14,16 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.paths import bounded_location
+from bijux_ontology.jsonld.contexts.preparation import (
+    capture_context_json,
+    capture_selections,
+    context_budget,
+    context_data,
+    encode_context_json,
+)
+from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.processing.resources import DocumentLoader
 
-from .processing import _capture, _data, _dump, _operation, _own, inspect_context
 from .types import (
     ContextChange,
     ContextComparison,
@@ -50,8 +57,8 @@ class _Comparison:
         """Compare already qualified scalars and retain exact changed data."""
         self.budget.consume("work")
         first, second = (
-            _dump(_data(before, self.budget), self.budget),
-            _dump(_data(after, self.budget), self.budget),
+            encode_context_json(context_data(before, self.budget), self.budget),
+            encode_context_json(context_data(after, self.budget), self.budget),
         )
         self.budget.consume("work", min(len(first), len(second)) + 1)
         self.checked += 1
@@ -186,7 +193,7 @@ def compare_context_definitions(
     processing inputs. Before/after resources remain independently owned even
     when the two loaders use the same logical URL.
     """
-    operation = _operation(limits, budget)
+    operation = context_budget(limits, budget)
     selected: tuple[str, ...] | None = None
     selected_scopes: tuple[ContextScope, ...] = ()
     compare = _Comparison(operation, None, ())
@@ -198,12 +205,12 @@ def compare_context_definitions(
         if type(compare_defaults) is not bool:
             raise InputError("compare_defaults requires explicit boolean intent")
         if terms is not None:
-            selected = _capture(terms, operation)
+            selected = capture_selections(terms, operation)
             for term in selected:
                 bound_text(term, operation)
             if len(set(selected)) != len(selected):
                 raise InputError("Selected context term names must be unique")
-        selected_scopes = _capture(scopes, operation)
+        selected_scopes = capture_selections(scopes, operation)
         # inspect_context requalifies typed selections before using processor data.
         for item in selected_scopes:
             if not isinstance(item, ContextScope):
@@ -211,14 +218,17 @@ def compare_context_definitions(
             bound_text(item.term, operation)
         compare = _Comparison(operation, selected, selected_scopes)
         # Capture both sides before either caller loader can run.
-        owned_before, owned_after = _own(before, operation), _own(after, operation)
+        owned_before, owned_after = (
+            capture_context_json(before, operation),
+            capture_context_json(after, operation),
+        )
         inherited_before = (
-            _own(before_inherited, operation)
+            capture_context_json(before_inherited, operation)
             if before_inherited is not ABSENT
             else ABSENT
         )
         inherited_after = (
-            _own(after_inherited, operation)
+            capture_context_json(after_inherited, operation)
             if after_inherited is not ABSENT
             else ABSENT
         )
@@ -259,8 +269,9 @@ def compare_context_definitions(
                     kind="unverified",
                 )
             )
-        data_json = _dump(
-            {"changes": [_data(item, operation) for item in compare.changes]}, operation
+        data_json = encode_context_json(
+            {"changes": [context_data(item, operation) for item in compare.changes]},
+            operation,
         )
         complete = (
             first.view is not None
