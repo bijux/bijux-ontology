@@ -167,14 +167,14 @@ def _dispatch(request: dict[str, object], operation: Operation) -> dict[str, obj
         # Debit a fully validated receipt without allowing a late cancellation
         # between counters to partially debit and then forfeit the same quota.
         for key in _KINDS:
-            operation.shared.consume(key, cast(int, controls[key]))
+            operation.consume_completed(key, cast(int, controls[key]))
         received = True
         operation.consume("work", 0)
         return response
     finally:
         if dispatched and not received:
             for key in _KINDS:
-                operation.shared.consume(key, allowances[key])
+                operation.consume_completed(key, allowances[key])
 
 
 def _engine(

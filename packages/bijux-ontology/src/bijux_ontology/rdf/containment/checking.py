@@ -91,13 +91,13 @@ def _run(
         ):
             raise ResourceError("Malformed containment worker receipt")
         for kind in _KINDS:
-            operation.shared.consume(kind, cast(int, controls[kind]))
+            operation.consume_completed(kind, cast(int, controls[kind]))
         valid_receipt = True
     finally:
         if not valid_receipt:
             # Missing receipts cannot establish that delegated work was unused.
             for kind in _KINDS:
-                operation.shared.consume(kind, allowances[kind])
+                operation.consume_completed(kind, allowances[kind])
     checkpoint(operation.deadline, operation.cancel)
     if response["status"] == "exhausted":
         raise LimitExceeded("Native containment exhausted its owned allowance")
