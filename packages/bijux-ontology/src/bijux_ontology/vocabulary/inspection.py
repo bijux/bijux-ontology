@@ -169,6 +169,7 @@ class VocabularyView:
             raise InputError("Unknown relationship direction")
         for predicate in predicates:
             absolute_iri(predicate)
+        selected_predicates = frozenset(URIRef(predicate) for predicate in predicates)
         candidates = (
             self._outgoing.get(node, ())
             if direction == "outgoing"
@@ -182,7 +183,9 @@ class VocabularyView:
         )
         return self._select(
             (
-                edge if not predicates or str(edge.predicate) in predicates else None
+                edge
+                if not selected_predicates or edge.predicate in selected_predicates
+                else None
                 for edge in candidates
             ),
             "terms.relationships",

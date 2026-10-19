@@ -78,6 +78,7 @@ def _simple(path: str, accept: str, base: str) -> Response:
 
 def test_actual_negotiation_shared_blanks_lists_and_qualified_redirects() -> None:
     """Different presentation and blank labels preserve actual joint RDF topology."""
+    # Positive representation coverage includes owned parsing and report handoff.
     turtle = (
         b'<urn:s> <urn:p> _:node; <urn:q> _:node; <urn:list> ("a" "b") . '
         b'_:node <urn:value> "01"^^<http://www.w3.org/2001/XMLSchema#integer> .'
@@ -114,6 +115,7 @@ def test_actual_negotiation_shared_blanks_lists_and_qualified_redirects() -> Non
         result = check_representations(
             PublishedResource("urn:publication", base + "/resource", _variants()),
             policy=AcquisitionPolicy((base,)),
+            limits=Limits(max_work=2_000_000),
         )
         assert result.report.verified and result.scope == "complete"
         assert [value.requests for value in result.variants] == [1, 1]
@@ -169,6 +171,7 @@ def test_actual_negotiation_shared_blanks_lists_and_qualified_redirects() -> Non
         actual = check_representations(
             PublishedResource("urn:logical:publication", base + "/resource", variants),
             policy=AcquisitionPolicy((base,)),
+            limits=Limits(max_work=2_000_000),
         )
         assert actual.report.verified and len(contacts) == 4
         assert sum(value.requests for value in actual.variants) == 4
@@ -177,6 +180,7 @@ def test_actual_negotiation_shared_blanks_lists_and_qualified_redirects() -> Non
                 "urn:logical:publication", base + "/resource", _variants()
             ),
             policy=AcquisitionPolicy((base,)),
+            limits=Limits(max_work=2_000_000),
         )
         assert not unbound.report.verified
         assert any(
@@ -350,18 +354,27 @@ def test_real_context_link_imports_and_aggregate_dependency_requests() -> None:
 
     with _server(dispatch) as (base, contacts):
         contract = PublishedResource("urn:publication", base + "/resource", _variants())
-        actual = check_representations(contract, policy=AcquisitionPolicy((base,)))
+        actual = check_representations(
+            contract,
+            policy=AcquisitionPolicy((base,)),
+            limits=Limits(max_work=2_000_000),
+        )
         assert actual.report.verified
         assert sum(value.requests for value in actual.variants) == 9
         assert len(contacts) == 9
         limited = check_representations(
             contract,
             policy=AcquisitionPolicy((base,), max_requests=8),
+            limits=Limits(max_work=2_000_000),
         )
         assert limited.report.outcome == "exhausted"
         assert sum(value.requests for value in limited.variants) <= 8
         mode["missing"] = True
-        missing = check_representations(contract, policy=AcquisitionPolicy((base,)))
+        missing = check_representations(
+            contract,
+            policy=AcquisitionPolicy((base,)),
+            limits=Limits(max_work=2_000_000),
+        )
         assert not missing.report.verified
         linked = check_representations(
             PublishedResource(
@@ -375,6 +388,7 @@ def test_real_context_link_imports_and_aggregate_dependency_requests() -> None:
                 ),
             ),
             policy=AcquisitionPolicy((base,)),
+            limits=Limits(max_work=2_000_000),
         )
         assert linked.report.verified and linked.variants[1].resource is not None
         assert linked.variants[1].resource.context_url == base + "/linked-context"

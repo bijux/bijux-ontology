@@ -187,6 +187,18 @@ claims no transitive-property entailment. Unsupported alternatives remain in the
 report even when an independent path is found; incomplete coverage cannot prove
 unreachability. Expression components stay in their attachment's source scope.
 
+Use `vocabulary.relation_paths.check_relation_path` for explicit typed regular
+languages: compose `RelationStep(predicate, role)` with `RelationSequence`,
+`RelationChoice`, `RelationInverse` and `RelationRepeat`, and select a
+`RelationEndpoint`. Class, SKOS, existential restriction and raw asserted roles
+remain distinct. Witnesses retain original assertions and scopes; inverse means
+navigation only. Cycles terminate, and incomplete traversal cannot prove a
+nonmatch. Missing sources cannot satisfy zero repetition. `relation_enumeration`
+classifies an explicit candidate inventory for ordinary application field
+constraints; its closed selection covers only the supplied view and language.
+For classification, `find_relation_path` permits complete nonmatches: its report
+qualifies search coverage, while `status` records whether a path was found.
+
 Use `read_obo_records(view, term_iri)` for explicitly selected OBO-in-OWL
 definitions and exact/broad/narrow/related synonyms. Records retain original
 literal terms and separate axiom attachments, including cross-references,
@@ -1323,3 +1335,30 @@ base, comments and processing instructions. DTD/entity declarations and external
 resolution are outside the supported profile. HTML supports fragment inspection;
 it has no supported canonical value comparison. Original RDF terms stay exact,
 and native execution has an owned deadline and cancellation lifecycle.
+
+`documents.relocation.relocate_document(..., old_url=..., new_url=...,
+policy="pin-old-base", requirements=...)` prepares an owned JSON-LD relocation.
+It preserves selected source-form and optional occurrence contracts, then compares
+whole resolved RDF. Root context references keep their original effective bases;
+null resets and nested/scoped contexts remain unsupported. `export_relocation`
+returns checked bytes for the ordinary atomic `write_export` protocol only after
+all required preservation checks verify. Intended identity changes require an
+explicit migration rather than this preservation policy.
+
+`jsonld.streams.check_jsonld_records` lazily checks explicit `JSONLDRecord` text or
+byte frames with independent bases, blank-node scopes and record budgets. One
+captured context owner is shared; only the current `last_result` is retained.
+An ordinary callback receives each prepared RDF source and its budget. The final
+stream report covers actual input exhaustion; malformed tails and early close
+remain incomplete, with cross-record obligations explicitly excluded.
+`interfaces.execution.record_streams.AsyncJSONLDRecords` bridges the same iterator
+with one admitted pull. Cancellation waits for that pull before joining its
+private thread; caller producers, loaders, callbacks and PyLD remain cooperative.
+
+Install `bijux-ontology[jsonpatch,jsonld]` for
+`documents.patches.apply_document_patch`. Supported add/remove/replace/test edits
+require an exact `expected_base`, selected before/after forms, changed meanings
+and explicit `RetainedUsage` path pairs. Array rebinding additionally needs the
+same actual named parent. Failed base/tests reject publication; unsupported
+operations or uncertain identity remain unverified. `export_document_patch`
+returns immutable checked JSON bytes for ordinary atomic `write_export`.

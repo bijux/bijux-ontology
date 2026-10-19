@@ -20,6 +20,7 @@ from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import SourceSelector
 from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.reports import Issue, Report, combine_reports
 
 from .types import DocumentFormCheck, FormRequirement
@@ -49,13 +50,16 @@ def _capture(values: Sequence[T], budget: Budget, kind: type[T]) -> tuple[T, ...
     return tuple(captured)
 
 
-def _result(form: Report, semantic: Report) -> DocumentFormCheck:
+def _result(
+    form: Report, semantic: Report, *, source: PreparedSource | None = None
+) -> DocumentFormCheck:
     """Aggregate both required scopes without hiding incomplete empty reports."""
     combined = combine_reports("documents.form_check", form, semantic)
     return DocumentFormCheck(
         form,
         semantic,
         replace(combined, complete=form.complete and semantic.complete),
+        source=source,
     )
 
 
@@ -330,5 +334,7 @@ def check_document_form(
         budget=operation,
     )
     return _result(
-        form, combine_reports("documents.form_semantics", semantics, converted.report)
+        form,
+        combine_reports("documents.form_semantics", semantics, converted.report),
+        source=converted.source,
     )

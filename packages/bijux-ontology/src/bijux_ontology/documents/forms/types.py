@@ -1,12 +1,13 @@
 """Explicit source-occurrence representation contracts and independent reports."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.selectors.types import EntitySelector, SourceSelector
 from bijux_ontology.limits import Budget
+from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.reports import Report
 
 
@@ -82,8 +83,13 @@ class FormRequirement:
 
 @dataclass(frozen=True)
 class DocumentFormCheck:
-    """Raw form and semantic truth remain separate from their required aggregate."""
+    """Retain raw reports and their already converted RDF without repeated work.
+
+    Source availability does not establish the aggregate application contract;
+    only report.verified accepts every selected form and semantic requirement.
+    """
 
     form_report: Report
     semantic_report: Report
     report: Report
+    source: PreparedSource | None = field(default=None, kw_only=True)
