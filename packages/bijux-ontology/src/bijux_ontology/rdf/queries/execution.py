@@ -12,9 +12,13 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
-from bijux_ontology.rdf.queries.protocol import read_term, term_data
+from bijux_ontology.rdf.queries.protocol import (
+    read_term,
+    reserve_solution_row,
+    term_data,
+)
 from bijux_ontology.rdf.queries.syntax import prepare_local_query
-from bijux_ontology.rdf.terms import validate_triple
+from bijux_ontology.rdf.terms import bound_node, validate_triple
 
 
 def evaluate(request: dict[str, Any], cap: int) -> dict[str, Any]:
@@ -79,8 +83,13 @@ def evaluate(request: dict[str, Any], cap: int) -> dict[str, Any]:
             budget.consume("work")
             if len(rows) >= request["max_rows"]:
                 raise LimitExceeded("SELECT result exceeds max_rows")
-            budget.consume("states", len(variables))
-            row = [term_data(binding.get(variable)) for variable in variables]
+            reserve_solution_row(len(variables), budget)
+            row = []
+            for variable in variables:
+                term = binding.get(variable)
+                if term is not None:
+                    bound_node(term, budget)
+                row.append(term_data(term))
             encoded = json.dumps(row, ensure_ascii=True, separators=(",", ":")).encode()
             if len(encoded) > limits.max_bytes:
                 raise LimitExceeded("SELECT row exceeds max_bytes")
