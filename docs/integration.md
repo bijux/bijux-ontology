@@ -1368,6 +1368,14 @@ unselected metadata remain informational; incomplete baseline or consumer scope
 stays unknown. Selected identifier qualifiers need qualified prefix interpretation;
 selected `curie_map` metadata compares the actual retained prefix maps.
 
+`documents.patches.rdf.project_rdf_patch` turns explicitly paired ground RDF
+replacements into checked compact-source edits. Supply the exact original base,
+form and retained-use contracts and a unique or explicit source-occurrence policy.
+Typed lexical strings and named forward/reverse references preserve their compact
+structure. A complete RDF re-expansion must prove the requested delta and all
+unedited assertions before a `DocumentPatch` or operations are returned. Ambiguous
+aliases, stale bases and unsupported anonymous correspondence withhold output.
+
 `workflows.reproductions` captures runnable context, emission, SKOS and supported
 SHACL Core requests using ordinary public declaration formats. Run the request,
 bind `failure_signature` to an actual complete nonempty finding, then call

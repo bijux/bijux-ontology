@@ -103,7 +103,8 @@ _CODES = {
         "relocation_unverified relocation_invalid "
         "patch_precondition_failed patch_invalid patch_unverified "
         "patch_retained_missing patch_retained_changed "
-        "patch_rebinding_unverified".split()
+        "patch_rebinding_unverified source_edit_base_failed "
+        "source_edit_ambiguous source_edit_unverified source_edit_invalid".split()
     ),
     "obo": frozenset(
         "xref_invalid xref_unverified xref_input_error "
