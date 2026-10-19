@@ -237,9 +237,14 @@ class PreparedModels:
         *,
         graph_name: GraphSelection | None = None,
         union: bool = False,
+        budget: Budget | None = None,
     ) -> Report:
-        """Check one actual owned RDF snapshot in the explicitly selected scope."""
-        operation = Budget(self.limits)
+        """Check owned RDF with a fresh allowance or a compatible enclosing budget."""
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Prepared RDF checking requires a Budget")
+        if budget is not None and budget.limits != self.limits:
+            raise InputError("RDF checking budget conflicts with prepared limits")
+        operation = budget if budget is not None else Budget(self.limits)
         try:
             operation.consume("issues", len(self.declaration_report.issues))
             report = check_rdf_emission(

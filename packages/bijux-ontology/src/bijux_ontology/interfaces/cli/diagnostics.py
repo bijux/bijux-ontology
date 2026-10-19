@@ -28,6 +28,14 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "templates": frozenset(
+        "row_input_error native_row_error row_output_missing "
+        "unrequested_output unverified input_error".split()
+    ),
+    "r2rml": frozenset(
+        "source_population_unverified emitted_key_mismatch "
+        "emitted_population_unverified unverified input_error".split()
+    ),
     "biolink": frozenset(
         "unverified input_error preparation_unverified unknown_element "
         "abstract_element mixin_element association_role category_role "
@@ -383,6 +391,10 @@ _CODES = {
         "locality_source_unrepresented locality_selection_failed "
         "locality_unverified locality_input_error "
         "reduction_unverified reduction_input_error "
+        "repairs_unverified repairs_input_error "
+        "upgrade_regression upgrade_unverified upgrade_unmatched_consumer "
+        "upgrade_explanation_unverified upgrade_input_error "
+        "reasoning_session_unverified reasoning_session_input_error "
         "emitted_record_unverified emitted_unverified emitted_input_error "
         "rename_postconditions_missing rename_postcondition_unverified "
         "rename_base_mismatch rename_unverified rename_profile_violation "
@@ -572,6 +584,25 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "templates": (
+        "explicit native ROBOT rows and selected generated ontology obligations",
+        "A row, native output assertion or consumer proof fails or is unverified.",
+        "Inspect original table and located row receipts, explicit identifier "
+        "and role bindings, exact native output inventory and consumer reports; "
+        "supply the qualified runtime and measured preparation allowance.",
+        "compile_table_template(runtime, backend, table, columns=columns, "
+        "bindings=bindings, identifiers=identifiers, terms=terms, "
+        "prefixes=prefixes, ontology_iri=iri, postconditions=obligations)",
+    ),
+    "r2rml": (
+        "explicit SQLite table populations and owned native R2RML output",
+        "A source row, emitted key or join fails or lacks complete scoped evidence.",
+        "Inspect original mapping, exact row keys and physical output graph; "
+        "supply complete populations and closed foreign-reference obligations "
+        "for every parent join, with a qualified isolated Morph-KGC interpreter.",
+        "check_r2rml(backend, snapshot, mapping, populations=populations, "
+        "models=models, foreign_checks=foreign_checks, graph_name=graph)",
+    ),
     "biolink": (
         "explicit local Biolink category, predicate and qualifier contracts",
         "A selected association fails or its native interpretation is unverified.",

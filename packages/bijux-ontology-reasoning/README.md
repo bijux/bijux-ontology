@@ -70,6 +70,19 @@ roles. `.unsupported` records actual selected axioms outside the finite model;
 structure or incomplete execution prevents a verified complete projection.
 Inspection makes no consistency, satisfiability or entailment claim.
 
+`templates.compile_table_template` executes the documented ROBOT 1.9.11 CSV/TSV
+class templates: ID, LABEL, TYPE, named parents, named-property existentials and
+plain literal annotations. Supply exact `TemplateColumn`, `TemplateIdentifier`
+and role-specific `TemplateTerm` bindings, local declaration/label ontology,
+prefixes and nonempty consumer postconditions. Original rows and native cell
+diagnostics remain available; every emitted axiom must match the declared rows.
+Only complete native profile, roundtrip and consumer proofs publish output.
+`prepare_template_backend` requires explicit Java and the official standalone
+jar pinned to SHA256
+`53cd275c8e4c0dad1fc2c1c34174876795cd7d6b6926e1444adcbb0cb3c7ab26`.
+Sealing its 82,708,624 bytes needs an explicit preparation allowance such as
+`Limits(max_total_bytes=128_000_000)`; execution uses a separate caller budget.
+
 `diagnosis.check_consistency(backend, source, named_classes=None)` asks actual
 ontology consistency and separate named-class satisfiability questions. A
 consistent ontology may contain unsatisfiable classes. An inconsistent ontology
@@ -188,3 +201,30 @@ theories. Proposals need joint verification with `prepare_reduction`: individual
 redundancy does not authorize the union. Choose retained annotations and read-only
 imports, and supply nonempty consumer entailments. Original inconsistency blocks
 proof; publish only verified candidates with `axioms.changes.write_axiom_change`.
+
+`repairs.propose_repairs` checks finite alternatives from one established native
+inconsistency justification. Supply nonempty consumer entailments, exact protected
+source axioms and any caller-authored `AllowedReplacement` meanings. Imports stay
+read-only. Each proposal independently needs native consistency and all selected
+consumer proofs; rejected candidates and original inconsistency remain visible.
+`search_complete` covers only the configured support/edit frontier;
+`enumeration_complete` stays false and minimality is unclaimed. Choose an accepted
+sealed candidate explicitly before using the ordinary axiom publication API.
+
+`upgrades.assess_logical_upgrade` compares explicit stable consumer IDs across
+owned before/after logical snapshots: entailments, satisfiability, model contracts
+and selected role-separation groups. Inspect `.transitions` and finite
+`.compatible` separately from the raw `.report`, which retains prior findings.
+Changed contract fingerprints stay visible; unmatched consumers remain unknown.
+Selected explanations provide actual positive support and cannot erase a proved
+regression when unavailable. No ontology-wide compatibility is asserted.
+
+`sessions.prepare_reasoning_theory` captures one exact native/RDF closure and
+backend revision. `with sessions.ReasoningSession(theory)` loads and classifies
+once, then recomputes supported queries and batches. Capture and `bind` a new
+theory for changed imports or backend semantics; external mutable inputs are
+not watched. An optional fixed Budget is cumulative across requests.
+`session.project` exports explicitly bounded subclass/existential domains as
+a separate ordinary RDF artifact, retaining quantifiers and unknown pairs.
+Its raw required-axiom answers remain inspectable separately from pair coverage;
+no class-instance assertions or complete inventory of all fillers is implied.
