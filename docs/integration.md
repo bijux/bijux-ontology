@@ -1368,6 +1368,15 @@ unselected metadata remain informational; incomplete baseline or consumer scope
 stays unknown. Selected identifier qualifiers need qualified prefix interpretation;
 selected `curie_map` metadata compares the actual retained prefix maps.
 
+`workflows.reproductions` captures runnable context, emission, SKOS and supported
+SHACL Core requests using ordinary public declaration formats. Run the request,
+bind `failure_signature` to an actual complete nonempty finding, then call
+`reduce_failure`. Bounded structural deletion retains the same required scope and
+native contradiction. Inspect the best verified runnable request separately from
+search completion; interrupted searches make no global-minimum claim. Missing
+worker receipts forfeit delegated allowances and stop further attempts. Anonymous
+SHACL finding correspondence and composite paths remain unsupported.
+
 `bijux_ontology.data.cube.check_cube` checks supplied Data Cube structures,
 observations, slices and code lists in one physical graph. `complete=True`
 declares the supplied observation inventory; named code-list closure is separate.

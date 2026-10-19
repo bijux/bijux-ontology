@@ -33,7 +33,7 @@ from .types import (
 def _materialize(
     witness: SnapshotWitness,
     original: PreparedSource,
-    operation: Operation,
+    operation: Budget,
     *,
     bindings: dict[str, BNode] | None = None,
 ) -> PreparedSource:

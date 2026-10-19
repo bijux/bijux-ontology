@@ -376,6 +376,10 @@ _CODES = {
         "collection_list_ambiguous collection_list_malformed "
         "navigation_anonymous".split()
     ),
+    "reproduction": frozenset(
+        "candidate_unverified unavailable input worker_failed "
+        "shacl_identity_unverified".split()
+    ),
     "instance": frozenset(
         "entity_removal_forbidden record_change_forbidden field_change_forbidden "
         "path_unverified change_unverified release_unverified "
@@ -707,6 +711,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "<https://example.org/list> "
         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> "
         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .",
+    ),
+    "reproduction": (
+        "bounded native failure reproduction with fixed required coverage",
+        "A runnable failure or a reduction candidate lacks complete native evidence.",
+        "Use owned public requests and an actual complete finding; inspect the "
+        "best verified request separately from reduction completion.",
+        "reduce_failure(request, failure_signature(request, result, finding))",
     ),
     "instance": (
         "explicit instance-data release and path change policies",

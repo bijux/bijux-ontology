@@ -39,6 +39,7 @@ PACKAGES = {
     "workflows.projects",
     "workflows.ontology",
     "workflows.upgrades",
+    "workflows.reproductions",
 }
 
 
