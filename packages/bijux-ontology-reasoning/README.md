@@ -196,3 +196,13 @@ and selected role-separation groups. Inspect `.transitions` and finite
 Changed contract fingerprints stay visible; unmatched consumers remain unknown.
 Selected explanations provide actual positive support and cannot erase a proved
 regression when unavailable. No ontology-wide compatibility is asserted.
+
+`sessions.prepare_reasoning_theory` captures one exact native/RDF closure and
+backend revision. `with sessions.ReasoningSession(theory)` loads and classifies
+once, then recomputes supported queries and batches. Capture and `bind` a new
+theory for changed imports or backend semantics; external mutable inputs are
+not watched. An optional fixed Budget is cumulative across requests.
+`session.project` exports explicitly bounded subclass/existential domains as
+a separate ordinary RDF artifact, retaining quantifiers and unknown pairs.
+Its raw required-axiom answers remain inspectable separately from pair coverage;
+no class-instance assertions or complete inventory of all fillers is implied.
