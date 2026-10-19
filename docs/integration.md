@@ -1923,3 +1923,15 @@ remain unverified. The isolated POSIX worker bounds native output files and
 retains native, model and relationship reports separately. Its pinned RDF
 dependencies belong to that environment; the ordinary core installation stays
 independently usable.
+
+Install `bijux-ontology[arrow]` for the qualified PyArrow 26.0.0 profile.
+`interfaces.adapters.arrow.prepare_arrow_contract` binds a `PreparedModels` plan
+to explicit subject, physical column, predicate, datatype, list and graph choices.
+Use `with open_arrow_records(reader, contract) as checked` and consume its batches;
+`emit_rdf=True` also retains owned RDF snapshots. Native scalars, dictionary
+values, row/column locations and raw model reports remain available. The finite
+profile preserves decimal128, explicit timestamp zones at s/ms/us resolution,
+one-dimensional lists and distinct null/NaN policies. Required unknown metadata,
+extensions, changed schemas or failed producers leave coverage incomplete.
+Validation consumes/closes a supplied native reader; Table/C-stream imports use
+maintained Arrow ownership. Producer callbacks are cooperative in-process work.

@@ -28,6 +28,10 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "arrow": frozenset(
+        "null_rejected nan_rejected stream_unverified input_error "
+        "remaining_unverified".split()
+    ),
     "templates": frozenset(
         "row_input_error native_row_error row_output_missing "
         "unrequested_output unverified input_error".split()
@@ -584,6 +588,15 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "arrow": (
+        "explicit column bindings over one owned Arrow record stream",
+        "A located value violates policy or required stream coverage is incomplete.",
+        "Inspect batch, row, physical column and retained native scalar; supply "
+        "explicit datatype/list/timezone and distinct null/NaN rules, unchanged "
+        "supported schemas, compatible compiled limits and a complete stream.",
+        "with open_arrow_records(reader, contract, emit_rdf=True) as checked: "
+        "results = tuple(checked)",
+    ),
     "templates": (
         "explicit native ROBOT rows and selected generated ontology obligations",
         "A row, native output assertion or consumer proof fails or is unverified.",
