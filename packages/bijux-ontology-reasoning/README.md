@@ -79,3 +79,10 @@ explicit classes must occur in the selected closure. Inspect `.consistent`,
 qualified original input, complete supplied imports and OWL 2 DL membership.
 Unsupported datatypes, axioms and failed execution remain unknown. The reported
 Maven artifact version and native reasoner version are retained separately.
+
+`entailment.check_entailments(backend, source, obligations)` accepts existing typed
+`SubClassOf` and `ClassAssertion` requests with supported class expressions.
+Each answer is `entailed`, `not_entailed` or `unknown`. A negative assertion uses
+an explicit `ClassComplement`; failure to entail a positive assertion never
+proves its negation. Actual consistency and complete input qualification precede
+all proofs. Unsupported queries retain their positions as unknown answers.

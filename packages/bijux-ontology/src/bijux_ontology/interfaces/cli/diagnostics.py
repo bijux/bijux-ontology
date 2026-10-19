@@ -301,6 +301,9 @@ _CODES = {
         "value_unverified".split()
     ),
     "owl": frozenset(
+        "entailment_input_loss entailment_profile_unsupported "
+        "entailment_consistency_unverified entailment_query_unverified "
+        "not_entailed "
         "diagnosis_loader_unverified diagnosis_input_loss "
         "diagnosis_profile_unsupported diagnosis_unverified inconsistent "
         "unsatisfiable_class "
