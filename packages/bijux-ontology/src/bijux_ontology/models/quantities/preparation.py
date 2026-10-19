@@ -5,8 +5,9 @@ from decimal import Context, Decimal, localcontext
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
-from bijux_ontology._jsonschema import capture, operation
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import operation
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.reports import Issue, Report
 

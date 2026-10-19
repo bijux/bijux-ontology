@@ -1,14 +1,12 @@
 """Maintained offline JSON Schema validation with bounded finite expansion."""
 
-from collections import deque
 from collections.abc import Sequence
-from math import isfinite
 from typing import Any
 
-from bijux_ontology._json import own_json
-from bijux_ontology._jsonpaths import bound_index
+from bijux_ontology._json import _measure
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits, bound_text
+from bijux_ontology.execution.inputs import capture
+from bijux_ontology.limits import Budget, bound_text
 
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 DRAFT07 = "http://json-schema.org/draft-07/schema#"
@@ -82,86 +80,6 @@ def backend(dialect: str = DIALECT) -> tuple[Any, Any, Any]:
     if dialect != DIALECT:
         raise InputError("Unsupported declared JSON Schema dialect")
     return Draft202012Validator, Registry, DRAFT202012
-
-
-def operation(limits: Limits | None, budget: Budget | None) -> Budget:
-    """Keep one caller's limits and counters throughout each owned operation."""
-    if budget is not None and (
-        not isinstance(budget, Budget) or limits is not None and limits != budget.limits
-    ):
-        raise InputError("Use the shared Budget with matching limits")
-    return budget if budget is not None else Budget(limits)
-
-
-def capture(values: Sequence[Any], budget: Budget) -> tuple[Any, ...]:
-    """Own a finite indexed inventory without trusting an arbitrary iterator."""
-    if not isinstance(values, (Sequence, deque)) or isinstance(values, (str, bytes)):
-        raise InputError("Output contracts require finite sequences")
-    count = len(values)
-    budget.consume("states", count)
-    budget.consume("bytes", 64 + 16 * count)
-    result = []
-    for index in range(count):
-        budget.consume("work")
-        try:
-            result.append(values[index])
-        except IndexError as error:
-            raise InputError("Output inventory changed during capture") from error
-    return tuple(result)
-
-
-def _measure(value: object, budget: Budget) -> int:
-    """Bound JSON nodes and scalar comparison payloads before owned processing."""
-    count = 0
-
-    def visit(item: object, depth: int) -> None:
-        """Charge each actual JSON node before the maintained ownership copy."""
-        nonlocal count
-        budget.consume("work")
-        budget.consume("states")
-        count += 1
-        if depth > budget.limits.max_depth:
-            raise LimitExceeded("JSON output exceeds max_depth")
-        if isinstance(item, str):
-            bound_text(item, budget)
-            count += len(item)
-        elif item is None or type(item) is bool:
-            return
-        elif type(item) is int:
-            bound_index(item, budget)
-            count += max(1, (item.bit_length() * 30103) // 100000 + 1)
-        elif type(item) is float:
-            if not isfinite(item):
-                raise InputError("JSON output numbers must be finite")
-            bound_text(repr(item), budget)
-            count += len(repr(item))
-        elif type(item) is list:
-            for child in capture(item, budget):
-                visit(child, depth + 1)
-        elif type(item) is dict:
-            budget.consume("states", len(item))
-            for key, child in item.items():
-                if not isinstance(key, str):
-                    raise InputError("JSON output object keys require text")
-                bound_text(key, budget)
-                count += len(key)
-                visit(child, depth + 1)
-        else:
-            raise InputError("Expected finite JSON output values")
-
-    visit(value, 0)
-    return count
-
-
-def owned_json(value: object, budget: Budget) -> tuple[object, int]:
-    """Qualify finite JSON metadata before producing its independent snapshot."""
-    count = _measure(value, budget)
-    return own_json(
-        value,
-        max_bytes=budget.limits.max_bytes,
-        max_depth=budget.limits.max_depth,
-        budget=budget,
-    ), count
 
 
 def _deny(uri: str) -> Any:

@@ -12,9 +12,9 @@ from typing import cast
 from rdflib import Dataset, Graph, Literal
 
 from bijux_ontology._jsonpaths import bound_index
-from bijux_ontology._jsonschema import capture, operation
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.budgets import Operation, operation
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.loading import _charge_graph

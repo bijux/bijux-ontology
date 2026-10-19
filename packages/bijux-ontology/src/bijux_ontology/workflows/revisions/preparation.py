@@ -12,7 +12,7 @@ from uuid import uuid4
 
 from rdflib import URIRef
 
-from bijux_ontology._jsonschema import _measure
+from bijux_ontology._json import _measure
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.declarations.types import ModelDeclaration

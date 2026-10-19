@@ -11,9 +11,9 @@ from typing import cast
 from rdflib import BNode, Graph, URIRef
 from rdflib.term import Node
 
-from bijux_ontology._json import decode_json
-from bijux_ontology._jsonschema import _measure, operation
+from bijux_ontology._json import _measure, decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import operation
 from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, Limits, bound_text
 from bijux_ontology.processes.transport import checkpoint, exchange_worker
 from bijux_ontology.rdf.identifiers import absolute_iri

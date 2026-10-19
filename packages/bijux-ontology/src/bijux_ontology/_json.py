@@ -11,8 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn, cast
 
+from bijux_ontology._jsonpaths import bound_index
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.inputs import capture
+from bijux_ontology.limits import Limits, bound_text
 
 if TYPE_CHECKING:
     from bijux_ontology.limits import Budget
@@ -215,6 +217,60 @@ def _measure_json(
             raise
         raise InputError(str(error), location=source) from error
     return _JsonMeasurement(size, ascii_only)
+
+
+def _measure(value: object, budget: Budget) -> int:
+    """Bound JSON nodes and scalar comparison payloads before owned processing."""
+    count = 0
+
+    def visit(item: object, depth: int) -> None:
+        """Charge each actual JSON node before the maintained ownership copy."""
+        nonlocal count
+        budget.consume("work")
+        budget.consume("states")
+        count += 1
+        if depth > budget.limits.max_depth:
+            raise LimitExceeded("JSON output exceeds max_depth")
+        if isinstance(item, str):
+            bound_text(item, budget)
+            count += len(item)
+        elif item is None or type(item) is bool:
+            return
+        elif type(item) is int:
+            bound_index(item, budget)
+            count += max(1, (item.bit_length() * 30103) // 100000 + 1)
+        elif type(item) is float:
+            if not math.isfinite(item):
+                raise InputError("JSON output numbers must be finite")
+            bound_text(repr(item), budget)
+            count += len(repr(item))
+        elif type(item) is list:
+            for child in capture(item, budget):
+                visit(child, depth + 1)
+        elif type(item) is dict:
+            budget.consume("states", len(item))
+            for key, child in item.items():
+                if not isinstance(key, str):
+                    raise InputError("JSON output object keys require text")
+                bound_text(key, budget)
+                count += len(key)
+                visit(child, depth + 1)
+        else:
+            raise InputError("Expected finite JSON output values")
+
+    visit(value, 0)
+    return count
+
+
+def owned_json(value: object, budget: Budget) -> tuple[object, int]:
+    """Qualify finite JSON metadata before producing its independent snapshot."""
+    count = _measure(value, budget)
+    return own_json(
+        value,
+        max_bytes=budget.limits.max_bytes,
+        max_depth=budget.limits.max_depth,
+        budget=budget,
+    ), count
 
 
 class _ObjectPairs(list[tuple[str, object]]):

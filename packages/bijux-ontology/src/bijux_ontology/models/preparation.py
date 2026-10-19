@@ -10,8 +10,7 @@ from uuid import uuid4
 
 from rdflib import Graph
 
-from bijux_ontology._json import own_json
-from bijux_ontology._jsonschema import _measure
+from bijux_ontology._json import _measure, own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded

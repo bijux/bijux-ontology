@@ -13,9 +13,9 @@ from typing import cast
 
 from rdflib import Graph
 
-from bijux_ontology._json import decode_json
-from bijux_ontology._jsonschema import _measure, operation
+from bijux_ontology._json import _measure, decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import operation
 from bijux_ontology.limits import (
     Budget,
     BudgetKind,

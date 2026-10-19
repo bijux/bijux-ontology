@@ -8,12 +8,13 @@ from typing import Literal, cast
 from rdflib import BNode, Variable
 from rdflib import Literal as RdfLiteral
 
+from bijux_ontology._json import owned_json
 from bijux_ontology._jsonpaths import bound_path
-from bijux_ontology._jsonschema import operation, owned_json
 from bijux_ontology.documents.export import RDFExport
 from bijux_ontology.documents.forms.checking import check_document_form
 from bijux_ontology.documents.forms.types import DocumentFormCheck, FormRequirement
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import operation
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.comparison import compare_observed_usages

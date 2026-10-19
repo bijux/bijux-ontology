@@ -5,9 +5,9 @@ from collections.abc import Iterable, Sequence
 
 from rdflib import URIRef
 
-from bijux_ontology._jsonschema import capture
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Report

@@ -3,10 +3,12 @@
 import json
 from collections.abc import Sequence
 
+from bijux_ontology._json import owned_json
 from bijux_ontology._jsonpaths import SourcePath, at_path, bound_path, location
-from bijux_ontology._jsonschema import capture, operation, owned_json
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import operation
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,

@@ -7,11 +7,11 @@ from rdflib import BNode, Variable
 from rdflib import Literal as RdfLiteral
 
 from bijux_ontology._jsonpaths import at_path, bound_path, bounded_location
-from bijux_ontology._jsonschema import operation
 from bijux_ontology.documents.export import RDFExport
 from bijux_ontology.documents.forms.checking import check_document_form
 from bijux_ontology.documents.forms.types import DocumentFormCheck, FormRequirement
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import operation
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.comparison import compare_observed_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy

@@ -9,6 +9,15 @@ from bijux_ontology.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
 from bijux_ontology.processes.transport import checkpoint
 
 
+def operation(limits: Limits | None, budget: Budget | None) -> Budget:
+    """Keep one caller's limits and counters throughout each owned operation."""
+    if budget is not None and (
+        not isinstance(budget, Budget) or limits is not None and limits != budget.limits
+    ):
+        raise InputError("Use the shared Budget with matching limits")
+    return budget if budget is not None else Budget(limits)
+
+
 class Operation(Budget):
     """Share host counters while qualifying every stage with one absolute deadline."""
 

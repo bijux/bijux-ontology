@@ -4,8 +4,7 @@ from collections.abc import Mapping
 from pathlib import PurePosixPath
 from typing import cast
 
-from bijux_ontology._json import own_json
-from bijux_ontology._jsonschema import _measure
+from bijux_ontology._json import _measure, own_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, bound_text
 

@@ -6,9 +6,9 @@ from threading import Event
 from rdflib import Graph
 
 from bijux_ontology._jsonpaths import bound_index
-from bijux_ontology._jsonschema import capture
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource

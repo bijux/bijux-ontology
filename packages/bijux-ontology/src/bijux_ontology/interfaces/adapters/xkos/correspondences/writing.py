@@ -5,8 +5,8 @@ from rdflib.graph import DATASET_DEFAULT_GRAPH_ID
 from rdflib.namespace import RDF
 from rdflib.term import Node
 
-from bijux_ontology._jsonschema import operation
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.planning import capture_source

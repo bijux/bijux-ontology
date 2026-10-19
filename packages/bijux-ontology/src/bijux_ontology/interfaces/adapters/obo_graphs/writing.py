@@ -4,7 +4,7 @@ import json
 
 from rdflib import BNode, URIRef
 
-from bijux_ontology._jsonschema import owned_json
+from bijux_ontology._json import owned_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text

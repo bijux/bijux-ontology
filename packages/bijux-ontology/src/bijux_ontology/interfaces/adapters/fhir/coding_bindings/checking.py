@@ -6,10 +6,10 @@ from typing import cast
 from rdflib.namespace import RDFS
 
 from bijux_ontology._jsonpaths import SourcePath, bound_path
-from bijux_ontology._jsonschema import capture
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_text
