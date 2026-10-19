@@ -16,7 +16,7 @@ from bijux_ontology._jsonschema import capture, operation
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.loading import _charge_graph
-from bijux_ontology.rdf.patches.correspondence import _json_bound
+from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_node
@@ -321,6 +321,18 @@ class ShaclSession:
         if any(not isinstance(source, ShaclSource) for source in source_usages):
             raise InputError("Expected explicit prepared SHACL source usages")
         deadline = None if self._timeout is None else time.monotonic() + self._timeout
+        if isinstance(chosen, Operation):
+            if (
+                cancel is not None
+                and chosen.cancel is not None
+                and cancel is not chosen.cancel
+            ):
+                raise InputError("Nested SHACL cancellation requires the same Event")
+            if cancel is None:
+                cancel = chosen.cancel
+            deadline = (
+                chosen.deadline if deadline is None else min(deadline, chosen.deadline)
+            )
         # Waiting callers own no worker computation and must not reset its state.
         try:
             while not self._lock.acquire(timeout=0.01):

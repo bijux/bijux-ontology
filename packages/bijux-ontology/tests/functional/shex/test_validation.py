@@ -12,6 +12,7 @@ from rdflib.namespace import XSD
 
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.shex import ShexBinding, ShexSchema, validate_shex
 from bijux_ontology.shex.types import ShexResult
@@ -144,10 +145,39 @@ def test_repeated_exact_terms_native_datatypes_and_capacity(tmp_path: Path) -> N
     assert (
         result.report.outcome == "unverified" and result.obligations[0].native is None
     )
+
     whitespace = Literal(" 1 ", datatype=XSD.integer, normalize=False)
     limited = check(Graph().add((E.A, E.p, whitespace)), scalar, tmp_path)
     assert limited.report.outcome == "unverified"
     assert limited.obligations[0].native is None
+
+
+def test_nested_operation_adopts_real_paid_native_findings(tmp_path: Path) -> None:
+    """Inherited receipt checks see the actual shared counters through wrappers."""
+    supplied = schema(
+        shape(constraint(E.p, {"type": "NodeConstraint", "datatype": str(XSD.integer)}))
+    )
+    graph = Graph().add((E.A, E.p, Literal(1))).add((E.B, E.p, Literal("wrong")))
+    budget = Budget()
+    first = Operation(None, budget, 30, None)
+    nested = Operation(None, first, 30, None)
+    result = validate_shex(
+        graph,
+        supplied,
+        bindings=(ShexBinding(E.A, E.S), ShexBinding(E.B, E.S)),
+        artifacts=tmp_path,
+        budget=nested,
+    )
+    assert result.report.complete and result.report.outcome == "disagreement"
+    assert tuple(item.status for item in result.obligations) == (
+        "matched",
+        "not_matched",
+    )
+    assert any(issue.kind == "finding" for issue in result.report.issues)
+    assert all(
+        first.remaining(kind) == nested.remaining(kind) == budget.remaining(kind)
+        for kind in ("bytes", "work", "issues", "states")
+    )
 
 
 def test_supplied_import_closure_and_unknown_features(tmp_path: Path) -> None:
@@ -312,6 +342,7 @@ def test_shared_limits_and_cancelled_paid_prefix_recover(tmp_path: Path) -> None
             supplied,
             bindings=bindings,
             limits=limits,
+            budget=Operation(limits, Operation(limits, None, 30, None), 30, None),
             cancel=cancellation,
             artifacts=tmp_path,
         )

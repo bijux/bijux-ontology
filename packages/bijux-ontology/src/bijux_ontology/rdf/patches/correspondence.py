@@ -59,10 +59,23 @@ class Operation(Budget):
         if cancel is not None and not isinstance(cancel, threading.Event):
             raise InputError("RDF patch cancellation requires threading.Event")
         shared = budget if budget is not None else Budget(limits)
+        if (
+            isinstance(shared, Operation)
+            and shared.cancel is not None
+            and cancel is not None
+            and cancel is not shared.cancel
+        ):
+            raise InputError("Nested RDF patch cancellation requires the same Event")
         super().__init__(shared.limits)
-        self.shared, self.cancel = shared, cancel
+        self.shared = shared
+        self.cancel: threading.Event | None = cancel
+        self._counts = shared._counts
         self._retained_issues = shared._retained_issues
         self.deadline = time.monotonic() + timeout
+        if isinstance(shared, Operation):
+            self.deadline = min(self.deadline, shared.deadline)
+            if cancel is None:
+                self.cancel = shared.cancel
 
     def consume(self, kind: BudgetKind, amount: int = 1) -> None:
         """Charge the original operation counters without restarting its allowance."""
