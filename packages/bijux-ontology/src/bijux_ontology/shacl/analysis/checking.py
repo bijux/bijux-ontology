@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from typing import Literal as Kind
 
-from rdflib import BNode, Graph, Literal, URIRef
-from rdflib.namespace import RDF, SH, XSD
+from rdflib import BNode, Graph, URIRef
+from rdflib.namespace import RDF, SH
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
@@ -15,10 +15,10 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list, strong_components
 from bijux_ontology.rdf.terms import bound_node, term_key
+from bijux_ontology.shacl.parameters.reading import ParameterReader, count_value
 from bijux_ontology.shacl.profiles.types import ShapeDependency, ShapeProfile, Triple
 
 from .types import (
@@ -65,7 +65,8 @@ class _Analysis:
 
     def __init__(self, graph: Graph, budget: Budget) -> None:
         """Reuse the profile's owned graph without copying or building an RDF index."""
-        self.graph, self.budget = graph, budget
+        self.budget = budget
+        self.parameters = ParameterReader(graph, budget)
         self.issues = IssueCollector(budget)
         self.local: list[LocalConflict] = []
         self.shapes: dict[Node, _Shape] = {}
@@ -83,54 +84,14 @@ class _Analysis:
                 "Shape metadata blank terms require exact snapshot ownership"
             )
 
-    def values(
-        self, shape: Node, predicate: URIRef, *, single: bool = False
-    ) -> tuple[Node, ...]:
-        """Read only actual metadata and stop a single-valued field at two terms."""
-        result = []
-        for value in self.graph.objects(shape, predicate):
-            self.budget.consume("work")
-            bound_node(value, self.budget)
-            self.budget.consume("states")
-            result.append(value)
-            if single and len(result) > 1:
-                raise InputError("A selected SHACL parameter has multiple values")
-        return tuple(result)
-
-    def boolean(self, shape: Node, predicate: URIRef) -> bool:
-        """Accept only well-formed explicit boolean metadata, without truth coercion."""
-        values = self.values(shape, predicate, single=True)
-        if not values:
-            return False
-        value = values[0]
-        if not isinstance(value, Literal) or value.datatype != XSD.boolean:
-            raise InputError("SHACL boolean metadata requires xsd:boolean")
-        text = str(value)
-        if text not in ("true", "false", "1", "0"):
-            raise InputError("SHACL boolean metadata has an invalid lexical form")
-        return text in ("true", "1")
-
     def count(
         self, shape: Node, predicate: URIRef
     ) -> tuple[int | None, tuple[Triple, ...]]:
-        """Qualify finite nonnegative xsd:integer bounds before integer conversion."""
-        values = self.values(shape, predicate, single=True)
-        if not values:
+        """Keep exact cardinality witnesses beside the static proof policy."""
+        value = self.parameters.one(shape, predicate)
+        if value is None:
             return None, ()
-        value = values[0]
-        if not isinstance(value, Literal) or value.datatype != XSD.integer:
-            raise InputError("SHACL cardinality metadata requires xsd:integer")
-        if len(value) > 4096:
-            raise LimitExceeded(
-                "SHACL cardinality metadata exceeds bounded integer precision"
-            )
-        self.budget.consume("work", len(value) + 1)
-        if not check_literal(value, budget=self.budget).verified:
-            raise InputError("SHACL cardinality metadata has invalid lexical text")
-        number = int(value)
-        if number < 0:
-            raise InputError("SHACL cardinality metadata cannot be negative")
-        return number, ((shape, predicate, value),)
+        return count_value(value, self.budget), ((shape, predicate, value),)
 
     def conflict(
         self,
@@ -149,12 +110,12 @@ class _Analysis:
         self.budget.consume("states")
         self.shapes[shape] = state
         try:
-            state.active = not self.boolean(shape, SH.deactivated)
+            state.active = not self.parameters.boolean(shape, SH.deactivated)
             if not state.active:
                 self.completed += 1
                 return
-            paths = self.values(shape, SH.path, single=True)
-            kinds = self.values(shape, RDF.type)
+            paths = self.parameters.values(shape, SH.path, single=True)
+            kinds = self.parameters.values(shape, RDF.type)
             state.property_shape = bool(paths)
             if (
                 SH.PropertyShape in kinds
@@ -169,7 +130,7 @@ class _Analysis:
                 minimum is not None or maximum is not None
             ):
                 raise InputError("SHACL count parameters require a property shape")
-            fixed = self.values(shape, SH.hasValue)
+            fixed = self.parameters.values(shape, SH.hasValue)
             self.budget.consume("states", len(fixed))
             fixed_keys = {term_key(value) for value in fixed}
             fixed_witness = tuple((shape, SH.hasValue, value) for value in fixed)
@@ -179,19 +140,19 @@ class _Analysis:
                 self.conflict(shape, "count_bounds", min_witness + max_witness)
             if maximum is not None and len(fixed_keys) > maximum:
                 self.conflict(shape, "fixed_count", fixed_witness + max_witness)
-            heads = self.values(shape, SH["in"], single=True)
+            heads = self.parameters.values(shape, SH["in"], single=True)
             if heads:
                 allowed = set()
                 allowed_values = []
                 witnesses: list[Triple] = [(shape, SH["in"], heads[0])]
-                if (RDF.nil, RDF.first, None) in self.graph or (
+                if (RDF.nil, RDF.first, None) in self.parameters.graph or (
                     RDF.nil,
                     RDF.rest,
                     None,
-                ) in self.graph:
+                ) in self.parameters.graph:
                     raise InputError("SHACL rdf:nil must not have list structure")
                 for value in iter_rdf_list(
-                    self.graph,
+                    self.parameters.graph,
                     heads[0],
                     max_items=self.budget.limits.max_states,
                     budget=self.budget,
@@ -248,7 +209,9 @@ class _Analysis:
             and self.shapes[dependency.dependency].valid
         ):
             maximum, _ = self.count(dependency.shape, SH.qualifiedMaxCount)
-            disjoint = self.boolean(dependency.shape, SH.qualifiedValueShapesDisjoint)
+            disjoint = self.parameters.boolean(
+                dependency.shape, SH.qualifiedValueShapesDisjoint
+            )
             if maximum is not None:
                 polarity = "nonmonotone"
             if disjoint:
@@ -291,12 +254,12 @@ def _reference_inventory(
         budget.consume("work")
         for parameter in _REFERENCES:
             budget.consume("work")
-            for anchor in analysis.values(
+            for anchor in analysis.parameters.values(
                 shape, parameter, single=parameter in logical
             ):
                 members = (
                     iter_rdf_list(
-                        analysis.graph,
+                        analysis.parameters.graph,
                         anchor,
                         max_items=budget.limits.max_states,
                         budget=budget,
@@ -478,7 +441,7 @@ def _proofs(analysis: _Analysis, roots: tuple[Node, ...]) -> None:
                     needed = proven[:1]
                     break
                 if parameter in (SH["or"], SH.xone) and len(proven) == len(indexes):
-                    heads = analysis.values(node, parameter, single=True)
+                    heads = analysis.parameters.values(node, parameter, single=True)
                     if heads:
                         needed = proven
                         break
@@ -572,10 +535,10 @@ def analyze_shape_profile(
                 )
             )
         else:
-            analysis.graph = profile.source._read(budget=operation)
+            analysis.parameters.graph = profile.source._read(budget=operation)
             # Qualify the existing selected RDF scalars before maintained list
             # traversal or dictionary lookups can copy their lexical metadata.
-            for triple in analysis.graph:
+            for triple in analysis.parameters.graph:
                 operation.consume("work")
                 operation.consume("triples")
                 for term in triple:
@@ -627,7 +590,7 @@ def analyze_shape_profile(
                         raise InputError("Shape witnesses require original RDF triples")
                     for term in triple:
                         analysis.bound_metadata(term)
-                    if triple not in analysis.graph:
+                    if triple not in analysis.parameters.graph:
                         raise InputError(
                             "Shape reference witness is outside the profile"
                         )

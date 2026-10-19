@@ -563,6 +563,9 @@ incompatibilities before loading data. Local conflicts remain conditional on
 invocation; only justified necessary conflicts propagate to selected roots.
 Inspect signed dependencies and components for recursion boundaries. The analyzer
 checks dependency metadata against actual RDF and preserves valid alternatives.
+Both inspection and analysis require exact boolean literals and nonnegative
+integer counts bounded to the smaller of 4096 characters and `max_bytes`.
+Scalar qualification that runs out of its allowance remains exhausted.
 `not_determined` never certifies arbitrary satisfiability; recursive semantics,
 qualified sibling exclusions and unsupported metadata remain explicit unknowns.
 
