@@ -15,6 +15,7 @@ from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
+from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
@@ -43,6 +44,7 @@ class CubeFacts:
         self.source = source
         self.graph_name = graph_name
         self.budget = budget
+        self.comparisons = ScalarComparisons(budget)
         self.graph = source._read(graph_name, budget=budget)
         self._types: dict[URIRef, tuple[Resource, ...]] = {}
         self._properties: dict[tuple[Node, URIRef], tuple[URIRef, ...]] = {}
@@ -273,6 +275,7 @@ class Coordinates:
                         graph_name=read.graph_name,
                     )
                 )
+        self.comparisons = read.comparisons
         self.count = len(records)
         self.keys: tuple[_Key, ...] = ()
         if self.contract is not None:
@@ -319,6 +322,8 @@ class Coordinates:
                 contract,
                 components=tuple(contract.components[index] for index in positions),
             )
-        relation, pending = compare_keys(left, right, contract, budget)
+        relation, pending = compare_keys(
+            left, right, contract, budget, comparisons=self.comparisons
+        )
         issues.extend(pending)
         return relation

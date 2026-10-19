@@ -5,11 +5,11 @@ import json
 from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology.declarations.keys import KeyContract
-from bijux_ontology.diagnostics.errors import LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values
+from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 
 from .extraction import _Key, _scope
 
@@ -68,9 +68,16 @@ def key_evidence(records: tuple[_Key, ...], budget: Budget) -> str:
 
 
 def compare_keys(
-    left: _Key, right: _Key, contract: KeyContract, budget: Budget
+    left: _Key,
+    right: _Key,
+    contract: KeyContract,
+    budget: Budget,
+    *,
+    comparisons: ScalarComparisons,
 ) -> tuple[str, tuple[Issue, ...]]:
     """A known unequal component defeats uncertainty in other components."""
+    if comparisons.budget is not budget:
+        raise InputError("Scalar comparisons belong to a different Budget")
     uncertain = False
     pending: list[Issue] = []
     for index, component in enumerate(contract.components):
@@ -101,9 +108,7 @@ def compare_keys(
             if left.tokens[index] != right.tokens[index]:
                 return "different", ()
         else:
-            result = compare_literal_values(
-                a, b, regime=component.equality, budget=budget
-            )
+            result = comparisons.compare(a, b, regime=component.equality)
             if result.report.outcome == "exhausted":
                 raise LimitExceeded(
                     "Literal key comparison exhausted its shared budget"

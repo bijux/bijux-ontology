@@ -9,6 +9,7 @@ from bijux_ontology.declarations.keys import KeyContract
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 
 from .evidence import compare_keys, key_evidence
 from .extraction import _Key, _KeyExtraction
@@ -50,6 +51,7 @@ def check_record_keys(
     extraction = _KeyExtraction(records, contract, operation, issues, count)
     anchor = ""
     try:
+        comparisons = ScalarComparisons(operation)
         bound_text(contract.name, operation)
         anchor = contract.name
         keys: list[_Key] = []
@@ -69,7 +71,9 @@ def check_record_keys(
                 operation.consume("states", len(matches) + len(uncertain_keys))
                 candidates = [*matches, *uncertain_keys]
             for prior in candidates:
-                relation, pending = compare_keys(prior, key, contract, operation)
+                relation, pending = compare_keys(
+                    prior, key, contract, operation, comparisons=comparisons
+                )
                 if relation == "different":
                     continue
                 issues.extend(pending)

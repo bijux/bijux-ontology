@@ -466,3 +466,54 @@ def test_nested_cube_failure_keeps_its_paid_findings_without_parent_evidence(
     stopped = check_cube(source, complete=True, budget=early)
     assert stopped.report.outcome == "exhausted"
     assert unrelated not in stopped.report.issues
+
+
+def test_coordinate_and_measure_families_share_one_expression_store() -> None:
+    """IC12/IC17 keep every comparison while sharing their exact Cube operation."""
+    import sys
+    from types import FrameType
+    from typing import Literal as Choice
+
+    import bijux_ontology.data.keys.evidence as key_evidence
+    import bijux_ontology.rdf.value_comparison.observations as scalar
+
+    graph = cube(measures=True)
+    graph.set((EX.period, RDFS.range, XSD.float))
+    for subject in (EX.o1, EX.o2):
+        graph.set(
+            (subject, EX.period, Literal("1.0", datatype=XSD.float, normalize=False))
+        )
+    contexts: set[int] = set()
+    counts = {"pairs": 0, "queries": 0, "stores": 0}
+    original_profile = sys.getprofile()
+
+    def observed(
+        frame: FrameType,
+        event: Choice["call", "return", "c_call", "c_return", "c_exception"],
+        arg: object,
+    ) -> None:
+        if original_profile is not None:
+            original_profile(frame, event, arg)
+        if event == "call" and frame.f_code is key_evidence.compare_keys.__code__:
+            counts["pairs"] += 1
+        elif (
+            event == "call"
+            and frame.f_code is scalar.ScalarComparisons._promoted_equal.__code__
+        ):
+            owner = frame.f_locals["self"]
+            contexts.add(id(owner))
+            counts["queries"] += 1
+            if owner._store is None:
+                counts["stores"] += 1
+
+    try:
+        sys.setprofile(observed)
+        result = check(graph)
+    finally:
+        sys.setprofile(original_profile)
+    assert result.report.verified, result.report.to_dict()
+    assert len(contexts) == 1 and counts["pairs"] == 5 and counts["stores"] == 1
+    # IC12 may encounter the unequal resource-valued measureType first; that
+    # established inequality legitimately avoids its numeric expression.
+    assert counts["queries"] in (4, 5)
+    assert all(result.coverage[index].status == "complete" for index in (12, 17))
