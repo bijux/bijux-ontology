@@ -1,5 +1,7 @@
 """Strict JSON input boundaries and independently owned caller values."""
 
+from __future__ import annotations
+
 import json
 import math
 from collections.abc import Callable, Iterator, Mapping
@@ -7,10 +9,13 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NoReturn, cast
+from typing import TYPE_CHECKING, NoReturn, cast
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.limits import Limits
+
+if TYPE_CHECKING:
+    from bijux_ontology.limits import Budget
 
 
 def _string_bytes(value: str) -> int:
@@ -28,30 +33,56 @@ def own_json(
     source: str = "",
     max_bytes: int = 5_000_000,
     max_depth: int = 128,
+    budget: Budget | None = None,
 ) -> object:
     """Validate JSON size, shape and cycles before making an independent copy.
 
     Parsed mappings cannot reveal duplicate names discarded by another decoder.
     Size is the compact UTF-8 JSON representation, not Python object overhead.
+    An optional enclosing budget also prepays traversal, container copies and
+    scalar serialization workspace before allocating them. Its limits remain
+    independent of any narrower explicit input-size/depth policy.
     """
     if type(max_bytes) is not int or max_bytes <= 0:
         raise InputError("max_bytes must be a positive integer")
     if type(max_depth) is not int or max_depth <= 0:
         raise InputError("max_depth must be a positive integer")
+    if budget is not None:
+        from bijux_ontology.limits import Budget as RuntimeBudget
+
+        if not isinstance(budget, RuntimeBudget):
+            raise InputError("JSON ownership requires a Budget")
+        max_bytes = min(max_bytes, budget.limits.max_bytes)
+        max_depth = min(max_depth, budget.limits.max_depth)
+        budget.consume("bytes", 128)
+
+    def text_workspace(text: str) -> None:
+        """Reserve scalar measurement/copy and compact-serialization workspace."""
+        if budget is not None:
+            budget.consume("work", len(text) + 1)
+            budget.consume("bytes", 64 + 16 * len(text))
+
     stack: list[tuple[object, int, bool]] = [(value, 0, False)]
     active: set[int] = set()
     size = 0
     try:
         while stack:
+            if budget is not None:
+                budget.consume("work")
             item, depth, leaving = stack.pop()
             if leaving:
                 active.remove(id(item))
                 continue
+            if budget is not None:
+                budget.consume("states")
+                budget.consume("bytes", 64)
             if depth > max_depth:
                 raise LimitExceeded("JSON nesting exceeds max_depth", location=source)
             if isinstance(item, (dict, list)):
                 if id(item) in active:
                     raise InputError("Cyclic containers are not JSON", location=source)
+                if budget is not None:
+                    budget.consume("bytes", 256 + 64 * len(item))
                 active.add(id(item))
                 stack.append((item, depth, True))
                 size += 2 + max(0, len(item) - 1)
@@ -67,6 +98,7 @@ def own_json(
                             raise LimitExceeded(
                                 "JSON input exceeds max_bytes", location=source
                             )
+                        text_workspace(key)
                         size += _string_bytes(key) + 1
                         if size > max_bytes:
                             raise LimitExceeded(
@@ -78,10 +110,19 @@ def own_json(
             elif isinstance(item, str):
                 if len(item) > max_bytes:
                     raise LimitExceeded("JSON input exceeds max_bytes", location=source)
+                text_workspace(item)
                 size += _string_bytes(item)
             elif item is None or type(item) in (bool, int, float):
                 if isinstance(item, float) and not math.isfinite(item):
                     raise InputError("JSON numbers must be finite", location=source)
+                if budget is not None:
+                    digits = (
+                        max(1, (item.bit_length() * 30103) // 100000 + 1)
+                        if type(item) is int
+                        else 32
+                    )
+                    budget.consume("work", digits)
+                    budget.consume("bytes", 64 + 16 * digits)
                 size += len(json.dumps(item))
             else:
                 raise InputError("Expected only JSON values", location=source)

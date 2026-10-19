@@ -2,6 +2,7 @@
 
 import copy
 import time
+import tracemalloc
 from dataclasses import replace
 from pathlib import Path
 from threading import Event, Thread
@@ -417,3 +418,22 @@ def test_worker_projection_parity_deadline_cancellation_and_recovery(
     )
     assert executor.run("framing", request).report.verified
     assert not tuple(tmp_path.iterdir())
+
+
+def test_framing_input_capture_stops_before_allocating_depleted_payload() -> None:
+    """Framing reuses the same prequalified JSON capture as resource ownership."""
+    document = {"@context": {"@vocab": E}, "@id": E + "record", "label": "x" * 500000}
+    tracemalloc.start()
+    try:
+        result = frame_document(
+            document,
+            {},
+            retained=EntitySelector(identifiers=(E + "record",), graph=None),
+            predicates=(E + "label",),
+            budget=Budget(Limits(max_total_bytes=32768)),
+        )
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert result.report.outcome == "exhausted" and not result.report.verified
+    assert peak < 100000

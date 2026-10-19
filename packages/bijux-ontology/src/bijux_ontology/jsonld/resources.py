@@ -1,8 +1,8 @@
 """Owned offline JSON-LD resources and per-operation resolution policy."""
 
 import json
+import os
 from collections.abc import Callable, Mapping
-from copy import deepcopy
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import cast
@@ -103,12 +103,21 @@ class OfflineDocumentLoader:
                     source=url,
                     max_bytes=self._max_bytes,
                     max_depth=self._limits.max_depth,
+                    budget=metadata,
                 )
             )
 
-    def __call__(self, url: str, options: dict[str, object]) -> dict[str, object]:
-        """Return the PyLD loader response without invoking a network loader."""
-        metadata = Budget(replace(self._limits, max_bytes=self._max_bytes))
+    def __call__(
+        self, url: str, options: dict[str, object], *, budget: Budget | None = None
+    ) -> dict[str, object]:
+        """Return offline content under an optional enclosing capture allowance."""
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Offline JSON-LD loading requires a Budget")
+        metadata = (
+            budget
+            if budget is not None
+            else Budget(replace(self._limits, max_bytes=self._max_bytes))
+        )
         bound_text(url, metadata)
         supplied = self._documents.get(url)
         location = str(supplied) if isinstance(supplied, Path) else ""
@@ -120,7 +129,18 @@ class OfflineDocumentLoader:
             if isinstance(document, Path):
                 try:
                     with document.open("rb") as handle:
-                        payload = handle.read(self._max_bytes + 1)
+                        size = os.fstat(handle.fileno()).st_size
+                        if size > min(self._max_bytes, metadata.limits.max_bytes):
+                            raise LimitExceeded("JSON-LD document exceeds max_bytes")
+                        # Prepay the maintained decoder and its ownership copy;
+                        # read only the bounded observed snapshot plus a growth marker.
+                        metadata.consume("work", size + 1)
+                        metadata.consume("bytes", 128 * (size + 1))
+                        payload = handle.read(size + 1)
+                    if len(payload) != size:
+                        raise ContextInputError(
+                            "JSON-LD document changed during reading"
+                        )
                     if len(payload) > self._max_bytes:
                         raise LimitExceeded(
                             f"JSON-LD document exceeds byte limit: {url}"
@@ -147,6 +167,7 @@ class OfflineDocumentLoader:
                 source=url,
                 max_bytes=self._max_bytes,
                 max_depth=self._limits.max_depth,
+                budget=metadata,
             )
             location_metadata = self._locations[url]
             return {
@@ -268,7 +289,16 @@ class ContextResources:
 
     def __call__(self, url: str, options: dict[str, object]) -> dict[str, object]:
         """Return an independent copy of this operation's qualified response."""
-        return deepcopy(self._owned_response(url, options))
+        return cast(
+            dict[str, object],
+            own_json(
+                self._owned_response(url, options),
+                source=url,
+                max_bytes=self.budget.limits.max_bytes,
+                max_depth=self.budget.limits.max_depth,
+                budget=self.budget,
+            ),
+        )
 
     def _owned_response(
         self, url: str, options: dict[str, object]
@@ -276,14 +306,19 @@ class ContextResources:
         """Hand owned data only to a qualifying child or public copy boundary."""
         bound_text(url, self.budget)
         if url in self._snapshots:
-            _consume_work(self._snapshots[url], self.budget)
             return self._snapshots[url]
         self.budget.consume("resources")
+        supplied = (
+            self._loader(url, options, budget=self.budget)
+            if isinstance(self._loader, OfflineDocumentLoader)
+            else self._loader(url, options)
+        )
         raw = own_json(
-            self._loader(url, options),
+            supplied,
             source=url,
             max_bytes=self.budget.limits.max_bytes,
             max_depth=self.budget.limits.max_depth,
+            budget=self.budget,
         )
         if not isinstance(raw, dict):
             raise ContextInputError("A loader response must be a JSON object")
@@ -295,8 +330,6 @@ class ContextResources:
             )
         bound_text(effective_url, self.budget)
         document = response.get("document")
-        self.budget.consume("bytes", _json_size(response))
-        _consume_work(response, self.budget)
         response["document"] = document
         nodes = document if isinstance(document, list) else [document]
         for node in nodes:
@@ -321,11 +354,18 @@ class ContextResources:
                 source=url,
                 max_bytes=self.budget.limits.max_bytes,
                 max_depth=self.budget.limits.max_depth,
+                budget=self.budget,
             ),
         )
-        self.budget.consume("bytes", _json_size(response))
-        identity = json.dumps(
+        identity_input = own_json(
             {"document": document, "contextUrl": context_url},
+            source=url,
+            max_bytes=self.budget.limits.max_bytes,
+            max_depth=self.budget.limits.max_depth,
+            budget=self.budget,
+        )
+        identity = json.dumps(
+            identity_input,
             ensure_ascii=False,
             sort_keys=True,
             separators=(",", ":"),
