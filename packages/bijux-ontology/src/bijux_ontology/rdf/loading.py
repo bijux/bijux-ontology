@@ -336,6 +336,7 @@ def _prepare_native(preparation: SourcePreparation) -> PreparedSource:
             budget=operation,
             max_triples=max_triples,
             preserve_literals=preserve_literals,
+            max_bytes=max_bytes,
         )
         dataset, graph_fidelity = parsed.dataset, parsed.graph_fidelity
         if preparation.require_complete_graphs and graph_fidelity != "complete":

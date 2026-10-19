@@ -42,6 +42,7 @@ from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.rdf.transforms import Transformation
 from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationValueEdit
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.sources import OwnedSource
 from bijux_ontology.vocabulary.view import Vocabulary
@@ -213,10 +214,15 @@ def author_vocabulary(
     Datasets require a physical graph. Annotation predicates need explicit caller
     acceptance or a supplied annotation-property declaration; reserved structural
     predicates cannot be reinterpreted through that profile. Original snapshots
-    stay unchanged. Qualified support is the finite OBO OWL.Axiom dialect only.
+    stay unchanged. QualifiedAnnotationChange uses the finite OBO OWL.Axiom
+    dialect; AnnotationValueEdit requires an explicitly inspected annotation graph.
     After checks remain mandatory and explicit accepted export uses the existing
     migration gate; a reviewable candidate is not an approved publication.
     """
+    from bijux_ontology.vocabulary.annotations.graphs.changes import (
+        change_annotation_value,
+    )
+
     from .annotations import change_annotation, change_qualified
     from .skos import change_skos
 
@@ -247,6 +253,8 @@ def author_vocabulary(
                 change_annotation(state, edit)
             elif isinstance(edit, QualifiedAnnotationChange):
                 change_qualified(state, edit)
+            elif isinstance(edit, AnnotationValueEdit):
+                change_annotation_value(state, edit)
             elif isinstance(
                 edit,
                 CreateSkosResource

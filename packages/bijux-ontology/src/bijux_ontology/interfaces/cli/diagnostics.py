@@ -47,6 +47,7 @@ _CODES = {
         "subset_unverified".split()
     ),
     "annotations": frozenset(
+        "attachment_shape graph_unverified comparison_unverified "
         "minimum_missing maximum_exceeded language_minimum_missing "
         "language_maximum_exceeded value_kind datatype entity_unresolved".split()
     ),
@@ -89,6 +90,7 @@ _CODES = {
         "usage_meaning_changed value_kind_mismatch value_unverified".split()
     ),
     "data": frozenset(
+        "consolidation_unverified consolidation_conflict consolidation_input_error "
         "layout_unverified layout_count_mismatch layout_graph_forbidden "
         "layout_content_misplaced layout_input_error "
         "topology_binding_unverified topology_corpus_unverified topology_cycle "
@@ -159,6 +161,7 @@ _CODES = {
         "sample_contract_conflict type_unverified value_kind_conflict "
         "value_unverified".split()
     ),
+    "owl": frozenset(("assertion_contradiction", "assertion_unverified")),
     "ontology": frozenset(
         "annotation_shape annotation_statement_missing cardinality_shape "
         "obligation_unknown obligation_contradicted obligation_exhausted "
@@ -310,9 +313,10 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
     ),
     "annotations": (
         "selected annotation publication requirements",
-        "Selected values violate an explicit shape/count or remain unresolved.",
+        "Selected values violate an explicit shape/count, or exact annotation "
+        "attachments and their correspondence remain unresolved.",
         "Inspect the entity, predicate, language mode and owned source scopes; "
-        "select fallback explicitly.",
+        "select fallback explicitly and retain original attachment witnesses.",
         'AnnotationRequirement("urn:label", languages=(LanguageRequirement("en"),))',
     ),
     "serialization": (
@@ -404,6 +408,14 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Inspect the named field and ontology endpoint constraints; do "
         "not infer a remapping.",
         'FieldDeclaration("image", "urn:image", (ValueDeclaration("iri"),))',
+    ),
+    "owl": (
+        "selected finite OWL assertion witnesses",
+        "Original assertions establish a contradiction or leave required work "
+        "unresolved.",
+        "Inspect retained assertion and identity premises, selected graph and datatype "
+        "map; absence of a finite witness does not establish consistency.",
+        "check_assertion_witnesses(source)",
     ),
     "ontology": (
         "selected RDF/OWL encoding rules",

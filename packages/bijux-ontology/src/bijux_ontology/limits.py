@@ -181,7 +181,7 @@ def retain_report(report: Report, operation: Budget, issues: IssueCollector) -> 
                     if failure.span is not None:
                         for value in failure.span.to_dict().values():
                             if value is not None:
-                                if value.bit_length() > min(
+                                if isinstance(value, int) and value.bit_length() > min(
                                     4096, operation.limits.max_bytes
                                 ):
                                     raise LimitExceeded(

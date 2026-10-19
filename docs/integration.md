@@ -840,3 +840,44 @@ inventory, required graphs (including empty ones), and `ContentPlacement` rules
 for selected predicates, types or owned subjects. Findings identify the physical
 graph and original statement. Incomplete empty-graph fidelity cannot establish a
 closed inventory; pinned or union views do not establish original partitions.
+
+Use `prepare_corpus` and `consolidate_entities` from
+`bijux_ontology.data.consolidation` for explicitly supplied repeated descriptions.
+`CorpusDocument` selects actual document/graph participation; `PredicateAgreement`
+requires exact or selected literal-value agreement, and additive predicates permit
+complementary facts. A candidate is returned only after agreement and required
+`ConsolidationCheck` callbacks verify. Contributions retain both document origins;
+independent blank nodes and physical graph partitions remain separate unless an
+explicit union is requested. These are application agreements, not OWL consistency.
+
+RDF/XML input uses a bounded Expat boundary before native RDF parsing. XML 1.0
+UTF-8 and BOM-qualified UTF-16 LE/BE preserve base, language and RDF terms. Safe
+internal general text entities are supported; external/parameter entities and
+other DTD constructs are explicit capability failures. Entity declarations
+combined with RDF XMLLiteral content are unsupported because the qualified native
+parser cannot preserve namespace-entity references inside that literal. Expanded
+content, nesting and normalized bytes share the operation limits. Malformed XML
+retains original parser coordinates and their column unit: Unicode code points
+for UTF-8, UTF-16 code units for UTF-16. Native RDF failures without coordinates
+remain spanless; an unqualified caller-supplied column unit stays absent.
+
+`inspect_annotation_graph` from `bijux_ontology.vocabulary.annotations.graphs`
+reads selected direct, axiom and recursively qualified annotations from one owned
+physical graph. It retains exact RDF terms, attachment paths and shared blank
+identities. `compare_annotation_graphs` compares the joint selected graph and
+attributes changes where correspondence is established. `adapt_obo_record`
+requires the original complete OBO attachment inventory. `AnnotationValueEdit`
+uses `author_vocabulary` with explicit after checks to replace an exclusively
+owned leaf qualifier; shared, ambiguous or nonleaf edits remain unverified.
+Referenced resource bodies stay opaque, and export still requires acceptance.
+
+`check_assertion_witnesses` from `bijux_ontology.owl.assertions` checks selected
+finite individual/property assertions without a DL backend. It retains original
+premises for irreflexive, asymmetric, disjoint-property, negative-assertion and
+identity/difference contradictions. Functionality, inverse functionality and
+supported named-class keys can establish equality; different IRIs alone do not
+establish difference. Keys require a shared witness for every property, with named
+object fillers. Literal values use the selected supported OWL datatype map while
+preserving RDF lexical terms. Results distinguish `contradiction_found`,
+`no_witness_in_selected_scope` and `incomplete`; none is a general consistency
+verdict. Unsupported entailments and stopped work remain explicit.

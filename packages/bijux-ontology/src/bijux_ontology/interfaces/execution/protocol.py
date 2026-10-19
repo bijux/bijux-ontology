@@ -1,7 +1,7 @@
 """Validate JSON reports exchanged only with the owned execution worker."""
 
 import json
-from typing import cast
+from typing import Literal, cast
 
 from bijux_ontology._json import object_value
 from bijux_ontology.errors import InputError, InputFailure, SourceSpan
@@ -24,6 +24,10 @@ def _input_failure(value: object) -> InputFailure | None:
             cast(int | None, raw.get("start_column")),
             cast(int | None, raw.get("end_line")),
             cast(int | None, raw.get("end_column")),
+            column_unit=cast(
+                Literal["unicode_code_points", "utf16_code_units"] | None,
+                raw.get("column_unit"),
+            ),
         )
     return InputFailure(
         cast(str | None, data.get("document_iri")),

@@ -1,7 +1,9 @@
 """Expected failures at owned input and execution boundaries."""
 
-from dataclasses import dataclass, replace
+from dataclasses import KW_ONLY, dataclass, replace
 from json import JSONDecodeError
+from typing import Literal
+from xml.parsers.expat import ExpatError
 
 
 class InputError(ValueError):
@@ -31,9 +33,13 @@ class SourceSpan:
     start_column: int | None = None
     end_line: int | None = None
     end_column: int | None = None
+    _: KW_ONLY
+    column_unit: Literal["unicode_code_points", "utf16_code_units"] | None = None
 
     def __post_init__(self) -> None:
         """Reject invented zero/negative coordinates at the typed evidence boundary."""
+        if self.column_unit not in (None, "unicode_code_points", "utf16_code_units"):
+            raise InputError("Parser columns require a known unit or explicit absence")
         for value in (
             self.start_line,
             self.start_column,
@@ -43,13 +49,14 @@ class SourceSpan:
             if value is not None and (type(value) is not int or value <= 0):
                 raise InputError("Parser coordinates require positive integers")
 
-    def to_dict(self) -> dict[str, int | None]:
+    def to_dict(self) -> dict[str, int | str | None]:
         """Expose only coordinates actually supplied by the maintained parser."""
         return {
             "start_line": self.start_line,
             "start_column": self.start_column,
             "end_line": self.end_line,
             "end_column": self.end_column,
+            "column_unit": self.column_unit,
         }
 
 
@@ -131,11 +138,26 @@ def attach_input_failure(
                 value if value is not None and value > 0 else None for value in values
             )
             if any(value is not None for value in qualified):
-                span = SourceSpan(*qualified)
+                span = SourceSpan(*qualified, column_unit="unicode_code_points")
                 break
         elif isinstance(current, JSONDecodeError):
-            span = SourceSpan(current.lineno, current.colno)
+            span = SourceSpan(
+                current.lineno, current.colno, column_unit="unicode_code_points"
+            )
             break
+        elif isinstance(current, ExpatError):
+            line = getattr(current, "lineno", None)
+            offset = getattr(current, "offset", None)
+            if type(line) is int and line > 0 and type(offset) is int and offset >= 0:
+                unit = getattr(current, "_bijux_column_unit", None)
+                span = SourceSpan(
+                    line,
+                    offset + 1,
+                    column_unit=unit
+                    if unit in ("unicode_code_points", "utf16_code_units")
+                    else None,
+                )
+                break
         cause = current.__cause__ or getattr(current, "cause", None)
         current = cause if isinstance(cause, BaseException) else None
     error.failure = InputFailure(document_iri, location, role, import_chain, span)

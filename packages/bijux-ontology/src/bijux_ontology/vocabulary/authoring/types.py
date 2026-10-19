@@ -21,6 +21,7 @@ from bijux_ontology.rdf.patches.types import (
 )
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.reports import Report
+from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationValueEdit
 from bijux_ontology.vocabulary.inspection import VocabularyView
 
 AnnotationValue = URIRef | BNode | Literal
@@ -218,6 +219,7 @@ VocabularyEdit = (
     | DeprecateResource
     | AnnotationChange
     | QualifiedAnnotationChange
+    | AnnotationValueEdit
 )
 
 
