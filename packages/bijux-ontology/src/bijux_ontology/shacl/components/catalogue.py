@@ -45,6 +45,7 @@ class Query:
     validator: Validator
     property_role: bool
     path: Node | None
+    require_execution: bool
 
 
 @dataclass(frozen=True)
@@ -72,7 +73,14 @@ def bind_use(
     syntax qualification. It adds no selected execution requirement.
     """
     role = SH.propertyValidator if property_shape else SH.nodeValidator
-    if not any(v.predicate in (role, SH.validator) for v in definition.validators):
+    selected = None
+    for validator in definition.validators:
+        budget.consume("work")
+        if validator.predicate == role or (
+            validator.predicate == SH.validator and selected is None
+        ):
+            selected = validator
+    if selected is None:
         raise InputError("No applicable validator exists for this shape role")
     budget.consume("work", len(definition.validators))
     budget.consume("states", 1 + len(definition.validators))
@@ -85,5 +93,7 @@ def bind_use(
         query_path = path if property_role else None
         if property_role and query_path is None:
             query_path = URIRef("urn:bijux:ontology:component-path")
-        queries.append(Query(validator, property_role, query_path))
+        queries.append(
+            Query(validator, property_role, query_path, validator is selected)
+        )
     return Use(shape, definition, tuple(bindings), tuple(queries))

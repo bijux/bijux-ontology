@@ -159,9 +159,15 @@ def _qualify(
                         valuenode=URIRef("urn:bijux:ontology:component-value"),
                         extravars=parameters,
                     )
-                    analysis = analyze_query(shape, node, Literal(concrete), budget)
+                    analysis = analyze_query(
+                        shape,
+                        node,
+                        Literal(concrete),
+                        budget,
+                        require_execution=query.require_execution,
+                    )
                     _prebinding(analysis.text, parameters, budget)
-                except LimitExceeded:
+                except (LimitExceeded, ResourceError):
                     raise
                 except (
                     InputError,

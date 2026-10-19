@@ -495,6 +495,7 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "query_unverified "
         "example_search_exhausted example_unsupported example_input_invalid "
         "remediation_unverified "
         "external_aggregate_empty external_nonconformance "
@@ -1108,6 +1109,12 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
         "Inspect the processor diagnostic, supported PyLD installation and required "
         "context resources; processing failure does not prove a remapping.",
         "uv pip install 'bijux-ontology[jsonld]'",
+    ),
+    "shacl.query_unverified": (
+        "A supplied SHACL SPARQL query could not be analysed in the supported scope.",
+        "Inspect the reported query and prefix environment; repair unsupported or "
+        "unavailable analysis without treating the query as proved safe or conformant.",
+        '[] <http://www.w3.org/ns/shacl#select> "SELECT $this WHERE { $this ?p ?o }" .',
     ),
     "adapter.fhir_backend_unavailable": (
         "The maintained FHIR R5 model is unavailable.",

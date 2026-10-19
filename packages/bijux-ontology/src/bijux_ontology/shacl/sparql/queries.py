@@ -11,7 +11,7 @@ from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.term import Node
 
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.queries.literals import (
@@ -74,7 +74,12 @@ def _nodes(value: object, budget: Budget) -> Iterator[CompValue]:
 
 
 def analyze_query(
-    shape: "Shape | SPARQLFunction", node: Node, text: Node, budget: Budget
+    shape: "Shape | SPARQLFunction",
+    node: Node,
+    text: Node,
+    budget: Budget,
+    *,
+    require_execution: bool = True,
 ) -> QueryAnalysis:
     """Resolve actual calls under maintained SHACL query-prefix handling."""
     from pyshacl.helper.sparql_query_helper import SPARQLQueryHelper
@@ -94,9 +99,26 @@ def analyze_query(
         budget.consume("bytes", len(expanded.encode()))
         budget.consume("work", len(expanded))
         parsed = parseQuery(expanded)
-        referenced_prefixes = {
-            _prefix(part) for part in _nodes(parsed, budget) if part.name == "pname"
-        }
+        referenced_prefixes: set[str] = set()
+        lone_filters: list[CompValue] = []
+        for part in _nodes(parsed, budget):
+            if part.name == "pname":
+                referenced_prefixes.add(_prefix(part))
+            if require_execution and part.name == "GroupGraphPatternSub":
+                only = None
+                # The second argument to CompValue.get controls evaluation,
+                # not missing keys.
+                for child in part["part"] if "part" in part else ():  # noqa: SIM401
+                    budget.consume("work")
+                    if isinstance(child, CompValue) and child.name == "Filter":
+                        if only is not None:
+                            only = None
+                            break
+                        only = child
+                if only is not None:
+                    budget.consume("states")
+                    budget.reserve_storage(8)
+                    lone_filters.append(only)
         algebra = translateQuery(
             parsed, initNs=dict(shape.sg.graph.namespaces())
         ).algebra
@@ -107,6 +129,18 @@ def analyze_query(
         raise InputError(
             "SHACL query context could not be resolved", location=str(node)
         ) from error
+    # RDFLib simplifies these original nodes in place. Its group translator
+    # drops a lone false-valued Literal through a Python truth-value test.
+    # Preserve the backend boundary instead of rewriting valid SPARQL or
+    # accepting its answer with a required filter silently omitted.
+    for original in lone_filters:
+        budget.consume("work")
+        expression = original["expr"]
+        if isinstance(expression, Literal) and not expression:
+            raise ResourceError(
+                "RDFLib cannot preserve a lone false-valued constant FILTER",
+                location=str(node),
+            )
     result: list[FunctionCall] = []
     check_literal_scope(algebra, budget)
     for value in _nodes(algebra, budget):
@@ -165,6 +199,16 @@ def check_function_dependencies(
             for text in graph.objects(node, predicate):
                 try:
                     analysis = analyze_query(shape, node, text, budget)
+                except ResourceError as error:
+                    issues.append(
+                        Issue(
+                            "shacl.query_unverified",
+                            str(error),
+                            str(node),
+                            kind="unverified",
+                        )
+                    )
+                    continue
                 except LiteralScopeUnsupported as error:
                     issues.append(
                         Issue(
