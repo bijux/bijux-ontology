@@ -6,7 +6,7 @@ from bijux_ontology.declarations.types import (
     SubjectIdentity,
     ValueDeclaration,
 )
-from bijux_ontology.jsonld.values import ValueTraits
+from bijux_ontology.jsonld.evidence.values import ValueTraits
 
 
 def identity_matches(contract: SubjectIdentity, traits: ValueTraits) -> bool:

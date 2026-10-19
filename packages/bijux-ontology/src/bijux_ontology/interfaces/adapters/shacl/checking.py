@@ -21,7 +21,7 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.json.paths import at_path, bound_path
 from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.checking import prepare_usages
-from bijux_ontology.jsonld.entities import object_key
+from bijux_ontology.jsonld.evidence.entities import object_key
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.resources import DocumentLoader
 from bijux_ontology.jsonld.runtime import processor

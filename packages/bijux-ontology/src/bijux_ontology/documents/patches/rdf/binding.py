@@ -23,8 +23,8 @@ from bijux_ontology.json.paths import (
     bounded_location,
 )
 from bijux_ontology.jsonld.checking import PreparedUsages
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.observations import ObservedOccurrence
 from bijux_ontology.jsonld.selectors.types import EntitySelector
 from bijux_ontology.rdf.patches.types import DatasetPatch, PatchLiteral, PatchQuad
 

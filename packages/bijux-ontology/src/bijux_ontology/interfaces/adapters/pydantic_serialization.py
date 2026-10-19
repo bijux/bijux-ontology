@@ -27,8 +27,8 @@ from bijux_ontology.json.paths import SourcePath, at_path, location
 from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.entities import object_key
-from bijux_ontology.jsonld.observations import ObservedOccurrence
+from bijux_ontology.jsonld.evidence.entities import object_key
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
 from bijux_ontology.models.emission.bindings import (
     candidate_paths,

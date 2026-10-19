@@ -15,7 +15,7 @@ from bijux_ontology.json.paths import (
 )
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.entities import source_entity
+from bijux_ontology.jsonld.evidence.entities import source_entity
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.resources import DocumentLoader

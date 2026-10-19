@@ -5,8 +5,8 @@ from __future__ import annotations
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.json.paths import location
-from bijux_ontology.jsonld.entities import object_key
-from bijux_ontology.jsonld.values import ValueTraits
+from bijux_ontology.jsonld.evidence.entities import object_key
+from bijux_ontology.jsonld.evidence.values import ValueTraits
 from bijux_ontology.models.emission.counts import check_occurrences
 from bijux_ontology.models.emission.types import ModelUsage
 

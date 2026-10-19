@@ -15,14 +15,14 @@ from bijux_ontology.json.paths import (
     bound_pointer_text,
     bounded_location,
 )
-from bijux_ontology.jsonld.entities import (
+from bijux_ontology.jsonld.evidence.entities import (
     EntityInventory,
     EntityKey,
     object_key,
     source_entity,
     subject_key,
 )
-from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
 from bijux_ontology.jsonld.selectors.types import (
     ArrayItems,
     CoverageUnit,

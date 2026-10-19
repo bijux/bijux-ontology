@@ -17,7 +17,7 @@ from bijux_ontology.jsonld.comparison import (
     _associated_occurrences,
     compare_observed_usages,
 )
-from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
 from bijux_ontology.models.emission.coverage import source_properties
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.comparison import compare_rdf

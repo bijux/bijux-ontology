@@ -8,8 +8,8 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.jsonld.conversion import DirectionPolicy, _convert_to_rdf_dataset
+from bijux_ontology.jsonld.evidence.values import ValueTraits
 from bijux_ontology.jsonld.resources import DocumentLoader
-from bijux_ontology.jsonld.values import ValueTraits
 from bijux_ontology.rdf.identifiers import language_tag
 
 _I18N = "https://www.w3.org/ns/i18n#"

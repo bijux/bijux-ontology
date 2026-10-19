@@ -237,7 +237,7 @@ def test_library_dependencies_follow_feature_ownership(
         if module == "bijux_ontology.interfaces.cli.arguments":
             forbidden.append("bijux_ontology.interfaces.cli")
         if module in {
-            "bijux_ontology.jsonld.observations",
+            "bijux_ontology.jsonld.evidence.occurrences",
             "bijux_ontology.jsonld.expectations",
         }:
             forbidden.extend(

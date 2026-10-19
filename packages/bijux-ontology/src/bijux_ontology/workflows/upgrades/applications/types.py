@@ -19,7 +19,7 @@ from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.paths import SourcePath, bound_path
 from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.observations import ObservedUsage
+from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
 from bijux_ontology.models.corpus.checking import SerializerCase
 from bijux_ontology.models.emission.serialization import InstanceCheck
 from bijux_ontology.models.emission.types import ModelUsage

@@ -11,8 +11,8 @@ from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.json.paths import SourcePath, at_path, location
-from bijux_ontology.jsonld.entities import EntityKey, subject_key
-from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
+from bijux_ontology.jsonld.evidence.entities import EntityKey, subject_key
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence, ObservedUsage
 from bijux_ontology.models.emission.counts import check_occurrences
 
 from .context import EmissionContext

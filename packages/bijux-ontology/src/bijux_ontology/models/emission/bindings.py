@@ -4,10 +4,12 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.json.paths import SourcePath
 from bijux_ontology.jsonld.checking import PreparedUsages
-from bijux_ontology.jsonld.entities import EntityKey
-from bijux_ontology.jsonld.entities import source_entity as establish_source_entity
-from bijux_ontology.jsonld.observations import ObservedOccurrence
-from bijux_ontology.jsonld.values import ValueTraits, identifier_kind
+from bijux_ontology.jsonld.evidence.entities import EntityKey
+from bijux_ontology.jsonld.evidence.entities import (
+    source_entity as establish_source_entity,
+)
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
+from bijux_ontology.jsonld.evidence.values import ValueTraits, identifier_kind
 
 
 def source_node_traits(

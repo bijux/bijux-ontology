@@ -10,8 +10,8 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.json.paths import bounded_location, location
 from bijux_ontology.jsonld.checking import PreparedUsages
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.expectations import compare_usage
-from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import KeyedItems, SourceSelector
 from bijux_ontology.rdf.identifiers import absolute_iri

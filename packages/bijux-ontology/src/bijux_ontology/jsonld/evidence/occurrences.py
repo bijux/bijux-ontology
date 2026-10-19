@@ -6,8 +6,7 @@ from typing import cast
 
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.json.paths import SourcePath
-
-from .values import ValueTraits, value_traits
+from bijux_ontology.jsonld.evidence.values import ValueTraits, value_traits
 
 
 def _json(value: object) -> str:

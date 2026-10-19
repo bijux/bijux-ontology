@@ -9,7 +9,7 @@ from bijux_ontology.declarations.types import OutputRequirement
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.jsonld.observations import ObservedOccurrence
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.rdf.terms import literal_term
 
 

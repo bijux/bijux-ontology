@@ -24,7 +24,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.values import ValueTraits
+from bijux_ontology.jsonld.evidence.values import ValueTraits
 from bijux_ontology.models.contracts.propagation import ModelContracts
 from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.groups import declaration_states, group_limitation
