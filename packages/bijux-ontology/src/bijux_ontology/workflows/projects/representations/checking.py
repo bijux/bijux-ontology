@@ -123,43 +123,60 @@ def _execute(
     remaining = operation.deadline - time.monotonic()
     if remaining <= 0:
         raise LimitExceeded("Publication exceeded its deadline")
-    raw = execute_worker(
-        "bijux_ontology.workflows.projects.representations.worker",
-        payload,
-        cap=cap,
-        timeout=remaining,
-        cancel=operation.cancel,
-    )
-    # JSON decoding and terminal receipt registration use the pre-reserved host
-    # capacity, even if cancellation arrives after the worker completed.
-    data = decode_json(raw, max_bytes=cap)
-    if isinstance(data, dict) and data.get("status") == "exhausted":
-        raise LimitExceeded("Publication worker exhausted its protocol allowance")
-    if not isinstance(data, dict) or set(data) != {"report", "variants", "consumed"}:
-        raise ResourceError("Malformed publication worker result")
-    consumed = data["consumed"]
-    if (
-        not isinstance(consumed, dict)
-        or set(consumed) != set(BUDGET_KINDS)
-        or any(
-            type(consumed[kind]) is not int or not 0 <= consumed[kind] <= grants[kind]
-            for kind in BUDGET_KINDS
+    received = False
+    try:
+        raw = execute_worker(
+            "bijux_ontology.workflows.projects.representations.worker",
+            payload,
+            cap=cap,
+            timeout=remaining,
+            cancel=operation.cancel,
         )
-    ):
-        raise ResourceError("Malformed publication worker receipt")
-    report = report_from_data(data["report"])
-    if report.requested != len(resource.variants) or len(report.children) > len(
-        resource.variants
-    ):
-        raise ResourceError("Publication report lost its requested variant inventory")
-    for kind in BUDGET_KINDS:
-        operation.shared.consume(kind, consumed[kind])
-    operation.shared._register_transferred_report(
-        report,
-        paid_issues=consumed["issues"],
-        max_references=references,
-    )
-    return data, report
+        # JSON decoding and terminal receipt registration use the pre-reserved host
+        # capacity, even if cancellation arrives after the worker completed.
+        data = decode_json(raw, max_bytes=cap)
+        if isinstance(data, dict) and data.get("status") == "exhausted":
+            raise LimitExceeded("Publication worker exhausted its protocol allowance")
+        if not isinstance(data, dict) or set(data) != {
+            "report",
+            "variants",
+            "consumed",
+        }:
+            raise ResourceError("Malformed publication worker result")
+        consumed = data["consumed"]
+        if (
+            not isinstance(consumed, dict)
+            or set(consumed) != set(BUDGET_KINDS)
+            or any(
+                type(consumed[kind]) is not int
+                or not 0 <= consumed[kind] <= grants[kind]
+                for kind in BUDGET_KINDS
+            )
+        ):
+            raise ResourceError("Malformed publication worker receipt")
+        report = report_from_data(data["report"])
+        if report.requested != len(resource.variants) or len(report.children) > len(
+            resource.variants
+        ):
+            raise ResourceError(
+                "Publication report lost its requested variant inventory"
+            )
+        for kind in BUDGET_KINDS:
+            operation.consume_completed(kind, consumed[kind])
+        operation.shared._register_transferred_report(
+            report,
+            paid_issues=consumed["issues"],
+            max_references=references,
+        )
+        received = True
+        return data, report
+    finally:
+        if not received:
+            # An admitted worker without a qualified receipt cannot refund its grant.
+            for kind in BUDGET_KINDS:
+                operation.consume_completed(
+                    kind, min(grants[kind], operation.remaining(kind))
+                )
 
 
 def check_representations(
