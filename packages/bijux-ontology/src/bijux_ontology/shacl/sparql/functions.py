@@ -24,7 +24,7 @@ from bijux_ontology.shacl.authoring.parameters import (
 from bijux_ontology.shacl.authoring.parameters import (
     parameter_name as _name,
 )
-from bijux_ontology.shacl.queries import _CASTS, analyze_query
+from bijux_ontology.shacl.sparql.queries import _CASTS, analyze_query
 
 if TYPE_CHECKING:
     from pyshacl.functions.shacl_function import SPARQLFunction

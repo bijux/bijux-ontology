@@ -417,7 +417,7 @@ def test_batch_budgets_preserve_completed_results_and_pending_required_scope() -
 
 def test_prepared_functions_are_registered_and_cleaned_independently_per_job() -> None:
     from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
-    from bijux_ontology.shacl.functions import (
+    from bijux_ontology.shacl.sparql.functions import (
         ShaclFunctionCatalog,
         ShaclFunctionParameter,
         ShaclSparqlFunction,

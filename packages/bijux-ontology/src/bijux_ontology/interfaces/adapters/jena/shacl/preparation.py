@@ -14,7 +14,7 @@ from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.planning import _role, _ShapePlan
 from bijux_ontology.shacl.execution.session import _contract_metadata, _prepay_graph
-from bijux_ontology.shacl.functions import FunctionPlan
+from bijux_ontology.shacl.sparql.functions import FunctionPlan
 
 
 def prepare_plan(

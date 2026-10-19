@@ -30,12 +30,12 @@ from bijux_ontology.shacl.capabilities import (
 from bijux_ontology.shacl.coverage import (
     ShaclCoverageContract,
 )
-from bijux_ontology.shacl.functions import (
+from bijux_ontology.shacl.paths import decode_path
+from bijux_ontology.shacl.sparql.functions import (
     FunctionPlan,
     ShaclFunctionCatalog,
     prepare_functions,
 )
-from bijux_ontology.shacl.paths import decode_path
 from bijux_ontology.shacl.targets.preparation import prepare_targets
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 

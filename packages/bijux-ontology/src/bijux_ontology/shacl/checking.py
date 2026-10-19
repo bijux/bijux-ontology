@@ -33,9 +33,7 @@ from bijux_ontology.shacl.execution.results import ShaclResult as ShaclResult
 from bijux_ontology.shacl.execution.transport import execute_backend
 from bijux_ontology.shacl.findings import ShaclFinding as ShaclFinding
 from bijux_ontology.shacl.findings import ShaclSource
-from bijux_ontology.shacl.functions import (
-    ShaclFunctionCatalog,
-)
+from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
 
 
 def validate_shapes(

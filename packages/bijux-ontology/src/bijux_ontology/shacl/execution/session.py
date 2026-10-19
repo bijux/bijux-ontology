@@ -40,7 +40,7 @@ from bijux_ontology.shacl.execution.projection import (
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.execution.transport import SessionBackend
 from bijux_ontology.shacl.findings import ShaclSource
-from bijux_ontology.shacl.functions import ShaclFunctionCatalog
+from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
 
 
 def _prepay_graph(graph: Graph, budget: Budget) -> None:

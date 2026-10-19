@@ -14,7 +14,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.authoring.parameters import parameter_name
-from bijux_ontology.shacl.queries import _CASTS, _nodes, analyze_query
+from bijux_ontology.shacl.sparql.queries import _CASTS, _nodes, analyze_query
 
 from .types import ComponentShapes, ComponentUse, ShaclComponent
 

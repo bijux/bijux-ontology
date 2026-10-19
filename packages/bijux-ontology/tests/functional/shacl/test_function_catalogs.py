@@ -10,7 +10,7 @@ from rdflib.namespace import RDF, SH, XSD
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.functions import (
+from bijux_ontology.shacl.sparql.functions import (
     ShaclFunctionCatalog,
     ShaclFunctionParameter,
     ShaclSparqlFunction,

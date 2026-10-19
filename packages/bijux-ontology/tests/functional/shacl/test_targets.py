@@ -14,7 +14,7 @@ from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.session import ShaclSession
-from bijux_ontology.shacl.functions import (
+from bijux_ontology.shacl.sparql.functions import (
     ShaclFunctionCatalog,
     ShaclFunctionParameter,
     ShaclSparqlFunction,
