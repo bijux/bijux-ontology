@@ -6,9 +6,9 @@ from importlib import import_module
 
 from bijux_ontology._json import array_value, object_value, text_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Location, Report
 
@@ -44,9 +44,9 @@ def reserve(budget: Budget, count: int = 1) -> None:
 
 def encode(value: object, budget: Budget) -> str:
     """Serialize already decoded bounded values after measured workspace payment."""
-    from bijux_ontology.rdf.patches.correspondence import _json_bound
+    from bijux_ontology.execution.protocol import json_bound
 
-    size = _json_bound(value, budget)
+    size = json_bound(value, budget)
     budget.consume("bytes", 4 * size)
     budget.consume("work", size)
     return json.dumps(value, ensure_ascii=True, separators=(",", ":"), allow_nan=False)

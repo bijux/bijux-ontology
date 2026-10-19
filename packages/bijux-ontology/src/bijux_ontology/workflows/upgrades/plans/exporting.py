@@ -2,9 +2,10 @@
 
 from bijux_ontology.documents.export import RDFExport, export_rdf
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.correspondence import Operation, compare_witnesses
+from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import PatchUnavailable
 from bijux_ontology.reports import Issue, Report

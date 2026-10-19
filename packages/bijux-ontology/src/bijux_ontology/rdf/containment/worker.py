@@ -12,17 +12,18 @@ from rdflib.term import Identifier, Node
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import read_witness, term_data
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.patches.types import PatchBlank, PatchLiteral, PatchValue
 from bijux_ontology.rdf.queries.worker import _checked_query
 from bijux_ontology.rdf.terms import literal_datatype, literal_term
 
 
-def evaluate(request: dict[str, object], budget: _ControlBudget) -> dict[str, object]:
+def evaluate(request: dict[str, object], budget: ControlBudget) -> dict[str, object]:
     """Let the maintained engine find one coherent substitution, without inference."""
     if set(request) != {"data", "template"}:
         raise InputError("Malformed containment request")
@@ -144,13 +145,13 @@ def main() -> None:
         raise LimitExceeded("Containment input exceeds protocol bound")
     envelope = object_value(decode_json(payload, max_bytes=cap), location="request")
     limits = Limits(**cast(dict[str, int], envelope["limits"]))
-    budget = _ControlBudget(limits, envelope["allowances"])
+    budget = ControlBudget(limits, envelope["allowances"])
     reply: dict[str, object] = {"status": "ok", "data": None, "message": ""}
     try:
         reply["data"] = evaluate(
             object_value(envelope["request"], location="data"), budget
         )
-        size = _json_bound(reply, budget) + 512
+        size = json_bound(reply, budget) + 512
         budget.consume("bytes", size * 2)
         budget.consume("work", size)
     except (InputError, ValueError, RecursionError) as error:

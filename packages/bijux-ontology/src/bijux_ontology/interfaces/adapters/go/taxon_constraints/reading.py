@@ -7,10 +7,10 @@ from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.patches.types import PatchUnavailable
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource

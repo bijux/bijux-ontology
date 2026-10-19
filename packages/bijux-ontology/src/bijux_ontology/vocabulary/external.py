@@ -4,8 +4,8 @@ from collections.abc import Sequence
 
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.stores.external.checking import read_external_declarations
 from bijux_ontology.rdf.stores.external.types import ExternalStore

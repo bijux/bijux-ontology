@@ -10,8 +10,9 @@ from typing import cast
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits, bound_text
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 
 from .profile import array, object_value, text
 
@@ -44,7 +45,7 @@ def _append(
     """Bound each completed raw observation before it enters the reply prefix."""
     budget.consume("states")
     budget.consume("bytes", 128)
-    measured = _json_bound(value, budget)
+    measured = json_bound(value, budget)
     if size[0] + measured + 4096 > cap:
         raise LimitExceeded("Native package observations exceed the response cap")
     budget.consume("bytes", 4 * measured)
@@ -171,11 +172,11 @@ def process_request(payload: bytes, cap: int) -> bytes:
     }
     try:
         request = object_value(decode_json(payload, max_bytes=cap))
-        budget = _ControlBudget(
+        budget = ControlBudget(
             Limits(**cast(dict[str, int], object_value(request["limits"]))),
             request["allowances"],
         )
-        budget.consume("bytes", 4 * _json_bound(request, budget))
+        budget.consume("bytes", 4 * json_bound(request, budget))
         output_cap = request["output_cap"]
         if type(output_cap) is not int or not 0 < output_cap <= cap:
             raise InputError("Invalid package output cap")
@@ -183,7 +184,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
         if type(maximum) is not int or maximum <= 0:
             raise InputError("Invalid package diagnostic cap")
         _run(request, reply, budget, output_cap)
-        size = _json_bound(reply, budget) + 1024
+        size = json_bound(reply, budget) + 1024
         budget.consume("bytes", 4 * size)
         budget.consume("work", size)
     except Exception as error:

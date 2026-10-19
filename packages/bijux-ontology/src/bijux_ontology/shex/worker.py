@@ -10,14 +10,15 @@ from rdflib import Graph
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.entailment.protocol import decode_rows
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 
 
 def execute(request: dict[str, Any], directory: Path, cap: int) -> None:
     """Run only supplied inline schemas, RDF and exact named shape-map pairs."""
-    budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
     backend = ""
     status = "shex.engine_error"
     output_size = 0
@@ -25,7 +26,7 @@ def execute(request: dict[str, Any], directory: Path, cap: int) -> None:
 
     def reserve(value: object) -> None:
         """Reserve JSON escaping and ownership before allocating retained output."""
-        size = _json_bound(value, budget) + 1024
+        size = json_bound(value, budget) + 1024
         budget.consume("bytes", size)
         budget.consume("work", size)
         if size > cap:
@@ -69,7 +70,7 @@ def execute(request: dict[str, Any], directory: Path, cap: int) -> None:
             graph.add(triple)
         # The existing term protocol preserves exact lexical forms and one shared
         # blank inventory. Reserve NTriples escaping before maintained formatting.
-        size = _json_bound(request["data"], budget)
+        size = json_bound(request["data"], budget)
         budget.consume("work", size)
         budget.consume("bytes", size)
         rdf = graph.serialize(format="nt") or "# Explicit supplied empty RDF graph\n"

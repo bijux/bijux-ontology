@@ -9,6 +9,7 @@ from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCandidate,
@@ -21,7 +22,6 @@ from bijux_ontology.rdf.migrations.values import (
     ValueSelection,
     migrate_values,
 )
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.planning import plan_rdf_patch
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource

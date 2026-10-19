@@ -10,6 +10,9 @@ from rdflib import URIRef
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import (
     Budget,
     BudgetKind,
@@ -22,16 +25,8 @@ from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import read_witness, witness_data
-from bijux_ontology.rdf.patches.correspondence import (
-    Operation,
-    _json_bound,
-    blank_tokens,
-)
-from bijux_ontology.rdf.patches.planning import (
-    capture_items,
-    capture_source,
-    plan_rdf_patch,
-)
+from bijux_ontology.rdf.patches.correspondence import blank_tokens
+from bijux_ontology.rdf.patches.planning import capture_source, plan_rdf_patch
 from bijux_ontology.rdf.patches.types import SnapshotWitness
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
@@ -55,7 +50,7 @@ def _run(request: dict[str, object], operation: Operation) -> dict[str, object]:
     """Adopt exact owned worker accounting before accepting any result metadata."""
     request["limits"] = asdict(operation.limits)
     request["allowances"] = {kind: operation.remaining(kind) for kind in _KINDS}
-    size = _json_bound(request, operation)
+    size = json_bound(request, operation)
     if size > operation.limits.max_bytes:
         raise LimitExceeded("Rule request exceeds max_bytes")
     operation.consume("bytes", size)

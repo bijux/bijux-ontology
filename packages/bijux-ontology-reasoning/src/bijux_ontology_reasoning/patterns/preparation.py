@@ -9,9 +9,9 @@ from rdflib.namespace import OWL
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.correspondence import _json_bound
 from bijux_ontology.rdf.terms import bound_text
 
 from .types import DosdpPattern
@@ -88,7 +88,7 @@ def prepare_dosdp_pattern(
         ),
         location="DOSDP pattern",
     )
-    operation.consume("bytes", _json_bound(data, operation))
+    operation.consume("bytes", json_bound(data, operation))
     if not isinstance(prefixes, Mapping):
         raise InputError("DOSDP prefixes require an explicit mapping")
     captured: dict[str, str] = {}

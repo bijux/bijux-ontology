@@ -3,19 +3,21 @@
 import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TypeVar, cast
+from typing import cast
 
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, bound_text, literal_datatype
 from bijux_ontology.reports import Issue, Report
 
-from .correspondence import Operation, blank_tokens, compare_witnesses
+from .correspondence import blank_tokens, compare_witnesses
 from .types import (
     BlankNodePair,
     DatasetPatch,
@@ -29,8 +31,6 @@ from .types import (
     SnapshotKind,
     SnapshotWitness,
 )
-
-_T = TypeVar("_T")
 
 
 class Rejected(InputError):
@@ -57,30 +57,6 @@ class Captured:
                 "A blank binding does not belong to its owned snapshot"
             )
         return entry[1]
-
-
-def capture_items(
-    values: Sequence[_T], expected: type[_T], budget: Budget
-) -> tuple[_T, ...]:
-    """Read one cached finite sequence length before bounded indexed capture."""
-    if not isinstance(values, Sequence) or isinstance(values, str | bytes):
-        raise InputError("RDF patch bindings require finite typed sequences")
-    count = len(values)
-    budget.consume("states", count)
-    budget.consume("bytes", 64 + 16 * count)
-    result = []
-    for index in range(count):
-        budget.consume("work")
-        try:
-            value = values[index]
-        except IndexError as error:
-            raise InputError(
-                "RDF patch binding inventory changed during capture"
-            ) from error
-        if not isinstance(value, expected):
-            raise InputError("RDF patch binding inventory contains an invalid record")
-        result.append(value)
-    return tuple(result)
 
 
 def capture_source(

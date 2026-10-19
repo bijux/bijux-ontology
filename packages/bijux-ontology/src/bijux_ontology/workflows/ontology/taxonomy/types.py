@@ -8,9 +8,9 @@ from rdflib import URIRef
 from rdflib.namespace import RDFS
 
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import TermRoleOccurrence
 from bijux_ontology.rdf.terms import bound_node, literal_term

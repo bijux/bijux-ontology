@@ -8,13 +8,10 @@ from rdflib import BNode, URIRef
 from rdflib.namespace import RDF
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.patches.planning import (
-    _plan_captured_patch,
-    capture_items,
-    capture_source,
-)
+from bijux_ontology.rdf.patches.planning import _plan_captured_patch, capture_source
 from bijux_ontology.rdf.patches.types import (
     BlankNodePair,
     DatasetPatch,

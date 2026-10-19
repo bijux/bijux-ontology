@@ -12,6 +12,7 @@ from bijux_ontology._jsonpaths import at_path
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.documents.patches.operations import serialized, snapshot
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.resources import OfflineDocument, OfflineDocumentLoader
@@ -21,7 +22,6 @@ from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import read_term, read_witness
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget
 from bijux_ontology.rdf.patches.types import PatchBlank
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
@@ -46,7 +46,7 @@ def _array(value: object) -> list[object]:
 
 
 def _source(
-    value: object, budget: _ControlBudget
+    value: object, budget: ControlBudget
 ) -> tuple[PreparedSource, dict[str, BNode]]:
     witness = read_witness(value, budget)
     original = prepare_rdf(Graph(), require_complete_graphs=True, budget=budget)
@@ -55,7 +55,7 @@ def _source(
     return result, bindings
 
 
-def _loader(value: object, budget: _ControlBudget) -> OfflineDocumentLoader:
+def _loader(value: object, budget: ControlBudget) -> OfflineDocumentLoader:
     documents = {}
     for raw in _array(value):
         resource = object_value(raw, location="JSON response")
@@ -80,7 +80,7 @@ def _loader(value: object, budget: _ControlBudget) -> OfflineDocumentLoader:
 def _source_obligations(
     document: object,
     paths: list[tuple[str | int, ...]],
-    budget: _ControlBudget,
+    budget: ControlBudget,
     loader: OfflineDocumentLoader,
     base: str | None,
 ) -> tuple[SourceObligation, ...]:
@@ -119,7 +119,7 @@ def _source_obligations(
 
 
 def _json_operation(
-    request: dict[str, object], budget: _ControlBudget
+    request: dict[str, object], budget: ControlBudget
 ) -> tuple[Report, tuple[SourceObligation, ...]]:
     kind = request["kind"]
     keys = {"kind", "document", "base", "resources"} | (
@@ -227,7 +227,7 @@ def _json_operation(
 
 
 def _roots(
-    value: object, bindings: dict[str, BNode], budget: _ControlBudget
+    value: object, bindings: dict[str, BNode], budget: ControlBudget
 ) -> tuple[URIRef | BNode, ...]:
     result: list[URIRef | BNode] = []
     for raw in _array(value):
@@ -245,7 +245,7 @@ def _roots(
     return tuple(result)
 
 
-def _finding(value: object, aliases: dict[str, str], budget: _ControlBudget) -> object:
+def _finding(value: object, aliases: dict[str, str], budget: ControlBudget) -> object:
     """Discard generated report IDs, retaining owned authored term correspondences."""
     reserve(budget)
     if isinstance(value, dict):
@@ -267,7 +267,7 @@ def _finding(value: object, aliases: dict[str, str], budget: _ControlBudget) -> 
 
 
 def _rdf_operation(
-    request: dict[str, object], budget: _ControlBudget
+    request: dict[str, object], budget: ControlBudget
 ) -> tuple[Report, str | None]:
     if request["kind"] == "skos":
         if set(request) != {"kind", "source", "concepts", "rules"}:
@@ -354,7 +354,7 @@ def _rdf_operation(
 
 
 def execute(
-    request: dict[str, object], budget: _ControlBudget
+    request: dict[str, object], budget: ControlBudget
 ) -> tuple[Report, tuple[SourceObligation, ...], str | None]:
     """Invoke public native checks; unexpected failures retain their traceback."""
     if request.get("kind") in ("context", "emission"):
@@ -380,7 +380,7 @@ def main() -> None:
     limits = Limits(
         **cast(dict[str, int], object_value(envelope["limits"], location="limits"))
     )
-    budget = _ControlBudget(limits, envelope["allowances"])
+    budget = ControlBudget(limits, envelope["allowances"])
     issues = IssueCollector(budget)
     report = None
     obligations: tuple[SourceObligation, ...] = ()

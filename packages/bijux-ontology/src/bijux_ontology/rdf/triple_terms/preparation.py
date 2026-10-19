@@ -10,9 +10,11 @@ import pyoxigraph as ox
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.execution import execute_worker
-from bijux_ontology.rdf.patches.correspondence import _KINDS, Operation, _json_bound
+from bijux_ontology.rdf.patches.correspondence import _KINDS
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
@@ -38,7 +40,7 @@ def _execute(request: dict[str, object], operation: Operation) -> dict[str, obje
     # decoding/adoption. Worker parser internals are isolated by the deadline;
     # counters cover explicit retained terms and our protocol operations.
     request["allowances"] = {kind: operation.remaining(kind) for kind in _KINDS}
-    operation.consume("bytes", _json_bound(request, operation))
+    operation.consume("bytes", json_bound(request, operation))
     allowances = {
         kind: operation.remaining(kind)
         // (2 if kind in ("bytes", "work", "states", "triples") else 1)

@@ -7,10 +7,12 @@ from dataclasses import asdict, replace
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.execution import execute_worker
-from bijux_ontology.rdf.patches.correspondence import _KINDS, Operation, _json_bound
-from bijux_ontology.rdf.patches.planning import capture_items
+from bijux_ontology.rdf.patches.correspondence import _KINDS
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report, report_from_data
 from bijux_ontology.workflows.projects.acquisition.types import (
@@ -92,7 +94,7 @@ def _execute(
             1, int((operation.deadline - time.monotonic()) * 1_000_000_000)
         ),
     }
-    size = _json_bound(request, operation)
+    size = json_bound(request, operation)
     if size > cap:
         raise LimitExceeded("Publication request exceeds protocol capacity")
     operation.consume("bytes", size)

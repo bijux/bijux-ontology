@@ -11,8 +11,9 @@ from typing import Any, cast
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Location, Report
 
@@ -253,7 +254,7 @@ def _check(
             details=Location(source=location, path=(index, *path)),
         )
         metadata = issue.to_dict()
-        maximum = _json_bound(metadata, budget)
+        maximum = json_bound(metadata, budget)
         budget.consume("bytes", 4 * maximum)
         budget.consume("work", maximum)
         amount = 512 + 2 * len(json.dumps(metadata, ensure_ascii=True))
@@ -645,7 +646,7 @@ def _check(
                 "Selected association has unsupported native classification rules",
                 unknown=True,
             )
-    amount = _json_bound(constraints, budget)
+    amount = json_bound(constraints, budget)
     budget.consume("work", amount)
     budget.consume("bytes", amount * 4)
     constraints_json = json.dumps(constraints, ensure_ascii=True, separators=(",", ":"))
@@ -673,7 +674,7 @@ def process(payload: bytes, cap: int) -> bytes:
         request = object_value(
             decode_json(payload, max_bytes=cap), location="Biolink request"
         )
-        budget = _ControlBudget(
+        budget = ControlBudget(
             Limits(**cast(dict[str, int], request["limits"])), request["allowances"]
         )
         issues = IssueCollector(budget)
@@ -713,7 +714,7 @@ def process(payload: bytes, cap: int) -> bytes:
                     output_cap,
                     response_size,
                 )
-                encoded_size = _json_bound(interpretation, budget)
+                encoded_size = json_bound(interpretation, budget)
                 budget.consume("bytes", encoded_size * 2)
                 observed = len(json.dumps(interpretation, ensure_ascii=True)) + 1024
                 if response_size[0] + observed > output_cap:

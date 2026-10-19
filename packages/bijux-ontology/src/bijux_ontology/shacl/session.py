@@ -14,9 +14,10 @@ from rdflib import Dataset, Graph, Literal
 from bijux_ontology._jsonpaths import bound_index
 from bijux_ontology._jsonschema import capture, operation
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.loading import _charge_graph
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_node
@@ -107,7 +108,7 @@ def _payload(graphs: Dataset, options: dict[str, object], budget: Budget) -> byt
     budget.consume("work", bound)
     text = graphs.serialize(format="nquads")
     options["graphs"] = text
-    encoded_bound = _json_bound(options, budget)
+    encoded_bound = json_bound(options, budget)
     budget.consume("bytes", 2 * encoded_bound)
     return json.dumps(options).encode()
 

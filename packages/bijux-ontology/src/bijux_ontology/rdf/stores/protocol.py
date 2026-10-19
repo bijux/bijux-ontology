@@ -9,9 +9,11 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.execution import execute_worker
-from bijux_ontology.rdf.patches.correspondence import _KINDS, Operation, _json_bound
+from bijux_ontology.rdf.patches.correspondence import _KINDS
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import term_data
 from bijux_ontology.reports import Issue, Report
@@ -62,7 +64,7 @@ def execute(
         request["database"] = str(snapshot.directory)
     request["limits"] = asdict(operation.limits)
     request["allowances"] = {kind: operation.remaining(kind) for kind in _KINDS}
-    operation.consume("bytes", _json_bound(request, operation))
+    operation.consume("bytes", json_bound(request, operation))
     allowances = {kind: operation.remaining(kind) for kind in _KINDS}
     request["allowances"] = allowances
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()

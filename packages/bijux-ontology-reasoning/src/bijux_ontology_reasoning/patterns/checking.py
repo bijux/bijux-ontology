@@ -7,9 +7,9 @@ from typing import Literal, cast
 from rdflib import Dataset, Graph, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.queries import QueryScope
 from bijux_ontology.rdf.queries.access import _graphs
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata

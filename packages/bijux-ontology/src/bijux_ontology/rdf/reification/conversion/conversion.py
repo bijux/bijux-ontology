@@ -13,6 +13,8 @@ from rdflib.term import Node
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,
@@ -22,12 +24,7 @@ from bijux_ontology.limits import (
 )
 from bijux_ontology.rdf.execution import execute_worker
 from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.correspondence import (
-    _KINDS,
-    Operation,
-    _json_bound,
-    compare_witnesses,
-)
+from bijux_ontology.rdf.patches.correspondence import _KINDS, compare_witnesses
 from bijux_ontology.rdf.patches.planning import Captured, capture_source, edited
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,
@@ -126,7 +123,7 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
         "limits": asdict(operation.limits),
         "allowances": dict.fromkeys(_KINDS, 0),
     }
-    size = _json_bound(request, operation)
+    size = json_bound(request, operation)
     operation.consume("bytes", size * 3)
     cap = min(operation.limits.max_bytes, max(4096, size * 6 + 4096))
     operation.consume("bytes", cap * 16)

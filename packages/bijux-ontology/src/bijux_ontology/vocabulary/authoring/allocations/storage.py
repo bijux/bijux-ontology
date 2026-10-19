@@ -15,6 +15,9 @@ from rdflib import Dataset, URIRef
 
 from bijux_ontology._json import decode_json, object_value, string_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import (
@@ -23,8 +26,7 @@ from bijux_ontology.rdf.patches.codecs import (
     term_data,
     witness_data,
 )
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
-from bijux_ontology.rdf.patches.planning import Captured, capture_items, capture_source
+from bijux_ontology.rdf.patches.planning import Captured, capture_source
 from bijux_ontology.rdf.patches.types import PatchLiteral, PatchUnavailable
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource
@@ -54,7 +56,7 @@ from .types import (
 
 def encode(value: object, operation: Budget) -> bytes:
     """Prepay conservative JSON encoding and retained bytes before serialization."""
-    size = _json_bound(value, operation)
+    size = json_bound(value, operation)
     if size > operation.limits.max_bytes:
         raise LimitExceeded("Allocation artifact exceeds max_bytes")
     operation.consume("bytes", 3 * size)

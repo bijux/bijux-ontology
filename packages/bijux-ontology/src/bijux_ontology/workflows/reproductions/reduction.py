@@ -12,9 +12,9 @@ from rdflib import URIRef
 from bijux_ontology._jsonpaths import SourcePath, at_path, bound_path, location
 from bijux_ontology.documents.patches.operations import snapshot
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.merging.planning import _list_domains
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,
     SnapshotWitness,

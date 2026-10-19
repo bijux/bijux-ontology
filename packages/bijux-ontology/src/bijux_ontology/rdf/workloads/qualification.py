@@ -10,6 +10,8 @@ from rdflib import URIRef
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import (
     Budget,
     BudgetKind,
@@ -21,7 +23,6 @@ from bijux_ontology.limits import (
 from bijux_ontology.rdf.answers.comparison import compare_answers
 from bijux_ontology.rdf.answers.reading import capture_answer
 from bijux_ontology.rdf.execution import execute_worker
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.queries.access import QueryScope, _graphs, _result
 from bijux_ontology.rdf.queries.protocol import term_data
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
@@ -102,7 +103,7 @@ def _dispatch(request: dict[str, object], operation: Operation) -> dict[str, obj
         limits=asdict(operation.limits),
         allowances=dict.fromkeys(_KINDS, 0),
     )
-    size = _json_bound(request, operation)
+    size = json_bound(request, operation)
     operation.consume("bytes", size * 3)
     cap = min(
         operation.limits.max_bytes,
@@ -224,7 +225,7 @@ def _engine(
             )
         else:
             native = object_value(response["result"], location="query")
-            size = _json_bound(native, operation)
+            size = json_bound(native, operation)
             operation.consume("bytes", 3 * size)
             raw = json.dumps(native, ensure_ascii=True, separators=(",", ":")).encode()
             result = _result(raw, scope, operation.limits, max_rows, budget=operation)

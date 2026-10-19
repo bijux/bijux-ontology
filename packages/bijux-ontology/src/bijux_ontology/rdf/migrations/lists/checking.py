@@ -10,11 +10,11 @@ from rdflib.namespace import RDF
 
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.execution import checkpoint
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.planning import Captured, Rejected, capture_source
 from bijux_ontology.rdf.patches.types import (
     PatchBlankBinding,

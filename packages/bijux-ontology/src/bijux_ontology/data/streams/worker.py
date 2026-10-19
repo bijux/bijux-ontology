@@ -20,9 +20,10 @@ from bijux_ontology.errors import (
     ResourceError,
     attach_input_failure,
 )
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import IssueCollector, Limits
 from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.queries.protocol import QueryTerm, term_data
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.stores.native import DeclarationReader
@@ -41,7 +42,7 @@ _LINES = re.compile(rb"[\r\n]")
 class _Reader:
     """Bound actual reads and physical records without interpreting RDF syntax."""
 
-    def __init__(self, stream: BinaryIO, budget: _ControlBudget, maximum: int) -> None:
+    def __init__(self, stream: BinaryIO, budget: ControlBudget, maximum: int) -> None:
         """Retain only fixed reader state and a raw observed-byte digest."""
         self.stream, self.budget, self.maximum = stream, budget, maximum
         self.count = self.record_size = 0
@@ -94,7 +95,7 @@ class _Reader:
         return chunk
 
 
-def _term(value: object, budget: _ControlBudget) -> QueryTerm | None:
+def _term(value: object, budget: ControlBudget) -> QueryTerm | None:
     """Convert one bounded term with existing lexical-preserving RDF machinery."""
     budget.consume("states")
     budget.consume("bytes", 64)
@@ -117,7 +118,7 @@ def _term(value: object, budget: _ControlBudget) -> QueryTerm | None:
     return cast(QueryTerm, node)
 
 
-def _projected_vocabulary(graph: Graph, budget: _ControlBudget) -> Vocabulary:
+def _projected_vocabulary(graph: Graph, budget: ControlBudget) -> Vocabulary:
     """Adopt a tiny derived selection without acquiring another input resource."""
     budget.consume("states", 3)
     budget.consume("bytes", 192)
@@ -147,7 +148,7 @@ def _projected_vocabulary(graph: Graph, budget: _ControlBudget) -> Vocabulary:
 
 def evaluate(request: dict[str, Any]) -> dict[str, object]:
     """Read through EOF or return a bounded completed diagnostic prefix."""
-    budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
     held = IssueCollector(budget)
     records: list[dict[str, object]] = []
     parse_issues: list[dict[str, object]] = []
@@ -168,7 +169,7 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
         item: dict[str, object] = {"issue": issue.to_dict()}
         if statement is not None:
             item["statement"] = statement
-        amount = _json_bound(item, budget)
+        amount = json_bound(item, budget)
         budget.consume("bytes", amount)
         encoded_size = len(
             json.dumps(item, ensure_ascii=True, separators=(",", ":")).encode()

@@ -6,11 +6,12 @@ from dataclasses import replace
 from rdflib import BNode, URIRef
 
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.rdf.entailment.preparation import prepare_entailment
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.patches.planning import capture_items, capture_source
+from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_text

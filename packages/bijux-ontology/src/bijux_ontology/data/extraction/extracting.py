@@ -13,10 +13,10 @@ from rdflib.term import Node
 from bijux_ontology.data.projection.reading import project_records
 from bijux_ontology.data.projection.types import ReadBinding
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.path_traversal import finite_path_steps, path_values
 from bijux_ontology.rdf.paths import capture_path
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata

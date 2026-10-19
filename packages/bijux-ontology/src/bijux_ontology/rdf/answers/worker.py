@@ -10,8 +10,9 @@ from rdflib import BNode
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits, bound_text
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
 from bijux_ontology.rdf.terms import oxigraph_term
 
@@ -120,7 +121,7 @@ def parse_answer(payload: str, format: str, budget: Budget) -> dict[str, object]
             key: decoded[key]
             for key in ("head", "boolean" if "boolean" in decoded else "results")
         }
-        budget.consume("bytes", 2 * _json_bound(answer, budget))
+        budget.consume("bytes", 2 * json_bound(answer, budget))
         payload = json.dumps(answer, ensure_ascii=True, separators=(",", ":"))
     native = ox.parse_query_results(
         payload, format=getattr(ox.QueryResultsFormat, format.upper())
@@ -162,7 +163,7 @@ def process_request(payload: bytes) -> bytes:
         decode_json(payload, max_bytes=len(payload) + 1), location="request"
     )
     limits = Limits(**cast(Mapping[str, int], envelope["limits"]))
-    budget = _ControlBudget(limits, envelope["allowances"])
+    budget = ControlBudget(limits, envelope["allowances"])
     response: dict[str, object] = {"status": "ok", "data": None, "message": ""}
     try:
         budget.consume("bytes", 4096)
@@ -226,7 +227,7 @@ def process_request(payload: bytes) -> bytes:
             response["data"] = {"serialized": serialized_answer}
         else:
             raise InputError("Unsupported fixed answer codec operation")
-        size = _json_bound(response, budget) + 512
+        size = json_bound(response, budget) + 512
         budget.consume("bytes", 2 * size)
         budget.consume("work", size)
     except (InputError, ValueError, SyntaxError) as error:

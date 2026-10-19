@@ -4,12 +4,13 @@ from collections.abc import Sequence
 from typing import Literal
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.correspondence import Operation, blank_tokens
+from bijux_ontology.rdf.patches.correspondence import blank_tokens
 from bijux_ontology.rdf.patches.planning import (
     Captured,
-    capture_items,
     capture_source,
     replace_witness,
 )

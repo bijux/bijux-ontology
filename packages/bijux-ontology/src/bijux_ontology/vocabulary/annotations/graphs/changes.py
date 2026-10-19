@@ -5,8 +5,8 @@ from typing import Protocol, cast
 from rdflib import BNode, URIRef
 from rdflib.namespace import OWL
 
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import IssueCollector, retain_report
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.planning import Captured, Rejected
 from bijux_ontology.rdf.patches.types import (
     PatchQuad,

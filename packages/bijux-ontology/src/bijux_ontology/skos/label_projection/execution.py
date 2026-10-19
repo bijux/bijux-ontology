@@ -5,11 +5,12 @@ from collections.abc import Sequence
 from dataclasses import replace
 
 from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
-from bijux_ontology.rdf.patches.correspondence import Operation
-from bijux_ontology.rdf.patches.planning import Captured, capture_items, capture_source
+from bijux_ontology.rdf.patches.planning import Captured, capture_source
 from bijux_ontology.rdf.patches.types import (
     DatasetPatch,
     PatchBlankBinding,

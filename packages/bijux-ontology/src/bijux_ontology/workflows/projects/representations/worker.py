@@ -10,15 +10,12 @@ from typing import Any, cast
 from bijux_ontology._json import decode_json
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import ControlBudget, Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.jsonld.preparation import prepare_jsonld
 from bijux_ontology.jsonld.runtime import processor
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.patches.correspondence import (
-    Operation,
-    _ControlBudget,
-    _json_bound,
-)
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import bound_text
@@ -359,7 +356,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
     request = decode_json(payload, max_bytes=cap)
     if not isinstance(request, dict):
         raise InputError("Malformed representation request")
-    budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
     operation = Operation(None, budget, request["timeout_ns"] / 1_000_000_000, None)
     result = _run(request, operation)
     result["consumed"] = budget.consumed()
@@ -367,7 +364,7 @@ def process_request(payload: bytes, cap: int) -> bytes:
     # semantic work: traversal, encoding and host decoding. This control budget
     # spends the first two prepaid allowances; it never renews semantic work.
     control = Budget(Limits(max_bytes=cap, max_total_bytes=cap, max_work=2 * cap))
-    _json_bound(result, control)
+    json_bound(result, control)
     output = bytearray()
     encoder = json.JSONEncoder(ensure_ascii=True, separators=(",", ":"))
     for chunk in encoder.iterencode(result):

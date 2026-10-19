@@ -12,9 +12,10 @@ from typing import Any, cast
 
 from bijux_ontology._json import decode_json, object_value, own_json
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.terms import bound_text
 
 
@@ -376,7 +377,7 @@ def prepare(payload: bytes, cap: int) -> bytes:
     socket.socket.connect = _offline  # type: ignore[method-assign]
     try:
         result = _prepare(request, operation)
-        operation.consume("bytes", _json_bound(result, operation))
+        operation.consume("bytes", json_bound(result, operation))
     except (LimitExceeded, RecursionError):
         result = {
             "error": "exhausted",

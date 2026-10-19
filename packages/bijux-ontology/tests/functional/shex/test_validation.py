@@ -10,9 +10,9 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import XSD
 
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.shex import ShexBinding, ShexSchema, validate_shex
 from bijux_ontology.shex.types import ShexResult

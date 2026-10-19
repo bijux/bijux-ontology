@@ -11,10 +11,11 @@ from rdflib.namespace import RDF, SH
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches.codecs import read_witness, witness_data
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import SnapshotWitness
 from bijux_ontology.rdf.terms import bound_node, term_key
@@ -173,7 +174,7 @@ def main() -> int:
             or not isinstance(request["limits"], dict)
         ):
             return 2
-        budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+        budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
         try:
             result = _execute(request, budget)
         except (LimitExceeded, MemoryError):
@@ -187,7 +188,7 @@ def main() -> int:
             # are not retained without a separate bounded metadata contract.
             result = {"status": "backend_error"}
         try:
-            size = _json_bound(result, budget)
+            size = json_bound(result, budget)
             if size > cap:
                 raise LimitExceeded("Rule response exceeds max_bytes")
             budget.consume("bytes", size)

@@ -10,10 +10,11 @@ from bijux_ontology._jsonpaths import bound_path
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import SubjectIdentity
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, BudgetKind, Limits, _issue_metadata
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Outcome, Report, combine_reports
 
@@ -232,7 +233,7 @@ def _send(
     ):
         raise LimitExceeded("Finding stream exceeded max_emitted_findings")
     data = _data(event, operation)
-    size = _json_bound(data, operation)
+    size = json_bound(data, operation)
     operation.consume("bytes", 2 * size + 1)
     payload = (
         json.dumps(data, ensure_ascii=True, separators=(",", ":")).encode("utf-8")

@@ -19,9 +19,9 @@ from rdflib import URIRef
 from rdflib.namespace import RDF, RDFS
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.limits import Limits
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.workflows.projects.acquisition import (
     AcquisitionPolicy,
     AcquisitionRequest,

@@ -10,10 +10,11 @@ from typing import cast
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.rdf.execution import execute_worker
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report, report_from_data
 
@@ -124,7 +125,7 @@ def dispatch(
         allowances=dict.fromkeys(KINDS, 0),
         output_cap=reply_cap,
     )
-    size = _json_bound(request, operation)
+    size = json_bound(request, operation)
     operation.consume("bytes", 2 * size + 64 * reply_cap)
     operation.consume("states", 2 * reply_cap + 32)
     operation.consume("work", 4 * reply_cap + 1)

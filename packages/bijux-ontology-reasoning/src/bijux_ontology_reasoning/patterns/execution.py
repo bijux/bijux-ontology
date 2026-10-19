@@ -7,8 +7,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.processes.transport import exchange_worker
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.stores.seals import verify_files
 from bijux_ontology.rdf.terms import bound_text
 
@@ -47,7 +48,7 @@ def generate_query(
         operation.consume("bytes", len(pattern.content))
         template.write_bytes(pattern.content)
         mapping = dict(pattern.prefixes)
-        operation.consume("bytes", _json_bound(mapping, operation))
+        operation.consume("bytes", json_bound(mapping, operation))
         prefixes.write_text(json.dumps(mapping, ensure_ascii=True), encoding="utf-8")
         operation.consume("bytes", 128)
         ontology.write_text(

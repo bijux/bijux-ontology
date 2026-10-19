@@ -7,8 +7,10 @@ from typing import Any
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.rdf.execution import execute_worker
-from bijux_ontology.rdf.patches.correspondence import _KINDS, Operation, _json_bound
+from bijux_ontology.rdf.patches.correspondence import _KINDS
 from bijux_ontology.rdf.terms import bound_text
 
 
@@ -30,7 +32,7 @@ def run_markup(
         "allowances": {key: budget.remaining(key) for key in _KINDS},
         "output_cap": budget.limits.max_total_bytes,
     }
-    budget.consume("bytes", _json_bound(request, budget))
+    budget.consume("bytes", json_bound(request, budget))
     allowances = {
         key: budget.remaining(key) // 2
         if key in ("bytes", "states", "work")

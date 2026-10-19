@@ -7,8 +7,8 @@ from pathlib import Path
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.limits import IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget
 from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.workflows.projects.jobs import check_kind
 from bijux_ontology.workflows.projects.operations import run_check
@@ -22,7 +22,7 @@ def execute(request: object) -> dict[str, object]:
     if not isinstance(request, dict) or not isinstance(request.get("limits"), dict):
         raise InputError("Invalid parallel project request")
     limits = Limits(**request["limits"])
-    budget = _ControlBudget(limits, request.get("allowances"))
+    budget = ControlBudget(limits, request.get("allowances"))
     issues = IssueCollector(budget)
     report: Report | None = None
     started = time.monotonic_ns()

@@ -10,8 +10,9 @@ from rdflib.term import Node
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Limits
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.terms import (
     bound_node,
     literal_datatype,
@@ -31,7 +32,7 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
             "status": "unavailable",
             "message": "Install bijux-ontology[shacl] for owlrl entailment",
         }
-    budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
     backend = "owlrl " + owlrl.__version__
     reason = "backend_rejected"
     try:
@@ -168,10 +169,8 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
             "derived": encode_rows(tuple(ordinary), budget),
             "generalized": encode_rows(tuple(generalized), budget),
         }
-        budget.consume("bytes", _json_bound(result, budget))
-        budget.consume(
-            "bytes", _json_bound({"consumed": request["allowances"]}, budget)
-        )
+        budget.consume("bytes", json_bound(result, budget))
+        budget.consume("bytes", json_bound({"consumed": request["allowances"]}, budget))
     except LimitExceeded:
         result = {
             "status": "exhausted",

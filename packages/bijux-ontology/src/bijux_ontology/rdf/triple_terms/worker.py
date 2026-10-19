@@ -11,9 +11,10 @@ import pyoxigraph as ox
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import _read
-from bijux_ontology.rdf.patches.correspondence import _ControlBudget, _json_bound
 from bijux_ontology.rdf.terms import bound_text
 
 from .protocol import decode_quads, encode_quads, encode_term
@@ -72,7 +73,7 @@ def _parsed(
 
 def evaluate(request: dict[str, Any]) -> dict[str, object]:
     """Execute one explicit pinned backend contract with cumulative allowances."""
-    budget = _ControlBudget(Limits(**request["limits"]), request["allowances"])
+    budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
     try:
         if (
             request.get("contract") != TRIPLE_TERM_CONTRACT
@@ -138,10 +139,8 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
             result = {"status": "result", "content": payload.hex()}
         else:
             raise InputError("Unknown triple-term worker operation")
-        budget.consume("bytes", _json_bound(result, budget))
-        budget.consume(
-            "bytes", _json_bound({"consumed": request["allowances"]}, budget)
-        )
+        budget.consume("bytes", json_bound(result, budget))
+        budget.consume("bytes", json_bound({"consumed": request["allowances"]}, budget))
     except (LimitExceeded, RecursionError):
         result = {"status": "exhausted"}
     except SyntaxError:

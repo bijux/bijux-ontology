@@ -8,8 +8,9 @@ from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology._json import object_value
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Issue, Report
 
@@ -96,7 +97,7 @@ def write_answers(
                     cells[variable] = value
                 rows.append(cells)
             root["results"] = {"bindings": rows}
-        size = _json_bound(root, operation)
+        size = json_bound(root, operation)
         operation.consume("bytes", size * 2)
         text = json.dumps(root, ensure_ascii=True, separators=(",", ":"))
         data = object_value(

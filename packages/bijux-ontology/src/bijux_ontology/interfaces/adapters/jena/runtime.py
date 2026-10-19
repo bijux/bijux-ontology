@@ -8,9 +8,10 @@ from pathlib import Path
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.processes.transport import exchange_worker
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.stores.seals import seal_files, verify_files
 from bijux_ontology.rdf.terms import bound_text
 
@@ -69,7 +70,7 @@ def prepare_jena_backend(
     entries = manifest["jars"]
     if not isinstance(entries, list) or not entries:
         raise ResourceError("Jena requires an explicit ordered classpath")
-    operation.consume("bytes", _json_bound(manifest, operation))
+    operation.consume("bytes", json_bound(manifest, operation))
     operation.consume("states", len(entries))
     operation.consume("resources", len(entries))
     expected: dict[str, str] = {}
@@ -161,7 +162,7 @@ def invoke_jena(
         control_states=native_states,
         control_triples=native_triples,
     )
-    size = _json_bound(request, operation)
+    size = json_bound(request, operation)
     operation.consume("bytes", 2 * size)
     payload = json.dumps(request).encode()
     if len(payload) > cap * 8:

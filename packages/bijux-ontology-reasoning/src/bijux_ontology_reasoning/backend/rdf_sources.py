@@ -14,9 +14,9 @@ from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, URIRef
 
 from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.rdf.terms import (

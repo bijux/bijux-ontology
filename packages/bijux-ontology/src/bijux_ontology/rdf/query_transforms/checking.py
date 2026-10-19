@@ -10,6 +10,9 @@ from rdflib import BNode, Literal, URIRef
 
 from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.execution import execute_worker
 from bijux_ontology.rdf.migrations.candidates import (
@@ -19,8 +22,8 @@ from bijux_ontology.rdf.migrations.candidates import (
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.codecs import read_witness, term_data, witness_data
-from bijux_ontology.rdf.patches.correspondence import _KINDS, Operation, _json_bound
-from bijux_ontology.rdf.patches.planning import Captured, capture_items, capture_source
+from bijux_ontology.rdf.patches.correspondence import _KINDS
+from bijux_ontology.rdf.patches.planning import Captured, capture_source
 from bijux_ontology.rdf.patches.types import (
     DatasetPatch,
     PatchBlankBinding,
@@ -77,7 +80,7 @@ def _native(
         "limits": asdict(operation.limits),
         "allowances": {kind: operation.remaining(kind) for kind in _KINDS},
     }
-    size = _json_bound(request, operation)
+    size = json_bound(request, operation)
     if size > operation.limits.max_bytes:
         raise LimitExceeded("SPARQL transformation request exceeds max_bytes")
     operation.consume("bytes", size)

@@ -14,9 +14,9 @@ from bijux_ontology.documents.archive import resource_path
 from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (

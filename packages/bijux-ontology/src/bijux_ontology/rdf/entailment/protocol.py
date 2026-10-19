@@ -4,8 +4,8 @@ from rdflib import BNode, Graph
 from rdflib.term import Node
 
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.patches.correspondence import _json_bound
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
 from bijux_ontology.rdf.terms import bound_node, validate_triple
 
@@ -26,7 +26,7 @@ def decode_term(
     value: object, blanks: dict[str, BNode], budget: Budget
 ) -> QueryTerm | None:
     """Bind one bounded term within this joint protocol document only."""
-    budget.consume("bytes", _json_bound(value, budget))
+    budget.consume("bytes", json_bound(value, budget))
     budget.consume("states", 5)
     budget.consume("bytes", 128)
     term = read_term(value, blanks)

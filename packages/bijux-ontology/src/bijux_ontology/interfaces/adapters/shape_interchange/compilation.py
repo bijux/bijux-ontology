@@ -11,9 +11,10 @@ from rdflib.namespace import XSD
 from bijux_ontology._json import object_value
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.paths import RdfPath
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
@@ -128,7 +129,7 @@ def _property(
             )
     if len(value) > 1:
         result["valueExpr"] = value
-    operation.consume("bytes", _json_bound(result, operation))
+    operation.consume("bytes", json_bound(result, operation))
     return result
 
 
@@ -345,7 +346,7 @@ def shacl_to_shex(
                 {"type": "ShapeDecl", "id": str(root), "shapeExpr": expression},
             ],
         }
-        operation.consume("bytes", _json_bound(document, operation))
+        operation.consume("bytes", json_bound(document, operation))
         schema = ShexSchema(
             schema_iri, json.dumps(document, ensure_ascii=True, separators=(",", ":"))
         )

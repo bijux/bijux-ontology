@@ -7,9 +7,9 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.errors import InputError
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import QueryTerm

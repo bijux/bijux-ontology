@@ -6,8 +6,8 @@ from typing import get_args
 from rdflib import BNode, Graph, URIRef
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.patches.planning import capture_items
 from bijux_ontology.rdf.roles.types import TermRole
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, bound_text

@@ -14,6 +14,7 @@ from bijux_ontology.documents.export import RDFExport
 from bijux_ontology.documents.forms.checking import check_document_form
 from bijux_ontology.documents.forms.types import DocumentFormCheck, FormRequirement
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.comparison import compare_observed_usages
 from bijux_ontology.jsonld.conversion import DirectionPolicy
@@ -23,7 +24,6 @@ from bijux_ontology.jsonld.resources import ContextResources, DocumentLoader
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.patches.correspondence import _json_bound
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Location, Report
 
@@ -33,7 +33,7 @@ from .types import DocumentRelocation
 
 def _serialize(document: object, budget: Budget) -> str:
     """Reserve escaped JSON before allocating the exact candidate representation."""
-    bound = _json_bound(document, budget)
+    bound = json_bound(document, budget)
     if bound > budget.limits.max_bytes:
         raise LimitExceeded("Relocated JSON representation exceeds its byte profile")
     budget.consume("bytes", bound)

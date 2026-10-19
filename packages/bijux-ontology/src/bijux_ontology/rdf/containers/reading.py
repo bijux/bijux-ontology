@@ -8,8 +8,9 @@ from rdflib.namespace import RDF, RDFS
 from rdflib.term import Node
 
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.patches.planning import capture_items, capture_source
+from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import PatchUnavailable
 from bijux_ontology.rdf.roles.types import Statement
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
