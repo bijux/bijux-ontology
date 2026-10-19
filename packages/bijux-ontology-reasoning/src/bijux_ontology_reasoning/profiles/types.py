@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from bijux_ontology.reports import Report
 
 from ..backend.types import BackendCapability as BackendCapability
+from ..backend.types import LoaderQualification as LoaderQualification
 from ..backend.types import OwlProfile as OwlProfile
 from ..backend.types import OwlProfileBackend as OwlProfileBackend
 from ..backend.types import ProfileDocument as ProfileDocument
@@ -20,23 +21,6 @@ class ProfileViolation:
     document: ProfileDocument
     axiom: str | None
     expression: str | None
-
-
-@dataclass(frozen=True)
-class LoaderQualification:
-    """Typed OWLAPI parser metadata; absence or guesses do not prove faithful input."""
-
-    document: ProfileDocument
-    present: bool
-    unparsed: int | None
-    guessed: int | None
-    triples: int | None
-    header: str | None
-
-    @property
-    def qualified(self) -> bool:
-        """Require actual complete metadata and no unparsed/guessed statements."""
-        return self.present and self.unparsed == 0 and self.guessed == 0
 
 
 @dataclass(frozen=True)

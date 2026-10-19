@@ -44,8 +44,10 @@ public final class ProfileWorker {
         String mode = text(request.path("operation"), 32);
         if (mode.equals("capability")) return result;
         if (mode.equals("convert")) return NativeDocuments.evaluate(request, job, result);
+        if (mode.equals("axiom_changes")) return org.bijux.ontology.axioms.AxiomChanges.evaluate(request, job, result);
         if (mode.equals("axioms")) return AxiomProjection.evaluate(request, job, result);
         if (mode.equals("diagnosis")) return LogicalDiagnosis.evaluate(request, job, result);
+        if (mode.equals("relationships")) return org.bijux.ontology.relationships.InferredRelationships.evaluate(request, job, result);
         if (mode.equals("entailment")) return EntailmentChecks.evaluate(request, job, result);
         if (!mode.equals("profile")) throw new IOException("Unsupported operation");
         int cap = positive(request.path("max_bytes"));

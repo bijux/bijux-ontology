@@ -18,14 +18,16 @@ import pytest
 from rdflib import URIRef
 from rdflib.namespace import RDF, RDFS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.limits import Limits
+from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.workflows.projects.acquisition import (
     AcquisitionPolicy,
     AcquisitionRequest,
     acquire_bundle,
 )
+from bijux_ontology.workflows.projects.acquisition.http import HttpAcquisition
 from bijux_ontology.workflows.projects.bundles import load_bundle
 from bijux_ontology.workflows.projects.checking import check_project
 
@@ -36,6 +38,35 @@ ROOT = (
     b"<urn:C> a <http://www.w3.org/2000/01/rdf-schema#Class> ."
 )
 CHILD = b"<urn:D> a <http://www.w3.org/2000/01/rdf-schema#Class> ."
+
+
+def test_fresh_reads_observe_changes_without_resetting_allowances() -> None:
+    """Use actual HTTP while keeping ordinary cached resource identity intact."""
+    seen: list[tuple[str, dict[str, str]]] = []
+    routes: dict[str, Route] = {
+        "/version": (200, {"Content-Type": "application/json"}, b'{"version":1}')
+    }
+    with server(routes, seen) as base:
+        budget = Operation(Limits(), None, 5, None)
+        client = HttpAcquisition(AcquisitionPolicy((base,), max_requests=3), budget)
+        original = client.get(base + "/version")
+        routes["/version"] = (
+            200,
+            {"Content-Type": "application/json"},
+            b'{"version":2}',
+        )
+        assert client.get(base + "/version") is original
+        fresh = client.get(base + "/version", fresh=True)
+        assert fresh.payload == b'{"version":2}'
+        assert client.get(base + "/version") is original
+        assert client.get(base + "/version", fresh=True).payload == fresh.payload
+        assert len(seen) == client.requests == 3
+        assert budget.remaining("resources") == budget.limits.max_resources - 3
+        with pytest.raises(LimitExceeded):
+            client.get(base + "/version", fresh=True)
+        with pytest.raises(InputError):
+            client.get(base + "/version", fresh=1)  # type: ignore[arg-type]
+        assert len(seen) == 3
 
 
 @contextmanager

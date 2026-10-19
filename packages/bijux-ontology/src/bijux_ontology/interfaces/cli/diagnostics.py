@@ -28,6 +28,17 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "ols": frozenset(
+        "acquisition_unverified input_error unverified data_changed "
+        "data_unversioned page_incomplete hierarchy_unverified "
+        "no_selected_entities membership_unverified".split()
+    ),
+    "go": frozenset(
+        "taxon_disallowed taxon_unverified input_invalid input_unverified "
+        "required_annotations_empty gpi_subject_missing gpi_subject_ambiguous "
+        "gpi_subject_unverified reference_kind_mismatch reference_missing "
+        "reference_unverified term_retired export_unverified".split()
+    ),
     "shape-interchange": frozenset("unsupported unverified behavior_changed".split()),
     "pattern": frozenset("expected_missing unexpected_binding unverified".split()),
     "biosamples": frozenset(
@@ -315,6 +326,14 @@ _CODES = {
         "diagnosis_profile_unsupported diagnosis_unverified inconsistent "
         "unsatisfiable_class "
         "axiom_input_loss axiom_input_unverified axiom_unsupported axioms_unverified "
+        "relationships_input_loss relationships_profile_unsupported "
+        "relationship_consistency_unverified relationship_query_unverified "
+        "relationships_unverified relationships_input_error "
+        "axiom_change_unrepresented axiom_change_loss axiom_change_unverified "
+        "axiom_change_input_error axiom_header_mismatch "
+        "axiom_postconditions_missing axiom_postcondition_unverified "
+        "axiom_base_mismatch axiom_precondition_failed axiom_profile_violation "
+        "axiom_acceptance_unverified axiom_candidate_changed "
         "conversion_loss conversion_unverified "
         "assertion_contradiction assertion_unverified backend_unavailable "
         "loader_unverified profile_unverified profile_violation".split()
@@ -493,6 +512,21 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "ols": (
+        "one versioned ontology-scoped OLS entity query",
+        "Captured service evidence is incomplete or outside the selected query.",
+        "Inspect exact ontology and role, every required page and unchanged "
+        "ontology data version; software identity alone cannot close the query.",
+        "prepare_ols_snapshot(pages, query=query, base_url=base_url)",
+    ),
+    "go": (
+        "explicit GO annotation and supplied taxon-constraint release",
+        "A selected annotation, reference or taxon contract fails or is unverified.",
+        "Inspect the located original assertion and exact GPI join, selected "
+        "vocabulary roles and lifecycle policy; for taxa also inspect resource "
+        "pins, independent restrictions, paths, unions and complete ancestry.",
+        "check_go_taxa(release, annotations, policy=policy)",
+    ),
     "shape-interchange": (
         "fixed explicit SHACL and ShEx record bindings",
         "Compilation is unsupported, execution is unverified or validators disagree.",

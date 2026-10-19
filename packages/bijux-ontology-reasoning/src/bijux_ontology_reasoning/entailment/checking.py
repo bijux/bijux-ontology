@@ -25,9 +25,9 @@ from ..backend.execution import (
     result_counter,
     result_text,
 )
+from ..backend.qualification import _records, qualify_reasoning_result, reasoning_header
 from ..backend.rdf_sources import stage_documents
 from ..backend.types import OwlProfileBackend, ProfileDocument
-from ..diagnosis.checking import _boolean, _loaders, _reasoner, _records
 from ..documents.preparation import stage_native_documents
 from ..documents.types import OwlDocument
 from ..profiles.types import LoaderQualification
@@ -129,72 +129,33 @@ def check_entailments(
             operation.consume("states", 4)
             capability = qualify_capability(data, backend, operation)
             children.append(capability.report)
-            if data.get("input_kind") != kind:
-                raise ResourceError("Entailment omitted its exact input interpretation")
-            if type(data.get("consistent")) not in (bool, type(None)):
-                raise ResourceError("Invalid native consistency answer")
-            raw_consistent = cast(bool | None, data["consistent"])
-            if data.get("dl_profile") is not None:
-                in_profile = _boolean(data["dl_profile"])
-            native_error = result_text(data.get("error"), operation, optional=True)
-            observed = set()
-            for raw in _records(data.get("documents"), operation):
-                record = object_value(raw, location="entailment loaded document")
-                index = result_counter(
-                    record.get("document"), operation, len(originals) - 1
-                )
-                if index in observed:
-                    raise ResourceError("Entailment document ownership is ambiguous")
-                observed.add(index)
-                for name in ("ontology_iri", "version_iri"):
-                    result_text(record.get(name), operation, optional=True)
-                result_counter(record.get("axioms"), operation, 2**31 - 1)
-                for iri in _records(record.get("imports"), operation):
-                    result_text(iri, operation)
-            if len(observed) != len(originals):
-                raise ResourceError("Entailment did not load every required document")
-            loaders = _loaders(data.get("loaders"), originals, operation, issues)
-            if (kind == "rdf" and len(loaders) != len(originals)) or (
-                kind == "native" and loaders
-            ):
-                raise ResourceError("Entailment omitted exact RDF loader scope")
-            for raw in _records(data.get("changes"), operation):
-                record = object_value(raw, location="entailment original input loss")
-                loss_kind = result_text(record.get("kind"), operation)
-                value = result_text(record.get("value"), operation)
-                issues.append(
-                    Issue(
-                        "owl.entailment_input_loss",
-                        "Original native content is not completely represented",
-                        expected=loss_kind,
-                        actual=value,
-                        kind="unverified",
-                    )
-                )
-            for raw in _records(data.get("violations"), operation):
-                text = result_text(raw, operation)
-                issues.append(
-                    Issue(
-                        "owl.entailment_profile_unsupported",
-                        "Entailment requires the OWL 2 DL profile",
-                        actual=text,
-                        kind="unverified",
-                    )
-                )
-            if data.get("reasoner") is not None:
-                reasoner = _reasoner(data["reasoner"], operation)
-            if not (
-                data.get("qualified") is True
-                and in_profile is True
-                and reasoner is not None
-                and all(item.qualified for item in loaders)
-                and not issues
-            ):
+            header = reasoning_header(data, operation)
+            raw_consistent, in_profile, native_error = (
+                header.raw_consistent,
+                header.in_profile,
+                header.native_error,
+            )
+            receipt = qualify_reasoning_result(
+                data,
+                originals,
+                kind,
+                operation,
+                issues,
+                header=header,
+                scope="entailment",
+            )
+            raw_consistent, in_profile, native_error = (
+                receipt.raw_consistent,
+                receipt.in_profile,
+                receipt.native_error,
+            )
+            loaders, reasoner = receipt.loaders, receipt.reasoner
+            if not receipt.qualified:
                 if data["status"] == "exhausted":
                     raise LimitExceeded(
-                        "Native entailment qualification did not complete"
+                        "DL native input qualification did not complete"
                     )
-                raise ResourceError("The selected entailment scope is unqualified")
+                raise ResourceError("The selected DL reasoning scope is unqualified")
             operation.consume("states", 2)
             operation.consume("bytes", 256)
             if raw_consistent is not None:

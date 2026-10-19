@@ -62,3 +62,30 @@ class ProfileDocument:
     graph_kind: str
     graph_name: URIRef | BNode | None
     serialization_sha256: str
+
+
+@dataclass(frozen=True)
+class ReasonerIdentity:
+    """Actual artifact and native versions, which this release reports differently."""
+
+    name: str
+    artifact_version: str
+    native_version: str
+    ignore_unsupported_datatypes: bool
+
+
+@dataclass(frozen=True)
+class LoaderQualification:
+    """Typed OWLAPI parser metadata; absence or guesses do not prove faithful input."""
+
+    document: ProfileDocument
+    present: bool
+    unparsed: int | None
+    guessed: int | None
+    triples: int | None
+    header: str | None
+
+    @property
+    def qualified(self) -> bool:
+        """Require actual complete metadata and no unparsed/guessed statements."""
+        return self.present and self.unparsed == 0 and self.guessed == 0

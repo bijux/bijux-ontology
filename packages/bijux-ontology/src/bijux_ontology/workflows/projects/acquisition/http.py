@@ -115,10 +115,17 @@ class HttpAcquisition:
         self.budget.consume("resources")
         self.requests += 1
 
-    def get(self, url: str) -> _Response:
-        """Read at most the allowed wire bytes, then validate complete decoding."""
+    def get(self, url: str, *, fresh: bool = False) -> _Response:
+        """Read bounded bytes; fresh observations bypass cache lookup and storage.
+
+        Fresh reads still spend this operation's original request and resource
+        allowances. Their changing representations do not replace or conflict
+        with a previously cached ordinary closure resource.
+        """
+        if type(fresh) is not bool:
+            raise InputError("Acquisition fresh selection requires a boolean")
         url = self.authorize(url)
-        if url in self.responses:
+        if not fresh and url in self.responses:
             return self.responses[url]
         self.request()
         self.redirects.visited = {url}
@@ -219,6 +226,8 @@ class HttpAcquisition:
             hashlib.sha256(expanded).hexdigest(),
         )
         result = _Response(resource, expanded, link, content_type)
+        if fresh:
+            return result
         before = self.responses.get(effective)
         if before is not None:
             self.budget.consume("work", len(expanded) + 1)

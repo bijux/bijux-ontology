@@ -101,3 +101,24 @@ with `prepare_dosdp_backend`: its pinned manifest has `protocol=1`,
 requires an explicit preparation allowance such as
 `Limits(max_total_bytes=200_000_000)`; subsequent checks use ordinary limits.
 Pattern paths, prefixes and required ontology imports are local and explicit.
+
+`axioms.changes.prepare_axiom_change` applies explicit additions/removals using
+the existing immutable axiom classes and maintained OWLAPI factories. Capture
+`expected=axiom_base(source)` before planning: both raw integrity and native
+resolution context must match. Imports stay read-only; annotated removals must
+exist in the root. `compare_axioms` reports structural set changes separately
+from RDF differences or logical equivalence. Required `after_checks` use the
+ordinary profile, logical or application APIs with the shared budget; passing
+syntax alone proves no consistency. Inspect the candidate, then publish unchanged
+checked bytes with `write_axiom_change(candidate, path, accept=True)`. A failed
+check, stale receipt or interrupted operation cannot replace the destination.
+
+`relationships.query_inferred_contracts(backend, source, queries)` enumerates
+named class and object/data property relationships through actual HermiT APIs.
+Use `InferredQuery` with existing typed entity values and explicit direct/indirect
+hierarchy selection. Native equivalence nodes, inverse expressions, builtins and
+matching asserted-axiom owners remain separate; no assertions are materialized.
+Class satisfiability is independent of successful enumeration. Complete results
+cover the selected named-signature query, not every possible expression; result
+caps, unsupported data-property ranges/inverses and unqualified inputs remain
+incomplete. The original source and selected physical graph stay unchanged.

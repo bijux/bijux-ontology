@@ -1836,3 +1836,36 @@ prevent a claimed translation. Install `[shacl,shex]` and call
 `check_interchange(translation, prepared_data)` to compare each pair through
 actual pySHACL and pyrudof. Agreement can mean both reject: raw negative results
 remain separate from correspondence and never certify the data as valid.
+
+`interfaces.adapters.go.taxon_constraints.check_go_taxa` checks explicit term/taxon
+annotations against a `GoTaxonRelease` of separately pinned local ontology,
+computed constraints, union groupings and taxonomy bytes. A `GoTaxonPolicy`
+selects roots and declares complete selected ancestry. Constraints inherit through
+is_a and existential part_of; regulates supplies no inheritance. Union members
+are alternatives within one restriction; independent restrictions conjoin.
+Original resource receipts and path witnesses remain visible. Competing group
+definitions, missing ancestry or absent requested constraints remain unverified;
+this read-only finite profile claims no biological absence or general OWL truth.
+
+`interfaces.adapters.ols.prepare_ols_snapshot` consumes immutable `OlsPage`
+responses for an explicit `OlsQuery` and `/api/v2` base. Ontology, exact IRI,
+entity roles and imported/defining/obsolete policies retain separate meanings.
+The selected lexical vocabulary is a service projection, with qualified JSON
+annotations retained; generic ancestors become no asserted subclass edges.
+Complete queries require all pages and stable ontology versionIRI/loaded metadata,
+independent of software release. `lookup_ols` reports scoped membership; missing
+or incomplete results publish no empty successful vocabulary. Offline preparation
+performs no acquisition. Opt-in `acquire_ols_snapshot` uses an explicit bounded
+`AcquisitionPolicy` and fresh metadata before and after each page; it promises
+an observed query snapshot, not an atomic remote transaction.
+
+`bijux_ontology.interfaces.adapters.go.annotations` reads explicit GAF 2.2 or
+GPAD 2.0 documents with supplied GPI 2.0 companions, retaining source locations,
+negation, evidence, separate taxa and comma/pipe expression groups. Use
+`read_go_annotations`, `check_go_annotations` with your registry and selected
+vocabulary roles, then `write_go_annotations` for the same format. Legacy GAF
+relation labels need an explicit mapping for reference checks or RDF export.
+`annotations_to_rdf` emits signed reified records with the original fields;
+it does not assert the quoted positive edge or an OWL negative assertion.
+The supported field grammar and selected vocabulary checks are separate from
+GO editorial quality control; permitted retirement retains its raw evidence.
