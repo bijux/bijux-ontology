@@ -47,7 +47,8 @@ _CODES = {
         "relation_conflict maximum_exceeded minimum_missing invalid_input "
         "interchange_unverified composition_input_unverified "
         "composition_rule_unverified composition_semantics_unverified "
-        "composition_invalid".split()
+        "composition_invalid proposal_invalid "
+        "reconciliation_unverified reconciliation_invalid".split()
     ),
     "taxonomy": frozenset(
         "class_role_unverified expression_unrepresented outside_parent "
@@ -103,6 +104,8 @@ _CODES = {
         "structure_mismatch binding_unverified".split()
     ),
     "adapter": frozenset(
+        "obographs_unverified obographs_input_error obographs_projection_loss "
+        "oak_python_unsupported oak_backend_unavailable oak_unsupported "
         "fhir_backend_unavailable fhir_input_error fhir_unsupported "
         "fhir_membership_unverified fhir_export_error fhir_export_unverified "
         "fhir_valueset_unverified fhir_valueset_input_error fhir_valueset_code_invalid "
@@ -343,6 +346,8 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "mapping_obligation_changed mapping_cardinality_changed "
+        "mapping_impact_unverified mapping_impact_input_error mapping_relation_changed "
         "lifecycle_violation lifecycle_unverified lifecycle_input_error "
         "identifier_changed identifier_unverified identifier_input_error "
         "matrix_unverified "

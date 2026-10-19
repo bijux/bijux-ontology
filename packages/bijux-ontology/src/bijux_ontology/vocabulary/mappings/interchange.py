@@ -9,7 +9,7 @@ from pathlib import Path
 
 from bijux_ontology._json import decode_json, object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import IssueCollector, Limits
+from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.execution import execute_worker
 from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.terms import bound_text
@@ -119,6 +119,7 @@ def read_sssom(
     mapping_set_id: str,
     license: str,
     limits: Limits | None = None,
+    budget: Budget | None = None,
     timeout: float = 30,
     cancel: threading.Event | None = None,
 ) -> MappingRead:
@@ -129,9 +130,10 @@ def read_sssom(
     All original lexical row occurrences are retained, including duplicates.
     '#' in the table body is unsupported; leading comment framing is SSSOM's.
     Parser/validator internals have owned deadline isolation, not invented work
-    counters. Host and worker preparation each retain their explicit limits.
+    counters. Host preparation/adoption can share a caller Budget; worker
+    preparation retains its independently bounded owned-process limits.
     """
-    operation = Operation(limits, None, timeout, cancel)
+    operation = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(operation)
     result = None
     try:

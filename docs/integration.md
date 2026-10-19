@@ -20,6 +20,25 @@ competing canonical spellings require an explicit `canonical_prefixes` choice.
 The immutable registry separates `.iri(value)` from `.expand_curie(value)` and
 uses the longest namespace in `.compact_iri(value)` without guessing intent.
 
+`interfaces.adapters.oak.as_oak(view, registry=registry, language="en")` exposes
+an owned selected view through the maintained OAK `BasicOntologyInterface`.
+Install `[oak]` on Python <3.15 for OAK 0.7.4. Core imports need no OAK package.
+Labels, aliases, definitions, asserted relationships and obsolescence retain
+their selected source meanings; the original `.view` keeps qualified evidence.
+Subset enumeration requires explicit `closed_subsets=True` for this finite
+selected source. Incomplete metadata, unsupported inference and mutation raise
+`OakOperationError` with the required report. One budget covers each whole batch;
+an explicitly supplied shared `Budget` also spans successive calls.
+
+`interfaces.adapters.obo_graphs` reads and writes a selected OBO Graphs ontology
+with `[jsonschema]` and the bundled upstream schema. Class edges retain subclass
+or authored existential meaning; supported logical definitions and qualified
+annotations round-trip. Supply an ontology `graph_id` and exact physical graph
+selection; generic plain-literal metadata predicates require explicit selection.
+Unsupported source assertions appear in `.omitted` and block export by default.
+`allow_lossy=True` permits supported output while retaining required loss findings.
+Preservation concerns supported axiom meaning, with distinct ontology/entity roles.
+
 Install `bijux-ontology[templates]` for `IdentifierTemplate(template, keys)` with
 explicit `TemplateKey` string/integer bindings. `.construct()` uses maintained
 URI escaping; `.construct_many()` rejects exact IRI collisions atomically.
@@ -1312,6 +1331,14 @@ optional `[sssom]` extra and maintained schema/parser/writer. Supply explicit
 metadata remain inspectable. `check_mappings` applies a `MappingPolicy` to exact
 subject/object `VocabularyView` scopes, independently of interchange validity.
 SKOS mapping directions remain distinct; confidence does not establish truth.
+`vocabulary.mappings.proposals.propose_lexical_mappings(source_index, target_index)`
+joins prepared lexical indexes with equal case policies. Original predicates,
+languages, scopes and homonyms remain reviewable; ranks order spelling and field
+priority, never semantic confidence. `approve_mapping_proposals` requires actual
+candidate references, explicit predicates, justifications, qualifications and an
+`IdentifierRegistry`. Only selected approvals enter the native SSSOM producer;
+incomplete candidate generation cannot authorize assertions. Host preparation
+and interchange can share a `Budget`; native worker limits remain independent.
 Endpoint roles, cardinalities and conflicts require explicit consumer policy.
 Modifiers, composed/literal endpoints, extension semantics and unmapped sentinels
 remain unknown; sentinels cannot satisfy required cardinality. The supported TSV
@@ -1324,6 +1351,22 @@ basis; other supported chains require an explicit application policy. Results
 retain every original row, path, qualifier and conflicting target. Uninterpreted
 qualifiers block affected derivations; confidence is never multiplied. Candidates
 establish neither OWL identity nor a newly authored SSSOM mapping set.
+
+`workflows.upgrades.mappings.reconciliation.reconcile_mappings` groups exact
+row content and interpretation context across supplied mapping releases. Every
+original occurrence remains available; confidence and differing qualifiers stay
+independent alternatives. `apply_mapping_resolution` requires an explicit
+`MappingResolution` bound to that review, retained group positions, authority,
+reason and output identity/license. The native SSSOM producer and selected
+endpoint/cardinality/conflict policies rerun before approved output is available.
+
+`workflows.upgrades.mappings.impact.assess_mapping_impact` compares supplied
+releases against explicit directional `MappingUse` occurrences, finite record
+coverage and selected qualifications. Used row loss, newly ambiguous cardinality
+or newly incompatible relations identify affected records. Unused edits and
+unselected metadata remain informational; incomplete baseline or consumer scope
+stays unknown. Selected identifier qualifiers need qualified prefix interpretation;
+selected `curie_map` metadata compares the actual retained prefix maps.
 
 `validate_shapes(..., trusted_targets=True)` and `ShaclSession` independently
 opt into supported SPARQL targets and parameterized target types. The existing

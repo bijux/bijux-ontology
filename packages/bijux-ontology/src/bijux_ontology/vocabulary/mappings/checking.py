@@ -1,5 +1,6 @@
 """Finite named-endpoint mapping policies over supplied vocabulary scopes."""
 
+import json
 from itertools import chain
 
 from rdflib import URIRef
@@ -17,6 +18,25 @@ from bijux_ontology.vocabulary.sources import source_role
 
 from .types import MappingCheck, MappingPolicy, MappingSet, _iri, _iris
 
+
+def _cardinality_evidence(
+    requirement: str, endpoint: str, limit: int, observed: int, budget: Budget
+) -> str:
+    """Expose exact obligation roles without requiring diagnostic prose parsing."""
+    bound_text(endpoint, budget)
+    budget.consume("work", len(endpoint) + 1)
+    budget.consume("bytes", 256 + 12 * len(endpoint))
+    return json.dumps(
+        {
+            "requirement": requirement,
+            "endpoint": endpoint,
+            "limit": limit,
+            "observed": observed,
+        },
+        sort_keys=True,
+    )
+
+
 _SUPPORTED = frozenset(
     str(predicate)
     for predicate in (
@@ -27,6 +47,27 @@ _SUPPORTED = frozenset(
         SKOS.relatedMatch,
     )
 )
+
+
+def _relation_conflict_evidence(
+    subject: str, object: str, left: str, right: str, budget: Budget
+) -> str:
+    """Retain the exact directed pair and incompatible relation obligation."""
+    size = 0
+    for value in (subject, object, left, right):
+        bound_text(value, budget)
+        size += len(value)
+    budget.consume("work", size + 1)
+    budget.consume("bytes", 256 + 12 * size)
+    return json.dumps(
+        {
+            "requirement": "relation_conflict",
+            "subject": subject,
+            "object": object,
+            "relations": [left, right],
+        },
+        sort_keys=True,
+    )
 
 
 def _endpoint(
@@ -319,6 +360,9 @@ def check_mappings(
                             "Rows violate a declared incompatible-relation policy",
                             where,
                             actual=row.predicate,
+                            evidence_json=_relation_conflict_evidence(
+                                row.subject, row.object, left, right, operation
+                            ),
                         )
                     )
             previous.add(row.predicate)
@@ -342,6 +386,13 @@ def check_mappings(
                             "Subject exceeds the declared distinct-target maximum",
                             where,
                             actual=row.subject,
+                            evidence_json=_cardinality_evidence(
+                                "maximum_targets",
+                                row.subject,
+                                policy.maximum_targets,
+                                len(outgoing),
+                                operation,
+                            ),
                         )
                     )
                 if (
@@ -355,6 +406,13 @@ def check_mappings(
                             "Object exceeds the declared distinct-source maximum",
                             where,
                             actual=row.object,
+                            evidence_json=_cardinality_evidence(
+                                "maximum_sources",
+                                row.object,
+                                policy.maximum_sources,
+                                len(incoming),
+                                operation,
+                            ),
                         )
                     )
             checked += 1
@@ -378,6 +436,13 @@ def check_mappings(
                         "Selected subject lacks the required mapping count",
                         "coverage",
                         actual=subject,
+                        evidence_json=_cardinality_evidence(
+                            "minimum_targets",
+                            subject,
+                            policy.minimum_targets,
+                            len(targets.get(subject, ())),
+                            operation,
+                        ),
                     )
                 )
             checked += 1

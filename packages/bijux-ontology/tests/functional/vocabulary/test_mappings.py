@@ -115,11 +115,18 @@ def test_real_tsv_roundtrip_preserves_all_lexical_occurrences_and_metadata(
 
 def test_endpoint_scope_types_cardinality_and_relation_conflicts_are_explicit() -> None:
     """Unknown endpoints stay unknown and duplicate occurrences are not targets."""
-    owned = _read(HEADER + _row() + _row(relation="broadMatch") + _row(target="C"))
+    owned = _read(
+        HEADER
+        + _row()
+        + _row(relation="broadMatch")
+        + _row(target="C")
+        + _row(subject="C")
+    )
     view = _view("A", "B", "C", "D")
     policy = MappingPolicy(
         (str(SKOS.closeMatch), str(SKOS.broadMatch)),
         maximum_targets=1,
+        maximum_sources=1,
         conflicts=((str(SKOS.closeMatch), str(SKOS.broadMatch)),),
     )
     result = check_mappings(
@@ -129,6 +136,17 @@ def test_endpoint_scope_types_cardinality_and_relation_conflicts_are_explicit() 
     assert {i.code for i in result.report} >= {
         "mapping.relation_conflict",
         "mapping.maximum_exceeded",
+    }
+    assert {
+        tuple(
+            json.loads(i.evidence_json or "{}")[key]
+            for key in ("requirement", "endpoint", "limit", "observed")
+        )
+        for i in result.report
+        if i.code == "mapping.maximum_exceeded"
+    } == {
+        ("maximum_targets", str(E.A), 1, 2),
+        ("maximum_sources", str(E.B), 1, 2),
     }
     unresolved = check_mappings(
         owned,
@@ -153,6 +171,13 @@ def test_endpoint_scope_types_cardinality_and_relation_conflicts_are_explicit() 
         policy=MappingPolicy(policy.relations, subjects=(str(E.D),), minimum_targets=1),
     )
     assert any(i.code == "mapping.minimum_missing" for i in minimum.report)
+    missing = next(i for i in minimum.report if i.code == "mapping.minimum_missing")
+    assert json.loads(missing.evidence_json or "{}") == {
+        "requirement": "minimum_targets",
+        "endpoint": str(E.D),
+        "limit": 1,
+        "observed": 0,
+    }
     punned = Graph().add((E.A, RDF.type, OWL.Class)).add((E.A, RDF.type, SKOS.Concept))
     assert check_mappings(
         _read(HEADER + _row()),
