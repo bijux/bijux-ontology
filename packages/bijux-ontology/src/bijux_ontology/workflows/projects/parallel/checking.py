@@ -94,16 +94,48 @@ def _execute(
             "allowances": grant,
         }
     ).encode()
+    received: ParallelJobResult | None = None
+
+    def completed_reply(raw: bytes) -> None:
+        """Qualify one complete native receipt before a later stop can reject IO."""
+        nonlocal received
+        received = _reply(raw, name, grant)
+
     try:
-        raw = execute_worker(
+        execute_worker(
             "bijux_ontology.workflows.projects.parallel.worker",
             payload,
             cap=cap,
             timeout=timeout,
             cancel=cancel,
+            completed=completed_reply,
         )
-        return _reply(raw, name, grant)
-    except (InputError, ResourceError, OSError):
+        if received is None:
+            raise InputError("Parallel worker omitted its completed receipt")
+        return received
+    except (InputError, ResourceError, OSError) as error:
+        if received is not None and isinstance(error, LimitExceeded):
+            if cancel.is_set():
+                return received
+            report = combine_reports(
+                name,
+                received.report,
+                Report(
+                    name,
+                    issues=(
+                        Issue(
+                            "execution.limit_exceeded",
+                            "Project job reached its deadline during receipt handoff",
+                            kind="exhausted",
+                        ),
+                    ),
+                    requested=1,
+                    complete=False,
+                ),
+            )
+            return replace(
+                received, state="interrupted", report=report, reason="worker-deadline"
+            )
         # Missing receipts cannot establish unspent work. Forfeit the full grant
         # and retain the interrupted required scope; never refund guessed work.
         report = Report(
@@ -366,6 +398,12 @@ def check_project_parallel(
         failure = "Project execution exhausted its enclosing operation budget"
     finally:
         stop.set()
+    try:
+        checkpoint(operation.deadline, cancel)
+    except LimitExceeded:
+        failure = (
+            failure or "Project execution was cancelled or reached its global deadline"
+        )
     settled: list[ParallelJobResult] = []
     for index, _job in enumerate(jobs):
         result = results.get(index) or _pending(
