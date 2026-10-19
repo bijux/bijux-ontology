@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, retain_report
-from bijux_ontology.jsonld.composition.checking import _Case, _document
 from bijux_ontology.jsonld.contexts.preparation import context_data
 from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.contexts.types import ContextInspection, TermDefinition
+from bijux_ontology.jsonld.contracts.cases import PreparedContextCase, bind_case
 from bijux_ontology.jsonld.processing.resources import ContextResources
 from bijux_ontology.jsonld.usages.checking import check_context
 
@@ -20,7 +20,7 @@ class _Probe:
     term: str
     definition: object
     expected: str
-    extension_cases: tuple[_Case, ...]
+    extension_cases: tuple[PreparedContextCase, ...]
     cases: list[Report | None]
     replacement: ContextInspection | None = None
     inspection: ContextInspection | None = None
@@ -56,7 +56,7 @@ def run_probe(
     probe: _Probe,
     context: object,
     original: TermDefinition,
-    retained_cases: tuple[_Case, ...],
+    retained_cases: tuple[PreparedContextCase, ...],
     resources: ContextResources,
     base: str | None,
     budget: Budget,
@@ -177,7 +177,7 @@ def run_probe(
     composite = _append(context, replacement, budget)
     for index, case in enumerate((*retained_cases, *probe.extension_cases)):
         result = check_context(
-            _document(case, composite, budget),
+            bind_case(case, composite, budget),
             case.expectations,
             base=base,
             document_loader=resources,

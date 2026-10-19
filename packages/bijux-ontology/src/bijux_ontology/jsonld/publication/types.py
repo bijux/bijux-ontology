@@ -6,8 +6,8 @@ from typing import Literal
 
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.jsonld.composition.types import ContextCase
 from bijux_ontology.jsonld.contexts.types import ContextInspection
+from bijux_ontology.jsonld.contracts import cases as case_contracts
 
 
 @dataclass(frozen=True)
@@ -31,7 +31,7 @@ class ContextOverride:
     term: str
     definition: object
     expect: Literal["allowed", "blocked"]
-    cases: tuple[ContextCase, ...] = ()
+    cases: tuple[case_contracts.ContextCase, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -45,7 +45,7 @@ class PublicationContract:
     """
 
     terms: tuple[PublishedTerm, ...]
-    cases: tuple[ContextCase, ...]
+    cases: tuple[case_contracts.ContextCase, ...]
     overrides: tuple[ContextOverride, ...]
     required_version: Literal["1.1"] | None = None
     vocabulary: str | None | Absent = ABSENT

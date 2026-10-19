@@ -12,7 +12,6 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.jsonld.composition.checking import _Case, _case, _document
 from bijux_ontology.jsonld.contexts.preparation import (
     capture_context_json,
     capture_selections,
@@ -21,6 +20,11 @@ from bijux_ontology.jsonld.contexts.preparation import (
     preflight_context_json,
 )
 from bijux_ontology.jsonld.contexts.processing import inspect_context
+from bijux_ontology.jsonld.contracts.cases import (
+    PreparedContextCase,
+    bind_case,
+    capture_case,
+)
 from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,
@@ -45,7 +49,7 @@ class _Contract:
     """Operation-owned qualified policy and immutable representative inputs."""
 
     terms: tuple[PublishedTerm, ...]
-    cases: tuple[_Case, ...]
+    cases: tuple[PreparedContextCase, ...]
     probes: tuple[_Probe, ...]
     version: bool
     vocabulary: object
@@ -58,7 +62,8 @@ def _capture_contract(contract: PublicationContract, budget: Budget) -> _Contrac
         raise InputError("Expected an explicit PublicationContract")
     terms = capture_selections(contract.terms, budget)
     cases = tuple(
-        _case(case, budget) for case in capture_selections(contract.cases, budget)
+        capture_case(case, budget)
+        for case in capture_selections(contract.cases, budget)
     )
     selected = {}
     for selected_term in terms:
@@ -105,7 +110,8 @@ def _capture_contract(contract: PublicationContract, budget: Budget) -> _Contrac
         covered.add(term)
         definition = capture_context_json(probe.definition, budget)
         extension = tuple(
-            _case(case, budget) for case in capture_selections(probe.cases, budget)
+            capture_case(case, budget)
+            for case in capture_selections(probe.cases, budget)
         )
         if len({case.name for case in extension}) != len(extension):
             raise InputError("Extension case names must be distinct per probe")
@@ -284,7 +290,7 @@ def check_context_publication(
                         )
             for index, case in enumerate(captured.cases):
                 result = check_context(
-                    _document(case, owned, operation),
+                    bind_case(case, owned, operation),
                     case.expectations,
                     base=base,
                     document_loader=resources,

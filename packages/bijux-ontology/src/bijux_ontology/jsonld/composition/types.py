@@ -5,21 +5,7 @@ from dataclasses import dataclass
 
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.jsonld.contexts.types import ContextInspection
-from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
-
-
-@dataclass(frozen=True)
-class ContextCase:
-    """One required representative object without its own root @context.
-
-    Nested contexts remain part of the actual sample and are processed normally.
-    Expectations describe required exercised behavior, not all future documents.
-    Composition captures every input before any supplied loader is called.
-    """
-
-    name: str
-    document: object
-    expectations: tuple[ContextExpectation, ...]
+from bijux_ontology.jsonld.contracts import cases as case_contracts
 
 
 @dataclass(frozen=True)
@@ -28,7 +14,7 @@ class ContextModule:
 
     name: str
     context: object
-    cases: tuple[ContextCase, ...]
+    cases: tuple[case_contracts.ContextCase, ...]
 
 
 @dataclass(frozen=True)
