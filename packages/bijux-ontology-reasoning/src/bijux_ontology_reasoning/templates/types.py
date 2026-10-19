@@ -1,37 +1,15 @@
 """Explicit native table-template bindings and qualified row/output receipts."""
 
 from dataclasses import dataclass
-from pathlib import Path
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.rdf.stores.seals import StoreFile
 from bijux_ontology.reports import Report
 
 from ..axioms.types import AxiomInspection, NamedEntity
 from ..documents.types import NativeExport, OwlDocument
 from ..entailment.types import EntailmentCheck
+from ..robot.types import RobotBackend
 
-
-@dataclass(frozen=True, init=False)
-class TemplateBackend:
-    """One caller-pinned standalone ROBOT release, with no ambient installation."""
-
-    java: Path
-    jar: Path
-    seal: StoreFile
-    artifacts: Path
-
-    def __init__(self) -> None:
-        """Require qualification of the actual maintained runtime file."""
-        raise InputError("Use prepare_template_backend")
-
-    @classmethod
-    def _owned(cls, **values: object) -> "TemplateBackend":
-        """Adopt only bounded explicitly qualified immutable runtime metadata."""
-        result = object.__new__(cls)
-        for name, value in values.items():
-            object.__setattr__(result, name, value)
-        return result
+TemplateBackend = RobotBackend
 
 
 @dataclass(frozen=True)
