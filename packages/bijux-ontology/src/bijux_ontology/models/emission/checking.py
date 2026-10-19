@@ -29,7 +29,7 @@ from bijux_ontology.vocabulary.sources.view import Vocabulary
 from .context import EmissionContext
 from .coverage import check_coverage
 from .groups import check_output_groups
-from .source import check_sources
+from .source.checking import check_sources
 
 if TYPE_CHECKING:
     from bijux_ontology.models.corpus.types import _CorpusEvidence

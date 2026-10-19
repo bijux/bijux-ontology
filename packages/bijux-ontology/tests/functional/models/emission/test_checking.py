@@ -863,3 +863,40 @@ def test_context_and_direction_share_one_actual_original_expansion() -> None:
         sys.setprofile(previous)
     assert report.verified, report.to_dict()
     assert len(original_calls) == len(rdf_calls) == 1
+
+
+def test_discovered_child_findings_survive_later_issue_exhaustion() -> None:
+    parent = Model(
+        "parent",
+        (EX + "Parent",),
+        (Field("children", EX + "children", (Value("object", model="child"),)),),
+    )
+    child = Model(
+        "child",
+        (EX + "Child",),
+        (Field("label", EX + "label", (Value("literal"),), emission="guaranteed"),),
+    )
+    children = [
+        {"@id": EX + "first", "@type": "Child"},
+        {"@id": EX + "second", "@type": "Child"},
+    ]
+    document = {"@context": {"@vocab": EX}, "@type": "Parent", "children": children}
+    result = check_emission(
+        document, (parent, child), (ModelUsage("parent"),), limits=Limits(max_issues=1)
+    )
+    assert result.outcome == "exhausted"
+    assert any(
+        issue.code == "emission.required_occurrence_missing"
+        and issue.location == "/children/0/label"
+        for issue in result.issues
+    )
+    assert not result.verified
+    assert children == [
+        {"@id": EX + "first", "@type": "Child"},
+        {"@id": EX + "second", "@type": "Child"},
+    ]
+    for node in children:
+        node["label"] = "Present"
+    assert check_emission(
+        document, (parent, child), (ModelUsage("parent"),), limits=Limits(max_issues=1)
+    ).verified
