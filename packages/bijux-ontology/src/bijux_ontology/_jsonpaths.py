@@ -3,7 +3,7 @@
 from typing import cast
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.limits import Budget, _bound_text_size
 
 SourcePath = tuple[str | int, ...]
 
@@ -38,19 +38,11 @@ def validate_path(path: SourcePath) -> None:
 
 def bound_pointer_text(value: str, budget: Budget) -> int:
     """Bound text and reserve its escaped pointer storage before diagnostics."""
-    if not isinstance(value, str):
-        raise InputError("Selector metadata requires text")
-    if len(value) > budget.limits.max_bytes:
-        raise LimitExceeded("Selector text exceeds max_bytes")
-    budget.consume("work", len(value) + 1)
-    try:
-        size = len(value.encode("utf-8"))
-    except UnicodeEncodeError as error:
-        raise InputError("Selector metadata requires valid Unicode") from error
+    size = _bound_text_size(value, budget)
     escaped = size + value.count("~") + value.count("/")
-    if size > budget.limits.max_bytes or escaped > budget.limits.max_bytes:
+    if escaped > budget.limits.max_bytes:
         raise LimitExceeded("Selector text exceeds max_bytes")
-    budget.consume("bytes", 64 + size + 2 * escaped)
+    budget.consume("bytes", 64 + 2 * escaped)
     return escaped
 
 

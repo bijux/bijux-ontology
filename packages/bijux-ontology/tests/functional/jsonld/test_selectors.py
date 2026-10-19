@@ -359,6 +359,34 @@ def test_selector_variants_reject_unbounded_query_text_and_invalid_bounds() -> N
             construct()
 
 
+def test_pointer_metadata_is_prepaid_and_escapes_source_keys() -> None:
+    key = EX + "a~/🧬"
+    document = {key: ["text"]}
+    prepared = prepare_usages(document)
+    bounded = Budget(Limits(max_total_bytes=4096))
+    stopped = resolve_selection(
+        SourceSelector((Property("🧬" * 400000),)),
+        document,
+        prepared.entities,
+        prepared.observe,
+        bounded,
+    )
+    assert stopped.report.outcome == "exhausted" and not stopped.report.complete
+    assert bounded._counts.get("bytes", 0) <= 4096
+    selected = prepared.select(SourceSelector((Property(key), ArrayItems())))
+    assert selected.report.verified and selected.paths == ((key, 0),)
+    checked = prepared.check(
+        [
+            ContextExpectation(
+                selected.paths[0],
+                key,
+                datatype="http://www.w3.org/2001/XMLSchema#integer",
+            )
+        ]
+    )
+    assert checked.issues[0].location == "/https:~1~1example.org~1a~0~1🧬/0"
+
+
 @pytest.mark.parametrize("keyword", ["@list", "@set"])
 def test_keyword_alias_wrappers_do_not_become_source_entities(keyword: str) -> None:
     document = {
