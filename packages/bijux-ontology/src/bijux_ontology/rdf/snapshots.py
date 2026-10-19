@@ -389,6 +389,8 @@ class PreparedSource:
         if isinstance(graph_name, URIRef):
             graph_name = str(graph_name)
         if self.graph_name is not None or self.union:
+            if self.graph_name is not None and budget is not None:
+                bound_text(self.graph_name, budget)
             if (graph_name is not None or union) and (
                 graph_name != self.graph_name or union != self.union
             ):

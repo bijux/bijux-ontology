@@ -1,7 +1,7 @@
 """Independent release declarations and real selected serializer evidence."""
 
 import importlib.util
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import pytest
 from rdflib import BNode, Graph, Namespace
@@ -118,7 +118,23 @@ def test_actual_serializer_once_with_owned_options_and_resources() -> None:
     resources.clear()
     options["aliases"] = False
     context["value"] = str(E.q)
-    result = compare_applications(_schema(), _schema(), before=version, after=version)
+    located = ApplicationVersion(
+        models={
+            "record": replace(
+                version.models["record"],
+                location="after.json#/models/record",
+                fields=tuple(
+                    replace(field, location=f"after.json#/models/record/fields/{index}")
+                    for index, field in enumerate(version.models["record"].fields)
+                ),
+            )
+        },
+        fields=version.fields,
+        cases=version.cases,
+        context=version.context,
+        resources=version.resources,
+    )
+    result = compare_applications(_schema(), _schema(), before=version, after=located)
     assert calls == [(version.cases[0].instance, True)] * 2
     assert result.before.verified and result.after.verified and result.report.verified
     assert not result.declarations and not result.samples[0].values

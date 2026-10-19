@@ -50,6 +50,7 @@ _CODES = {
         "structure_mismatch binding_unverified".split()
     ),
     "adapter": frozenset(
+        "schema_unverified schema_mismatch "
         "alias_unverified class_mapping_unverified computed_output_unverified "
         "emission_unverified excluded_emission_conflict mapping_conflict "
         "mapping_unverified field_contract_conflict alias_contract_conflict "
@@ -166,6 +167,13 @@ _CODES = {
         "remap_literal_loss remap_scope structure_changed".split()
     ),
     "shacl": frozenset(
+        "component_unverified "
+        "analysis_metadata_unverified analysis_profile_unverified "
+        "analysis_qualification_unverified analysis_recursion_unverified "
+        "static_incompatibility "
+        "shape_projection_unverified shape_edit_unverified "
+        "profile_dependency_unverified profile_behavior_unverified "
+        "profile_behavior_changed "
         "path_field_unverified "
         "model_shape_unverified "
         "dataset_scope_unverified "

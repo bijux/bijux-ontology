@@ -278,6 +278,32 @@ without returning partial shapes. It infers no constraints from ontology axioms.
 Use `validate_shapes(data, compiled, preflight=True)` to run maintained
 meta-SHACL and data validation; compilation alone does not establish conformance.
 
+`extract_profile(shapes, (root_iri,), cases=(ProfileCase("valid", data, True),))`
+from `bijux_ontology.shacl` captures finite referenced shapes, paths, lists and
+prefixes. Supply a separate `ontology=` resource when needed. Independent roots
+are omitted; unresolved or dynamic dependencies remain unverified. Inspect
+`structural_report` separately from the actual source/derived case comparisons.
+`export_profile(profile, format="turtle")` exports qualified shapes and ontology
+through faithful RDF serialization. Agreement covers supplied cases only;
+independent role exports cannot preserve shared anonymous constants across roles.
+
+`inspect_shapes(shapes, (root_iri,))` projects supported supplied constraints into
+the immutable authoring records and reports uninterpreted semantic RDF in
+`remainder`. `edit_shape_counts(inspection, (ShapeCountEdit(property_shape,
+ShaclCount(minimum=1)),), data=actual_data)` supports ordinary property count
+edits. The candidate retains every other assertion in the selected physical
+graph and runs maintained validation with root coverage. Unknown extensions
+block edits by default; explicit `allow_opaque=True` preserves them while keeping
+the projection unverified. Export `candidate.source` through `export_rdf`.
+
+`analyze_shape_profile(profile)` checks finite count, fixed-value and enumeration
+incompatibilities before loading data. Local conflicts remain conditional on
+invocation; only justified necessary conflicts propagate to selected roots.
+Inspect signed dependencies and components for recursion boundaries. The analyzer
+checks dependency metadata against actual RDF and preserves valid alternatives.
+`not_determined` never certifies arbitrary satisfiability; recursive semantics,
+qualified sibling exclusions and unsupported metadata remain explicit unknowns.
+
 Use `compile_model_shapes(models, bindings)` with explicit `ModelShapeBinding`
 targets to translate supported output declarations into the same typed shapes.
 Asserted model/value types use exact `rdf:type` values; subclass edges do not
@@ -289,6 +315,16 @@ remain required unknowns. Finite exact enumerations can qualify lexical domains;
 an unbounded datatype shape alone cannot promise native lexical agreement.
 An explicit target without a positive assertion requirement still needs native
 subject-occurrence evidence; naming a SHACL focus node does not supply a record.
+
+Author reusable parameterized checks with `ShaclComponent`, `ShaclParameter`,
+`ComponentValidator` and `ComponentUse` from `bijux_ontology.shacl`.
+`compile_components(shapes, components, uses)` returns ordinary owned SHACL RDF.
+The supported forms are generic ASK and node/property SELECT; required parameters,
+query forms, pre-bound variables and offline prefixes are qualified explicitly.
+`check_components(data, compiled, trusted_sparql=True)` runs the actual backend
+without enabling advanced mode for ordinary ASK. Keep structural and query
+reports separate; unavailable custom functions and anonymous execution/data
+bindings remain unknown. Package the artifact through ordinary `export_rdf`.
 
 SHACL findings retain report-local identities, nested details and finite typed
 property paths in `result.findings` and each generic issue’s `evidence`.
@@ -643,3 +679,13 @@ removal use explicit `added_graphs` and `removed_graphs`; a removed graph must
 be empty after the proposed moves. Exact terms, shared blanks and unrelated
 partitions remain intact. The same before/after contract and explicit export
 gate applies, including actual graph-local constraint failures.
+
+Install `[jsonschema]` to import supported offline JSON Schema 2020-12 contracts.
+`bijux_ontology.interfaces.adapters.jsonschema` exposes `SchemaModel`,
+`model_declarations` and `check_instance`. Supply explicit RDF classes and
+`RdfField` mappings for each referenced object variant. The checks invoke the
+real serializer once with its supplied options and return the exact checked output. Set
+`output_schema=True` to check that output against the JSON Schema assertions.
+Schema `required` and `additionalProperties` remain JSON rules; RDF occurrence
+guarantees require explicit `OutputRequirement` records. Missing mappings,
+unavailable offline references and unsupported applicators remain unverified.

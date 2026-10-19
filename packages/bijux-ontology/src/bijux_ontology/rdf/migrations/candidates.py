@@ -2,10 +2,9 @@
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
-from itertools import chain
 
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.correspondence import Operation
 from bijux_ontology.rdf.patches.planning import capture_items, capture_source
@@ -45,73 +44,6 @@ class MigrationCandidate:
     report: Report
 
 
-def _retain(report: Report, operation: Budget, issues: IssueCollector) -> None:
-    """Bound adopted report trees without counting inherited diagnostics twice."""
-    pending = [(report, 0)]
-    reports: set[int] = set()
-    retained: set[int] = set()
-    text: str | None
-    while pending:
-        current, depth = pending.pop()
-        operation.consume("work")
-        if depth > operation.limits.max_depth:
-            raise LimitExceeded("Migration report exceeds max_depth")
-        if id(current) in reports:
-            continue
-        operation.consume("states")
-        reports.add(id(current))
-        for number in (current.checked, current.requested):
-            if number is not None:
-                if number.bit_length() > min(4096, operation.limits.max_bytes):
-                    raise LimitExceeded("Migration report counter exceeds max_bytes")
-                bound_text(str(number), operation)
-        operation.consume("states", len(current.families) + len(current.exclusions))
-        for text in chain(
-            (current.scope, current.regime), current.families, current.exclusions
-        ):
-            bound_text(text, operation)
-        for issue in current.issues:
-            operation.consume("work")
-            if id(issue) in retained:
-                continue
-            operation.consume("states")
-            retained.add(id(issue))
-            for text in (
-                issue.code,
-                issue.message,
-                issue.location,
-                issue.expected,
-                issue.actual,
-                issue.evidence_json,
-            ):
-                if text is not None:
-                    bound_text(text, operation)
-            if issue.details is not None:
-                details = issue.details
-                for text in (
-                    details.source,
-                    details.term,
-                    details.graph,
-                    details.model,
-                ):
-                    if text is not None:
-                        bound_text(text, operation)
-                operation.consume("states", len(details.path))
-                for value in chain(details.path, (details.branch,)):
-                    if value is None:
-                        continue
-                    if isinstance(value, int) and value.bit_length() > min(
-                        4096, operation.limits.max_bytes
-                    ):
-                        raise LimitExceeded(
-                            "Migration diagnostic index exceeds max_bytes"
-                        )
-                    bound_text(str(value), operation)
-            issues.append(issue)
-        operation.consume("states", len(current.children))
-        pending.extend((child, depth + 1) for child in current.children)
-
-
 def finish_migration(
     original: PreparedSource,
     transformed: Transformation,
@@ -134,7 +66,7 @@ def finish_migration(
     completed = 0
     scoped_source = None
     try:
-        _retain(transformed.report, budget, issues)
+        retain_report(transformed.report, budget, issues)
         children.append(transformed.report)
         completed = transformed.report.checked
         if patch is None or transformed.source is None:
@@ -205,7 +137,7 @@ def finish_migration(
                         raise InputError(
                             "Migration contract callbacks must return Report"
                         )
-                    _retain(checked, budget, selected_issues)
+                    retain_report(checked, budget, selected_issues)
                     size = (
                         len(role.encode("utf-8"))
                         + 1

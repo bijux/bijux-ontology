@@ -2,8 +2,8 @@
 
 from bijux_ontology.documents.export import RDFExport, export_rdf
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, _retain
+from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.rdf.migrations.candidates import MigrationCandidate
 from bijux_ontology.reports import Issue, Report
 
 
@@ -30,7 +30,7 @@ def export_migration(
     operation = budget if budget is not None else Budget(limits)
     issues = IssueCollector(operation)
     try:
-        _retain(candidate.report, operation, issues)
+        retain_report(candidate.report, operation, issues)
         if not accept or candidate.source is None or not candidate.report.verified:
             issues.append(
                 Issue(
@@ -46,7 +46,7 @@ def export_migration(
                 budget=operation,
                 timeout_seconds=timeout_seconds,
             )
-            _retain(exported.report, operation, issues)
+            retain_report(exported.report, operation, issues)
             return RDFExport(
                 exported.content,
                 Report(
