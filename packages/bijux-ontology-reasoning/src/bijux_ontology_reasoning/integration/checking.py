@@ -11,7 +11,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.changes.encoding import ConstructionEncoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import ProjectedAxiom
 from ..backend.types import OwlProfileBackend
 from ..diagnosis.checking import _classes

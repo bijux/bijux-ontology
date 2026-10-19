@@ -6,8 +6,8 @@ from bijux_ontology.errors import InputError, ResourceError
 from bijux_ontology.limits import Budget
 
 from ..axioms.changes.checking import _owned
-from ..axioms.changes.encoding import ConstructionEncoder
-from ..axioms.decoding import ProjectionDecoder
+from ..axioms.codec.decoding import ProjectionDecoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import NamedEntity, ProjectedAxiom
 from ..documents.types import OwlDocument
 from .types import MireotBoundary, MireotRetention

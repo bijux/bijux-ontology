@@ -29,7 +29,7 @@ from ..documents.sources.native import stage_native_documents
 from ..documents.sources.rdf import stage_documents
 from ..documents.types import OwlDocument
 from . import types as t
-from .decoding import ProjectionDecoder
+from .codec.decoding import ProjectionDecoder
 
 
 def _selection(

@@ -12,7 +12,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.changes.encoding import ConstructionEncoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.inspection import inspect_axioms
 from ..axioms.types import (
     AnnotationAssertion,

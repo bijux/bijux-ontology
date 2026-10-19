@@ -10,8 +10,8 @@ from bijux_ontology.limits import Budget
 from bijux_ontology.models.persistence.codecs import declaration_data, json_bytes
 
 from ..axioms.changes.checking import _imports, _owned
-from ..axioms.changes.encoding import ConstructionEncoder
-from ..axioms.decoding import ProjectionDecoder
+from ..axioms.codec.decoding import ProjectionDecoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import DataProperty, NamedEntity, ObjectProperty
 from ..documents.types import OwlDocument
 from ..relationships.types import RelationshipValue

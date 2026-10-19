@@ -12,8 +12,8 @@ from bijux_ontology.errors import InputError, ResourceError
 from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.terms import bound_node, bound_text
 
-from ..axioms.changes.encoding import ConstructionEncoder
-from ..axioms.decoding import ProjectionDecoder
+from ..axioms.codec.decoding import ProjectionDecoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import NamedEntity
 from .types import DatatypeFieldBranch, DatatypeObligation, DatatypeRequest
 

@@ -11,7 +11,7 @@ from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 
-from ..axioms.changes.encoding import ConstructionEncoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import NamedEntity, ObjectProperty, ObjectQuantifier, SubClassOf
 from ..entailment.encoding import encode_axiom
 from ..entailment.types import EntailmentCheck

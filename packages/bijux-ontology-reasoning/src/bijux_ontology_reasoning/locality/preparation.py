@@ -11,7 +11,7 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_text
 
 from ..axioms.changes.checking import _imports, _owned
-from ..axioms.changes.encoding import ConstructionEncoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import NamedEntity, ProjectedAxiom
 from ..documents.types import OwlDocument
 from .types import LocalityMethod

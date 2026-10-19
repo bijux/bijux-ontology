@@ -10,7 +10,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.changes.encoding import ConstructionEncoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..backend.types import OwlProfileBackend
 from ..diagnosis.checking import check_consistency
 from ..documents.types import OwlDocument

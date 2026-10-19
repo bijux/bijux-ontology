@@ -11,8 +11,8 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
 from ..axioms.changes.checking import _base, _imports, _owned, prepare_axiom_change
-from ..axioms.changes.encoding import ConstructionEncoder
 from ..axioms.changes.types import AxiomCandidate, AxiomCheck
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import ClassRelation, ProjectedAxiom, SubClassOf
 from ..backend.types import OwlProfileBackend
 from ..diagnosis.checking import check_consistency

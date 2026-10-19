@@ -12,7 +12,7 @@ from bijux_ontology.limits import IssueCollector
 from bijux_ontology.reports import Issue, Report
 
 from ..axioms.changes.checking import _owned
-from ..axioms.changes.encoding import ConstructionEncoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import (
     AnnotationAssertion,
     Declaration,

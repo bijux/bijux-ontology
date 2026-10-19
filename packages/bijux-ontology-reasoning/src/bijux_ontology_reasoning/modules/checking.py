@@ -28,7 +28,7 @@ from bijux_ontology.workflows.ontology.modules.types import (
 
 from ..axioms.changes.checking import _base, _losses
 from ..axioms.changes.types import AxiomBase
-from ..axioms.decoding import ProjectionDecoder
+from ..axioms.codec.decoding import ProjectionDecoder
 from ..axioms.types import ProjectedAxiom
 from ..backend.owlapi.bundles import qualify_backend
 from ..backend.owlapi.execution import invoke_worker, qualify_capability, result_counter

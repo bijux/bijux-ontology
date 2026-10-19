@@ -9,7 +9,7 @@ from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.decoding import ProjectionDecoder
+from ..axioms.codec.decoding import ProjectionDecoder
 from ..axioms.types import NamedEntity, NativeLiteral
 from ..backend.owlapi.execution import result_counter, result_text
 from ..backend.owlapi.receipts import QualifiedReceipt, _boolean, _records

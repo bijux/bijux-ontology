@@ -10,8 +10,8 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.workflows.ontology.modules.types import ModuleBinding
 
 from ..axioms.changes.checking import _base, _expected, _imports, _owned, receipt
-from ..axioms.changes.encoding import ConstructionEncoder
 from ..axioms.changes.types import AxiomBase
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.types import ProjectedAxiom
 from ..documents.sources.native import native_iri
 from ..documents.types import OwlDocument

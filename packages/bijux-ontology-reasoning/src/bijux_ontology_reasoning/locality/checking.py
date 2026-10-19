@@ -12,7 +12,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import Issue, Report
 
-from ..axioms.decoding import ProjectionDecoder
+from ..axioms.codec.decoding import ProjectionDecoder
 from ..axioms.types import NamedEntity, ProjectedAxiom
 from ..backend.owlapi.bundles import qualify_backend
 from ..backend.owlapi.execution import invoke_worker, qualify_capability, result_counter

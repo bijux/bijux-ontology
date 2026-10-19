@@ -13,7 +13,7 @@ from bijux_ontology.vocabulary.mappings.composition.checking import _input
 from bijux_ontology.vocabulary.mappings.types import MappingRead, MappingSet
 
 from ..axioms.changes.checking import receipt
-from ..axioms.changes.encoding import ConstructionEncoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from ..axioms.inspection import inspect_axioms
 from ..axioms.types import AxiomInspection, ProjectedAxiom
 from ..backend.types import OwlProfileBackend

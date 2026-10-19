@@ -5,8 +5,8 @@ from dataclasses import replace
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget
 
-from ..axioms.changes.encoding import ConstructionEncoder
-from ..axioms.decoding import ProjectionDecoder
+from ..axioms.codec.decoding import ProjectionDecoder
+from ..axioms.codec.encoding import ConstructionEncoder
 from .types import ExplanationQuestion
 
 

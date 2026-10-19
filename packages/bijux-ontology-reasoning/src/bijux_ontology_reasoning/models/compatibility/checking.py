@@ -18,7 +18,7 @@ from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.reports import Issue, Report
 
 from ...axioms.changes.checking import _imports, _owned
-from ...axioms.decoding import ProjectionDecoder
+from ...axioms.codec.decoding import ProjectionDecoder
 from ...axioms.types import ClassExpression, SubClassOf
 from ...backend.owlapi.bundles import qualify_backend
 from ...backend.owlapi.execution import (

@@ -32,7 +32,7 @@ from ...axioms.changes.checking import (
     _owned,
 )
 from ...axioms.changes.types import AxiomBase
-from ...axioms.decoding import ProjectionDecoder
+from ...axioms.codec.decoding import ProjectionDecoder
 from ...backend.owlapi.bundles import PROFILES, qualify_backend
 from ...backend.owlapi.execution import (
     invoke_worker,

@@ -24,9 +24,9 @@ from ...backend.types import OwlProfile, OwlProfileBackend
 from ...documents.conversion import _profiles
 from ...documents.sources.native import prepare_owl_document, stage_native_documents
 from ...documents.types import NativeProfile, OwlDocument
-from ..decoding import ProjectionDecoder
+from ..codec.decoding import ProjectionDecoder
+from ..codec.encoding import ConstructionEncoder
 from ..types import ProjectedAxiom
-from .encoding import ConstructionEncoder
 from .types import AxiomBase, AxiomCandidate, AxiomCheck, AxiomPatch
 
 
