@@ -112,3 +112,13 @@ ordinary profile, logical or application APIs with the shared budget; passing
 syntax alone proves no consistency. Inspect the candidate, then publish unchanged
 checked bytes with `write_axiom_change(candidate, path, accept=True)`. A failed
 check, stale receipt or interrupted operation cannot replace the destination.
+
+`relationships.query_inferred_contracts(backend, source, queries)` enumerates
+named class and object/data property relationships through actual HermiT APIs.
+Use `InferredQuery` with existing typed entity values and explicit direct/indirect
+hierarchy selection. Native equivalence nodes, inverse expressions, builtins and
+matching asserted-axiom owners remain separate; no assertions are materialized.
+Class satisfiability is independent of successful enumeration. Complete results
+cover the selected named-signature query, not every possible expression; result
+caps, unsupported data-property ranges/inverses and unqualified inputs remain
+incomplete. The original source and selected physical graph stay unchanged.
