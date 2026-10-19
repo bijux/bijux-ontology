@@ -5,7 +5,7 @@ from typing import Literal as Choice
 
 from rdflib import BNode, Graph, URIRef
 
-from bijux_ontology.data.keys.checking import _canonical_evidence, _relation
+from bijux_ontology.data.keys.evidence import compare_keys, encode_evidence
 from bijux_ontology.data.keys.extraction import _Key, _KeyExtraction, _scope
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.types import ModelDeclaration
@@ -80,7 +80,7 @@ def _evidence(source: _Key, targets: Sequence[_Key], budget: Budget) -> str:
             "values": tuple(term_key(value) for value in key.values),
         }
         rows.append(data)
-    return _canonical_evidence(rows, budget, allowance)
+    return encode_evidence(rows, budget, allowance)
 
 
 def check_foreign_references(
@@ -144,7 +144,9 @@ def check_foreign_references(
             for target in candidates:
                 operation.consume("work")
                 _retain(target, operation)
-                relation, pending = _relation(key, target, contract.source, operation)
+                relation, pending = compare_keys(
+                    key, target, contract.source, operation
+                )
                 issues.extend(pending)
                 if relation == "equal":
                     operation.consume("states")
