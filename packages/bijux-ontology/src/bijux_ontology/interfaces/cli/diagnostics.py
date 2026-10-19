@@ -77,6 +77,7 @@ _CODES = {
         "patch_rebinding_unverified".split()
     ),
     "obo": frozenset(
+        "xref_invalid xref_unverified xref_input_error "
         "publication_text publication_qualification publication_definition_xref "
         "publication_synonym_type publication_unverified "
         "alternative_id_unverified alternative_id_ambiguous "
@@ -102,6 +103,9 @@ _CODES = {
         "structure_mismatch binding_unverified".split()
     ),
     "adapter": frozenset(
+        "fhir_backend_unavailable fhir_input_error fhir_unsupported "
+        "fhir_membership_unverified fhir_export_error fhir_export_unverified "
+        "fhir_valueset_unverified fhir_valueset_input_error fhir_valueset_code_invalid "
         "shape_binding_unverified shape_constraint_untranslated "
         "shape_list_unverified shape_output_backend_unavailable "
         "shape_representation_unverified shape_source_scope_unverified "
@@ -225,6 +229,8 @@ _CODES = {
         "loader_unverified profile_unverified profile_violation".split()
     ),
     "ontology": frozenset(
+        "ownership_unverified ownership_input_error owner_conflict "
+        "definition_redefined "
         "annotation_shape annotation_statement_missing cardinality_shape "
         "obligation_unknown obligation_contradicted obligation_exhausted "
         "characteristic_conflict datatype_restriction_shape "
@@ -649,6 +655,11 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
 }
 
 _OVERRIDES: dict[str, tuple[str, str, str]] = {
+    "adapter.fhir_backend_unavailable": (
+        "The maintained FHIR R5 model is unavailable.",
+        "Install bijux-ontology[fhir] and retain the original resource and bindings.",
+        "read_code_system(content, bindings=bindings)",
+    ),
     "rdf.literal_conversion_unverified": (
         "The selected backend reconstructs literal spelling outside exact scope.",
         "Retain exact source terms and use a supported query or explicit conversion.",

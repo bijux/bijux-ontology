@@ -324,6 +324,53 @@ and ranking evidence. Suggestions allow one codepoint insertion, deletion or
 substitution; they never replace identifiers or assert semantic mappings.
 Inspect both `.report.complete` and `.truncated` when consuming bounded results.
 
+`annotate_text(index, text)` reuses that index to locate overlapping dictionary
+mentions with all selected candidate terms and lexical evidence. Its half-open
+spans count original Python characters, including when casefold expands a
+character. Word boundaries are explicit; `boundary="substring"` also permits
+embedded hits. Unicode composition is unchanged. Keep the returned report:
+interrupted extraction retains complete mentions but cannot prove their absence.
+
+`vocabulary.obo.cross_references.check_cross_references(view, terms, registry,
+rules=...)` checks original term, definition and synonym dbxrefs with the existing
+identifier policies. Optional `LocalCatalogue` inventories resolve exact IRIs;
+only explicitly closed catalogue coverage can prove a dangling reference.
+External references remain external, and alternate spellings establish no IRI
+equivalence. Native OBO annotation records remain separate evidence; the required
+report covers xref capture, attachment, accession and selected resolution policy.
+
+Install `[fhir]` for `interfaces.adapters.fhir.code_system.read_code_system` and
+`write_code_system`, backed by the maintained R5 model. Supply explicit reversible
+`FhirCodeBinding(FhirCodeIdentity(system, version, code), iri)` values from
+`interfaces.adapters.fhir.identity`; neither versions nor RDF IRIs are inferred.
+Supported concepts retain hierarchy, multilingual designation qualifiers and
+code/string/integer/boolean properties. The owned vocabulary supplies ordinary
+annotation checks; its RDF labels do not represent every FHIR qualifier.
+`check_code_membership` distinguishes complete content from fragments and
+supplements. Case-insensitive comparison requires explicit `case_comparison="ascii"`;
+original spellings remain unchanged. Keep all reports: unsupported fields,
+fractional numbers and unavailable comparison regimes cannot establish acceptance.
+
+The sibling `fhir.value_set` adapter reads and writes supported R5 ValueSets.
+`compile_value_set(..., mode="compose", systems=..., bindings=...)` applies finite
+local includes minus exclusions through the existing allowed-value contracts;
+`mode="expansion"` keeps abstract grouping entries separate from submitted codes.
+Every coded entry needs its own system and version policy. Paged expansions,
+ambiguous totals, unavailable versions and unsupported filters remain open;
+neither nesting nor an available parent supplies a missing identity. Export
+preserves the original presentation tree and parameters without declaring closure.
+
+`workflows.ontology.ownership.check_ownership` applies explicit `OwnerClaim`
+declarations to protected outgoing `FactSelection` predicates and exact terms.
+Claims supply actual authoritative views; exact terms and the longest declared
+namespace select ownership, optionally by RDF role. An external extension may
+omit imported assertions and add annotations outside the protected selection.
+New protected assertions must match authoritative content. Evidence retains
+original source/graph witnesses; namespace overlap, duplicate assertions and
+legal punning alone establish no conflict. Anonymous definitions remain unknown.
+Each current term needs a subject occurrence in the selected scope; an owner's
+separate evidence cannot supply that coverage.
+
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
 `rdf.skolem.skolemize(source, caller_owned_base)` names blank resources with
