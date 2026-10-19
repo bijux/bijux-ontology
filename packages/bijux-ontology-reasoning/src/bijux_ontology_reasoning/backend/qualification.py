@@ -120,7 +120,14 @@ def qualify_reasoning_result(
     issues: IssueCollector,
     *,
     header: QualifiedReceipt,
-    scope: Literal["diagnosis", "entailment", "relationships", "datatypes", "models"],
+    scope: Literal[
+        "diagnosis",
+        "entailment",
+        "relationships",
+        "datatypes",
+        "models",
+        "explanations",
+    ],
 ) -> QualifiedReceipt:
     """Adopt only complete original scope, native profile and pinned engine receipts."""
     if data.get("input_kind") != kind:
@@ -170,6 +177,8 @@ def qualify_reasoning_result(
                 if scope == "datatypes"
                 else "Model compatibility requires the OWL 2 DL profile"
                 if scope == "models"
+                else "Logical explanations require the OWL 2 DL profile"
+                if scope == "explanations"
                 else "Inferred relationships require the OWL 2 DL profile",
                 actual=text,
                 kind="unverified",

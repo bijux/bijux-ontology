@@ -163,3 +163,14 @@ the graph or identify a uniquely guilty record. Original scopes stay separate
 from the derived joint input. Missing explicit existential values and different
 IRIs retain ordinary OWL semantics; submission conformance remains a separate
 model/output check.
+
+`explanations.explain_reasoning(backend, document, ExplanationQuestion(...))`
+returns one bounded maintained owlexplanation 5.0.1 justification for a selected
+entailment, named-class unsatisfiability or inconsistency. Original annotated
+structural axioms retain their source modules and rendering hashes; these are
+not physical source coordinates or universal canonical identities. Standalone
+proof bytes are independently reread and reasoned over. Inspect `.underlying`
+separately from `.explanation_report`: failed or capped explanation work retains
+proved logical findings. Smallest size, subset minimality and complete enumeration
+are not claimed. Anonymous support and unavailable tautology justifications remain
+unknown; generated signature declarations are separate replay scaffolding.
