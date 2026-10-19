@@ -16,6 +16,7 @@ from bijux_ontology.rdf.trig import serialize_trig
 from ..errors import InputError, LimitExceeded, ResourceError
 from ..reports import Issue, Report, combine_reports
 from .preparation import prepare_source
+from .writing import write_bytes
 
 _FORMATS = frozenset({"turtle", "nt", "xml", "trig", "nquads", "json-ld"})
 _DATASET_FORMATS = frozenset({"trig", "nquads", "json-ld"})
@@ -214,6 +215,9 @@ def write_export(
 
     Existing paths are protected unless overwrite=True explicitly opts in. This
     function never chooses an output path or replaces any source automatically.
+    Paths publish a fully written, synced file atomically in the same directory;
+    a failed preparation cannot truncate an existing destination. Caller-owned
+    streams retain their ordinary streaming IO boundary.
     """
     if exported.content is None or exported.report.exit_code() != 0:
         raise InputError("Only an accepted RDF export can be written")
@@ -226,11 +230,10 @@ def write_export(
             raise ResourceError("Cannot write to a closed export stream")
     try:
         if isinstance(destination, Path):
-            with destination.open("wb" if overwrite else "xb") as stream:
-                written = stream.write(exported.content)
+            write_bytes(exported.content, destination, overwrite=overwrite)
         else:
             written = destination.write(exported.content)
-        if written != len(exported.content):
-            raise ResourceError("The output stream did not accept the complete export")
+            if written != len(exported.content):
+                raise ResourceError("The output stream rejected the complete export")
     except OSError as error:
         raise ResourceError(f"Cannot write RDF export: {error}") from error

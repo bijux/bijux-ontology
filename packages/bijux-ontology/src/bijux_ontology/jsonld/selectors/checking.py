@@ -73,14 +73,26 @@ def resolve_selection(
     budget: Budget,
     *,
     require_usage: bool = True,
+    association_only: bool = False,
 ) -> Selection:
     """Resolve bounded source paths or semantically associated entity selections.
 
-    Explicit source form checking may omit usage attribution. Entity selection
-    always retains its original semantic association requirements.
+    Explicit source form checking may omit usage attribution. An association-only
+    entity selection proves describing-node ownership, without promising isolated
+    attribution of the whole object's contribution. Semantic association, graph
+    scope and required counts still apply; ordinary selection remains unchanged.
     """
     if type(require_usage) is not bool:
         raise InputError("require_usage must be a boolean")
+    if type(association_only) is not bool:
+        raise InputError("association_only must be a boolean")
+    if association_only and (
+        require_usage
+        or not isinstance(selector, EntitySelector)
+        or selector.coverage_unit != "source_occurrence"
+        or selector.steps
+    ):
+        raise InputError("Association-only selection requires whole entity paths")
     issues = IssueCollector(budget)
     paths: tuple[SourcePath, ...] = ()
     entities: tuple[EntityKey, ...] = ()
@@ -310,7 +322,9 @@ def resolve_selection(
         count = len(paths) if unit == "source_occurrence" else len(entities)
         count_matches(count, selector.minimum, selector.maximum, where)
         if unit == "source_occurrence" and (
-            require_usage or isinstance(selector, EntitySelector)
+            require_usage
+            or isinstance(selector, EntitySelector)
+            and not association_only
         ):
             for path in paths:
                 if not path:

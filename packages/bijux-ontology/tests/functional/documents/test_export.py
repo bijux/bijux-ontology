@@ -1,5 +1,6 @@
 """Real serializer round trips, deliberate dataset scope and caller IO ownership."""
 
+import os
 from io import BytesIO
 from pathlib import Path
 
@@ -125,3 +126,33 @@ def test_export_refuses_serializer_lexical_loss_without_global_normalisation() -
     unrepresentable = export_rdf(no_qname, format="xml")
     assert unrepresentable.content is None
     assert unrepresentable.report.outcome == "unverified"
+
+
+@pytest.mark.parametrize("failure_point", ("fsync", "replace"))
+def test_failed_atomic_publication_preserves_existing_file_and_cleans_private_bytes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_point: str,
+) -> None:
+    exported = export_rdf(
+        prepare_source(Graph().add((S, P, Literal("new")))), format="nt"
+    )
+    destination = tmp_path / "result.nt"
+    destination.write_bytes(b"existing exact bytes")
+    destination.chmod(0o640)
+    original_mode = destination.stat().st_mode
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise OSError("Simulated filesystem publication failure")
+
+    with monkeypatch.context() as failure:
+        failure.setattr(os, failure_point, fail)
+        with pytest.raises(ResourceError, match="publication failure"):
+            write_export(exported, destination, overwrite=True)
+    assert destination.read_bytes() == b"existing exact bytes"
+    assert destination.stat().st_mode == original_mode
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["result.nt"]
+    write_export(exported, destination, overwrite=True)
+    assert destination.read_bytes() == exported.content
+    assert destination.stat().st_mode == original_mode
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["result.nt"]

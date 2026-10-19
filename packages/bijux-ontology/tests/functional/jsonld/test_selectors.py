@@ -13,6 +13,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import (
     ArrayItems,
     EntitySelector,
@@ -20,7 +21,7 @@ from bijux_ontology.jsonld.selectors.types import (
     Property,
     SourceSelector,
 )
-from bijux_ontology.limits import Limits
+from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models import ModelUsage, check_emission
 
 EX = "https://example.org/"
@@ -371,3 +372,47 @@ def test_keyword_alias_wrappers_do_not_become_source_entities(keyword: str) -> N
     )
     assert selected.paths == (("items", "entries", 0),)
     assert selected.report.verified
+
+
+def test_describing_node_association_is_distinct_from_whole_contribution() -> None:
+    document = {
+        "@context": {"@vocab": EX},
+        "@graph": [
+            {"@id": EX + "parent", "child": {"@id": EX + "child", "label": "Child"}},
+            {"@id": EX + "other", "label": "Other"},
+        ],
+    }
+    selector = EntitySelector(
+        (EX + "parent",), graph=None, coverage_unit="source_occurrence"
+    )
+    prepared = prepare_usages(document)
+    selected = resolve_selection(
+        selector,
+        document,
+        prepared.entities,
+        prepared.observe,
+        Budget(),
+        require_usage=False,
+        association_only=True,
+    )
+    assert selected.paths == (("@graph", 0),) and selected.report.verified
+    missing = resolve_selection(
+        EntitySelector((EX + "absent",), graph=None, coverage_unit="source_occurrence"),
+        document,
+        prepared.entities,
+        prepared.observe,
+        Budget(),
+        require_usage=False,
+        association_only=True,
+    )
+    assert not missing.report.verified and not missing.paths
+    with pytest.raises(InputError, match="whole entity paths"):
+        resolve_selection(
+            SourceSelector(()),
+            document,
+            prepared.entities,
+            prepared.observe,
+            Budget(),
+            require_usage=False,
+            association_only=True,
+        )

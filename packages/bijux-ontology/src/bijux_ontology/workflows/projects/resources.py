@@ -15,9 +15,12 @@ from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.resources import (
     ContextResources,
     DocumentLoader,
+    DocumentLocation,
+    OfflineDocument,
     OfflineDocumentLoader,
 )
 from bijux_ontology.limits import Budget
+from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.loading import prepare_input
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.sources import RdfSource
@@ -30,10 +33,16 @@ from bijux_ontology.workflows.projects.configuration import ProjectConfig
 class _ContextDocuments:
     """Retain immutable raw documents independently of operation context caches."""
 
-    def __init__(self, inputs: Mapping[str, Path | str], storage: Budget) -> None:
+    def __init__(
+        self,
+        inputs: Mapping[str, Path | str],
+        storage: Budget,
+        metadata: Mapping[str, DocumentLocation] | None = None,
+    ) -> None:
         if len(inputs) > storage.limits.max_resources:
             raise LimitExceeded("Too many supplied context documents")
         self.inputs = dict(inputs)
+        self.metadata = dict(metadata or {})
         self.storage = storage
         for document in self.inputs.values():
             if isinstance(document, str):
@@ -42,6 +51,16 @@ class _ContextDocuments:
 
     def acquire(self, url: str, document: object) -> None:
         """Own one bounded replacement or lazily resolved original document."""
+        if isinstance(document, OfflineDocument):
+            self.metadata[url] = DocumentLocation(
+                document.effective_url, document.context_url
+            )
+            document = document.document
+        location = self.metadata.get(url, DocumentLocation())
+        for value in (location.effective_url, location.context_url):
+            if value is not None:
+                bound_text(value, self.storage)
+                absolute_iri(value)
         if isinstance(document, Path):
             document = OfflineDocumentLoader(
                 {url: document}, limits=self.storage.limits
@@ -62,9 +81,10 @@ class _ContextDocuments:
             raise InputError("No supplied JSON-LD context", location=url)
         if isinstance(self.inputs[url], Path):
             self.acquire(url, self.inputs[url])
+        metadata = self.metadata.get(url, DocumentLocation())
         return {
-            "documentUrl": url,
-            "contextUrl": None,
+            "documentUrl": metadata.effective_url or url,
+            "contextUrl": metadata.context_url,
             "document": json.loads(str(self.inputs[url])),
         }
 
@@ -144,7 +164,9 @@ class ProjectResources:
         self._preparing: str | None = None
         self._preparation = Budget(configuration.limits)
         self._storage = Budget(configuration.limits)
-        self._documents = _ContextDocuments(configuration.contexts, self._storage)
+        self._documents = _ContextDocuments(
+            configuration.contexts, self._storage, configuration.context_metadata
+        )
         self._imports = _Imports(self)
         self._contexts = _Contexts(self)
 
@@ -282,7 +304,11 @@ class ProjectResources:
                 for url, value in self._documents.inputs.items()
                 if url not in contexts
             }
-            revised._documents = _ContextDocuments(retained, revised._storage)
+            revised._documents = _ContextDocuments(
+                retained,
+                revised._storage,
+                self._documents.metadata,
+            )
             for url, document in contexts.items():
                 revised._documents.acquire(url, document)
             revised._contexts = _Contexts(revised)

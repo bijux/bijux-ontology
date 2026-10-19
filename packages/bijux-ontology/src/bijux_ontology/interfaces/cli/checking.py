@@ -210,6 +210,10 @@ def run_command(
             Report("diagnostic.explanation", 1, families=("diagnostic-help",)),
             explanation.to_dict(),
         )
+    if options.action == "acquire":
+        from bijux_ontology.interfaces.cli.acquisition import acquire
+
+        return acquire(options)
     if options.action == "transform":
         from bijux_ontology.interfaces.cli.transforms import transform
 

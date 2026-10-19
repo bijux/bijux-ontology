@@ -38,6 +38,7 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
         "models",
         "ontology",
         "project",
+        "acquire",
         "inspect",
         "skos",
         "transform",
@@ -52,6 +53,7 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
                 "models": "Check explicit application model declarations",
                 "ontology": "Check selected ontology encoding rules",
                 "project": "Run explicit checks from a local JSON configuration",
+                "acquire": "Prepare explicitly selected HTTP resources for offline use",
                 "inspect": "Inspect exact terms and multilingual search evidence",
                 "skos": "Check SKOS integrity and explicit publication rules",
                 "transform": "Write a checked RDF candidate without editing inputs",
@@ -84,6 +86,12 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
                 '"kind": "ontology", "source": "terms"}]} '
                 "Paths resolve against checks.json, not the current directory."
             ),
+            "acquire": (
+                "Example: bijux-ontology acquire project-directory "
+                "--request ontology.ttl https://example.org/ontology "
+                "--origin https://example.org --destination resources.zip; "
+                "ordinary project checks remain offline."
+            ),
             "inspect": (
                 "Example: bijux-ontology inspect terms.ttl --search colour "
                 "--language en-GB --json"
@@ -106,6 +114,32 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
         }[name]
         if name == "explain":
             action.add_argument("code", help="Exact stable diagnostic code")
+        elif name == "acquire":
+            action.add_argument(
+                "source", type=Path, help="Local project bundle skeleton"
+            )
+            action.add_argument(
+                "--request",
+                nargs=2,
+                action="append",
+                required=True,
+                metavar=("MEMBER", "URL"),
+            )
+            action.add_argument(
+                "--origin",
+                action="append",
+                required=True,
+                help="Exact allowed HTTP(S) origin",
+            )
+            action.add_argument(
+                "--destination",
+                type=Path,
+                required=True,
+                help="New offline ZIP bundle path",
+            )
+            action.add_argument("--max-redirects", type=int, default=5)
+            action.add_argument("--max-requests", type=int, default=100)
+            action.add_argument("--max-compressed-bytes", type=int, default=5_000_000)
         elif name == "project":
             action.add_argument("configuration", type=Path)
             action.add_argument(
@@ -157,7 +191,7 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
             )
             action.add_argument("--lookup", action="append", type=Path, default=[])
             action.add_argument("--lookup-format")
-        if name not in ("project", "explain"):
+        if name not in ("project", "explain", "acquire"):
             action.add_argument(
                 "--sources", type=Path, help="Logical URL to local snapshot source map"
             )

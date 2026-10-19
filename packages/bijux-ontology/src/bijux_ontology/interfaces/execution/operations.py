@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from bijux_ontology._json import (
+    array_value,
     boolean_value,
     known_keys,
     object_value,
@@ -23,8 +24,10 @@ from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.contexts.types import ContextScope
 from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.flattening import flatten_document
+from bijux_ontology.jsonld.framing.checking import frame_document
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.selectors.codecs import selector_from_data
+from bijux_ontology.jsonld.selectors.types import EntitySelector
 from bijux_ontology.limits import Limits
 from bijux_ontology.models.codecs import usages_from_data
 from bijux_ontology.models.emission.checking import check_emission
@@ -43,6 +46,7 @@ OPERATIONS = frozenset(
         "emission",
         "serialization",
         "flatten",
+        "framing",
         "vocabulary",
         "project",
         "selection",
@@ -70,6 +74,27 @@ def _context_scopes(value: object, limits: Limits) -> tuple[ContextScope, ...]:
             )
         )
     return tuple(selected)
+
+
+def _frame_selector(value: object, limits: Limits) -> EntitySelector:
+    """Capture only finite existing entity selectors for framed-record scope."""
+    data = object_value(value, location="worker framing selector")
+    for key in ("identifiers", "types", "steps"):
+        values = array_value(data.get(key, []))
+        if len(values) > limits.max_states:
+            raise LimitExceeded("Framing selector exceeds max_states")
+    selector = selector_from_data(data)
+    if not isinstance(selector, EntitySelector):
+        raise InputError("Framing requires entity selectors")
+    return selector
+
+
+def _frame_strings(value: object, limits: Limits) -> tuple[str, ...]:
+    """Bound protocol arrays before constructing owned predicate tuples."""
+    values = array_value(value)
+    if len(values) > limits.max_states:
+        raise LimitExceeded("Framing predicate scope exceeds max_states")
+    return tuple(string_value(item) for item in values)
 
 
 def execute_operation(
@@ -235,6 +260,48 @@ def execute_operation(
     common = {"document", "base", "resources"}
     base = optional_string_value(parameters.get("base"))
     document = parameters.get("document")
+    if operation == "framing":
+        known_keys(
+            parameters,
+            common
+            | {
+                "frame",
+                "retained",
+                "predicates",
+                "omitted",
+                "omitted_predicates",
+                "direction",
+            },
+            location="worker framing request",
+        )
+        if "frame" not in parameters:
+            raise InputError("Framing requires an explicit frame")
+        omissions = array_value(parameters.get("omitted", []))
+        if len(omissions) > limits.max_states:
+            raise LimitExceeded("Framing record omissions exceed max_states")
+        framed = frame_document(
+            document,
+            parameters["frame"],
+            retained=_frame_selector(parameters.get("retained"), limits),
+            predicates=_frame_strings(parameters.get("predicates"), limits),
+            omitted=tuple(_frame_selector(item, limits) for item in omissions),
+            omitted_predicates=_frame_strings(
+                parameters.get("omitted_predicates", []), limits
+            ),
+            base=base,
+            document_loader=loader,
+            limits=limits,
+            direction=cast(
+                DirectionPolicy | None,
+                optional_string_value(parameters.get("direction")),
+            ),
+        )
+        return framed.report, {
+            "document": framed.document,
+            "base": framed.base,
+            "nodes": [asdict(node) for node in framed.nodes],
+            "omissions": [asdict(item) for item in framed.omissions],
+        }
     if operation == "selection":
         known_keys(parameters, common | {"selector"}, location="worker request")
         prepared = prepare_usages(

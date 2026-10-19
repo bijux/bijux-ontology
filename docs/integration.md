@@ -265,6 +265,20 @@ descriptions expose `expanded_paths` into expanded input, not compact source
 pointers. Blank-node or anonymous-graph correspondence remains unverified without
 an identity witness. RDF preservation does not promise original JSON shape.
 
+Use `frame_document(document, frame, retained=EntitySelector(...),
+predicates=(...))` to check an intentional projection through PyLD. Select named
+roots in one explicit graph; required predicates and their attached anonymous
+structures compare jointly, preserving shared identity, lists and exact literals.
+Declare omitted records with `omitted` and seed predicate exclusions with
+`omitted_predicates`; exclusions require observed source content. Those predicates
+are outside preservation truth, including framing defaults there. Required loss
+or invented required values withhold the checked document and RDF. This proves
+selected retention, with no whole-dataset equivalence or pure-subset guarantee.
+`result.bind(iri, graph=...)` supplies actual output paths for `ModelUsage`; pass
+`result.base` to subsequent JSON-LD checks when IDs are relative. Direct processing
+runs in process; `WorkerExecutor.run("framing", ...)` supplies explicit isolated
+deadlines and cancellation using the same offline resource protocol.
+
 Loading errors expose `InputError.failure` from `bijux_ontology.errors`: the
 logical document IRI, supplied location and role, known import chain, and any
 parser-provided span. Pass `location=` and `role=` on `RdfSource` when available.
@@ -397,7 +411,7 @@ Use `WorkerExecutor(python=installed_python, timeout=30, limits=Limits(...))`
 for bounded embedding. `run("context", {"document": output, "expectations":
 expectation_data, "resources": contexts, "base": logical_base})` transfers JSON
 resources and returns a raw `report`. Supported operations also include
-`emission`, `serialization`, `flatten`, `vocabulary` and `project`; declarations
+`emission`, `serialization`, `flatten`, `framing`, `vocabulary` and `project`; declarations
 use their existing JSON codecs. `project` takes `configuration` and an absolute
 `directory`, retaining completed scopes on cancellation or deadline.
 
@@ -748,6 +762,18 @@ be empty after the proposed moves. Exact terms, shared blanks and unrelated
 partitions remain intact. The same before/after contract and explicit export
 gate applies, including actual graph-local constraint failures.
 
+`execute_migration_plan(source, steps, final_checks=...)` runs explicit
+`MigrationStep` operations over independent owned snapshots. Each operation must
+satisfy its named preconditions, native migration report, exact current-base patch,
+returned candidate comparison and postconditions. Final checks run on the actual
+last candidate. A missing, failed or exhausted required gate withholds the final
+source; earlier patches and named failure evidence remain reviewable. Callback
+exceptions propagate, and trusted callbacks keep their ordinary Python lifetime.
+`export_migration_plan(result, accept=True, format="trig")` rechecks the retained
+final witness before serializing. `write_export(..., destination, overwrite=True)`
+publishes complete bytes atomically; failed staging or replacement preserves an
+existing file. Caller-owned binary streams retain ordinary streaming semantics.
+
 `bijux_ontology.workflows.upgrades.replacements.plan_replacements` accepts
 explicit `ApprovedReplacement` mappings, their entity roles and namespace owners.
 One-to-one changes rewrite selected declaration slots and actual RDF occurrences;
@@ -968,3 +994,43 @@ URL, Integer, Number and Float; unsupported datatype encodings, list/container
 expectations, inherited-only property hints and missing class proof stay unknown.
 These are selected application rules, with no OWL consistency claim. Anonymous
 subjects require actual witnesses from the supplied `PreparedSource`.
+
+`bijux_ontology.vocabulary.obo.resolve_alternative_ids(view, identifiers)` reads
+only asserted `oboInOwl:hasAlternativeId` aliases in the selected inventory.
+Choose exact literal matching, absolute IRI interpretation, or CURIE expansion
+with an explicit `IdentifierRegistry`. Each request retains all canonical
+candidates, original assertions and deprecation state. Different canonical
+subjects remain ambiguous; a duplicate alias assertion never selects a winner.
+Labels and replacement hints do not establish aliases. Missing or incomplete
+inventories remain unknown, and exhaustion keeps observed candidates with
+incomplete status. Resolution proposes identities without rewriting caller data.
+
+Use `bijux_ontology.workflows.projects.acquisition.acquire_bundle` for explicit
+HTTP resource preparation. Supply `AcquisitionRequest(member, url)`, an
+`AcquisitionPolicy` with exact allowed origins and a new ZIP destination. The
+ordinary project bundle skeleton declares resource identities, graph selections
+and unchanged check jobs. Redirects, transitive imports, observed context links,
+media and compressed/expanded sizes remain bounded; requested and effective URLs
+stay distinct. Inspect `result.report`, `result.resources` and `result.archive`.
+Preparation proves selected resource availability; run ordinary bundle checks to
+qualify the application. Existing checks never acquire missing resources.
+
+The console equivalent is `bijux-ontology acquire project-directory --request
+ontology.ttl https://example.org/ontology --origin https://example.org
+--destination resources.zip --timeout 30 --json`. Repeat `--request` and `--origin`
+explicitly. Native RDF works in core; JSON-LD context processing uses `[jsonld]`.
+Directory input aliases, including missing declared members, reject before HTTP.
+Fetch/closure and final ordinary bundle validation retain separate documented
+Limits boundaries inside the owned worker deadline. Host capture/report adoption
+are separately bounded; filesystem I/O keeps its ordinary OS execution boundary.
+
+Use `bijux_ontology.workflows.ontology.publication.SkosPublication` and
+`compile_skos_publication(source, specification)` to publish selected concepts,
+multilingual labels, XL resources and ordered collections from one selected
+physical graph. Declare `mapping_boundary="retain-reference"`, `"include-target"`
+or `"omit"`, and supply nonempty ordinary `MigrationCheck` publication checks.
+The result is a checked `MigrationPlanResult`; use `export_migration_plan` with
+explicit acceptance for portable RDF. Excluded collection members block complete
+publication; mapping exclusions remain explicit. Shared labels, list order and
+authored membership direction are retained. This certifies the selected
+publication contract, without claiming OWL equivalence or global minimality.

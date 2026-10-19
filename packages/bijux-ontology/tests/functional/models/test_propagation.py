@@ -114,7 +114,7 @@ def test_work_exhaustion_preserves_completed_input_findings() -> None:
         (str(EX.Root),),
         (Field("child", str(EX.good), (Value("object", model="missing"),)),),
     )
-    report = check_models((root,), graph_contracts(), limits=Limits(max_work=5))
+    report = check_models((root,), graph_contracts(), limits=Limits(max_work=100))
     assert report.complete is False
     assert report.exit_code() == 2
     assert any(issue.code == "input.model_reference_missing" for issue in report.issues)

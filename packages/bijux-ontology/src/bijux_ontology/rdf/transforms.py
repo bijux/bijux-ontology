@@ -84,6 +84,7 @@ def extract_neighbourhood(
     *,
     predicates: Sequence[str],
     include_blank_nodes: bool = True,
+    graph_name: str | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
 ) -> Transformation:
@@ -93,7 +94,9 @@ def extract_neighbourhood(
     all their outgoing edges so included lists and anonymous structures remain
     intact. The closure stays within its original named graph. This is syntactic
     extraction, not a logically conservative OWL module. Other assertions and
-    empty unrelated graphs are deliberately outside the extraction scope.
+    empty unrelated graphs are deliberately outside the extraction scope. An explicit
+    graph_name narrows an unpinned dataset to one physical graph and is retained
+    on the result; conflicting declared selections and absent named graphs fail.
     """
     if (
         isinstance(terms, str)
@@ -104,6 +107,10 @@ def extract_neighbourhood(
         raise InputError("Extraction requires nonempty term and predicate sequences")
     if type(include_blank_nodes) is not bool:
         raise InputError("include_blank_nodes must be a boolean")
+    if graph_name is not None and (
+        not isinstance(graph_name, str) or isinstance(graph_name, BNode)
+    ):
+        raise InputError("Extraction graph selection requires a named IRI or @default")
     operation = _budget(limits, budget)
     seeds: set[URIRef] = set()
     edges: set[URIRef] = set()
@@ -118,7 +125,11 @@ def extract_neighbourhood(
                 selected.add(URIRef(absolute_iri(value)))
         _fidelity(source, issues)
         bound_namespaces = False
-        for name, graph in _authorized_contexts(source, operation):
+        if graph_name is not None:
+            bound_text(graph_name, operation)
+        for name, graph in _authorized_contexts(
+            source, operation, graph_name=graph_name
+        ):
             operation.consume("work")
             if not bound_namespaces:
                 _bind(result, (graph,), operation)
@@ -129,7 +140,8 @@ def extract_neighbourhood(
             seen: set[Node] = set()
             target: Graph | None = (
                 result.graph(name)
-                if source.graph_name is not None and name is not None
+                if (source.graph_name is not None or graph_name is not None)
+                and name is not None
                 else None
             )
             while pending:
@@ -155,7 +167,14 @@ def extract_neighbourhood(
                         operation.consume("states")
                         operation.consume("bytes", 16)
                         pending.append(triple[2])
-        candidate = _owned(result, source, operation)
+        candidate = _owned(
+            result,
+            source,
+            operation,
+            graph_name=str(graph_name)
+            if graph_name is not None and source.is_dataset
+            else None,
+        )
     except LimitExceeded as error:
         issues.exhausted(str(error))
         candidate = None
@@ -282,10 +301,13 @@ def remap_iris(
 
 
 def _authorized_contexts(
-    source: PreparedSource, budget: Budget
+    source: PreparedSource, budget: Budget, *, graph_name: str | None = None
 ) -> Iterator[tuple[URIRef | BNode | None, Graph]]:
     """Read only authorized partitions without exporting a second input dataset."""
-    if source.union:
+    if graph_name is not None:
+        for _, name, graph in source._contexts(graph_name, budget=budget):
+            yield name, graph
+    elif source.union:
         yield None, source._read(budget=budget)
     elif source.is_dataset and source.graph_name is None:
         for name in chain((None,), source._graph_names(budget=budget)):

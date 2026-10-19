@@ -285,7 +285,7 @@ def test_offline_resources_are_shared_and_limits_never_erase_prior_findings() ->
     assert probe_context(EX + "context", [probe], document_loader=loader).verified
     assert calls == [EX + "context"]
     context["title"] = EX + "wrong"
-    report = probe_context(context, [probe], limits=Limits(max_work=500))
+    report = probe_context(context, [probe], limits=Limits(max_work=600))
     assert not report.verified and not report.complete
     assert any(issue.kind == "exhausted" for issue in report.issues), report.to_dict()
     assert any(issue.code == "context.mapping_mismatch" for issue in report.issues), (

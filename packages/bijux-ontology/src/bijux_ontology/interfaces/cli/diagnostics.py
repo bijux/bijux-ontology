@@ -28,6 +28,7 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "acquisition": frozenset("resource_failed unavailable".split()),
     "schema": frozenset(
         "translation_invalid translation_unverified "
         "output_invalid output_unverified".split()
@@ -41,6 +42,7 @@ _CODES = {
         "form_binding_unverified form_scope_unverified".split()
     ),
     "obo": frozenset(
+        "alternative_id_unverified alternative_id_ambiguous "
         "attachment_shape attachment_unverified base_missing "
         "synonym_type_shape value_kind "
         "subset_undefined subset_definition_kind subset_membership_kind "
@@ -70,6 +72,7 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "frame_unverified frame_input_error "
         "term_usage_disallowed term_usage_membership "
         "term_usage_unverified term_usage_input_error "
         "number_not_portable number_not_exact number_rdf_not_exact "
@@ -230,6 +233,8 @@ _CODES = {
         "publication.root_not_published publication.root_scope_unverified "
         "publication.unreachable_component publication.hierarchy_cycle "
         "publication.scope_unverified "
+        "publication.dependencies_unverified publication.collection_member_excluded "
+        "publication.requirements_unverified "
         "publication.required_root_missing publication.root_not_allowed "
         "publication.root_has_broader publication.broader_scope_unverified "
         "publication.reference_unverified "
@@ -259,6 +264,7 @@ _CODES = {
         "navigation_anonymous".split()
     ),
     "upgrade": frozenset(
+        "plan_unverified plan_final_changed "
         "replacement_unverified replacement_kind_mismatch "
         "application_unverified application_declaration_changed "
         "application_value_changed "
@@ -283,6 +289,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "acquisition": (
+        "explicit offline resource preparation",
+        "A selected acquisition closure failed or could not be qualified.",
+        "Inspect exact origins, redirect/media/size limits and missing resources; "
+        "keep ordinary checks offline and retain the original project inputs.",
+        "acquire_bundle(source, requests=requests, policy=policy, destination=archive)",
+    ),
     "schema": (
         "explicit serialized JSON output contracts",
         "A selected JSON assertion fails or an RDF obligation lacks translation.",

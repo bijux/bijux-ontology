@@ -128,7 +128,7 @@ def test_incomplete_inventory_retains_truth_before_exhausted_parent_lookup() -> 
         for issue in result.report.issues
     )
     policy = TopConceptPolicy(str(EX.Scheme), allowed=(), broader="forbid")
-    result = check_top_concepts(view, policy, budget=Budget(Limits(max_work=7)))
+    result = check_top_concepts(view, policy, budget=Budget(Limits(max_work=200)))
     assert result.report.outcome == "exhausted"
     assert any(
         issue.code == "skos.publication.root_not_allowed"

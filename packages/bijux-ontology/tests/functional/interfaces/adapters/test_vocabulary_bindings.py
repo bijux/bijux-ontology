@@ -136,11 +136,15 @@ def test_selected_membership_invalid_overrides_and_exhaustion_remain_honest() ->
     finding_then_stop = generate_vocabulary_bindings(
         view,
         [str(EX.Unknown), str(EX.Valid)],
-        limits=Limits(max_work=120),
+        limits=Limits(max_work=200),
     )
     assert not finding_then_stop.report.verified
     assert any(
         issue.code == "vocabulary.binding_name_unresolved"
+        for issue in finding_then_stop.report.issues
+    )
+    assert any(
+        issue.code == "execution.limit_exceeded"
         for issue in finding_then_stop.report.issues
     )
 

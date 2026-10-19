@@ -147,7 +147,7 @@ def test_batch_report_matches_sequential_and_exhaustion_retains_existing_finding
     document["dropped"] = "retain this finding"
     budget = Budget(Limits(max_work=100_000))
     prepared = prepare_usages(document, base=EX, budget=budget)
-    budget.consume("work", budget.limits.max_work - budget._counts.get("work", 0) - 5)
+    budget.consume("work", budget.limits.max_work - budget._counts.get("work", 0) - 100)
     exhausted = prepared.check(expectations)
     assert not exhausted.complete and not exhausted.verified
     assert {issue.code for issue in exhausted.issues} >= {
