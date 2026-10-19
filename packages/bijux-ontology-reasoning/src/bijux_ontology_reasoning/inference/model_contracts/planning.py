@@ -12,8 +12,8 @@ from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.json.values import capture_json
+from bijux_ontology.models.contracts.groups import declaration_states, group_limitation
 from bijux_ontology.models.contracts.registry import index_models
-from bijux_ontology.models.emission.groups import declaration_states, group_limitation
 from bijux_ontology.models.persistence.codecs import declaration_data
 
 from ..datatypes.types import DatatypeFieldBranch

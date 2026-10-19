@@ -15,15 +15,16 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
-from bijux_ontology.models.emission.counts import check_output_counts
-from bijux_ontology.models.emission.coverage import predicate_issues
-from bijux_ontology.models.emission.direction import project_direction
-from bijux_ontology.models.emission.groups import TermKey, check_groups
-from bijux_ontology.models.emission.matching import (
+from bijux_ontology.models.contracts.groups import TermKey
+from bijux_ontology.models.contracts.matching import (
     ValueObservation,
     identity_matches,
     matches_value,
 )
+from bijux_ontology.models.emission.counts import check_output_counts
+from bijux_ontology.models.emission.coverage import predicate_issues
+from bijux_ontology.models.emission.direction import project_direction
+from bijux_ontology.models.emission.groups import check_groups
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.models.rdf.observations import observe_rdf_term
 from bijux_ontology.models.resource_roles.checking import _RoleChecks

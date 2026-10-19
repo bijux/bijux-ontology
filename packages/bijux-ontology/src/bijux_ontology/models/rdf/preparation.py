@@ -12,11 +12,11 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector
-from bijux_ontology.models.contracts.registry import index_models
-from bijux_ontology.models.emission.matching import (
+from bijux_ontology.models.contracts.matching import (
     ValueObservation,
     identity_matches,
 )
+from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.models.value_constraints.checking import (
     retain_enumeration_report,

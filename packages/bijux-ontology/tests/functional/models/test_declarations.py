@@ -478,3 +478,42 @@ def test_repeated_deep_class_closure_is_owned_cached_and_work_bounded() -> None:
     changed = check_models(models[:1], graph)
     assert not changed.verified
     assert any(issue.actual == str(OWL.Nothing) for issue in changed.issues)
+
+
+@pytest.mark.parametrize("kind", ["class", "datatype"])
+@pytest.mark.parametrize("unknown_first", [False, True])
+def test_known_conflict_survives_unsupported_alternative(
+    kind: str, unknown_first: bool
+) -> None:
+    graph = vocabulary()
+    known = (
+        Value("object", types=(str(EX.Other),))
+        if kind == "class"
+        else Value("literal", datatype=str(XSD.integer))
+    )
+    values = (Value("unknown"), known) if unknown_first else (known, Value("unknown"))
+    field = Field(
+        "value",
+        str(EX.child if kind == "class" else EX.name),
+        values,
+        location="/records/parent/value",
+    )
+    report = check_models((Model("parent", (str(EX.Parent),), (field,)),), graph)
+    known_index, unknown_index = (1, 0) if unknown_first else (0, 1)
+    conflict = (
+        "models.disjoint_conflict" if kind == "class" else "models.datatype_conflict"
+    )
+    assert any(
+        issue.code == conflict
+        and issue.kind == "finding"
+        and issue.location == f"/records/parent/value[{known_index}]"
+        for issue in report.issues
+    )
+    assert any(
+        issue.code == "models.value_unverified"
+        and issue.kind == "unverified"
+        and issue.location == f"/records/parent/value[{unknown_index}]"
+        for issue in report.issues
+    )
+    assert not report.verified
+    assert report.exit_code() == 1
