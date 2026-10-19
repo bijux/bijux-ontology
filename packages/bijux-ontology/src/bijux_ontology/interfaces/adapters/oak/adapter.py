@@ -16,13 +16,13 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.roles.classification import classify_statement
-from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.obo.reading import read_obo_records
 from bijux_ontology.vocabulary.obo.subsets.reading import read_obo_subsets
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
-from bijux_ontology.vocabulary.restrictions.projection import project_restrictions
 
+from .completion import require_complete
+from .relationships import project_relationships
 from .types import OakOperationError
 
 
@@ -118,18 +118,6 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
             )
         )
 
-    @staticmethod
-    def _complete(report: Report) -> None:
-        """Do not hide findings, missing coverage or an exhausted result prefix."""
-        if not report.verified and not (
-            report.outcome == "not_applicable"
-            and report.complete
-            and report.requested == 0
-            and report.checked == 0
-            and not report.issues
-        ):
-            raise OakOperationError(report)
-
     def _capture(self, values: Iterable[str], budget: Budget) -> tuple[str, ...]:
         """Bound arbitrary consumer iterables before publishing any result."""
         if isinstance(values, str | bytes):
@@ -216,7 +204,7 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
         """Keep an ambiguous scalar label unknown instead of picking a value."""
         iri, language = self._term(curie, budget), self._lang(lang, budget)
         selected = self._view.labels(iri, budget=budget)
-        self._complete(selected.report)
+        require_complete(selected.report)
         values = set()
         for item in selected.items:
             bound_text(item.value, budget)
@@ -257,9 +245,9 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
             predicates=(str(RDFS.label), str(SKOS.prefLabel), str(SKOS.altLabel)),
             budget=budget,
         )
-        self._complete(selected.report)
+        require_complete(selected.report)
         records = read_obo_records(self._view, iri, budget=budget)
-        self._complete(records.report)
+        require_complete(records.report)
         result: dict[str, list[str]] = {}
         for item in selected.items:
             key = self._identifier(item.predicate, budget)
@@ -303,11 +291,11 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
         """Keep scalar text and representable annotation attachment separate."""
         iri, language = self._term(curie, budget), self._lang(lang, budget)
         selected = read_obo_records(self._view, iri, budget=budget)
-        self._complete(selected.report)
+        require_complete(selected.report)
         generic = self._view.annotations(
             iri, predicates=(str(SKOS.definition),), budget=budget
         )
-        self._complete(generic.report)
+        require_complete(generic.report)
         records = []
         for item in selected.records:
             budget.consume("work")
@@ -387,7 +375,7 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
         """Absence of an obsolete annotation is not conflicting annotation input."""
         bound_text(iri, budget)
         selected = self._view.deprecation(iri, budget=budget)
-        self._complete(selected.report)
+        require_complete(selected.report)
         if selected.state in {"unverified", "conflicting"}:
             self._unsupported(
                 "Conflicting or malformed obsolescence is not active", budget
@@ -403,7 +391,7 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
         with self._operation() as budget:
             kind = self._iri(owl_type, budget) if owl_type is not None else None
             selected = self._view.terms(budget=budget)
-            self._complete(selected.report)
+            require_complete(selected.report)
             result = []
             for term in selected.items:
                 budget.consume("work")
@@ -430,7 +418,7 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
                     predicates=(str(RDF.type),),
                     budget=budget,
                 )
-                self._complete(selected.report)
+                require_complete(selected.report)
                 for edge in selected.items:
                     occurrences = classify_statement(
                         (edge.subject, edge.predicate, edge.object),
@@ -455,7 +443,7 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
             self._unsupported("Merged-term interpretation is not supplied")
         with self._operation() as budget:
             selected = self._view.terms(budget=budget)
-            self._complete(selected.report)
+            require_complete(selected.report)
             return tuple(
                 self._identifier(term.iri, budget)
                 for term in selected.items
@@ -468,7 +456,7 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
             selected = read_obo_subsets(
                 self._view, closed=self._closed_subsets, budget=budget
             )
-            self._complete(selected.report)
+            require_complete(selected.report)
             return tuple(
                 self._identifier(str(item.iri), budget) for item in selected.definitions
             )
@@ -479,10 +467,10 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
             selected = read_obo_subsets(
                 self._view, closed=self._closed_subsets, budget=budget
             )
-            self._complete(selected.report)
+            require_complete(selected.report)
             values = selected.select(self._iri(subset, budget), budget=budget)
             assert values.report is not None
-            self._complete(values.report)
+            require_complete(values.report)
             return tuple(
                 self._identifier(str(value), budget) for value in values.values
             )
@@ -497,7 +485,7 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
             selected = read_obo_subsets(
                 self._view, closed=self._closed_subsets, budget=budget
             )
-            self._complete(selected.report)
+            require_complete(selected.report)
             result = []
             for edge in selected.memberships:
                 budget.consume("work")
@@ -589,88 +577,15 @@ class BijuxBasicOntology(BasicOntologyInterface):  # type: ignore[misc]
                 selected_objects,
                 selected_subjects,
             )
-        selected = self._view.all_statements(budget=budget)
-        self._complete(selected.report)
-        object_properties = set()
-        owners = set()
-        for edge in selected.items:
-            budget.consume("work")
-            if edge.predicate == RDF.type and edge.object == OWL.ObjectProperty:
-                budget.consume("states")
-                object_properties.add(edge.subject)
-            if edge.predicate == RDFS.subClassOf and isinstance(edge.subject, URIRef):
-                budget.consume("states")
-                owners.add(edge.subject)
-        triples = set()
-
-        def retain(subject: URIRef, predicate: URIRef, obj: URIRef) -> None:
-            """Apply exact native filters before bounded tuple retention."""
-            budget.consume("work")
-            for node in (subject, predicate, obj):
-                bound_node(node, budget)
-            if (
-                selected_subjects is not None
-                and str(subject) not in selected_subjects
-                or selected_objects is not None
-                and str(obj) not in selected_objects
-                or selected_predicates is not None
-                and str(predicate) not in selected_predicates
-            ):
-                return
-            budget.consume("states")
-            triples.add((str(subject), str(predicate), str(obj)))
-
-        for edge in selected.items:
-            budget.consume("work")
-            if not isinstance(edge.subject, URIRef) or not isinstance(
-                edge.object, URIRef
-            ):
-                continue
-            if include_tbox and edge.predicate == RDFS.subClassOf:
-                retain(edge.subject, edge.predicate, edge.object)
-            elif include_abox:
-                if edge.predicate in object_properties:
-                    retain(edge.subject, edge.predicate, edge.object)
-                elif edge.predicate == RDF.type:
-                    occurrences = classify_statement(
-                        (edge.subject, edge.predicate, edge.object),
-                        source_scope=edge.scope,
-                        budget=budget,
-                    )
-                    individual = any(
-                        item.position == "subject" and item.role == "individual"
-                        for item in occurrences
-                    )
-                    application_class = any(
-                        item.position == "object" and item.role == "class"
-                        for item in occurrences
-                    )
-                    if individual and application_class:
-                        retain(edge.subject, edge.predicate, edge.object)
-        if include_tbox and (
-            selected_predicates is None or selected_predicates - {str(RDFS.subClassOf)}
-        ):
-            for owner in owners:
-                budget.consume("work")
-                bound_node(owner, budget)
-                if (
-                    selected_subjects is not None
-                    and str(owner) not in selected_subjects
-                ):
-                    continue
-                projections = project_restrictions(
-                    self._view, str(owner), inherited=False, budget=budget
-                )
-                self._complete(projections.report)
-                for item in projections.items:
-                    budget.consume("work")
-                    if (
-                        item.status == "supported"
-                        and item.quantifier == OWL.someValuesFrom
-                        and isinstance(item.property, URIRef)
-                        and isinstance(item.filler, URIRef)
-                    ):
-                        retain(item.authored_owner, item.property, item.filler)
+        triples = project_relationships(
+            self._view,
+            subjects=selected_subjects,
+            predicates=selected_predicates,
+            objects=selected_objects,
+            include_tbox=include_tbox,
+            include_abox=include_abox,
+            budget=budget,
+        )
         result = []
         for subject, predicate, obj in triples:
             row = (
