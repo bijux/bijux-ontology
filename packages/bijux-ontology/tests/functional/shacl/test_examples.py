@@ -11,7 +11,8 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.shacl.examples import MissingValueExample, generate_examples
+from bijux_ontology.shacl.examples.checking import generate_examples
+from bijux_ontology.shacl.examples.types import MissingValueExample
 
 EX = Namespace("https://example.invalid/examples/")
 _PREFIX = f"@prefix ex:<{EX}>. @prefix sh:<{SH}>. @prefix xsd:<{XSD}>. "

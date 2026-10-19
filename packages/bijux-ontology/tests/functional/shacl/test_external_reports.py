@@ -11,11 +11,11 @@ from bijux_ontology.execution.limits import Budget, BudgetKind, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.external_reports import (
+from bijux_ontology.shacl.external_reports.aggregation import aggregate_shacl_reports
+from bijux_ontology.shacl.external_reports.ingestion import ingest_external_report
+from bijux_ontology.shacl.external_reports.types import (
     ExternalShaclReport,
     ExternalShaclScope,
-    aggregate_shacl_reports,
-    ingest_external_report,
 )
 
 EX = Namespace("https://example.org/external/")

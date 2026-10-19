@@ -17,13 +17,13 @@ from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.authoring.parameters import ShaclParameter
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.components import (
+from bijux_ontology.shacl.components.checking import check_components
+from bijux_ontology.shacl.components.compiling import compile_components
+from bijux_ontology.shacl.components.types import (
     ComponentShapes,
     ComponentUse,
     ComponentValidator,
     ShaclComponent,
-    check_components,
-    compile_components,
 )
 
 EX = Namespace("https://example.org/components#")

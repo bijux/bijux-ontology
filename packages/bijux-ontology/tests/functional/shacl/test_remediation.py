@@ -10,7 +10,8 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.evidence.findings import ShaclFinding
-from bijux_ontology.shacl.remediation import RemediationStrategy, propose_remediations
+from bijux_ontology.shacl.remediation.planning import propose_remediations
+from bijux_ontology.shacl.remediation.types import RemediationStrategy
 
 EX = Namespace("https://example.org/repair/")
 

@@ -23,7 +23,8 @@ from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.evidence.results import ShaclResult
-from bijux_ontology.shacl.incremental import prepare_incremental, revalidate
+from bijux_ontology.shacl.incremental.checking import revalidate
+from bijux_ontology.shacl.incremental.preparation import prepare_incremental
 
 E = Namespace("urn:incremental:")
 LIMITS = Limits(max_work=10000000, max_states=1000000, max_total_bytes=100000000)

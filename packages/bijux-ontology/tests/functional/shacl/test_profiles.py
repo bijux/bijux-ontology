@@ -12,7 +12,9 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.profiles import ProfileCase, export_profile, extract_profile
+from bijux_ontology.shacl.profiles.exporting import export_profile
+from bijux_ontology.shacl.profiles.extraction import extract_profile
+from bijux_ontology.shacl.profiles.types import ProfileCase
 
 EX = Namespace("urn:profile:")
 SHAPES = """@prefix e:<urn:profile:>. @prefix sh:<http://www.w3.org/ns/shacl#>.

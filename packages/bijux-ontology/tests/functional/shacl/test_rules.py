@@ -19,7 +19,8 @@ from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.rules import RuleMode, materialize_rules
+from bijux_ontology.shacl.rules.materialization import materialize_rules
+from bijux_ontology.shacl.rules.types import RuleMode
 from bijux_ontology.shacl.sparql.functions import (
     ShaclFunctionCatalog,
     ShaclFunctionParameter,

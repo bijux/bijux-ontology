@@ -14,7 +14,7 @@ from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.paths.types import RdfPath
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.shacl.authoring import (
+from bijux_ontology.shacl.authoring.types import (
     ShaclCount,
     ShaclLogical,
     ShaclNodeShape,
@@ -22,12 +22,9 @@ from bijux_ontology.shacl.authoring import (
     ShaclShapeRef,
 )
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.inspection import (
-    ShapeCountEdit,
-    ShapeInspection,
-    edit_shape_counts,
-    inspect_shapes,
-)
+from bijux_ontology.shacl.inspection.editing import edit_shape_counts
+from bijux_ontology.shacl.inspection.reading import inspect_shapes
+from bijux_ontology.shacl.inspection.types import ShapeCountEdit, ShapeInspection
 
 E = Namespace("urn:shape-inspection:")
 PREFIXES = """@prefix e:<urn:shape-inspection:>.
