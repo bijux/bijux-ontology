@@ -28,7 +28,10 @@ from bijux_ontology.models.persistence.codecs import json_bytes
 from bijux_ontology.models.persistence.identity import _source
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.workflows.revisions.management import RevisionLease
+from bijux_ontology.workflows.revisions.management import (
+    RevisionLease,
+    _RevisionOperation,
+)
 
 from .storage import Checkpoint, eligible
 from .types import CorpusRecord, CorpusRecordResult, CorpusResult
@@ -49,7 +52,7 @@ class _Record:
 
 def _capture(
     records: Sequence[CorpusRecord],
-    lease: RevisionLease,
+    revision: _RevisionOperation,
     operation: Operation,
     timeout: float,
 ) -> tuple[_Record, ...]:
@@ -124,8 +127,8 @@ def _capture(
                 "key_subject": key,
                 "graph_name": graph,
                 "union": union,
-                "revision_inputs": lease.identity.inputs_sha256,
-                "revision_engine": lease.identity.engine_sha256,
+                "revision_inputs": revision.identity.inputs_sha256,
+                "revision_engine": revision.identity.engine_sha256,
                 "limits": asdict(operation.limits),
                 "timeout": timeout,
             },
@@ -194,9 +197,9 @@ class ResumeCorpus:
         """Retain an actual live semantic owner for the entire resumed request."""
         if type(lease) is not RevisionLease:
             raise InputError("Resume requires an actual active revision lease")
-        with lease._run():
+        with lease._borrow() as revision:
             return self._check(
-                lease,
+                revision,
                 records,
                 keys=keys,
                 limits=limits,
@@ -207,7 +210,7 @@ class ResumeCorpus:
 
     def _check(
         self,
-        lease: RevisionLease,
+        revision: _RevisionOperation,
         records: Sequence[CorpusRecord],
         *,
         keys: Sequence[KeyContract] = (),
@@ -223,8 +226,6 @@ class ResumeCorpus:
         semantic completion and checkpoint uncertainty, while their two reports
         remain separately inspectable. No global result is ever checkpointed.
         """
-        if type(lease) is not RevisionLease:
-            raise InputError("Resume requires an actual active revision lease")
         operation = Operation(limits, budget, timeout, cancel)
         issues, checkpoint_issues = IssueCollector(operation), IssueCollector(operation)
         captured: tuple[_Record, ...] = ()
@@ -237,7 +238,7 @@ class ResumeCorpus:
         checkpoint_stopped = False
         required_globals = completed_globals = 0
         try:
-            captured = _capture(records, lease, operation, timeout)
+            captured = _capture(records, revision, operation, timeout)
             contracts = capture_items(keys, KeyContract, operation)
             required_globals = len(contracts)
             if any(type(contract) is not KeyContract for contract in contracts):
@@ -279,7 +280,7 @@ class ResumeCorpus:
                     try:
                         source = prepare_source(record.source, budget=operation)
                         if report is None:
-                            report = lease.check_rdf(
+                            report = revision.check_rdf(
                                 source,
                                 record.usages,
                                 graph_name=record.graph_name,
@@ -403,6 +404,6 @@ class ResumeCorpus:
             pending,
             bool(captured),
             global_report,
-            lease.revision,
-            lease.identity,
+            revision.revision,
+            revision.identity,
         )
