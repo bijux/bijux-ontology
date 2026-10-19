@@ -1836,3 +1836,13 @@ prevent a claimed translation. Install `[shacl,shex]` and call
 `check_interchange(translation, prepared_data)` to compare each pair through
 actual pySHACL and pyrudof. Agreement can mean both reject: raw negative results
 remain separate from correspondence and never certify the data as valid.
+
+`interfaces.adapters.go.taxon_constraints.check_go_taxa` checks explicit term/taxon
+annotations against a `GoTaxonRelease` of separately pinned local ontology,
+computed constraints, union groupings and taxonomy bytes. A `GoTaxonPolicy`
+selects roots and declares complete selected ancestry. Constraints inherit through
+is_a and existential part_of; regulates supplies no inheritance. Union members
+are alternatives within one restriction; independent restrictions conjoin.
+Original resource receipts and path witnesses remain visible. Competing group
+definitions, missing ancestry or absent requested constraints remain unverified;
+this read-only finite profile claims no biological absence or general OWL truth.

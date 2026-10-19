@@ -28,6 +28,7 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "go": frozenset("taxon_disallowed taxon_unverified".split()),
     "shape-interchange": frozenset("unsupported unverified behavior_changed".split()),
     "pattern": frozenset("expected_missing unexpected_binding unverified".split()),
     "biosamples": frozenset(
@@ -498,6 +499,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "go": (
+        "explicit GO annotation and supplied taxon-constraint release",
+        "A selected taxon restriction fails or its resource evidence is incomplete.",
+        "Inspect exact resource pins, independent restrictions, selected is_a "
+        "or part_of paths, union definitions and declared complete ancestry.",
+        "check_go_taxa(release, annotations, policy=policy)",
+    ),
     "shape-interchange": (
         "fixed explicit SHACL and ShEx record bindings",
         "Compilation is unsupported, execution is unverified or validators disagree.",
