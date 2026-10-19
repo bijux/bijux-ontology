@@ -157,7 +157,10 @@ def owned_json(value: object, budget: Budget) -> tuple[object, int]:
     """Qualify finite JSON metadata before producing its independent snapshot."""
     count = _measure(value, budget)
     return own_json(
-        value, max_bytes=budget.limits.max_bytes, max_depth=budget.limits.max_depth
+        value,
+        max_bytes=budget.limits.max_bytes,
+        max_depth=budget.limits.max_depth,
+        budget=budget,
     ), count
 
 
