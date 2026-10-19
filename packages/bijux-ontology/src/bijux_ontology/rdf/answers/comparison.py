@@ -1,4 +1,4 @@
-"""Result bag identity through maintained RDF isomorphism and explicit value proofs."""
+"""Exact row identity, global blank correspondence and explicit value proofs."""
 
 import time
 from threading import Event
@@ -23,6 +23,7 @@ from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.terms import bound_node, literal_term, term_key
 from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values
 
+from .identity import compare_ground_answers
 from .types import AnswerArtifact, AnswerSemantics
 
 _BASE = "urn:bijux:ontology:answer:"
@@ -241,9 +242,10 @@ def compare_answers(
 ) -> Report:
     """Compare finite artifacts, independently of external query execution truth.
 
-    Exact identity uses one global maintained blank bijection, without requiring
-    uniqueness. Value mode checks explicit row correspondence, or aligned sequence
-    positions, through the existing named literal regime. No value matcher or
+    Ground rows use exact bounded tokens; original result blanks use one global
+    maintained bijection, without requiring uniqueness. Value mode checks explicit
+    row correspondence, or aligned sequence positions, through the existing named
+    literal regime. No value matcher or
     reasoner is inferred. Variable names align columns; serialized order remains
     available and can be required explicitly.
     """
@@ -318,20 +320,24 @@ def compare_answers(
                 raise InputError(
                     "Exact answer comparison finds its own global correspondence"
                 )
-            before = _graph(left, semantics, operation)
-            after = _graph(right, semantics, operation)
-            remaining = operation.deadline - time.monotonic()
-            if remaining <= 0:
-                raise LimitExceeded("Answer comparison exceeded its deadline")
-            proof = compare_rdf(
-                before,
-                after,
-                budget=operation,
-                timeout_seconds=remaining,
-                cancel=cancel,
-            )
-            children.append(proof)
-            retain_report(proof, operation, issues)
+            ground = compare_ground_answers(left, right, semantics, operation)
+            if ground is False:
+                issues.append(Issue("rdf.answer_changed", "Answer rows differ"))
+            elif ground is None:
+                before = _graph(left, semantics, operation)
+                after = _graph(right, semantics, operation)
+                remaining = operation.deadline - time.monotonic()
+                if remaining <= 0:
+                    raise LimitExceeded("Answer comparison exceeded its deadline")
+                proof = compare_rdf(
+                    before,
+                    after,
+                    budget=operation,
+                    timeout_seconds=remaining,
+                    cancel=cancel,
+                )
+                children.append(proof)
+                retain_report(proof, operation, issues)
         else:
             _value_rows(
                 left,

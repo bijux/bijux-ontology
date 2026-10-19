@@ -19,6 +19,7 @@ from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.rdf.answers import (
     AnswerArtifact,
     AnswerFormat,
+    AnswerSemantics,
     capture_answer,
     compare_answers,
     read_answers,
@@ -271,6 +272,78 @@ def test_shared_budgets_cancel_and_query_truncation_remain_incomplete() -> None:
     )
     bounded = compare_answers(a, b, budget=cut)
     assert not bounded.verified and cut._counts.get("work", 0) <= cut.limits.max_work
+
+
+def test_ground_tables_use_exact_rows_without_graphs_or_isomorphism(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Real several-thousand-row artifacts retain multiplicity and column meaning."""
+    from bijux_ontology.rdf.answers import comparison
+
+    rows = list(range(3000))
+
+    def table(
+        bindings: list[int], variables: tuple[str, ...] = ("x", "y")
+    ) -> AnswerArtifact:
+        query = "SELECT " + " ".join("?" + name for name in variables)
+        query += " WHERE { VALUES (?position ?x) { " + " ".join(
+            f"({index} {value})" for index, value in enumerate(bindings)
+        )
+        query += " } } ORDER BY ?position"
+        result = query_rdf(
+            Graph(), query, scope=QueryScope("default"), max_rows=len(bindings)
+        )
+        assert result.report.verified, result.report.to_dict()
+        artifact = capture_answer(result)
+        assert artifact.report.verified, artifact.report.to_dict()
+        return artifact
+
+    original = table(rows + rows[:1])
+    reordered = table(list(reversed(rows)) + rows[:1], ("y", "x"))
+    fewer = table(rows)
+    aligned = table(rows + rows[:1], ("y", "x"))
+    lexical = _answer([{"x": _literal("01", datatype=_INTEGER)}])
+    numeric = _answer([{"x": _literal("1", datatype=_INTEGER)}])
+    unbound = _answer([{}])
+    empty = _answer([{"x": _literal("")}])
+
+    def unexpected(*args: object, **kwargs: object) -> None:
+        raise AssertionError(
+            "Ground identity must not allocate graphs or native workers"
+        )
+
+    monkeypatch.setattr(comparison, "Graph", unexpected)
+    monkeypatch.setattr(comparison, "compare_rdf", unexpected)
+    monkeypatch.setattr(subprocess, "Popen", unexpected)
+    for semantics in cast(tuple[AnswerSemantics, ...], ("bag", "set", "sequence")):
+        budget = Budget()
+        result = compare_answers(
+            original, reordered, semantics=semantics, budget=budget
+        )
+        assert result.verified is (semantics != "sequence"), result.to_dict()
+        assert (
+            not result.children
+            and budget.remaining("triples") == budget.limits.max_triples
+        )
+    assert compare_answers(original, aligned, semantics="sequence").verified
+    assert compare_answers(original, fewer).outcome == "disagreement"
+    assert compare_answers(original, fewer, semantics="set").verified
+    assert (
+        compare_answers(original, aligned, strict_variable_order=True).outcome
+        == "disagreement"
+    )
+    assert compare_answers(lexical, numeric).outcome == "disagreement"
+    assert compare_answers(unbound, empty).outcome == "disagreement"
+    for limits in (
+        Limits(max_work=100),
+        Limits(max_states=100),
+        Limits(max_total_bytes=100),
+    ):
+        assert compare_answers(original, aligned, limits=limits).outcome == "exhausted"
+    event = Event()
+    event.set()
+    assert compare_answers(original, aligned, cancel=event).outcome == "exhausted"
+    assert compare_answers(original, aligned, timeout=1e-9).outcome == "exhausted"
 
 
 @pytest.mark.parametrize("receipt", (True, False))
