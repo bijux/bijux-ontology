@@ -125,7 +125,13 @@ def _records(
     retained: list[AggregateContribution],
     excluded: list[str],
 ) -> list[tuple[object, Fraction | tuple[object, ...]]]:
-    """Reuse existing exact path/graph extraction and preserve every description."""
+    """Retain independent member obligations without inventing partial totals.
+
+    Unsupported member interpretations remain local; identity, declaration and
+    capture errors still escape. Each available quantity owes its own lexical
+    qualification even if its unit is unknown. Only explicit missing exclusions
+    remove a member from the required population.
+    """
     records = capture_items(group.members, KeyRecord, operation)
     identifiers: set[str] = set()
     entities: dict[object, Fraction | tuple[object, ...]] = {}
@@ -162,10 +168,6 @@ def _records(
             node is record.graph_name
             for node in record.source._graph_names(budget=operation)
         ):
-            if selected.member_path is None:
-                raise ResourceError(
-                    "Blank graph binding lacks exact snapshot ownership"
-                )
             issues.append(
                 Issue(
                     "data.key_binding_unverified",
@@ -179,7 +181,12 @@ def _records(
             record.source, operation, graph_name=record.graph_name, union=record.union
         )
         if reader.metadata.graph_fidelity != "complete":
-            raise ResourceError("Aggregate record graph coverage is incomplete")
+            _issue(
+                issues,
+                "Aggregate record graph coverage is incomplete",
+                record.identifier,
+            )
+            continue
         scope, union = _entity_scope(reader)
         entity: object = (
             str(record.subject)
@@ -187,6 +194,7 @@ def _records(
             else (id(record.source), scope, union, record.subject)
         )
         row: tuple[Node, ...]
+        member: Node | None = None
         if selected.member_path is not None:
             if (
                 isinstance(record.subject, BNode)
@@ -201,22 +209,29 @@ def _records(
                     )
                 )
                 continue
+            prior_exclusions = len(excluded)
             member = _scalar(
                 reader, record, member_steps, selected, operation, issues, excluded
             )
-            if member is None:
+            if len(excluded) != prior_exclusions:
+                # Only a proven, explicitly excluded missing quantity makes its
+                # unit irrelevant. Unknown quantities still owe unit coverage.
                 continue
-            row = (member,)
+            row = () if member is None else (member,)
         else:
             if not reader.described(record.subject, operation):
                 _issue(
                     issues,
                     "A selected record subject is absent from its owned scope",
-                    group.identifier,
+                    record.identifier,
                 )
                 continue
             row = ()
-        retained.append(AggregateContribution(record, row))
+        contributing = selected.member_path is None or member is not None
+        position = len(retained) if contributing else None
+        if position is not None:
+            retained.append(AggregateContribution(record, row))
+        unit_complete = True
         if selected.unit_path is not None:
             unit_value = _scalar(
                 reader,
@@ -229,15 +244,19 @@ def _records(
                 unit=True,
             )
             if unit_value is None:
-                continue
-            row = (*row, unit_value)
-            retained[-1] = AggregateContribution(record, row)
-        if selected.unit is not None and row[-1] != selected.unit:
-            _issue(
-                issues,
-                "A contributing value lacks the exact declared unit",
-                group.identifier,
-            )
+                unit_complete = False
+            else:
+                if position is not None:
+                    row = (*row, unit_value)
+                    retained[position] = AggregateContribution(record, row)
+                if unit_value != selected.unit:
+                    _issue(
+                        issues,
+                        "A contributing value lacks the exact declared unit",
+                        record.identifier,
+                    )
+                    unit_complete = False
+        if not contributing:
             continue
         if selected.function == "count":
             value: Fraction | tuple[object, ...] = Fraction(1)
@@ -249,9 +268,19 @@ def _records(
                 else term_key(node)
             )
         else:
-            if not isinstance(row[0], Literal):
-                raise ResourceError("A numeric member path requires a literal value")
-            value = number(row[0], operation)
+            try:
+                if not isinstance(row[0], Literal):
+                    raise ResourceError(
+                        "A numeric member path requires a literal value"
+                    )
+                value = number(
+                    row[0], operation, issues=issues, location=record.identifier
+                )
+            except ResourceError as error:
+                _issue(issues, str(error), record.identifier)
+                continue
+        if not unit_complete:
+            continue
         if selected.counting == "entities":
             if entity in entities:
                 prior = entities[entity]

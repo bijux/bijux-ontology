@@ -1,8 +1,11 @@
 """Exact group conservation, occurrence identity and dangerous omission controls."""
 
+import sys
 from dataclasses import replace
 from fractions import Fraction
+from itertools import permutations
 from threading import Event
+from types import FrameType
 from typing import Literal as Choice
 
 import pytest
@@ -12,7 +15,7 @@ from rdflib.namespace import XSD
 from bijux_ontology.data.aggregates import AggregateGroup, check_aggregates
 from bijux_ontology.data.keys import KeyRecord
 from bijux_ontology.declarations.aggregates import AggregateContract
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 
@@ -389,3 +392,153 @@ def test_object_only_record_is_present_but_has_no_countable_description() -> Non
         closure="closed",
     )
     assert topology.verified
+
+
+def test_unknown_members_keep_independent_findings_in_every_order() -> None:
+    """An unsupported number cannot terminate independent presence or unit checks."""
+    unsupported, missing, multiple, wrong = map(
+        URIRef,
+        (
+            "urn:unsupported",
+            "urn:missing",
+            "urn:multiple",
+            "urn:wrong-unit",
+        ),
+    )
+    graph = Graph().add(
+        (unsupported, VALUE, Literal("1", datatype=XSD.double, normalize=False))
+    )
+    graph.add((unsupported, UNIT, KG)).add((missing, NAME, Literal("present")))
+    graph.add((multiple, VALUE, Literal(1))).add((multiple, VALUE, Literal(2))).add(
+        (multiple, UNIT, KG)
+    )
+    graph.add((wrong, VALUE, Literal(1))).add((wrong, UNIT, URIRef("urn:gram")))
+    source = prepare_rdf(graph)
+    rows = tuple(
+        KeyRecord(str(node), source, node)
+        for node in (unsupported, missing, multiple, wrong)
+    )
+    selected = replace(numeric(), missing="reject", multiplicity="reject", empty="zero")
+    expected = None
+    for ordering in permutations(rows):
+        answer = check_aggregates((group(ordering, "0"),), selected)
+        assert answer.report.outcome == "disagreement" and not answer.report.complete
+        assert answer.groups[0].actual is None and answer.groups[0].excluded == ()
+        observed = tuple(
+            sorted((i.code, i.kind, i.location, i.message) for i in answer.report)
+        )
+        if expected is None:
+            expected = observed
+        assert observed == expected
+        keys = {(i.code, i.kind, i.location) for i in answer.report}
+        assert ("data.key_absent", "finding", str(missing)) in keys
+        assert ("data.key_absent", "unverified", str(missing)) in keys
+        assert ("data.key_multiple", "finding", str(multiple)) in keys
+        assert ("data.aggregate_unverified", "unverified", str(unsupported)) in keys
+        assert ("data.aggregate_unverified", "unverified", str(wrong)) in keys
+        assert not any(i.code == "data.aggregate_mismatch" for i in answer.report)
+    bad = URIRef("urn:invalid-lexical")
+    term = Literal("bad", datatype=XSD.decimal, normalize=False)
+    source = prepare_rdf(Graph().add((bad, VALUE, term)))
+    result = check_aggregates((group((KeyRecord("bad", source, bad),), "0"),), selected)
+    assert result.groups[0].actual is None and not result.report.complete
+    assert any(
+        i.code == "data.key_absent" and i.kind == "unverified" for i in result.report
+    )
+    assert [
+        i.location for i in result.report if i.code == "literal.lexical_invalid"
+    ] == ["bad"]
+
+
+def test_incomplete_records_preserve_siblings_and_only_declared_exclusions() -> None:
+    """Native incomplete scope stays unknown; exclusions require actual absence."""
+    incomplete = prepare_rdf(
+        RdfSource(
+            '@base <urn:example:x> . <partial> <urn:value> "1"^^<'
+            + str(XSD.decimal)
+            + "> .",
+            format="trig",
+            graph_name="@default",
+        )
+    )
+    assert incomplete.graph_fidelity == "nonempty-only"
+    first = KeyRecord("partial", incomplete, URIRef("urn:partial"))
+    missing_source = prepare_rdf(
+        Graph().add((URIRef("urn:missing"), NAME, Literal("present")))
+    )
+    missing = KeyRecord("missing", missing_source, URIRef("urn:missing"))
+    selected = replace(numeric(), missing="reject", empty="zero")
+    for rows in ((first, missing), (missing, first)):
+        result = check_aggregates((group(rows, "0"),), selected)
+        assert result.report.outcome == "disagreement" and not result.report.complete
+        assert result.groups[0].actual is None
+        assert any(
+            i.code == "data.key_absent" and i.kind == "finding" for i in result.report
+        )
+    allowed = replace(numeric(), missing="exclude", empty="zero")
+    valid = records("1")[0]
+    result = check_aggregates((group((missing, valid), "1"),), allowed)
+    assert result.report.verified and result.groups[0].actual == 1
+    assert result.groups[0].excluded == ("missing",)
+    unknown = check_aggregates((group((first, missing), "0"),), allowed)
+    assert unknown.report.outcome == "unverified" and unknown.groups[0].actual is None
+    assert unknown.groups[0].excluded == ("missing",)
+    invalid = check_aggregates((group((valid, valid), "2"),), selected)
+    assert invalid.report.outcome == "input_error" and invalid.groups[0].actual is None
+
+
+def test_member_stops_keep_only_original_paid_findings_and_recover() -> None:
+    """A real lexical finding and live cancellation never become unknown totals."""
+    subject = URIRef("urn:invalid")
+    source = prepare_rdf(
+        Graph()
+        .add((subject, VALUE, Literal("bad", datatype=XSD.decimal, normalize=False)))
+        .add((subject, UNIT, KG))
+    )
+    selected = replace(numeric(), missing="reject", empty="zero")
+    bad = KeyRecord("bad", source, subject)
+    capped = check_aggregates(
+        (group((bad,), "0"),), selected, budget=Budget(Limits(max_issues=1))
+    )
+    assert capped.report.outcome == "exhausted" and capped.groups[0].actual is None
+    assert [
+        i.location for i in capped.report if i.code == "literal.lexical_invalid"
+    ] == ["bad"]
+    missing_source = prepare_rdf(
+        Graph().add((URIRef("urn:missing"), NAME, Literal("present")))
+    )
+    missing = KeyRecord("missing", missing_source, URIRef("urn:missing"))
+    event = Event()
+    paid: list[str] = []
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        kind: Choice["call", "return", "c_call", "c_return", "c_exception"],
+        result: object,
+    ) -> None:
+        if previous is not None:
+            previous(frame, kind, result)
+        if kind == "return" and frame.f_code is IssueCollector.append.__code__:
+            issue = frame.f_locals["issue"]
+            collector = frame.f_locals["self"]
+            if (
+                issue.code == "data.key_absent"
+                and issue.kind == "finding"
+                and any(item is issue for item in collector)
+            ):
+                paid.append(issue.location)
+                event.set()
+
+    sys.setprofile(observe)
+    try:
+        stopped = check_aggregates(
+            (group((missing, bad), "0"),), selected, cancel=event
+        )
+    finally:
+        sys.setprofile(previous)
+    assert paid == ["missing"]
+    assert stopped.report.outcome == "exhausted" and stopped.groups[0].actual is None
+    assert [i.location for i in stopped.report if i.kind == "finding"] == ["missing"]
+    assert not any(i.code == "literal.lexical_invalid" for i in stopped.report)
+    assert check_aggregates((group(records("1", "2"), "3"),), numeric()).report.verified
