@@ -17,7 +17,10 @@ from bijux_ontology.rdf.sources import RdfSource
 EX = Namespace("https://example.org/")
 
 
-def test_blank_node_renaming_is_ignored_but_changed_list_order_is_visible() -> None:
+@pytest.mark.parametrize("owned_worker", (False, True))
+def test_blank_node_renaming_is_ignored_but_changed_list_order_is_visible(
+    owned_worker: bool,
+) -> None:
     left = Graph()
     head = BNode("left")
     Collection(left, head, [EX.A, EX.B])
@@ -26,13 +29,13 @@ def test_blank_node_renaming_is_ignored_but_changed_list_order_is_visible() -> N
     other = BNode("right")
     Collection(right, other, [EX.A, EX.B])
     right.add((EX.record, EX.values, other))
-    assert compare_rdf(left, right).verified
+    assert compare_rdf(left, right, _owned_worker=owned_worker).verified
     changed = Graph()
     Collection(changed, other, [EX.B, EX.A])
     changed.add((EX.record, EX.values, other))
-    assert compare_rdf(left, changed).outcome == "disagreement"
-    assert not compare_rdf(left, changed).verified
-    assert compare_rdf(Graph(), Graph()).verified
+    different = compare_rdf(left, changed, _owned_worker=owned_worker)
+    assert different.outcome == "disagreement" and not different.verified
+    assert compare_rdf(Graph(), Graph(), _owned_worker=owned_worker).verified
 
 
 def test_dataset_names_empty_graphs_and_cross_graph_blank_identity_survive() -> None:

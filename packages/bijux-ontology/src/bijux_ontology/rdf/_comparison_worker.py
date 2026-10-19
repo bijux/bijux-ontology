@@ -48,6 +48,17 @@ def _encode(records: object) -> Graph:
     return graph
 
 
+def process_request(payload: bytes, maximum: int) -> bytes:
+    """Evaluate the same finite protocol within an already deadline-owned worker."""
+    if type(maximum) is not int or maximum <= 0:
+        raise InputError("Comparison requires a positive protocol byte bound")
+    values = decode_json(payload, max_bytes=maximum)
+    if not isinstance(values, list) or len(values) != 2:
+        raise InputError("Comparison requires two exact record inventories")
+    equal = isomorphic(_encode(values[0]), _encode(values[1]))
+    return b"true\n" if equal else b"false\n"
+
+
 def main() -> int:
     """Read a finite parent-owned JSON request and emit only one boolean result."""
     try:
@@ -55,11 +66,7 @@ def main() -> int:
         if maximum <= 0:
             return 2
         payload = sys.stdin.buffer.read(maximum + 1)
-        values = decode_json(payload, max_bytes=maximum)
-        if not isinstance(values, list) or len(values) != 2:
-            return 2
-        equal = isomorphic(_encode(values[0]), _encode(values[1]))
-        print("true" if equal else "false")
+        sys.stdout.buffer.write(process_request(payload, maximum))
         return 0
     except (ValueError, IndexError, TypeError):
         return 2

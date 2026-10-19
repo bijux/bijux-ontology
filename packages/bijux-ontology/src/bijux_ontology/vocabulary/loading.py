@@ -30,6 +30,7 @@ def load_vocabulary(
     budget: Budget | None = None,
     preserve_literals: bool = True,
     document_loader: DocumentLoader | None = None,
+    _owned_worker: bool = False,
 ) -> Vocabulary:
     """Load explicit scoped resources without implicit file/network resolution.
 
@@ -37,6 +38,8 @@ def load_vocabulary(
     explicit union. Snapshot files keep their logical base. Lookup documents do
     not form a required import closure. Limits apply before owned source copies.
     """
+    if type(_owned_worker) is not bool:
+        raise InputError("Owned vocabulary loading selection must be a boolean")
     resources = context_resources(document_loader, limits=limits, budget=budget)
     budget = resources.budget
     selected = budget.limits
@@ -71,6 +74,7 @@ def load_vocabulary(
         budget=budget,
         preserve_literals=preserve_literals,
         document_loader=resources,
+        _owned_worker=_owned_worker,
     )
     lookups = []
     for item in lookup:

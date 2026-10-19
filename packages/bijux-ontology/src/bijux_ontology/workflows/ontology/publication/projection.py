@@ -16,6 +16,7 @@ from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, Migrati
 from bijux_ontology.rdf.patches.correspondence import Operation, _json_bound
 from bijux_ontology.rdf.patches.planning import capture_source, plan_rdf_patch
 from bijux_ontology.rdf.patches.types import BlankNodePair, PatchUnavailable
+from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.rdf.transforms import Transformation, _bind
@@ -450,6 +451,7 @@ def _candidate(
     """Use native typed patches and exact original blank ownership for all edits."""
     transformed = _Projection(source, specification, budget).run()
     patch = None
+    metadata = None
     children = [transformed.report]
     issues = IssueCollector(budget)
     try:
@@ -479,6 +481,7 @@ def _candidate(
             retain_report(planned.report, budget, issues)
             children.append(planned.report)
             patch = planned.patch
+            metadata = SnapshotMetadata.capture(transformed.source, budget)
     except LimitExceeded as error:
         issues.exhausted(str(error))
     report = Report(
@@ -494,6 +497,8 @@ def _candidate(
         (),
         (),
         report,
+        _metadata=metadata,
+        _checked_source=transformed.source,
     )
 
 

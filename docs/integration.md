@@ -288,6 +288,13 @@ subjects, graphs and predicates retain their distinct scopes.
 
 For JSON-LD, pass original usages and expectations to `check_context`. Reuse explicit resources and logical bases across parsing, serialisation and `prepare_jsonld` conversion. Default loaders do not fetch missing resources. Consumer-owned loaders or validation services have their own network behaviour; configuring this library does not make an entire application offline.
 
+`vocabulary.lexical.prepare_lexical_index(view, fields=..., languages=...)`
+reuses the selected vocabulary's lexical inventory for repeated `autocomplete`
+and `suggest` calls. Results retain labels, identifiers, languages, source roles
+and ranking evidence. Suggestions allow one codepoint insertion, deletion or
+substitution; they never replace identifiers or assert semantic mappings.
+Inspect both `.report.complete` and `.truncated` when consuming bounded results.
+
 Use `canonicalize_rdf(source)` for bounded RDFC-1.0 canonical N-Quads over the selected RDF 1.1 quads. The result records its algorithm, hash choice, literal fidelity and graph scope. Empty or unknown graph inventory prevents publication unless explicitly excluded. Canonical blank labels do not establish identity across changed graphs, raw-resource integrity or OWL equivalence. An optional OS address-space bound fails explicitly where unavailable.
 
 `rdf.skolem.skolemize(source, caller_owned_base)` names blank resources with
@@ -327,6 +334,27 @@ asserting described triples. RDF 1.1 export, canonicalization, SHACL and
 reasoning APIs reject it; broader RDF 1.2 compatibility is not implied.
 
 Use `export_jsonld(source, context=context, base=logical_base)` to compact selected RDF through PyLD and verify its re-expanded RDF before writing with `write_export`. An optional standard `frame` requests embedding or reverse fields; losing selected triples blocks export. Context loading is offline by default. Source JSON shape and index metadata are outside this RDF preservation claim. Empty named graphs require an explicit exclusion or prevent export.
+
+`jsonld.composition.compose_contexts(modules, resolution="retain-required")`
+processes caller-ordered `ContextModule` values as a JSON-LD context array.
+Every module supplies nonempty representative `ContextCase` usages and
+`ContextExpectation` obligations. Independent and composite checks must both
+pass before `.context` is returned. Protection, nullification and scoped
+contexts use maintained processing; qualification covers the declared cases.
+
+`rdf.query_transforms.transform_sparql(source, SparqlProgram(...), after_checks=...)`
+executes a finite local `CONSTRUCT` or single `UPDATE` on one selected physical
+graph, returning an exact patch and `MigrationCandidate`. Use `SparqlBinding`
+parameters and explicit typed string constants. Retrieval, graph management,
+assignment, aggregation, `VALUES`, subqueries and anonymous WHERE syntax are
+outside this profile. Required after checks and explicit acceptance gate export.
+
+`jsonld.publication.check_context_publication(context, PublicationContract(...))`
+checks selected root protection, vocabulary/base and local version promises.
+Supply retained `ContextCase` usages and actual `ContextOverride` scenarios for
+each `PublishedTerm`. Legal extensions must preserve retained mappings; blocked
+overrides require the processor's precise protected-definition rejection, which
+remains visible as raw evidence. These policies apply only when requested.
 
 `jsonld.html.extract_html_jsonld(content, document_url)` extracts JSON-LD
 scripts through the maintained HTML processor and returns `.scripts` locations,
@@ -1153,6 +1181,13 @@ stay distinct. Inspect `result.report`, `result.resources` and `result.archive`.
 Preparation proves selected resource availability; run ordinary bundle checks to
 qualify the application. Existing checks never acquire missing resources.
 
+`workflows.projects.representations.check_representations(resource, policy=...)`
+checks a `PublishedResource` with explicit `RepresentationVariant` Accept,
+media/profile and effective-URL bindings. Actual context/import closure and RDF
+comparison share the acquisition limits and owned worker lifetime. Inspect each
+variant's response and raw report. An explicit `graph_name` verifies only that
+projection; complete agreement includes required empty named graphs.
+
 The console equivalent is `bijux-ontology acquire project-directory --request
 ontology.ttl https://example.org/ontology --origin https://example.org
 --destination resources.zip --timeout 30 --json`. Repeat `--request` and `--origin`
@@ -1271,3 +1306,20 @@ verify their closed file revision; restart rechecks content hashes and inventory
 `materialize_snapshot(..., max_triples=...)` explicitly bounds other consumers'
 in-memory projections. Nonempty-only graph inventory cannot prove empty named
 graph coverage, and unsupported physical graph identities cannot be collapsed.
+
+`rdf.literal_values.json.check_json_literal(literal, JsonLiteralContract(...))`
+checks opaque `rdf:JSON` values with explicit `JsonRequirement` paths, kinds,
+exact Decimal bounds and ordered array requirements. Duplicate keys, nonfinite
+numbers and malformed JSON are invalid; nested diagnostics use JSON pointers.
+The original RDF literal stays unchanged: parsed value equality proves no RDF
+term equality. Optional `jsonschema` checks require an explicit finite JSON Schema
+2020-12 dialect and resource identity; unsupported schema features remain unknown.
+
+Install `bijux-ontology[markup]` for
+`rdf.literal_values.markup.inspect_markup_literal` and `compare_markup_values`.
+The explicit `xml-exc-c14n-with-comments` regime compares self-contained XML
+fragments using maintained lxml/libxml2, preserving inline namespaces, language,
+base, comments and processing instructions. DTD/entity declarations and external
+resolution are outside the supported profile. HTML supports fragment inspection;
+it has no supported canonical value comparison. Original RDF terms stay exact,
+and native execution has an owned deadline and cancellation lifecycle.

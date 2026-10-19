@@ -4,6 +4,7 @@ from bijux_ontology.documents.export import RDFExport, export_rdf
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate
+from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.reports import Issue, Report
 
 
@@ -36,6 +37,21 @@ def export_migration(
                 Issue(
                     "rdf.migration_acceptance_unverified",
                     "Export requires explicit acceptance and verified migration checks",
+                    kind="unverified",
+                )
+            )
+        elif (
+            candidate.source is not candidate._checked_source
+            or candidate._metadata is None
+            or not candidate._metadata.same_scope(
+                SnapshotMetadata.capture(candidate.source, operation)
+            )
+        ):
+            issues.append(
+                Issue(
+                    "rdf.migration_acceptance_unverified",
+                    "Candidate scope, origin or fidelity differs "
+                    "from its checked receipt",
                     kind="unverified",
                 )
             )

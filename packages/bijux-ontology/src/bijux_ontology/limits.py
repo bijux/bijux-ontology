@@ -268,3 +268,19 @@ def retain_report(report: Report, operation: Budget, issues: IssueCollector) -> 
     except LimitExceeded:
         issues.retain_completed(report)
         raise
+
+
+def bound_text(text: str, budget: Budget) -> None:
+    """Qualify text before encoding, formatting, hashing or diagnostic retention."""
+    if not isinstance(text, str):
+        raise InputError("Role metadata must be text")
+    if len(text) > budget.limits.max_bytes:
+        raise LimitExceeded("Role metadata exceeds max_bytes")
+    budget.consume("work", len(text) + 1)
+    try:
+        size = len(text.encode("utf-8"))
+    except UnicodeEncodeError as error:
+        raise InputError("Role metadata requires valid Unicode") from error
+    if size > budget.limits.max_bytes:
+        raise LimitExceeded("Role metadata exceeds max_bytes")
+    budget.consume("bytes", size)

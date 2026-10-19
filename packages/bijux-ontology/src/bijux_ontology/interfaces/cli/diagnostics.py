@@ -39,6 +39,11 @@ _CODES = {
         "scope_unverified".split()
     ),
     "acquisition": frozenset("resource_failed unavailable".split()),
+    "publication": frozenset(
+        "identity_mismatch media_mismatch profile_mismatch "
+        "graph_scope_unverified reference_unverified variant_unverified "
+        "input_unverified".split()
+    ),
     "schema": frozenset(
         "translation_invalid translation_unverified "
         "output_invalid output_unverified".split()
@@ -86,6 +91,8 @@ _CODES = {
         "output_unverified predicate_contract_conflict".split()
     ),
     "context": frozenset(
+        "publication_mismatch publication_unverified "
+        "composition_unverified "
         "html_extraction_unverified "
         "frame_unverified frame_input_error "
         "term_usage_disallowed term_usage_membership "
@@ -169,7 +176,10 @@ _CODES = {
     ),
     "literal": frozenset(
         "conversion_unverified datatype_unverified "
-        "lexical_invalid lexical_unverified value_unverified".split()
+        "lexical_invalid lexical_unverified value_unverified "
+        "json_invalid json_mismatch json_unverified "
+        "json_schema_mismatch json_schema_unverified "
+        "markup_invalid markup_unverified markup_value_changed".split()
     ),
     "models": frozenset(
         "direction_unverified contextual_direction_unverified "
@@ -209,6 +219,7 @@ _CODES = {
     "rdf": frozenset(
         "triple_terms_unverified "
         "container_contract container_unverified container_conversion_rejected "
+        "query_transform_unverified query_transform_invalid query_unverified "
         "reification_contract reification_unverified "
         "merge_conflict merge_unverified merge_resolution_required "
         "algebra_identity_unverified "
@@ -345,6 +356,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Inspect exact origins, redirect/media/size limits and missing resources; "
         "keep ordinary checks offline and retain the original project inputs.",
         "acquire_bundle(source, requests=requests, policy=policy, destination=archive)",
+    ),
+    "publication": (
+        "explicit negotiated RDF representations",
+        "An observed variant differs or a required representation is unqualified.",
+        "Inspect the variant, effective URL, media/profile and required resources; "
+        "retain graph projection and unavailable processing boundaries.",
+        "check_representations(resource, policy=policy)",
     ),
     "schema": (
         "explicit serialized JSON output contracts",

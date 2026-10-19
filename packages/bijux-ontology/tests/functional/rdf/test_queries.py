@@ -176,6 +176,13 @@ def test_false_ask_and_completed_empty_select_are_distinct_from_truncated_select
         "SELECT * WHERE {",
         "CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}",
         "INSERT DATA {<urn:s> <urn:p> <urn:o>}",
+        "SELECT ?x WHERE {?s <urn:a> ?x. BIND(<urn:replacement> AS ?x)}",
+        "SELECT ?x WHERE {BIND(<urn:a> AS ?x) BIND(<urn:b> AS ?x)}",
+        "SELECT ?s (COUNT(?o) AS ?n) WHERE {?s ?p ?o}",
+        "SELECT * WHERE {VALUES (?a ?b) {(<urn:a> <urn:b> <urn:c>)}}",
+        "SELECT * WHERE {VALUES (?a ?b) {(<urn:a>)}}",
+        "SELECT * WHERE {_:b <urn:p> ?x OPTIONAL {_:b <urn:q> ?y}}",
+        "ASK {?s <urn:a> ?x. BIND(<urn:replacement> AS ?x)}",
     ),
 )
 def test_actual_parser_rejects_retrieval_everywhere_and_invalid_query_forms(
@@ -184,6 +191,40 @@ def test_actual_parser_rejects_retrieval_everywhere_and_invalid_query_forms(
     result = query_rdf(Graph(), query, scope=QueryScope("dataset"))
     assert result.report.outcome == "input_error" and not result.report.complete
     assert result.kind is None and result.answer is None and not result.rows
+
+
+def test_valid_variable_binding_grouping_values_and_query_blank_scope() -> None:
+    graph = Graph().add(
+        (EX.one, EX.value, Literal("01", datatype=XSD.integer, normalize=False))
+    )
+    graph.add((EX.one, RDFS.label, Literal("Bonjour", lang="FR")))
+    bound = query_rdf(
+        graph,
+        f"SELECT ?v ?bound WHERE {{?s <{EX.value}> ?v BIND(?s AS ?bound)}}",
+        scope=QueryScope("default"),
+    )
+    assert bound.report.verified and bound.rows == (
+        (Literal("01", datatype=XSD.integer, normalize=False), EX.one),
+    )
+    grouped = query_rdf(
+        graph,
+        f"SELECT ?s (COUNT(?v) AS ?n) WHERE {{?s <{EX.value}> ?v}} GROUP BY ?s",
+        scope=QueryScope("default"),
+    )
+    assert grouped.report.verified and grouped.rows == ((EX.one, Literal(1)),)
+    values = query_rdf(
+        graph,
+        f"SELECT ?label WHERE {{VALUES (?s ?p) {{(<{EX.one}> <{RDFS.label}>)}} "
+        "?s ?p ?label}",
+        scope=QueryScope("default"),
+    )
+    assert values.report.verified and values.rows == ((Literal("Bonjour", lang="FR"),),)
+    scoped = query_rdf(
+        graph,
+        f"ASK {{_:a <{EX.value}> ?v OPTIONAL {{_:b <{RDFS.label}> ?label}}}}",
+        scope=QueryScope("default"),
+    )
+    assert scoped.report.verified and scoped.answer is True
 
 
 def test_keywords_in_literals_are_allowed_and_work_and_output_caps_are_truthful() -> (
@@ -308,3 +349,41 @@ def test_deadline_expiring_at_capture_end_is_exhausted() -> None:
         DelayedNamespaces(), "ASK {}", scope=QueryScope("default"), timeout=0.005
     )
     assert result.report.outcome == "exhausted" and result.answer is None
+
+
+@pytest.mark.parametrize(
+    ("body", "outcome", "code"),
+    [
+        (
+            "SELECT (<urn:extension>(1) AS ?v) WHERE {}",
+            "unverified",
+            "rdf.query_unverified",
+        ),
+        (
+            'SELECT (x:normalizedString(" a  b ") AS ?v) WHERE {}',
+            "unverified",
+            "rdf.literal_conversion_unverified",
+        ),
+        (
+            'SELECT (x:normalizedString(" a  b ") AS ?v) '
+            "WHERE { BIND(1 AS ?n) BIND(2 AS ?n) }",
+            "input_error",
+            "input.invalid",
+        ),
+        ("SELECT (x:string(1) AS ?v) WHERE {}", "agreement", None),
+    ],
+)
+def test_native_function_capability_is_distinct_from_invalid_query_scope(
+    body: str, outcome: str, code: str | None
+) -> None:
+    result = query_rdf(
+        Graph(),
+        "PREFIX x: <http://www.w3.org/2001/XMLSchema#> " + body,
+        scope=QueryScope("default"),
+    )
+    assert result.report.outcome == outcome
+    if code is not None:
+        assert result.answer is None and not result.rows
+        assert any(issue.code == code for issue in result.report.issues)
+    else:
+        assert result.rows == ((Literal("1", datatype=XSD.string),),)

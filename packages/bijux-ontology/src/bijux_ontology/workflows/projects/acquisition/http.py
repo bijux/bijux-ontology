@@ -27,6 +27,7 @@ class _Response:
     resource: AcquiredResource
     payload: bytes
     link: str
+    content_type: str = ""
 
 
 class _Redirects(HTTPRedirectHandler):
@@ -69,8 +70,24 @@ class HttpAcquisition:
         "Accept-Encoding": "gzip, identity",
     }
 
-    def __init__(self, policy: AcquisitionPolicy, budget: Operation) -> None:
+    def __init__(
+        self, policy: AcquisitionPolicy, budget: Operation, *, accept: str | None = None
+    ) -> None:
         self.policy, self.budget = policy, budget
+        self.headers = dict(type(self).headers)
+        if accept is not None:
+            if not isinstance(accept, str):
+                raise InputError("Acquisition Accept requires text")
+            bound_text(accept, budget)
+            if (
+                not accept.strip()
+                or not accept.isascii()
+                or any(ord(char) < 32 or ord(char) == 127 for char in accept)
+            ):
+                raise InputError(
+                    "Acquisition Accept requires printable ASCII header text"
+                )
+            self.headers["Accept"] = str(accept)
         for origin in policy.origins:
             bound_text(origin, budget)
             budget.consume("states")
@@ -128,6 +145,8 @@ class HttpAcquisition:
                 charset = response.headers.get_content_charset()
                 if charset is not None and charset.lower() not in ("utf-8", "utf8"):
                     raise InputError("Acquisition supports explicit UTF-8 media only")
+                content_type = response.headers.get("Content-Type", "")
+                bound_text(content_type, self.budget)
                 media_type = response.headers.get_content_type().lower()
                 encoding = (
                     response.headers.get("Content-Encoding", "identity").strip().lower()
@@ -199,7 +218,7 @@ class HttpAcquisition:
             len(expanded),
             hashlib.sha256(expanded).hexdigest(),
         )
-        result = _Response(resource, expanded, link)
+        result = _Response(resource, expanded, link, content_type)
         before = self.responses.get(effective)
         if before is not None:
             self.budget.consume("work", len(expanded) + 1)

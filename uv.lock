@@ -252,6 +252,9 @@ jsonschema = [
 linkml = [
     { name = "linkml-runtime" },
 ]
+markup = [
+    { name = "lxml" },
+]
 patterns = [
     { name = "google-re2" },
 ]
@@ -283,6 +286,7 @@ requires-dist = [
     { name = "jsonschema", marker = "extra == 'jsonschema'", specifier = ">=4.26,<5" },
     { name = "linkml-runtime", marker = "extra == 'linkml'", specifier = ">=1.12.1,<2" },
     { name = "lxml", marker = "extra == 'jsonld'", specifier = ">=6,<7" },
+    { name = "lxml", marker = "extra == 'markup'", specifier = ">=6,<7" },
     { name = "owlrl", marker = "extra == 'shacl'", specifier = ">=7.6.2,<8" },
     { name = "pandas", marker = "extra == 'sssom'", specifier = ">=2,<4" },
     { name = "pydantic", marker = "extra == 'pydantic'", specifier = ">=2.11,<3" },
@@ -298,7 +302,7 @@ requires-dist = [
     { name = "sssom-schema", marker = "extra == 'sssom'", specifier = "==1.1.0a5" },
     { name = "uri-template", marker = "extra == 'templates'", specifier = ">=1.3,<2" },
 ]
-provides-extras = ["jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
+provides-extras = ["markup", "jsonschema", "jsonld", "shacl", "pydantic", "linkml", "checksums", "templates", "xsd", "patterns", "sssom"]
 
 [[package]]
 name = "bijux-ontology-dev"

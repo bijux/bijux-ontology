@@ -285,4 +285,6 @@ def migrate_list(
         len(before),
         len(after),
         copied,
+        _metadata=finished._metadata,
+        _checked_source=finished._checked_source,
     )

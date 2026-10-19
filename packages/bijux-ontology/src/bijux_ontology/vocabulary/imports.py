@@ -45,7 +45,14 @@ def _selected_contexts(source: OwnedSource, budget: Budget) -> tuple[set[str], D
     return kinds, dataset
 
 
-def _same(first: _Binding, second: _Binding, budget: Budget, alias: str) -> None:
+def _same(
+    first: _Binding,
+    second: _Binding,
+    budget: Budget,
+    alias: str,
+    *,
+    _owned_worker: bool = False,
+) -> None:
     # Required alias agreement reuses the maintained bounded RDF comparison.
     from bijux_ontology.rdf.comparison import compare_rdf
 
@@ -58,7 +65,7 @@ def _same(first: _Binding, second: _Binding, budget: Budget, alias: str) -> None
                 "Conflicting selected graph ownership for a required document alias",
                 location=alias,
             )
-    report = compare_rdf(left, right, budget=budget)
+    report = compare_rdf(left, right, budget=budget, _owned_worker=_owned_worker)
     if not report.verified:
         raise ResourceError(
             "Conflicting or unverified supplied sources for a required document alias",
@@ -74,6 +81,7 @@ def required_imports(
     budget: Budget,
     preserve_literals: bool,
     document_loader: DocumentLoader | None = None,
+    _owned_worker: bool = False,
 ) -> tuple[OwnedSource, ...]:
     """Resolve requested keys only; lookup/header IRIs never establish aliases."""
     root = _Binding(local)
@@ -148,7 +156,9 @@ def required_imports(
                 )
             if collisions:
                 representative = next(iter(collisions.values()))
-                _same(representative, candidate, budget, iri)
+                _same(
+                    representative, candidate, budget, iri, _owned_worker=_owned_worker
+                )
             else:
                 representative = candidate
                 imported = candidate.selected

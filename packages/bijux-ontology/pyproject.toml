@@ -19,6 +19,9 @@ dependencies = [
 bijux-ontology = "bijux_ontology.interfaces.cli:main"
 
 [project.optional-dependencies]
+markup = [
+    "lxml>=6,<7",
+]
 jsonschema = [
     "jsonschema>=4.26,<5",
     "referencing>=0.37,<0.38",
