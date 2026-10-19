@@ -331,6 +331,10 @@ _CODES = {
         "required_occurrence_missing types_mismatch value_mismatch "
         "value_unverified".split()
     ),
+    "corpus": frozenset(
+        "record_unverified input_error key_source_unverified "
+        "checkpoint_unverified".split()
+    ),
     "revision": frozenset("preparation_unverified input_error".split()),
     "geospatial": frozenset(
         "invalid_lexical invalid_geometry unavailable relation input_error".split()
@@ -951,6 +955,13 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "Check the selected output path and model alternatives; examples "
         "do not prove all outputs.",
         '{"@id":"https://example.org/item","@type":"https://example.org/Image"}',
+    ),
+    "corpus": (
+        "qualified record outcomes and checkpoint durability",
+        "A record, global key obligation or saved checkpoint did not verify.",
+        "Inspect semantic and checkpoint reports separately; reuse requires exact "
+        "record and preparation identities. Global keys run again.",
+        "ResumeCorpus(path).run(lease, records, keys=keys)",
     ),
     "revision": (
         "complete prepared semantic revision",

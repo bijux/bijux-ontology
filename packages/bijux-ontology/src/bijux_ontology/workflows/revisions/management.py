@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from threading import Event, RLock
 
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Limits, bound_text
+from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.models.persistence.types import PreparationIdentity
 from bijux_ontology.processes.transport import checkpoint
@@ -89,13 +89,14 @@ class RevisionLease:
         *,
         graph_name: GraphSelection | None = None,
         union: bool = False,
+        budget: Budget | None = None,
     ) -> RevisionResult:
         """Run ordinary owned RDF model checking without optional JSON-LD setup."""
         with self._run() as state:
             return RevisionResult(
                 state.revision,
                 state.models.check_rdf(
-                    source, usages, graph_name=graph_name, union=union
+                    source, usages, graph_name=graph_name, union=union, budget=budget
                 ),
             )
 

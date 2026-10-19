@@ -41,6 +41,7 @@ PACKAGES = {
     "workflows.upgrades",
     "workflows.reproductions",
     "workflows.revisions",
+    "workflows.corpus",
 }
 
 

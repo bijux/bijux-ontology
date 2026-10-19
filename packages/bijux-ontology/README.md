@@ -70,3 +70,13 @@ the same complete preparation. Mutable Paths and live graphs are unsupported.
 Use `RevisionManager.activate(candidate, expected_active=...)`, then `lease()` for
 ordinary model or shape checks against that exact revision. Explicit rollback,
 retirement, retained-count/byte caps and close-and-drain preserve in-flight runs.
+
+`workflows.corpus.ResumeCorpus(path).run(lease, records, keys=...)` resumes explicit
+`CorpusRecord` identities against an actual revision lease. The bounded local
+SQLite store commits complete independent RDF-model outcomes at record boundaries;
+changed inputs, bindings or semantic preparation invalidate reuse. Complete
+negatives stay negative, and unknown or exhausted records stay pending. Selected
+global key checks run again over every current record. Inspect `semantic_report`
+and `checkpoint_report` separately: a fresh semantic recheck cannot hide corrupt
+or incomplete checkpoint durability. This profile supports immutable native RDF
+inputs and named subjects, with trusted local checkpoint state.
