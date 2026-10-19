@@ -1,235 +1,212 @@
-"""Application topology over one explicitly selected, owned RDF corpus."""
+"""Application topology policies over qualified corpus and incremental evidence."""
 
-import json
-from collections import deque
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal as Choice
 from typing import cast
 
 from rdflib import BNode, Literal, URIRef
-from rdflib.term import Node
 
-from bijux_ontology.data.records.reading import RecordReader, read_records
-from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
+from bijux_ontology.data.records.reading import read_records
+from bijux_ontology.declarations.topology import TopologyContract
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.json.paths import bound_index, bounded_location
-from bijux_ontology.rdf.paths.traversal import (
-    finite_path_steps,
-)
-from bijux_ontology.rdf.paths.types import capture_path
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.json.paths import bound_index
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.terms import bound_node, term_key
 
+from .capture import RecordCorpus, capture_inventory
+from .evidence import RelationEvidence, _context, _Gap, _Link
 from .types import TopologyRecord
 
 
-@dataclass(frozen=True)
-class _Focus:
-    """One qualified record binding and bounded caller diagnostic anchor."""
+@dataclass
+class _Policy:
+    """Application constraint decisions over already established selected facts."""
 
-    record: TopologyRecord
-    where: str
+    corpus: RecordCorpus
+    evidence: RelationEvidence
+    contract: TopologyContract
+    issues: IssueCollector
+    cycles: set[frozenset[str]] = field(default_factory=set)
+    excess: set[str] = field(default_factory=set)
 
+    def unresolved(self, gap: _Gap) -> None:
+        """Expose unresolved path coverage without pretending it is an empty result."""
+        focus = gap.focus
+        if focus is None:
+            self.issues.append(
+                Issue(
+                    "data.topology_path_unverified",
+                    "Topology requires finite sequence/inverse paths",
+                    gap.relation.name,
+                    kind="unverified",
+                )
+            )
+        else:
+            self.issues.append(
+                Issue(
+                    "data.topology_path_unverified",
+                    gap.reason or "Topology requires finite sequence/inverse paths",
+                    focus.where,
+                    kind="unverified",
+                    expected=gap.path,
+                    details=focus.record.location,
+                )
+            )
+        self.evidence.unresolved(gap.relation)
 
-@dataclass(frozen=True)
-class _Link:
-    """An established selected path, never a fabricated asserted RDF triple."""
-
-    source: _Focus
-    target: _Focus | None
-    endpoint: Node
-    relation: TopologyRelation
-    path: str
-
-
-def _capture(
-    values: object, expected: type[object], budget: Budget, *, count: int | None = None
-) -> tuple[object, ...]:
-    """Own a bounded finite input inventory before semantic work begins."""
-    if not isinstance(values, Sequence) or isinstance(values, str | bytes):
-        raise InputError("Topology inventories require finite typed sequences")
-    count = len(values) if count is None else count
-    budget.consume("states", count)
-    budget.consume("bytes", 64 + 16 * count)
-    result = []
-    for index in range(count):
-        budget.consume("work")
-        try:
-            value = values[index]
-        except IndexError as error:
-            raise InputError("A topology inventory changed during capture") from error
-        if not isinstance(value, expected):
-            raise InputError("A topology inventory contains an unsupported item")
-        if expected is str:
-            bound_text(cast(str, value), budget)
-            value = str(value)
-        result.append(value)
-    return tuple(result)
-
-
-def _place(record: TopologyRecord, budget: Budget) -> str:
-    """Bound known output metadata without inventing a source occurrence."""
-    bound_text(record.identifier, budget)
-    bound_node(record.subject, budget)
-    location = record.location
-    if location is None:
-        return record.identifier
-    for value in (location.source, location.term, location.graph, location.model):
-        if value is not None:
-            bound_text(value, budget)
-    if location.branch is not None:
-        bound_index(location.branch, budget)
-    pointer = bounded_location(location.path, budget)
-    size = len(location.source) + len(pointer)
-    if size > budget.limits.max_bytes:
-        raise LimitExceeded("Topology output location exceeds max_bytes")
-    budget.consume("work", size)
-    budget.consume("bytes", 4 * size)
-    if (
-        len(location.source.encode("utf-8")) + len(pointer.encode("utf-8"))
-        > budget.limits.max_bytes
-    ):
-        raise LimitExceeded("Topology output location exceeds max_bytes")
-    return (
-        location.source + pointer
-        or location.model
-        or location.term
-        or location.graph
-        or record.identifier
-    )
-
-
-def _context(reader: RecordReader, budget: Budget) -> tuple[dict[str, object], int]:
-    """Retain exact operation scope, not guessed graph names or source paths."""
-    source = reader.metadata
-    name = reader.selected.graph_name
-    kind = reader.selected.kind
-    for value in (
-        source.document_iri,
-        source.effective_url,
-        source.literal_fidelity,
-        str(name) if name is not None else None,
-    ):
-        if value is not None:
-            bound_text(value, budget)
-
-    graph = (
-        term_key(name if isinstance(name, URIRef | BNode) else URIRef(name))
-        if kind == "named" and name is not None
-        else None
-    )
-    result: dict[str, object] = {
-        "document_iri": source.document_iri,
-        "effective_url": source.effective_url,
-        "graph_kind": kind,
-        "graph_name": graph,
-    }
-    size = 128 + 12 * (
-        len(source.document_iri or "")
-        + len(source.effective_url or "")
-        + len(str(name or ""))
-    )
-    budget.consume("work", size)
-    budget.consume("bytes", size)
-    return result, size
-
-
-def _evidence(
-    context: dict[str, object],
-    context_size: int,
-    focuses: Sequence[_Focus],
-    links: Sequence[_Link],
-    budget: Budget,
-) -> str:
-    """Reserve all derived evidence before materializing nested JSON records."""
-    budget.consume("states", 8 * (1 + len(focuses) + len(links)))
-    selected: dict[str, _Focus] = {}
-    for focus in focuses:
-        selected[focus.record.identifier] = focus
-    for link in links:
-        selected[link.source.record.identifier] = link.source
-        if link.target is not None:
-            selected[link.target.record.identifier] = link.target
-    size = 512 + context_size
-    for focus in selected.values():
-        size += 256 + 12 * (
-            len(focus.record.identifier)
-            + len(focus.where)
-            + sum(len(part or "") for part in term_key(focus.record.subject))
+    def observe(self, link: _Link) -> None:
+        """Retain known violations before requesting any subsequent relation data."""
+        focus, target, endpoint, relation = (
+            link.source,
+            link.target,
+            link.endpoint,
+            link.relation,
         )
-    for link in links:
-        size += 256 + 12 * (
-            len(link.source.record.identifier)
-            + len(link.target.record.identifier if link.target else "")
-            + len(link.relation.name)
-            + len(link.path)
-            + sum(len(part or "") for part in term_key(link.endpoint))
-        )
-    if size > budget.limits.max_bytes:
-        raise LimitExceeded("Topology evidence exceeds max_bytes")
-    budget.consume("work", size)
-    budget.consume("bytes", size)
-    data = {
-        "source": context,
-        "records": [
-            {
-                "identifier": f.record.identifier,
-                "subject": term_key(f.record.subject),
-                "output_location": f.where if f.record.location is not None else None,
-            }
-            for f in selected.values()
-        ],
-        "paths": [
-            {
-                "source": link.source.record.identifier,
-                "target": link.target.record.identifier if link.target else None,
-                "endpoint": term_key(link.endpoint),
-                "relation": link.relation.name,
-                "path": link.path,
-            }
-            for link in links
-        ],
-    }
-    text = json.dumps(data, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
-    if len(text) > budget.limits.max_bytes:
-        raise LimitExceeded("Topology evidence exceeds max_bytes")
-    return text
+        source_id = focus.record.identifier
+        operation, issues, contract = self.issues.budget, self.issues, self.contract
+        if isinstance(endpoint, Literal):
+            issues.append(
+                Issue(
+                    "data.topology_target_invalid",
+                    "A selected record relation ends in a literal",
+                    focus.where,
+                    details=focus.record.location,
+                    evidence_json=self.evidence.evidence((), (link,), operation),
+                )
+            )
+            return
+        if target is None:
+            issues.append(
+                Issue(
+                    "data.topology_reference_missing"
+                    if self.corpus.closed
+                    else "data.topology_reference_unverified",
+                    "Relation target is outside the declared record corpus",
+                    focus.where,
+                    kind="finding" if self.corpus.closed else "unverified",
+                    details=focus.record.location,
+                    evidence_json=self.evidence.evidence((), (link,), operation),
+                )
+            )
+            self.evidence.unresolved(relation)
+            return
+        target_id = target.record.identifier
+        if relation.reachability:
+            self.evidence.reachable_link(link, operation)
+        if relation.ownership:
+            incoming = self.evidence.owner_link(link, operation)
+            maximum = contract.max_owners
+            if (
+                maximum is not None
+                and len(incoming) > maximum
+                and target_id not in self.corpus.shared_set
+                and target_id not in self.excess
+            ):
+                operation.consume("states", 1 + len(incoming))
+                proof = tuple(incoming.values())
+                issues.append(
+                    Issue(
+                        "data.topology_owners",
+                        "More distinct owners than the declared maximum",
+                        target.where,
+                        expected=str(maximum),
+                        actual=str(len(incoming)),
+                        details=target.record.location,
+                        evidence_json=self.evidence.evidence((), proof, operation),
+                    )
+                )
+                self.excess.add(target_id)
+        if relation.acyclic and target_id not in self.evidence.adjacency.get(
+            source_id, {}
+        ):
+            cycle_path = self.evidence.path(target_id, source_id, operation)
+            if cycle_path is not None:
+                operation.consume("states", 1 + len(cycle_path))
+                identity = frozenset(
+                    (
+                        source_id,
+                        target_id,
+                        *(item.source.record.identifier for item in cycle_path),
+                    )
+                )
+                if identity not in self.cycles:
+                    issues.append(
+                        Issue(
+                            "data.topology_cycle",
+                            "Selected application paths form a cycle",
+                            focus.where,
+                            details=focus.record.location,
+                            evidence_json=self.evidence.evidence(
+                                (),
+                                (link, *cycle_path),
+                                operation,
+                            ),
+                        )
+                    )
+                    self.cycles.add(identity)
+            self.evidence.acyclic_link(link, operation)
 
-
-def _path(
-    adjacency: dict[str, dict[str, _Link]], start: str, goal: str, budget: Budget
-) -> tuple[_Link, ...] | None:
-    """Find an already established path for one incremental cycle witness."""
-    if start == goal:
-        return ()
-    queue = deque([start])
-    parents: dict[str, _Link] = {}
-    seen = {start}
-    while queue:
-        node = queue.popleft()
-        budget.consume("work")
-        for target, link in adjacency.get(node, {}).items():
-            budget.consume("work")
-            if target in seen:
-                continue
-            budget.consume("states", 2)
-            seen.add(target)
-            parents[target] = link
-            if target == goal:
-                result = []
-                current = goal
-                while current != start:
-                    budget.consume("work")
-                    budget.consume("states")
-                    item = parents[current]
-                    result.append(item)
-                    current = item.source.record.identifier
-                return tuple(reversed(result))
-            queue.append(target)
-    return None
+    def finish(self) -> None:
+        """Project absence only under the relevant complete closed evidence."""
+        operation, issues, contract = self.issues.budget, self.issues, self.contract
+        reached = self.evidence.reached(self.corpus, operation)
+        if contract.require_reachable and not self.corpus.roots:
+            issues.append(
+                Issue(
+                    "data.topology_roots_unverified",
+                    "No required root record binding was supplied",
+                    kind="unverified",
+                )
+            )
+        for focus in self.corpus.nodes.values():
+            operation.consume("work")
+            identifier = focus.record.identifier
+            if contract.require_reachable and identifier not in reached:
+                known = (
+                    self.corpus.closed
+                    and bool(self.corpus.roots)
+                    and not self.evidence.reach_unknown
+                )
+                issues.append(
+                    Issue(
+                        "data.topology_unreachable",
+                        "Record is not established reachable from the selected roots",
+                        focus.where,
+                        kind="finding" if known else "unverified",
+                        details=focus.record.location,
+                        evidence_json=self.evidence.evidence((focus,), (), operation),
+                    )
+                )
+            minimum = contract.min_owners
+            count = len(self.evidence.owners.get(identifier, {}))
+            if (
+                minimum is not None
+                and identifier not in self.corpus.root_set
+                and count < minimum
+            ):
+                known = self.corpus.closed and not self.evidence.owner_unknown
+                issues.append(
+                    Issue(
+                        "data.topology_owners",
+                        "Required incoming ownership is not established",
+                        focus.where,
+                        kind="finding" if known else "unverified",
+                        expected=str(minimum),
+                        actual=str(count),
+                        details=focus.record.location,
+                        evidence_json=self.evidence.evidence((focus,), (), operation),
+                    )
+                )
+        if not self.corpus.complete:
+            issues.append(
+                Issue(
+                    "data.topology_corpus_unverified",
+                    "Required record inventory is not declared complete",
+                    kind="unverified",
+                )
+            )
 
 
 def check_record_topology(
@@ -274,7 +251,8 @@ def check_record_topology(
         raise InputError("Topology graph selection requires a typed RDF name")
     operation = budget if budget is not None else Budget(limits)
     issues = IssueCollector(operation)
-    checked = 0
+    corpus: RecordCorpus | None = None
+    evidence: RelationEvidence | None = None
     finished = True
     requested = (
         len(records)
@@ -285,10 +263,12 @@ def check_record_topology(
     try:
         captured = cast(
             tuple[TopologyRecord, ...],
-            _capture(records, TopologyRecord, operation, count=requested),
+            capture_inventory(records, TopologyRecord, operation, count=requested),
         )
-        root_ids = cast(tuple[str, ...], _capture(roots, str, operation))
-        shared_ids = cast(tuple[str, ...], _capture(shared_targets, str, operation))
+        root_ids = cast(tuple[str, ...], capture_inventory(roots, str, operation))
+        shared_ids = cast(
+            tuple[str, ...], capture_inventory(shared_targets, str, operation)
+        )
         if len(set(root_ids)) != len(root_ids) or len(set(shared_ids)) != len(
             shared_ids
         ):
@@ -319,284 +299,51 @@ def check_record_topology(
             )
         reader = read_records(source, operation, graph_name=graph_name, union=union)
         scope, scope_size = _context(reader, operation)
-        focuses: dict[str, _Focus] = {}
-        nodes: dict[tuple[str | None, ...], _Focus] = {}
-        bindings: set[object] = set()
-        unknown_inventory = False
-        for record in captured:
-            where = _place(record, operation)
-            if record.identifier in focuses:
-                raise InputError("Topology record identifiers must be unique")
-            operation.consume("states")
-            focus = _Focus(record, where)
-            focuses[record.identifier] = focus
-            binding = (
-                ("iri", str(record.subject))
-                if isinstance(record.subject, URIRef)
-                else ("blank", id(record.subject))
-            )
-            if binding in bindings:
-                raise InputError("Topology record subjects must be unique")
-            operation.consume("states")
-            bindings.add(binding)
-            presence = reader.presence(record.subject, operation)
-            present, owned = presence.present, presence.owned
-            if not owned:
-                unknown_inventory = True
-                checked += 1
+        operation.consume("states")
+        operation.consume("bytes", 128)
+        corpus = RecordCorpus(reader, root_ids, shared_ids, complete, closure)
+        for focus, presence in corpus.admit(captured, operation):
+            if not presence.owned:
                 issues.append(
                     Issue(
                         "data.topology_binding_unverified",
                         "Blank record binding lacks exact snapshot ownership",
-                        where,
+                        focus.where,
                         kind="unverified",
-                        details=record.location,
+                        details=focus.record.location,
                     )
                 )
-                continue
-            if not present:
-                unknown = not (complete and closure == "closed")
-                unknown_inventory = unknown_inventory or unknown
-                checked += 1
+            else:
                 issues.append(
                     Issue(
                         "data.topology_record_missing",
                         "Record has no established occurrence in the selected graph",
-                        where,
-                        kind="unverified" if unknown else "finding",
-                        details=record.location,
-                    )
-                )
-                continue
-            key = term_key(record.subject)
-            if key in nodes:
-                raise InputError("Topology record subjects must be unique")
-            operation.consume("states")
-            nodes[key] = focus
-        if set(root_ids) - focuses.keys() or set(shared_ids) - focuses.keys():
-            raise InputError("Roots and shared targets must identify supplied records")
-        root_set, shared_set = set(root_ids), set(shared_ids)
-        closed = complete and closure == "closed" and not unknown_inventory
-        reach_unknown = owner_unknown = unknown_inventory
-        adjacency: dict[str, dict[str, _Link]] = {}
-        reachable_edges: dict[str, set[str]] = {}
-        owners: dict[str, dict[str, _Link]] = {}
-        cycles: set[frozenset[str]] = set()
-        excess: set[str] = set()
-        relations = []
-        for relation in contract.relations:
-            bound_text(relation.name, operation)
-            path = capture_path(relation.path, budget=operation)
-            steps = finite_path_steps(path, operation)
-            readable = path.readable
-            bound_text(readable, operation)
-            relations.append((relation, steps, readable))
-            if steps is None:
-                issues.append(
-                    Issue(
-                        "data.topology_path_unverified",
-                        "Topology requires finite sequence/inverse paths",
-                        relation.name,
-                        kind="unverified",
-                    )
-                )
-                reach_unknown = reach_unknown or relation.reachability
-                owner_unknown = owner_unknown or relation.ownership
-        for focus in nodes.values():
-            source_id = focus.record.identifier
-            for relation, steps, readable in relations:
-                if steps is None:
-                    continue
-                observed = reader.values(focus.record.subject, steps, operation)
-                if not observed.complete:
-                    issues.append(
-                        Issue(
-                            "data.topology_path_unverified",
-                            observed.reason
-                            or "Topology requires finite sequence/inverse paths",
-                            focus.where,
-                            kind="unverified",
-                            expected=readable,
-                            details=focus.record.location,
-                        )
-                    )
-                    reach_unknown = reach_unknown or relation.reachability
-                    owner_unknown = owner_unknown or relation.ownership
-                    continue
-                endpoints = observed.values
-                for endpoint in endpoints:
-                    operation.consume("work")
-                    target = nodes.get(term_key(endpoint))
-                    link = _Link(focus, target, endpoint, relation, readable)
-                    if isinstance(endpoint, Literal):
-                        issues.append(
-                            Issue(
-                                "data.topology_target_invalid",
-                                "A selected record relation ends in a literal",
-                                focus.where,
-                                details=focus.record.location,
-                                evidence_json=_evidence(
-                                    scope, scope_size, (), (link,), operation
-                                ),
-                            )
-                        )
-                        continue
-                    if target is None:
-                        issues.append(
-                            Issue(
-                                "data.topology_reference_missing"
-                                if closed
-                                else "data.topology_reference_unverified",
-                                "Relation target is outside the declared record corpus",
-                                focus.where,
-                                kind="finding" if closed else "unverified",
-                                details=focus.record.location,
-                                evidence_json=_evidence(
-                                    scope, scope_size, (), (link,), operation
-                                ),
-                            )
-                        )
-                        reach_unknown = reach_unknown or relation.reachability
-                        owner_unknown = owner_unknown or relation.ownership
-                        continue
-                    target_id = target.record.identifier
-                    if relation.reachability:
-                        operation.consume("states")
-                        reachable_edges.setdefault(source_id, set()).add(target_id)
-                    if relation.ownership:
-                        incoming = owners.setdefault(target_id, {})
-                        if source_id not in incoming:
-                            operation.consume("states")
-                            incoming[source_id] = link
-                        maximum = contract.max_owners
-                        if (
-                            maximum is not None
-                            and len(incoming) > maximum
-                            and target_id not in shared_set
-                            and target_id not in excess
-                        ):
-                            operation.consume("states", 1 + len(incoming))
-                            proof = tuple(incoming.values())
-                            issues.append(
-                                Issue(
-                                    "data.topology_owners",
-                                    "More distinct owners than the declared maximum",
-                                    target.where,
-                                    expected=str(maximum),
-                                    actual=str(len(incoming)),
-                                    details=target.record.location,
-                                    evidence_json=_evidence(
-                                        scope, scope_size, (), proof, operation
-                                    ),
-                                )
-                            )
-                            excess.add(target_id)
-                    if relation.acyclic and target_id not in adjacency.get(
-                        source_id, {}
-                    ):
-                        cycle_path = _path(adjacency, target_id, source_id, operation)
-                        if cycle_path is not None:
-                            operation.consume("states", 1 + len(cycle_path))
-                            identity = frozenset(
-                                (
-                                    source_id,
-                                    target_id,
-                                    *(
-                                        item.source.record.identifier
-                                        for item in cycle_path
-                                    ),
-                                )
-                            )
-                            if identity not in cycles:
-                                issues.append(
-                                    Issue(
-                                        "data.topology_cycle",
-                                        "Selected application paths form a cycle",
-                                        focus.where,
-                                        details=focus.record.location,
-                                        evidence_json=_evidence(
-                                            scope,
-                                            scope_size,
-                                            (),
-                                            (link, *cycle_path),
-                                            operation,
-                                        ),
-                                    )
-                                )
-                                cycles.add(identity)
-                        operation.consume("states")
-                        adjacency.setdefault(source_id, {})[target_id] = link
-            checked += 1
-        valid_ids = {focus.record.identifier for focus in nodes.values()}
-        reached = root_set & valid_ids
-        operation.consume("states", len(reached))
-        queue = deque(reached)
-        while queue:
-            current = queue.popleft()
-            operation.consume("work")
-            for target_id in reachable_edges.get(current, ()):
-                operation.consume("work")
-                if target_id not in reached:
-                    operation.consume("states")
-                    reached.add(target_id)
-                    queue.append(target_id)
-        if contract.require_reachable and not root_ids:
-            issues.append(
-                Issue(
-                    "data.topology_roots_unverified",
-                    "No required root record binding was supplied",
-                    kind="unverified",
-                )
-            )
-        for focus in nodes.values():
-            operation.consume("work")
-            identifier = focus.record.identifier
-            if contract.require_reachable and identifier not in reached:
-                known = closed and bool(root_ids) and not reach_unknown
-                issues.append(
-                    Issue(
-                        "data.topology_unreachable",
-                        "Record is not established reachable from the selected roots",
                         focus.where,
-                        kind="finding" if known else "unverified",
+                        kind="finding"
+                        if complete and closure == "closed"
+                        else "unverified",
                         details=focus.record.location,
-                        evidence_json=_evidence(
-                            scope, scope_size, (focus,), (), operation
-                        ),
                     )
                 )
-            minimum = contract.min_owners
-            count = len(owners.get(identifier, {}))
-            if minimum is not None and identifier not in root_set and count < minimum:
-                known = closed and not owner_unknown
-                issues.append(
-                    Issue(
-                        "data.topology_owners",
-                        "Required incoming ownership is not established",
-                        focus.where,
-                        kind="finding" if known else "unverified",
-                        expected=str(minimum),
-                        actual=str(count),
-                        details=focus.record.location,
-                        evidence_json=_evidence(
-                            scope, scope_size, (focus,), (), operation
-                        ),
-                    )
-                )
-        if not complete:
-            issues.append(
-                Issue(
-                    "data.topology_corpus_unverified",
-                    "Required record inventory is not declared complete",
-                    kind="unverified",
-                )
-            )
+        operation.consume("states", 2)
+        operation.consume("bytes", 256)
+        evidence = RelationEvidence(
+            scope, scope_size, corpus.unknown_inventory, corpus.unknown_inventory
+        )
+        policy = _Policy(corpus, evidence, contract, issues)
+        for item in evidence.links(corpus, contract, operation):
+            if isinstance(item, _Gap):
+                policy.unresolved(item)
+            else:
+                policy.observe(item)
+        policy.finish()
     except LimitExceeded as error:
         finished = False
         issues.exhausted(str(error), location="record-topology")
     return Report(
         "record-topology",
-        checked,
+        (corpus.checked if corpus is not None else 0)
+        + (evidence.checked if evidence is not None else 0),
         tuple(issues),
         requested=requested,
         complete=finished,
