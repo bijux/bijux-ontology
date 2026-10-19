@@ -1739,3 +1739,12 @@ belong to the chosen profile. Shared distributions and absent download URLs are
 allowed when the selected access rule is satisfied. Select historical graphs
 explicitly; unsupported required extensions, incomplete vocabularies and missing
 related populations withhold complete profile qualification.
+
+`interfaces.adapters.ontolex.read_lexicon` reads explicitly selected OntoLex Core
+entries, forms, written literals and separate senses against a supplied vocabulary
+view. `lookup_written` ranks language and form roles while preserving ties and
+sense identities. `write_lexicon` reconstructs the typed Core assertions and retains
+every other source graph, its original selection and resource metadata. Required
+missing references, unsupported extensions and caller-selected arity violations
+remain visible. `project_labels` explicitly reports omitted form/sense structure
+and keeps the full lexicon available; labels never become unconditional synonyms.

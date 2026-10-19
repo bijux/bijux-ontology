@@ -28,6 +28,13 @@ class DiagnosticExplanation:
 # Suffixes are exact registered diagnostics, not arbitrary prefix matches. Family
 # guidance shares scope and remedies without duplicating implementation messages.
 _CODES = {
+    "ontolex": frozenset(
+        "input source_unverified label_structure_omitted extension_unverified "
+        "entry_unverified canonical_count form_invalid sense_invalid "
+        "written_invalid literal_unverified written_missing reference_missing "
+        "reference_count reference_invalid reference_dangling reference_unverified "
+        "sense_owner_count".split()
+    ),
     "catalog": frozenset(
         "extension_unverified controlled_forbidden reference_unverified input".split()
     ),
@@ -441,6 +448,13 @@ _CODES = {
 
 # Meaning, corrective action and a minimal input example for each owned surface.
 _FAMILIES: dict[str, tuple[str, str, str, str]] = {
+    "ontolex": (
+        "selected asserted lexical entries, forms and ontology references",
+        "A selected lexical assertion fails its contract or remains unqualified.",
+        "Inspect original resource and sense identities, selected vocabulary "
+        "declarations, explicit arity policy and any omitted lexical structure.",
+        "read_lexicon(source, entries, vocabulary=view)",
+    ),
     "catalog": (
         "selected DCAT 3 records and explicit application-profile choices",
         "A selected record fails its rule or lacks complete profile coverage.",
