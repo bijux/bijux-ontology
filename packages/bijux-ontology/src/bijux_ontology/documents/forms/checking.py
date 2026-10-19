@@ -13,7 +13,6 @@ from bijux_ontology.json.paths import (
     bound_pointer_text,
     bounded_location,
 )
-from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.evidence.entities import source_entity
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
@@ -21,6 +20,7 @@ from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import SourceSelector
+from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .types import DocumentFormCheck, FormRequirement

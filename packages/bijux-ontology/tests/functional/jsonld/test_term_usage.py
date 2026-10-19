@@ -9,9 +9,9 @@ from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector
 from bijux_ontology.jsonld.term_usage import TermUsageRegion, check_term_usages
+from bijux_ontology.jsonld.usages.checking import PreparedUsages
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
 requires_processor = pytest.mark.skipif(

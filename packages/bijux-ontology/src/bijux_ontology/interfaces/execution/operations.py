@@ -18,9 +18,7 @@ from bijux_ontology.json.values import (
     optional_string_value,
     string_value,
 )
-from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
-from bijux_ontology.jsonld.comparison import compare_serializations
 from bijux_ontology.jsonld.contexts.comparison import compare_context_definitions
 from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.contexts.types import ContextScope
@@ -30,6 +28,8 @@ from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.selectors.codecs import selector_from_data
 from bijux_ontology.jsonld.selectors.types import EntitySelector
+from bijux_ontology.jsonld.usages.checking import check_context, prepare_usages
+from bijux_ontology.jsonld.usages.comparison import compare_serializations
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.rdf.sources.types import RdfSource

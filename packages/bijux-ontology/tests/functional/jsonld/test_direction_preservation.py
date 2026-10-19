@@ -5,10 +5,10 @@ from rdflib import Namespace
 
 from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.evidence.occurrences import occurrences
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
+from bijux_ontology.jsonld.usages.checking import prepare_usages
 
 EX = Namespace("https://language.example/")
 

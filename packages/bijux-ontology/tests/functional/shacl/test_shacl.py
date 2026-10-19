@@ -677,7 +677,7 @@ ex:Shape a sh:NodeShape; sh:targetNode ex:record;
 
 
 def test_nested_findings_and_complex_paths_preserve_raw_evidence() -> None:
-    from bijux_ontology.jsonld.checking import prepare_usages
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
     from bijux_ontology.shacl.findings import ShaclSource
 
     shapes = Graph().parse(
@@ -726,7 +726,7 @@ ex:Integer a sh:NodeShape; sh:datatype xsd:integer.
 
 
 def test_actual_source_correspondence_keeps_multiple_and_unknown_locations() -> None:
-    from bijux_ontology.jsonld.checking import prepare_usages
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
     from bijux_ontology.shacl.findings import ShaclSource
 
     document = {
@@ -771,7 +771,7 @@ ex:Shape a sh:NodeShape; sh:targetNode ex:record;
 
 
 def test_sequence_source_join_uses_actual_terminal_subject_and_selected_graph() -> None:
-    from bijux_ontology.jsonld.checking import prepare_usages
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
     from bijux_ontology.shacl.findings import ShaclSource
 
     document = {

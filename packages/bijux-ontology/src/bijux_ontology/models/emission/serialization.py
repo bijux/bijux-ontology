@@ -15,10 +15,10 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.json.values import encode_json, own_json
-from bijux_ontology.jsonld.checking import PreparedUsages
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import DocumentLoader
+from bijux_ontology.jsonld.usages.checking import PreparedUsages
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.context import same_context

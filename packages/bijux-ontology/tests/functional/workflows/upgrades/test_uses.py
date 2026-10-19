@@ -9,8 +9,8 @@ from bijux_ontology.declarations import (
     ValueDeclaration,
 )
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
+from bijux_ontology.jsonld.usages.checking import prepare_usages
 from bijux_ontology.workflows.upgrades.uses import index_uses
 
 EX = "https://example.org/"

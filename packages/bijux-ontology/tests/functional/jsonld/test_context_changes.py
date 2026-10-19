@@ -7,7 +7,7 @@ from typing import cast
 import pytest
 
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.jsonld.comparison import (
+from bijux_ontology.jsonld.usages.comparison import (
     compare_context_usages,
     compare_serializations,
 )
@@ -146,7 +146,7 @@ def test_valid_interoperability_limits_stay_distinct_from_malformed_input() -> N
 
 
 def test_prepared_context_comparison_keeps_the_established_resource_snapshot() -> None:
-    from bijux_ontology.jsonld.checking import prepare_usages
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
 
     current = EX + "label"
 

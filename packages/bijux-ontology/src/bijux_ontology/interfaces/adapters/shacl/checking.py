@@ -20,11 +20,11 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.json.paths import at_path, bound_path
 from bijux_ontology.json.values import own_json
-from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.evidence.entities import object_key
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.jsonld.processing.runtime import processor
+from bijux_ontology.jsonld.usages.checking import prepare_usages
 from bijux_ontology.models.emission.bindings import source_entity
 from bijux_ontology.models.emission.serialization import (
     InstanceCheck,

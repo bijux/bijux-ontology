@@ -7,10 +7,10 @@ from rdflib import Graph, Literal, URIRef
 
 from bijux_ontology.declarations import ABSENT
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.evidence.values import ValueKind
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import convert_to_rdf
+from bijux_ontology.jsonld.usages.checking import check_context, prepare_usages
 
 EX = "https://example.org/"
 

@@ -14,8 +14,7 @@ from bijux_ontology.execution.limits import Budget
 from bijux_ontology.json.paths import SourcePath, at_path, location
 from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
-
-from .selection import Expansion, UsageIndex
+from bijux_ontology.jsonld.usages.selection import Expansion, UsageIndex
 
 _GUARD = "https://bijux.org/ontology/omission-boundary/guard"
 _MARKER = "https://bijux.org/ontology/omission-boundary/value"

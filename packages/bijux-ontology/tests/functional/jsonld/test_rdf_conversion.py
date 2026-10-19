@@ -6,7 +6,6 @@ import pytest
 from rdflib import Dataset, Literal, URIRef
 from rdflib.collection import Collection
 
-from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import convert_to_rdf
 from bijux_ontology.jsonld.processing.expansion import expand_document
@@ -14,6 +13,7 @@ from bijux_ontology.jsonld.processing.resources import (
     DocumentLoader,
     context_document_loader,
 )
+from bijux_ontology.jsonld.usages.checking import check_context
 
 EX = "https://example.org/"
 

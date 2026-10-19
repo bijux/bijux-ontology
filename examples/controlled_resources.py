@@ -3,13 +3,13 @@
 from rdflib.namespace import OWL
 
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.resources import (
     OfflineDocumentLoader,
     context_document_loader,
 )
+from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.checking import check_vocabulary

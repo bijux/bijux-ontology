@@ -7,7 +7,6 @@ import pytest
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import convert_to_rdf
 from bijux_ontology.jsonld.processing.expansion import expand_document
@@ -18,6 +17,7 @@ from bijux_ontology.jsonld.processing.resources import (
     context_document_loader,
     context_resources,
 )
+from bijux_ontology.jsonld.usages.checking import check_context, prepare_usages
 
 EX = "https://example.org/"
 

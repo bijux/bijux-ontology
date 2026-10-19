@@ -18,8 +18,8 @@ from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.shacl.paths import ShaclPath, decode_path
 
 if TYPE_CHECKING:
-    from bijux_ontology.jsonld.checking import PreparedUsages
     from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
+    from bijux_ontology.jsonld.usages.checking import PreparedUsages
 
 _Edge = tuple[Node, Node, Node]
 
@@ -48,7 +48,7 @@ class ShaclSource:
 
     def __post_init__(self) -> None:
         # Optional JSON-LD dependencies are needed only for an actual source join.
-        from bijux_ontology.jsonld.checking import PreparedUsages
+        from bijux_ontology.jsonld.usages.checking import PreparedUsages
 
         if not isinstance(self.prepared, PreparedUsages) or not isinstance(
             self.source, str

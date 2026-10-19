@@ -3,8 +3,8 @@
 from dataclasses import replace
 
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.checking import prepare_usages
-from bijux_ontology.jsonld.comparison import compare_observed_usages
+from bijux_ontology.jsonld.usages.checking import prepare_usages
+from bijux_ontology.jsonld.usages.comparison import compare_observed_usages
 
 
 def test_renamed_source_paths_use_explicit_correspondence_without_reexpansion() -> None:
@@ -69,7 +69,7 @@ def test_unproven_locations_and_bounded_evidence_cannot_certify_agreement() -> N
 
 
 def test_explicit_comparison_budget_does_not_charge_an_old_preparation() -> None:
-    from bijux_ontology.jsonld.comparison import compare_context_usages
+    from bijux_ontology.jsonld.usages.comparison import compare_context_usages
 
     original = Budget()
     prepared = prepare_usages(

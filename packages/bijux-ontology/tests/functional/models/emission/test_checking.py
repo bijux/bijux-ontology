@@ -556,7 +556,7 @@ def test_entity_join_does_not_discharge_source_object_field_obligations() -> Non
 
 
 def test_graph_scoped_inventory_keeps_anonymous_subjects_and_graphs_distinct() -> None:
-    from bijux_ontology.jsonld.checking import prepare_usages
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
 
     document = {
         "@context": {"@vocab": EX},

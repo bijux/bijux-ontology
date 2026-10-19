@@ -4,11 +4,11 @@ from dataclasses import dataclass
 
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, retain_report
-from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.composition.checking import _Case, _document
 from bijux_ontology.jsonld.contexts.processing import _data, inspect_context
 from bijux_ontology.jsonld.contexts.types import ContextInspection, TermDefinition
 from bijux_ontology.jsonld.processing.resources import ContextResources
+from bijux_ontology.jsonld.usages.checking import check_context
 
 
 @dataclass

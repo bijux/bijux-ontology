@@ -17,11 +17,10 @@ from bijux_ontology.json.paths import SourcePath, location
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy, convert_to_rdf
 from bijux_ontology.jsonld.processing.resources import DocumentLoader
+from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
-
-from .checking import PreparedUsages, prepare_usages
 
 
 def _resource(value: str | None, implicit: int | None = None) -> str | None:

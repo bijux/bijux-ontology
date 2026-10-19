@@ -3,14 +3,14 @@
 from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 from bijux_ontology.declarations import (
     FieldDeclaration,
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.usages.checking import prepare_usages
+from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 
 EX = "https://example.org/"
 before = Graph().parse(
