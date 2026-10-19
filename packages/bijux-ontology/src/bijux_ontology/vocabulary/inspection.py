@@ -12,10 +12,11 @@ from bijux_ontology.owl.constructs import unsupported_constructs
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.snapshots import copy_graph
 from bijux_ontology.vocabulary.identifiers import expand_curie
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Report
-from .loading import load_vocabulary
 from .results import (
     Annotation,
     Deprecation,
@@ -28,7 +29,6 @@ from .results import (
     Summary,
     TermInfo,
 )
-from .view import Vocabulary
 
 T = TypeVar("T")
 

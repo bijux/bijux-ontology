@@ -33,7 +33,7 @@ from bijux_ontology.shacl.functions import (
 )
 from bijux_ontology.shacl.paths import decode_path
 from bijux_ontology.shacl.targets.preparation import prepare_targets
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 _UNSUPPORTED = frozenset(
     (

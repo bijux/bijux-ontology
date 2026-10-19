@@ -14,7 +14,7 @@ from bijux_ontology.vocabulary.comparison import VocabularyChanges, compare_voca
 from bijux_ontology.vocabulary.facts.comparison import _collect, _metadata
 from bijux_ontology.vocabulary.facts.types import FactSelection, SelectedFact
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 from .types import (
     HistoryCoverage,

@@ -15,7 +15,7 @@ from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .preparation import _operation, _records
 from .types import ForeignReferenceResult, ForeignResolution, ForeignTargetIndex

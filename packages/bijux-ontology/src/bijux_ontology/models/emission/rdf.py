@@ -32,7 +32,7 @@ from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 
 def _traits(graph: Graph, node: Node, budget: Budget) -> ValueTraits:

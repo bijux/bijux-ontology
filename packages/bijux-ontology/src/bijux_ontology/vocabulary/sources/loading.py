@@ -11,10 +11,9 @@ from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import _charge_graph
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources import Payload, RdfSource
-
-from .imports import required_imports
-from .sources import OwnedSource
-from .view import Vocabulary
+from bijux_ontology.vocabulary.sources.imports import required_imports
+from bijux_ontology.vocabulary.sources.types import OwnedSource
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 
 def load_vocabulary(

@@ -15,9 +15,8 @@ from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
 from bijux_ontology.rdf.snapshots import _read_graph, bind_namespaces, copy_graph
-
-from .results import Edge, TermInfo
-from .sources import GraphKind, OwnedSource, source_role
+from bijux_ontology.vocabulary.results import Edge, TermInfo
+from bijux_ontology.vocabulary.sources.types import GraphKind, OwnedSource, source_role
 
 
 @dataclass(frozen=True, slots=True)

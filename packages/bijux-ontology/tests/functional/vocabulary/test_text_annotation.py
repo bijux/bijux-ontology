@@ -16,7 +16,7 @@ from bijux_ontology.vocabulary.lexical import (
     annotate_text,
     prepare_lexical_index,
 )
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/mentions/")
 

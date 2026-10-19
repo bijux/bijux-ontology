@@ -19,9 +19,9 @@ from bijux_ontology.vocabulary.annotations.graphs.reading import (
 )
 from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationStatement
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.obo.reading import read_obo_records
 from bijux_ontology.vocabulary.restrictions.projection import project_restrictions
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 DEFINITION = URIRef("http://purl.obolibrary.org/obo/IAO_0000115")
 XREF = URIRef("http://www.geneontology.org/formats/oboInOwl#hasDbXref")

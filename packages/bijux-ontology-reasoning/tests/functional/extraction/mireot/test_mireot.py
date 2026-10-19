@@ -29,7 +29,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.checking import check_models
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = "https://example.org/"
 A, B, UPPER = (NamedEntity("class", EX + name) for name in ("A", "B", "Upper"))

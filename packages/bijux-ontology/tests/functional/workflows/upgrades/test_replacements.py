@@ -26,12 +26,12 @@ from bijux_ontology.reports import Report
 from bijux_ontology.skos.subsets import select_concepts
 from bijux_ontology.vocabulary.facts.types import FactPredicate
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.registry.types import (
     IdentifierRegistry,
     NamespaceContribution,
 )
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.upgrades.replacements import (
     ApprovedReplacement,
     ReplacementCheck,

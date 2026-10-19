@@ -25,8 +25,8 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals import Regime
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.reports import Issue, Report, combine_reports
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .checking import check_models
 

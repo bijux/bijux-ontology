@@ -25,8 +25,8 @@ from bijux_ontology.vocabulary.builtins import (
 )
 from bijux_ontology.vocabulary.checking import _lint_issues
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.ontology.deprecation import check_deprecated_terms
 
 _CLASS = (str(OWL.Class), str(RDFS.Class))

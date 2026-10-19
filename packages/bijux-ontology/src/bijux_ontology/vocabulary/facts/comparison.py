@@ -14,9 +14,9 @@ from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, bound_text, literal_datatype, term_key
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.sources import source_role
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.types import source_role
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .projection import FactProjection
 from .types import (

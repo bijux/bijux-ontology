@@ -27,7 +27,7 @@ from bijux_ontology.models.emission.serialization import (
 )
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://example.org/")
 

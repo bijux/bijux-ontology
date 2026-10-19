@@ -16,7 +16,7 @@ from bijux_ontology.vocabulary.browsing import (
 )
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.results import Edge, SearchMatch
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/")
 

@@ -19,9 +19,9 @@ from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.restrictions.projection import project_restrictions
 from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 from .types import GoTaxonReceipt, GoTaxonRelease, GoTaxonResource, TaxonConstraint, iri
 

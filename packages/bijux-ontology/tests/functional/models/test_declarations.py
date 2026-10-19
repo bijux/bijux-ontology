@@ -9,7 +9,7 @@ from bijux_ontology.declarations import FieldDeclaration as Field
 from bijux_ontology.declarations import ModelDeclaration as Model
 from bijux_ontology.declarations import ValueDeclaration as Value
 from bijux_ontology.models import check_models
-from bijux_ontology.vocabulary import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://example.org/vocabulary#")
 

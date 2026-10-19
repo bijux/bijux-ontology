@@ -27,8 +27,8 @@ from bijux_ontology.skos.subsets.selection import select_concepts
 from bijux_ontology.skos.xl import ROLES, XL, describe_xl_label
 from bijux_ontology.vocabulary.collections.expansion import expand_collection
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.upgrades.plans.execution import execute_migration_plan
 from bijux_ontology.workflows.upgrades.plans.types import (
     MigrationPlanResult,

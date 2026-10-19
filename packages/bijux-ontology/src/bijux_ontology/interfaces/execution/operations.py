@@ -34,7 +34,7 @@ from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 

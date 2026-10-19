@@ -11,7 +11,7 @@ from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.pages import _comparison_text
 from bijux_ontology.vocabulary.lexical.types import LexicalIndex
 from bijux_ontology.vocabulary.results import SearchMatch
-from bijux_ontology.vocabulary.view import _LexicalCandidate
+from bijux_ontology.vocabulary.sources.view import _LexicalCandidate
 
 from .types import LexicalMappingProposal, MappingProposals
 

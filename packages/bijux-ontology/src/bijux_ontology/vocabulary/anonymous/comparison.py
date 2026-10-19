@@ -15,7 +15,7 @@ from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.facts.projection import FactProjection
 from bijux_ontology.vocabulary.facts.types import FactGraph, SelectedFact
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import AnonymousChange, AnonymousDifferences, NamedAttachment
 

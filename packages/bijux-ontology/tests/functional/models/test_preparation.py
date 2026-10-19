@@ -24,7 +24,7 @@ from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.models.preparation import PreparedModels
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.reports import Report, combine_reports
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://example.org/catalogue/")
 

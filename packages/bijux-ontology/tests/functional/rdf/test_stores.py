@@ -25,7 +25,10 @@ from bijux_ontology.rdf.stores.protocol import scope_data
 from bijux_ontology.reports import Issue
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.storage import check_stored_terms, inspect_stored_terms
+from bijux_ontology.vocabulary.sources.storage import (
+    check_stored_terms,
+    inspect_stored_terms,
+)
 
 E = Namespace("urn:store:")
 

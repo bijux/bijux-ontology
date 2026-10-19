@@ -8,7 +8,7 @@ from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.results import SearchMatch
-from bijux_ontology.vocabulary.view import _LexicalCandidate
+from bijux_ontology.vocabulary.sources.view import _LexicalCandidate
 
 
 @dataclass(frozen=True, init=False, eq=False)

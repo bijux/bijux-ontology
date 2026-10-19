@@ -26,8 +26,8 @@ from bijux_ontology.rdf.stores.types import StoredRdf
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.reports import issue_from_data as read_issue
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .protocol import read_statement, stored_data
 from .types import GlobalCheck, StreamCheck, StreamFinding

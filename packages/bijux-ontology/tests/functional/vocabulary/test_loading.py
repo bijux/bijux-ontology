@@ -12,7 +12,9 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.vocabulary import Vocabulary, check_vocabulary, load_vocabulary
+from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/")
 TURTLE = "@prefix ex:<https://example.org/>. ex:Image a <http://www.w3.org/2002/07/owl#Class>."

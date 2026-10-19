@@ -6,8 +6,8 @@ from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
-from bijux_ontology.vocabulary import Vocabulary
 from bijux_ontology.vocabulary.builtins import Regime
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
 
 EX = Namespace("https://example.org/")

@@ -5,7 +5,7 @@ from typing import Generic, TypeVar
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.view import _VocabularyIndex
+from bijux_ontology.vocabulary.sources.view import _VocabularyIndex
 
 T = TypeVar("T")
 

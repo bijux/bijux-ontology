@@ -19,8 +19,8 @@ from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.rdf.workloads.qualification import _engine, _plan
 from bijux_ontology.rdf.workloads.types import EngineConfig, WorkloadQuery
 from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.imports import required_imports
-from bijux_ontology.vocabulary.sources import OwnedSource
+from bijux_ontology.vocabulary.sources.imports import required_imports
+from bijux_ontology.vocabulary.sources.types import OwnedSource
 
 from .execution import generate_query
 from .types import (

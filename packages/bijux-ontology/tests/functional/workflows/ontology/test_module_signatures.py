@@ -9,7 +9,7 @@ from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.owl.obligations import OntologyObligation
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.ontology.modules import (
     ModuleBinding,
     ModuleContract,

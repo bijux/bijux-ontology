@@ -31,8 +31,8 @@ from bijux_ontology.owl.obligations import (
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals import Regime, check_literal
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from ..errors import InputError, LimitExceeded
 from ..reports import Issue, Report, combine_reports

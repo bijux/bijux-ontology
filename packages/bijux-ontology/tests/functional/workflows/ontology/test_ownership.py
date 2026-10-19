@@ -8,7 +8,7 @@ from rdflib.namespace import OWL, RDF, RDFS, XSD
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.facts import FactPredicate, FactSelection
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.ontology.ownership import OwnerClaim, check_ownership
 
 EX = Namespace("https://ownership.example/")

@@ -8,7 +8,8 @@ from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.declarations import TermDeclaration
 from bijux_ontology.errors import InputError
-from bijux_ontology.vocabulary import check_vocabulary, load_vocabulary
+from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://example.org/vocabulary#")
 

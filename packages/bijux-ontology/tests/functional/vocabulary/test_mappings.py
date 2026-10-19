@@ -23,7 +23,7 @@ from bijux_ontology.vocabulary.mappings import (
     export_sssom,
     read_sssom,
 )
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 E = Namespace("urn:example:")
 LICENSE = "https://creativecommons.org/publicdomain/zero/1.0/"

@@ -38,7 +38,7 @@ from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.facts.types import FactPredicate
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.upgrades.uses import index_uses
 
 from .declarations import own_models, rewrite_declarations

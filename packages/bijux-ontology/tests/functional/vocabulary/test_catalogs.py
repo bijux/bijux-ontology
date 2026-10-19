@@ -11,8 +11,9 @@ from bijux_ontology.declarations import TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.vocabulary import check_vocabulary, load_vocabulary
-from bijux_ontology.vocabulary.catalogs import OntologyVersion, load_catalog
+from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.sources.catalogs import OntologyVersion, load_catalog
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://catalog.example/")
 XMLNS = "urn:oasis:names:tc:entity:xmlns:xml:catalog"

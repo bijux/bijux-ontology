@@ -14,7 +14,7 @@ from bijux_ontology.vocabulary.restrictions import (
     existential_path,
     project_restrictions,
 )
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/restrictions/")
 

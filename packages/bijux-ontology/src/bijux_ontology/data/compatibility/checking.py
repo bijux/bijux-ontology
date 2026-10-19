@@ -17,8 +17,8 @@ from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.reports import Issue, Location, Report
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .literals import bounded_text, integer_membership
 

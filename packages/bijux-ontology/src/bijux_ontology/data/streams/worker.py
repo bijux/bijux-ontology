@@ -30,9 +30,9 @@ from bijux_ontology.rdf.stores.native import DeclarationReader
 from bijux_ontology.rdf.terms import bound_node, bound_text, oxigraph_term
 from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.sources import OwnedSource
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.types import OwnedSource
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .protocol import read_stored
 

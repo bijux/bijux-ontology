@@ -13,7 +13,7 @@ from bijux_ontology.rdf.datatype_evaluators import DatatypeEvaluator, DatatypeRe
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("urn:compatibility:")
 

@@ -13,8 +13,8 @@ from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import validate_triple
 from bijux_ontology.vocabulary.results import Edge, TermInfo
-from bijux_ontology.vocabulary.sources import OwnedSource
-from bijux_ontology.vocabulary.view import _VocabularyIndex
+from bijux_ontology.vocabulary.sources.types import OwnedSource
+from bijux_ontology.vocabulary.sources.view import _VocabularyIndex
 
 from .sources import TermTable, record, reference
 

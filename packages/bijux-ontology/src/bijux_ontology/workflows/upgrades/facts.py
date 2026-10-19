@@ -17,7 +17,7 @@ from bijux_ontology.vocabulary.facts.types import (
     SelectedFactDifference,
     SelectedFactDifferences,
 )
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.vocabulary.sources.types import source_role
 
 from .uses import Use, UseIndex
 

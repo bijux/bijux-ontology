@@ -11,7 +11,7 @@ from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.results import Edge
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 
 @dataclass(frozen=True)

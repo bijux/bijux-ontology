@@ -19,7 +19,7 @@ from bijux_ontology.interfaces.adapters.sparql import (
 )
 from bijux_ontology.models.checking import check_models
 from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.projects.acquisition import AcquisitionPolicy
 
 P = URIRef("urn:p")

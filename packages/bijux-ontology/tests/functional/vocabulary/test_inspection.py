@@ -8,9 +8,9 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Limits
-from bijux_ontology.vocabulary import Vocabulary
 from bijux_ontology.vocabulary.identifiers import compact_iri, expand_curie
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/")
 

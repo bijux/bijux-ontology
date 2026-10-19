@@ -23,7 +23,7 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.emission.serialization import InstanceCheck, check_serialized
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.reports import Issue, Report, combine_reports
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 
 def _pointer(path: SourcePath, budget: Budget) -> str:

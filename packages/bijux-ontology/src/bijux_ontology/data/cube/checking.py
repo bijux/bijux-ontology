@@ -25,8 +25,8 @@ from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.skos.subsets.selection import select_concepts
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.navigation import traverse
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 from .inspection import CubeRead, Resource
 from .normalization import QB, normalize

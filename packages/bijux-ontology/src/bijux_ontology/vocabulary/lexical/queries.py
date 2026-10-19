@@ -11,7 +11,7 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.browsing.pages import _comparison_text, _PageBudget
 from bijux_ontology.vocabulary.results import SearchMatch
-from bijux_ontology.vocabulary.view import _LexicalCandidate
+from bijux_ontology.vocabulary.sources.view import _LexicalCandidate
 
 from .preparation import _variants
 from .types import LexicalIndex, LexicalResults, LexicalSuggestion

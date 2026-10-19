@@ -26,7 +26,7 @@ from bijux_ontology.limits import (
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .schemas import CORE_SHA256, CORE_VERSION, check_schema, resource
 from .types import (

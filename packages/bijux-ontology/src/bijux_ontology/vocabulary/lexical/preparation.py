@@ -17,7 +17,7 @@ from bijux_ontology.vocabulary.browsing.pages import (
     _PageBudget,
 )
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.view import _LexicalCandidate
+from bijux_ontology.vocabulary.sources.view import _LexicalCandidate
 
 from .types import LexicalIndex, LexicalPreparation
 

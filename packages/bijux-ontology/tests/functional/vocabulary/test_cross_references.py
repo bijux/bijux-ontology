@@ -13,7 +13,6 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.accessions.types import AccessionRule
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.obo.cross_references import (
     CrossReferenceCheck,
     LocalCatalogue,
@@ -23,6 +22,7 @@ from bijux_ontology.vocabulary.registry.types import (
     IdentifierRegistry,
     NamespaceContribution,
 )
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 E = Namespace("urn:owner:")
 DB = Namespace("https://example.org/database/")

@@ -18,7 +18,7 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.emission.serialization import InstanceCheck, check_instance
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.reports import Issue, Report, combine_reports
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from ..registry import index_models
 from .types import (

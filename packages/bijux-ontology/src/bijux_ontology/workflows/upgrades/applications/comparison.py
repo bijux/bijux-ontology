@@ -16,8 +16,8 @@ from bijux_ontology.vocabulary.comparison import (
     selected_view,
 )
 from bijux_ontology.vocabulary.facts.types import FactSelection
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.upgrades.anonymous import (
     AnonymousAffectedUse,
     anonymous_uses,

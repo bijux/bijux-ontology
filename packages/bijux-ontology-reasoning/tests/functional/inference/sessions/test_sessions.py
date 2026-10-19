@@ -39,8 +39,8 @@ from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.sources import RdfSource
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.restrictions import project_restrictions
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 _SOURCE = """Ontology(<urn:session>
  Declaration(Class(<urn:A>)) Declaration(Class(<urn:B>))

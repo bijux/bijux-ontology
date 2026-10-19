@@ -8,7 +8,7 @@ from rdflib import URIRef
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.errors import InputError
 from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from ..identity import FhirCodeBinding, FhirCodeIdentity
 

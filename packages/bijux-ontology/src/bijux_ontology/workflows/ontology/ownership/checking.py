@@ -20,7 +20,7 @@ from bijux_ontology.vocabulary.facts.comparison import (
 )
 from bijux_ontology.vocabulary.facts.types import FactGraph, FactSelection, SelectedFact
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import OwnerClaim, OwnershipCheck, OwnershipEvidence
 

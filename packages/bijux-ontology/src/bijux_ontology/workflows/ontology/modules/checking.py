@@ -24,7 +24,7 @@ from bijux_ontology.rdf.terms import bound_node, bound_text
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.builtins import builtin_kinds, kind_matches
 from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import (
     ModuleBinding,

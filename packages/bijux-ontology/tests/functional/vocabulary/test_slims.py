@@ -11,7 +11,6 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
 from bijux_ontology.vocabulary.relation_paths.types import (
     RelationRepeat,
     RelationSequence,
@@ -19,6 +18,7 @@ from bijux_ontology.vocabulary.relation_paths.types import (
 )
 from bijux_ontology.vocabulary.restrictions.projection import project_restrictions
 from bijux_ontology.vocabulary.slims import SlimAnnotation, assign_slim
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://example.org/slims/")
 

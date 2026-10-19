@@ -6,7 +6,7 @@ from rdflib.namespace import OWL, RDF, RDFS, SKOS
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.obo import read_obo_records
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/obo/")
 OIO = Namespace("http://www.geneontology.org/formats/oboInOwl#")

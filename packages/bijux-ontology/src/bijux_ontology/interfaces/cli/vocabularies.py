@@ -10,8 +10,8 @@ from bijux_ontology.interfaces.cli.inputs import protect_paths, rdf_input, sourc
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Limits
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 
 def load_command_vocabulary(

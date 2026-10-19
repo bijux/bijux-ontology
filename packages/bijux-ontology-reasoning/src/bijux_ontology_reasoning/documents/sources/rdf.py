@@ -25,9 +25,9 @@ from bijux_ontology.rdf.terms import (
     independent_blank_scopes,
 )
 from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.sources import GraphKind, source_role
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.types import GraphKind, source_role
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from ...backend.types import ProfileDocument
 

@@ -12,7 +12,7 @@ from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.inspection import VocabularyView
 from bijux_ontology.vocabulary.results import Edge, SearchMatch, TermInfo
-from bijux_ontology.vocabulary.view import _LexicalCandidate
+from bijux_ontology.vocabulary.sources.view import _LexicalCandidate
 
 from .types import VocabularyCursor, VocabularyPage
 

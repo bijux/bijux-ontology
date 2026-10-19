@@ -31,7 +31,7 @@ from pathlib import Path
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 vocabulary = load_vocabulary(Path("ontology.ttl"))
 view = inspect_vocabulary(vocabulary)

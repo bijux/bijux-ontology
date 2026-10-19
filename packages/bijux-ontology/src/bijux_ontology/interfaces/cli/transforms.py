@@ -26,7 +26,7 @@ from bijux_ontology.rdf.transforms import (
     remap_iris,
 )
 from bijux_ontology.reports import Report, combine_reports
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
 
 

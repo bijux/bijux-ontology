@@ -43,8 +43,8 @@ from bijux_ontology.vocabulary.annotations.graphs.types import (
     AnnotationValueEdit,
 )
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.sources import OwnedSource
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.types import OwnedSource
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .types import (
     AnnotationChange,

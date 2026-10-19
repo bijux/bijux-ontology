@@ -15,7 +15,7 @@ from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
 from bijux_ontology.vocabulary.navigation import traverse
 from bijux_ontology.vocabulary.results import Edge
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import SdrfOntology, SdrfTerm
 

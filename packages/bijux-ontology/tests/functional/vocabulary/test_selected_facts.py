@@ -20,7 +20,7 @@ from bijux_ontology.vocabulary.facts import (
     compare_selected_facts,
 )
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("urn:selected:")
 

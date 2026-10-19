@@ -18,8 +18,8 @@ from bijux_ontology.interfaces.adapters.sdrf import (
 )
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 sdrf = pytest.importorskip("sdrf_pipelines.sdrf.sdrf")
 models = pytest.importorskip("sdrf_pipelines.sdrf.schemas.models")

@@ -25,8 +25,8 @@ from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report, combine_reports
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 if TYPE_CHECKING:
     from bijux_ontology.models.corpus.types import _CorpusEvidence

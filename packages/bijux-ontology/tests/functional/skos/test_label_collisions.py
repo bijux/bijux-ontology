@@ -12,7 +12,7 @@ from bijux_ontology.limits import Limits
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.labels import Comparison, LabelHomonym, check_label_collisions
 from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://example.org/")
 
