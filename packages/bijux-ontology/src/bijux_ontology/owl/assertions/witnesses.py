@@ -11,9 +11,9 @@ from rdflib.namespace import OWL, RDF
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.owl.obligations import OntologyObligation
 
-from .context import AssertionContext, _Row
+from .context import AssertionContext
 from .patterns import Resource
-from .types import Statement, TermKey
+from .types import PropertyAssertion, Statement, TermKey
 
 
 def edge_witnesses(
@@ -73,7 +73,10 @@ def edge_witnesses(
 
 
 def same_edge(
-    state: AssertionContext, left: _Row, right: _Row, kind: str
+    state: AssertionContext,
+    left: PropertyAssertion,
+    right: PropertyAssertion,
+    kind: str,
 ) -> tuple[Statement, ...] | None:
     """Prove the same subject/value tuple using resource or actual datatype identity."""
     first = state.equal(left.subject, right.subject)
@@ -165,7 +168,7 @@ def negatives(state: AssertionContext) -> None:
             continue
         if isinstance(negative.value, Literal):
             state.validate(negative.value, (*negative.premises, *declaration))
-        row = _Row(negative.subject, negative.value, negative.premises[0])
+        row = PropertyAssertion(negative.subject, negative.value, negative.premises[0])
         indexed = state.indexed_rows(negative.predicate)
         subject = state.identity.find(state.key(negative.subject))
         if kind == "object":

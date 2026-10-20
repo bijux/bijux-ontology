@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Literal as Choice
 from typing import cast
 
@@ -22,16 +21,7 @@ from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 from .identity import Identity, retain_premises
 from .indexing import PropertyRows
 from .patterns import Patterns, Resource, Value
-from .types import AssertionWitness, Statement, TermKey
-
-
-@dataclass(frozen=True)
-class _Row:
-    """An original property assertion and its already qualified proof premise."""
-
-    subject: Resource
-    value: Value
-    premise: Statement
+from .types import AssertionWitness, PropertyAssertion, Statement, TermKey
 
 
 class AssertionContext:
@@ -51,7 +41,7 @@ class AssertionContext:
         self.properties: dict[
             URIRef, tuple[Choice["object", "data"] | None, tuple[Statement, ...]]
         ] = {}
-        self.assertions: dict[URIRef, tuple[_Row, ...]] = {}
+        self.assertions: dict[URIRef, tuple[PropertyAssertion, ...]] = {}
         self.row_indexes: dict[URIRef, tuple[int, PropertyRows]] = {}
         self.named: set[TermKey] = set()
         self.types: list[tuple[Resource, URIRef, Statement]] = []
@@ -155,7 +145,7 @@ class AssertionContext:
         )
         return self.properties[predicate]
 
-    def rows(self, predicate: URIRef) -> tuple[_Row, ...]:
+    def rows(self, predicate: URIRef) -> tuple[PropertyAssertion, ...]:
         """Cache only demanded property assertions using the maintained graph index."""
         cached = self.assertions.get(predicate)
         if cached is not None:
@@ -183,7 +173,7 @@ class AssertionContext:
                 self.mark_named(value)
             self.operation.consume("states")
             self.operation.consume("bytes", 96)
-            row = _Row(subject, cast(Value, value), proof)
+            row = PropertyAssertion(subject, cast(Value, value), proof)
             rows.append(row)
             if isinstance(value, Literal):
                 self.validate(value, (proof, *declaration))
@@ -196,7 +186,9 @@ class AssertionContext:
         generation = len(self.identity.consequences)
         existing = self.row_indexes.get(predicate)
         if existing is None or existing[0] != generation:
-            rows = PropertyRows(self, predicate)
+            rows = PropertyRows(
+                self.rows(predicate), self.identity, self.operation, self.key
+            )
             self.operation.consume("states")
             self.operation.reserve_storage(128)
             self.row_indexes[predicate] = generation, rows

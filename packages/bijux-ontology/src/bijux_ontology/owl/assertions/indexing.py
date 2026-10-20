@@ -2,30 +2,37 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Callable
 
 from rdflib import BNode, URIRef
+from rdflib.term import Node
 
-from .types import TermKey
+from bijux_ontology.execution.budgets import Operation
 
-if TYPE_CHECKING:
-    from .context import AssertionContext, _Row
+from .identity import Identity
+from .types import PropertyAssertion, TermKey
 
 
 class PropertyRows:
     """Retain original row order and premises beside finite identity buckets."""
 
-    def __init__(self, state: AssertionContext, predicate: URIRef) -> None:
-        self.subjects: dict[TermKey, list[_Row]] = {}
-        self.edges: dict[tuple[TermKey, TermKey], list[_Row]] = {}
+    def __init__(
+        self,
+        rows: tuple[PropertyAssertion, ...],
+        identity: Identity,
+        operation: Operation,
+        key: Callable[[Node], TermKey],
+    ) -> None:
+        self.subjects: dict[TermKey, list[PropertyAssertion]] = {}
+        self.edges: dict[tuple[TermKey, TermKey], list[PropertyAssertion]] = {}
         self.positions: dict[int, int] = {}
-        for position, row in enumerate(state.rows(predicate)):
-            state.operation.consume("work")
-            state.operation.consume("states", 3)
-            state.operation.reserve_storage(256)
-            subject = state.identity.find(state.key(row.subject))
+        for position, row in enumerate(rows):
+            operation.consume("work")
+            operation.consume("states", 3)
+            operation.reserve_storage(256)
+            subject = identity.find(key(row.subject))
             self.subjects.setdefault(subject, []).append(row)
             self.positions[id(row)] = position
             if isinstance(row.value, URIRef | BNode):
-                value = state.identity.find(state.key(row.value))
+                value = identity.find(key(row.value))
                 self.edges.setdefault((subject, value), []).append(row)

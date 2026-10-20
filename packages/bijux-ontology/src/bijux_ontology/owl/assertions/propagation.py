@@ -6,9 +6,9 @@ from itertools import chain, combinations, product
 from rdflib import BNode, URIRef
 
 from .consequences import functional_pair, key_identities
-from .context import AssertionContext, _Row
+from .context import AssertionContext
 from .patterns import KeyPattern
-from .types import TermKey
+from .types import PropertyAssertion, TermKey
 
 
 class FunctionalBuckets:
@@ -22,9 +22,9 @@ class FunctionalBuckets:
     ) -> None:
         self.state = state
         self.rules: list[tuple[URIRef, bool, bool]] = []
-        self.buckets: list[dict[TermKey, list[_Row]]] = []
+        self.buckets: list[dict[TermKey, list[PropertyAssertion]]] = []
         self.owners: dict[TermKey, set[int]] = {}
-        self.pending: deque[tuple[int, _Row, _Row]] = deque()
+        self.pending: deque[tuple[int, PropertyAssertion, PropertyAssertion]] = deque()
         for predicate, inverse_ in (
             *((p, False) for p in functional),
             *((p, True) for p in inverse),
@@ -39,7 +39,7 @@ class FunctionalBuckets:
             state.operation.reserve_storage(256)
             rule = len(self.rules)
             self.rules.append((predicate, inverse_, kind == "data"))
-            groups: dict[TermKey, list[_Row]] = {}
+            groups: dict[TermKey, list[PropertyAssertion]] = {}
             self.buckets.append(groups)
             for row in state.rows(predicate):
                 endpoint = row.value if inverse_ else row.subject
@@ -58,7 +58,9 @@ class FunctionalBuckets:
                 for left, right in pairs:
                     self.schedule(rule, left, right)
 
-    def schedule(self, rule: int, left: _Row, right: _Row) -> None:
+    def schedule(
+        self, rule: int, left: PropertyAssertion, right: PropertyAssertion
+    ) -> None:
         """Reserve each finite pending inference before retaining its original rows."""
         self.state.operation.consume("work")
         self.state.operation.consume("states")

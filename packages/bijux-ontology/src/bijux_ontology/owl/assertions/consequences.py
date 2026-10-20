@@ -5,17 +5,18 @@ from __future__ import annotations
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import OWL, RDF
 
-from .context import AssertionContext, _Row
+from .context import AssertionContext
 from .key_join import KeyJoin
 from .patterns import KeyPattern
+from .types import PropertyAssertion
 
 
 def functional_pair(
     state: AssertionContext,
     predicate: URIRef,
     inverse: bool,
-    left: _Row,
-    right: _Row,
+    left: PropertyAssertion,
+    right: PropertyAssertion,
 ) -> None:
     """Apply one affected pair, retaining only complete original-premise evidence."""
     state.operation.consume("work")

@@ -5,10 +5,10 @@ from collections.abc import Iterator
 from rdflib import Literal, URIRef
 from rdflib.namespace import OWL
 
-from .context import AssertionContext, _Row
+from .context import AssertionContext
 from .indexing import PropertyRows
 from .patterns import KeyPattern, Resource
-from .types import Statement, TermKey
+from .types import PropertyAssertion, Statement, TermKey
 
 
 class KeyJoin:
@@ -127,14 +127,16 @@ class KeyJoin:
             if matched:
                 yield candidate
 
-    def subject_rows(self, predicate: URIRef, subject: Resource) -> list[_Row]:
+    def subject_rows(
+        self, predicate: URIRef, subject: Resource
+    ) -> list[PropertyAssertion]:
         """Read actual original assertions of one established subject class."""
         representative = self.state.identity.find(self.state.key(subject))
         return self.rows[predicate].subjects.get(representative, [])
 
     def value_rows(
         self, predicate: URIRef, subject: Resource, value: Resource
-    ) -> list[_Row]:
+    ) -> list[PropertyAssertion]:
         """Select object fillers only after both endpoint identities are proved."""
         first = self.state.identity.find(self.state.key(subject))
         second = self.state.identity.find(self.state.key(value))
