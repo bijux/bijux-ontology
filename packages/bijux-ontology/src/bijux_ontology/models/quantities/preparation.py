@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from decimal import Context, Decimal, localcontext
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
+from typing import Literal as Choice
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
@@ -14,19 +15,27 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, boun
 from .checking import PreparedQuantities
 from .types import UnitBinding
 
-_SUPPORTED = frozenset(
+_LENGTH_TIME = frozenset(
     (
         "meter",
         "millimeter",
+        "micrometer",
+        "nanometer",
         "centimeter",
         "kilometer",
         "second",
+        "millisecond",
+        "microsecond",
         "minute",
         "hour",
-        "kelvin",
-        "degree_Celsius",
     )
 )
+
+
+_PROFILES = {
+    "exact-atomic": _LENGTH_TIME | {"kelvin", "degree_Celsius"},
+    "multiplicative-length-time": _LENGTH_TIME,
+}
 
 
 def _diagnostic(issues: IssueCollector, issue: Issue) -> None:
@@ -40,6 +49,7 @@ def _diagnostic(issues: IssueCollector, issue: Issue) -> None:
 def prepare_quantities(
     bindings: Sequence[UnitBinding],
     *,
+    profile: Choice["exact-atomic", "multiplicative-length-time"] = "exact-atomic",
     limits: Limits | None = None,
     budget: Budget | None = None,
 ) -> PreparedQuantities:
@@ -57,6 +67,9 @@ def prepare_quantities(
     checked = 0
     requested = 1
     try:
+        if not isinstance(profile, str) or profile not in _PROFILES:
+            raise InputError("Select a supported finite atomic quantity profile")
+        supported = _PROFILES[profile]
         captured = capture(bindings, current)
         requested = max(1, len(captured))
         seen: set[str] = set()
@@ -73,7 +86,7 @@ def prepare_quantities(
             current.consume("states", 2)
             seen.add(code)
             owned.append(UnitBinding(code, name))
-            if binding.pint_unit not in _SUPPORTED:
+            if binding.pint_unit not in supported:
                 issues.append(
                     Issue(
                         "quantity.unit_unverified",
@@ -109,7 +122,7 @@ def prepare_quantities(
             )
             for binding in owned:
                 current.consume("work")
-                if binding.pint_unit in _SUPPORTED:
+                if binding.pint_unit in supported:
                     units[binding.code] = registry.parse_units(
                         binding.pint_unit, as_delta=False
                     )

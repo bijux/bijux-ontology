@@ -6,8 +6,13 @@ from fractions import Fraction
 from rdflib import Literal, URIRef
 from rdflib.namespace import XSD
 
-from bijux_ontology.declarations.aggregates import AggregateContract
+from bijux_ontology.declarations.aggregates import (
+    AggregateContract,
+    AggregateUnitConversion,
+    RdfUnitBinding,
+)
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
 from bijux_ontology.rdf.paths.types import capture_path
@@ -63,6 +68,36 @@ def contract(value: AggregateContract, operation: Budget) -> AggregateContract:
             raise InputError("Units require a numeric aggregate and an explicit IRI")
         bound_node(unit, operation)
         unit = URIRef(str(unit))
+    conversion = value.conversion
+    if conversion is not None:
+        if type(conversion) is not AggregateUnitConversion or unit is None:
+            raise InputError(
+                "Aggregate conversion requires a typed dimensional contract"
+            )
+        if (
+            type(conversion.profile) is not str
+            or conversion.profile != "multiplicative-length-time"
+        ):
+            raise InputError(
+                "Aggregate conversion requires the multiplicative length/time profile"
+            )
+        bindings = []
+        for binding in capture_items(conversion.bindings, RdfUnitBinding, operation):
+            if (
+                type(binding) is not RdfUnitBinding
+                or type(binding.unit) is not URIRef
+                or type(binding.pint_unit) is not str
+            ):
+                raise InputError(
+                    "RDF unit bindings require an actual IRI and native unit name"
+                )
+            bound_node(binding.unit, operation)
+            bound_text(binding.pint_unit, operation)
+            reserve(operation)
+            bindings.append(
+                RdfUnitBinding(URIRef(str(binding.unit)), binding.pint_unit)
+            )
+        conversion = AggregateUnitConversion(tuple(bindings), conversion.profile)
     return AggregateContract(
         value.name,
         value.function,
@@ -74,6 +109,7 @@ def contract(value: AggregateContract, operation: Budget) -> AggregateContract:
         value.empty,
         unit,
         unit_path,
+        conversion,
     )
 
 
