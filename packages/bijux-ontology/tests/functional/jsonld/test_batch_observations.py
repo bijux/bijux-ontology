@@ -164,7 +164,11 @@ def test_batch_missing_path_and_invalid_selector_keep_precise_errors() -> None:
     assert missing.value.location == "/records/5/name"
     with pytest.raises(InputError, match="key/index"):
         prepared.observe_many([("records", True, "name")])
-    bounded = prepare_usages(document, base=EX, limits=Limits(max_states=1))
+    with pytest.raises(LimitExceeded, match="max_states"):
+        prepare_usages(document, base=EX, limits=Limits(max_states=1))
+    budget = Budget()
+    bounded = prepare_usages(document, base=EX, budget=budget)
+    budget.consume("states", budget.remaining("states"))
     with pytest.raises(LimitExceeded, match="max_states"):
         bounded.observe_many(paths)
 
