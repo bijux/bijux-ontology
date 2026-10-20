@@ -155,6 +155,13 @@ def select_binding(
         for case in bindings.cases:
             _text(case.name, owned_budget)
             _text(case.equals, owned_budget)
+        # Wire-string capture cannot establish the native text kind required by
+        # this policy: RDF identifiers and literals also subclass str.
+        owned_budget.consume("work", len(bindings.discriminator) + 1)
+        try:
+            source_text = type(at_path(record, bindings.discriminator)) is str
+        except (KeyError, IndexError):
+            source_text = False
         owned, cost = owned_json(record, owned_budget)
         if type(owned) is not dict:
             raise InputError("An actual record requires a JSON object")
@@ -169,9 +176,9 @@ def select_binding(
         checked = 1
         try:
             actual = at_path(owned, bindings.discriminator)
-        except KeyError:
+        except (KeyError, IndexError):
             actual = None
-        if type(actual) is not str:
+        if not source_text or type(actual) is not str:
             issues.append(
                 Issue(
                     "vocabulary.binding_trait_unverified",
