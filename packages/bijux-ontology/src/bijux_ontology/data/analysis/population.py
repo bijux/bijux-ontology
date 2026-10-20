@@ -199,8 +199,8 @@ def _admit_population(population: AnnotationPopulation, budget: Budget) -> None:
         ref(population),
         tuple(vars(population).items()),
         tuple(vars(population.identity).values()),
-        states,
-        size,
+        states + 16,
+        size + 16 * 96,
         maximum,
     )
     object.__setattr__(population, "_admission", admission)

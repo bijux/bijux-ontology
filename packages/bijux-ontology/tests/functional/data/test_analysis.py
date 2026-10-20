@@ -510,6 +510,22 @@ def test_prepared_population_amortises_admission_without_trusting_copies(
     assert limited.score is None and limited.report.outcome == "exhausted"
     copied = AnnotationPopulation._owned(**vars(population))
     assert resnik_similarity(copied, EX.A, EX.B).report.outcome == "input_error"
+    unicode_population = _population(corpus_id="é" * 50)
+    assert resnik_similarity(
+        unicode_population,
+        EX.A,
+        EX.B,
+        limits=replace(Limits(), max_bytes=100),
+    ).report.verified
+    assert (
+        resnik_similarity(
+            unicode_population,
+            EX.A,
+            EX.B,
+            limits=replace(Limits(), max_bytes=99),
+        ).report.outcome
+        == "exhausted"
+    )
     identity = population.identity
     object.__setattr__(population, "identity", replace(identity, corpus_id="changed"))
     try:
