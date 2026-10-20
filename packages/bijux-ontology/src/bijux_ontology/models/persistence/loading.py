@@ -194,9 +194,10 @@ def compile_model_artifact(
         allowance.consume("states", 8 * count)
         allowance.consume("bytes", 2048 * count)
         allowance.consume("work", count * max(1, count.bit_length()))
-        VocabularyView(
+        view = VocabularyView(
             vocabulary, scopes=("local", "imports", "lookup"), budget=allowance
         )
+        view._prepare_index(allowance)
         prepared = vocabulary._capture_preparation(budget=allowance)
         terms = TermTable(allowance)
         sources = [
