@@ -10,7 +10,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
@@ -323,17 +323,22 @@ def test_exhaustion_and_ambiguous_bindings_never_claim_complete_coverage() -> No
             {"@type": "Record", "label": "two"},
         ],
     }
-    prepared = prepare_usages(document, limits=Limits(max_work=100))
-    result = prepared.select(
-        SourceSelector((Property("items"), ArrayItems(), Property("label")))
+    with pytest.raises(LimitExceeded):
+        prepare_usages(document, limits=Limits(max_work=100))
+    selector = SourceSelector((Property("items"), ArrayItems(), Property("label")))
+    measurement = Budget()
+    measured = prepare_usages(document, budget=measurement)
+    measured.select(selector)
+    limits = Limits(
+        max_work=measurement.limits.max_work - measurement.remaining("work")
     )
+    prepared = prepare_usages(document, limits=limits)
+    result = prepared.select(selector)
     # Selection and processor derivatives share the finite operation budget.
     for _ in range(100):
         if not result.report.complete:
             break
-        result = prepared.select(
-            SourceSelector((Property("items"), ArrayItems(), Property("label")))
-        )
+        result = prepared.select(selector)
     assert not result.report.complete and result.report.issues[-1].kind == "exhausted"
     duplicate = prepare_usages(document)
     ambiguous = duplicate.select(

@@ -359,7 +359,7 @@ def test_malformed_result_truth_restarts_before_the_next_real_dataset(
         monkeypatch.setattr(session._backend, "_exchange", malformed)
         batch = session.validate_batch((_data(), _data()))
         assert batch.results[0].conforms is None
-        assert batch.results[0].report.outcome == "input_error"
+        assert batch.results[0].report.outcome == "unverified"
         assert not batch.report.verified and not batch.report.complete
         assert batch.results[1].report.verified
         assert session.worker_launches == 2
@@ -394,7 +394,7 @@ def test_preparation_cannot_substitute_a_prior_dataset_result(
         )
         invalid = session.validate(_data("bad"))
         assert invalid.conforms is None
-        assert invalid.report.outcome == "input_error"
+        assert invalid.report.outcome == "unverified"
         monkeypatch.setattr(session._backend, "_exchange", exchange)
         assert session.validate(_data("bad")).conforms is False
         assert session.worker_launches == 3
