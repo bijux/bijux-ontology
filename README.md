@@ -28,7 +28,10 @@ Core RDF and vocabulary operations do not require PyLD. Install `bijux-ontology[
 
 ```python
 from pathlib import Path
-from bijux_ontology import TermDeclaration, check_vocabulary, inspect_vocabulary, load_vocabulary
+from bijux_ontology.declarations.types import TermDeclaration
+from bijux_ontology.vocabulary.checking import check_vocabulary
+from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.loading import load_vocabulary
 
 vocabulary = load_vocabulary(Path("ontology.ttl"))
 view = inspect_vocabulary(vocabulary)
@@ -75,7 +78,7 @@ The uv workspace contains the public library in `packages/bijux-ontology` and in
 
 ## Package ownership
 
-- `interfaces/api.py` defines the Python surface; `interfaces/cli` owns commands and execution, and `interfaces/adapters` owns framework extraction.
+- Python APIs live in their owning domain modules; `interfaces/cli` owns commands, `interfaces/execution` owns isolated execution, and `interfaces/adapters` owns framework extraction.
 - `execution` owns shared operation budgets, deadlines and finite input capture; `processes` owns operating-system worker lifetimes.
 - `rdf` owns native graph primitives and transformations; `jsonld` owns context processing and conversion; `owl` owns finite construct interpretation. These engines do not depend on one another's higher-level checks.
 - `documents` composes RDF and JSON-LD preparation and verified export. `vocabulary`, `models`, `skos`, `data` and `shacl` own their respective checks; `declarations` owns application contracts.

@@ -5,12 +5,12 @@ from dataclasses import dataclass, field, fields, replace
 from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     ValueDeclaration,
-    check_models,
 )
+from bijux_ontology.models.checking import check_models
 
 CATALOGUE = Namespace("https://example.org/catalogue#")
 

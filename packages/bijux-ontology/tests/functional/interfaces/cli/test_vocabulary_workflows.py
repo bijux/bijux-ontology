@@ -16,7 +16,8 @@ EX = "https://example.org/"
 def test_skos_cli_and_projects_keep_profile_and_hierarchy_choices(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    from bijux_ontology import ProjectConfig, check_project
+    from bijux_ontology.workflows.projects.checking import check_project
+    from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
     vocabulary = tmp_path / "terms.ttl"
     vocabulary.write_text(

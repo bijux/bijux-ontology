@@ -32,7 +32,6 @@ PACKAGES = {
     "shacl",
     "shex",
     "data",
-    "interfaces.api",
     "interfaces.cli",
     "interfaces.execution",
     "interfaces.exports",
@@ -111,9 +110,7 @@ def facades(dependencies: dict[str, set[str]]) -> set[str]:
     result = set()
     for module, targets in dependencies.items():
         package = root.joinpath(*module.split("."), "__init__.py")
-        if not targets or not (
-            package.exists() or module == "bijux_ontology.interfaces.api"
-        ):
+        if not targets or not (package.exists()):
             continue
         source = (
             package
@@ -279,9 +276,7 @@ def test_library_dependencies_follow_feature_ownership(
             assert not _within(target, tuple(forbidden)), f"{module} -> {target}"
 
 
-def test_narrow_imports_defer_convenience_exports_and_preserve_public_identity() -> (
-    None
-):
+def test_narrow_imports_load_only_explicit_owners() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -290,52 +285,19 @@ def test_narrow_imports_defer_convenience_exports_and_preserve_public_identity()
             "-c",
             """
 import sys
+import bijux_ontology
+import bijux_ontology.shacl
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
 assert not any(name.startswith("rdflib") for name in sys.modules)
-assert not any(name.startswith("bijux_ontology.rdf") for name in sys.modules)
-import bijux_ontology as ontology
+assert "bijux_ontology.interfaces.api" not in sys.modules
+assert "bijux_ontology.models.checking" not in sys.modules
+assert "bijux_ontology.shacl.checking" not in sys.modules
+assert "__getattr__" not in vars(bijux_ontology)
+assert "__getattr__" not in vars(bijux_ontology.shacl)
 from bijux_ontology.errors import InputError
-from bijux_ontology.vocabulary.authoring import author_vocabulary
-from bijux_ontology.vocabulary.annotations.hygiene import AnnotationLiteralRepair
-from bijux_ontology.vocabulary.annotations.graphs import (
-    AnnotationLiteralRepair as GraphRepair,
-)
-assert AnnotationLiteralRepair is GraphRepair
-assert callable(author_vocabulary)
-assert 'bijux_ontology.interfaces.api' not in sys.modules
-assert 'bijux_ontology.models.checking' not in sys.modules
-assert set(ontology.__all__) <= set(dir(ontology))
-try:
-    ontology.unsupported_name
-except AttributeError:
-    pass
-else:
-    raise AssertionError('Unknown convenience name accepted')
-assert 'bijux_ontology.interfaces.api' not in sys.modules
-import bijux_ontology.shacl as shacl
-assert 'bijux_ontology.shacl.checking' not in sys.modules
-try:
-    shacl.unsupported_name
-except AttributeError:
-    pass
-else:
-    raise AssertionError('Unknown SHACL name accepted')
-assert 'bijux_ontology.shacl.checking' not in sys.modules
-assert set(shacl.__all__) == set(shacl._EXPORT_MODULES)
-assert set(shacl.__all__) <= set(dir(shacl))
-from importlib import import_module
-for name in shacl.__all__:
-    owner = import_module(shacl._EXPORT_MODULES[name])
-    assert getattr(shacl, name) is getattr(owner, name)
-from bijux_ontology.interfaces import api
-for name in ontology.__all__:
-    assert getattr(ontology, name) is getattr(api, name), name
-assert ontology.InputError is InputError
-namespace = {}
-exec("from bijux_ontology import *", namespace)
-assert all(namespace[name] is getattr(api, name) for name in ontology.__all__)
+assert issubclass(InputError, Exception)
 """,
         ],
         text=True,

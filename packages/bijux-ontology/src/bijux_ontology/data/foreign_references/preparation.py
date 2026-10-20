@@ -6,7 +6,7 @@ from typing import cast
 
 from rdflib import BNode
 
-from bijux_ontology.data.keys.checking import _evidence, _relation
+from bijux_ontology.data.keys.evidence import compare_keys, key_evidence
 from bijux_ontology.data.keys.extraction import _Key, _KeyExtraction
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.errors import InputError, LimitExceeded
@@ -79,7 +79,7 @@ def prepare_foreign_targets(
                 operation.consume("states", len(matches) + len(uncertain))
                 candidates = [*matches, *uncertain]
             for prior in candidates:
-                relation, pending = _relation(prior, key, contract.target, operation)
+                relation, pending = compare_keys(prior, key, contract.target, operation)
                 issues.extend(pending)
                 if relation == "equal":
                     operation.consume("states")
@@ -91,7 +91,7 @@ def prepare_foreign_targets(
                             "data.foreign_target_duplicate",
                             "Distinct target records share the declared lookup key",
                             anchor,
-                            evidence_json=_evidence((prior, key), operation),
+                            evidence_json=key_evidence((prior, key), operation),
                         )
                     )
             operation.consume("states", 2)

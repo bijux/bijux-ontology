@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Event
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
 from bijux_ontology._json import object_value
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
@@ -15,13 +15,10 @@ from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.reports import Issue, Report
 
 from ..backend.owlapi.bundles import PROFILES, qualify_backend
-from ..backend.owlapi.execution import (
-    invoke_worker,
-    qualify_capability,
-    result_counter,
-    result_text,
-)
+from ..backend.owlapi.execution import invoke_worker, qualify_capability
+from ..backend.owlapi.protocol import result_counter, result_text
 from ..backend.types import OwlProfile, OwlProfileBackend
+from .receipts import native_profiles, native_records
 from .sources.native import native_syntax, stage_native_documents
 from .types import (
     ConversionChange,
@@ -31,39 +28,6 @@ from .types import (
     OwlDocument,
     OwlSyntax,
 )
-
-
-def _records(value: object, operation: Budget, maximum: int) -> list[Any]:
-    if not isinstance(value, list) or len(value) > maximum:
-        raise ResourceError("Invalid native result inventory")
-    operation.consume("states", len(value))
-    operation.consume("work", len(value) + 1)
-    return value
-
-
-def _profiles(
-    raw: object, selected: tuple[OwlProfile, ...], operation: Budget
-) -> tuple[NativeProfile, ...]:
-    records = _records(raw, operation, len(selected))
-    if len(records) != len(selected):
-        raise ResourceError("Native worker omitted selected profiles")
-    result = []
-    for name, raw_record in zip(selected, records, strict=True):
-        item = object_value(raw_record, location="native profile")
-        profile = result_text(item.get("profile"), operation)
-        answer = item.get("in_profile")
-        if profile != name or type(answer) is not bool:
-            raise ResourceError("Invalid native profile answer")
-        violations = tuple(
-            cast(str, result_text(value, operation))
-            for value in _records(
-                item.get("violations"), operation, operation.limits.max_issues
-            )
-        )
-        if bool(violations) == answer:
-            raise ResourceError("Native profile answer contradicts its violations")
-        result.append(NativeProfile(name, answer, violations))
-    return tuple(result)
 
 
 def convert_ontology(
@@ -150,7 +114,7 @@ def convert_ontology(
                     "Native writer did not complete its selected format"
                 )
             # Adopt completed differences before later metadata/output exhaustion.
-            for raw in _records(
+            for raw in native_records(
                 data.get("changes"), operation, operation.limits.max_issues
             ):
                 item = object_value(raw, location="native conversion change")
@@ -175,7 +139,7 @@ def convert_ontology(
                     "Native input or output interpretation is incomplete"
                 )
             seen = set()
-            for raw in _records(data.get("documents"), operation, len(inputs)):
+            for raw in native_records(data.get("documents"), operation, len(inputs)):
                 item = object_value(raw, location="loaded native ontology")
                 index = result_counter(item.get("document"), operation, len(inputs) - 1)
                 if index in seen:
@@ -188,7 +152,7 @@ def convert_ontology(
                 version = result_text(item.get("version_iri"), operation, optional=True)
                 declared_imports = tuple(
                     cast(str, result_text(value, operation))
-                    for value in _records(
+                    for value in native_records(
                         item.get("imports"), operation, operation.limits.max_resources
                     )
                 )
@@ -202,8 +166,12 @@ def convert_ontology(
                 )
             if 0 not in seen:
                 raise ResourceError("Native worker omitted the selected root")
-            before = _profiles(data.get("before_profiles"), tuple(selected), operation)
-            after = _profiles(data.get("after_profiles"), tuple(selected), operation)
+            before = native_profiles(
+                data.get("before_profiles"), tuple(selected), operation
+            )
+            after = native_profiles(
+                data.get("after_profiles"), tuple(selected), operation
+            )
             size = result_counter(
                 data.get("bytes"), operation, operation.limits.max_bytes
             )

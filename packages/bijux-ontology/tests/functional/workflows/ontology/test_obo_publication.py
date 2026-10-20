@@ -3,7 +3,7 @@
 from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology import prepare_source
+from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.annotations.types import AnnotationRequirement
 from bijux_ontology.vocabulary.facts.types import FactPredicate

@@ -1,14 +1,15 @@
-"""Actual builtin integer membership through qualified maintained witnesses."""
+"""Bounded exact integer membership after original RDF lexical qualification."""
 
-import pyoxigraph as ox
 from rdflib import Literal, URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
-from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values
+from bijux_ontology.rdf.literals import (
+    check_literal,
+    datatype_relation,
+    integer_interval,
+)
 
 
 def bounded_text(value: str, budget: Budget) -> str:
@@ -27,57 +28,37 @@ def bounded_text(value: str, budget: Budget) -> str:
 
 
 def integer_membership(value: Literal, required: URIRef, budget: Budget) -> bool | None:
-    """Qualify builtin integer membership through a maintained integer witness.
+    """Check exact integer membership after qualifying the original RDF lexical.
 
-    Casting alone truncates decimals. OWL datatype-map identity against the
-    original establishes whether that cast actually preserves the source value.
-    Only then does the existing subtype lexical validator qualify the witness.
+    Supported integer/decimal lexicals have no exponent and at most 4096
+    characters. Only an all-zero fractional part has an integer value; the
+    established integer interval then decides membership without a cast query
+    or a discarded witness finding. Original RDF term identity is unchanged.
     """
     actual = str(value.datatype or XSD.string)
-    if not actual.startswith(str(XSD)) or not str(required).startswith(str(XSD)):
+    interval = integer_interval(str(required))
+    if interval is None or datatype_relation(actual, str(XSD.decimal)) not in (
+        "equal",
+        "subset",
+    ):
         return None
-    if datatype_relation(actual, str(XSD.decimal)) not in ("equal", "subset"):
+    validation = check_literal(value, budget=budget)
+    if any(issue.kind == "exhausted" for issue in validation.issues):
+        raise LimitExceeded("Integer membership exhausted original lexical validation")
+    if not validation.verified:
         return None
-    if datatype_relation(str(required), str(XSD.integer)) not in ("equal", "subset"):
-        return None
-    operand = str(ox.Literal(str(value), datatype=ox.NamedNode(actual)))
-    query = f"SELECT (<{XSD.integer}>({operand}) AS ?value) WHERE {{}}"
-    bounded_text(query, budget)
-    budget.consume("resources")
+    raw = str(value)
+    size = len(raw)
+    # Original validation bounds the coefficient. Pay its slices and exact
+    # integer conversion before allocating either; no Decimal context is used.
+    budget.consume("work", (size + 1) ** 2)
+    budget.consume("bytes", 256 + 16 * (size + 1))
     budget.consume("states", 4)
-    try:
-        answers = ox.Store().query(query)
-        if not isinstance(answers, ox.QuerySolutions):
-            return None
-        rows = iter(answers)
-        row = next(rows)
-        budget.consume("work")
-        result = row[0]
-        if next(rows, None) is not None or not isinstance(result, ox.Literal):
-            return None
-        if result.datatype.value != str(XSD.integer):
-            return None
-        bounded_text(result.value, budget)
-        witness = literal_term(result.value, datatype=str(XSD.integer))
-        identity = compare_literal_values(
-            value, witness, regime="owl2-datatype-map", budget=budget
-        )
-        if any(issue.kind == "exhausted" for issue in identity.report.issues):
-            raise LimitExceeded("Integer witness identity exhausted its shared budget")
-        if not identity.report.verified:
-            return None
-        if identity.relation == "different":
-            return False
-        if identity.relation != "equal":
-            return None
-        candidate = literal_term(result.value, datatype=str(required))
-        validation = check_literal(candidate, budget=budget)
-        if validation.verified:
-            return True
-        if any(issue.kind == "finding" for issue in validation.issues):
-            return False
-        return None
-    except LimitExceeded:
-        raise
-    except (ValueError, RuntimeError, OverflowError, SyntaxError, StopIteration):
-        return None
+    whole, _, fractional = raw.partition(".")
+    if any(digit != "0" for digit in fractional):
+        return False
+    if whole in ("", "+", "-"):
+        whole += "0"
+    number = int(whole)
+    low, high = interval
+    return (low is None or number >= low) and (high is None or number <= high)

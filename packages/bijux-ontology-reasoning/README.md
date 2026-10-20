@@ -38,8 +38,8 @@ PYTHON
 
 Pass that printed SHA to `prepare_profile_backend(Path(java), Path(bundle),
 manifest_sha256=sha, artifacts=Path("artifacts/owl-jobs"))` from
-`bijux_ontology_reasoning.profiles`. Then call
-`check_profile(backend, prepared_source, profile="owl2-dl", imports=offline_map)`.
+`bijux_ontology_reasoning.backend`. Import `check_profile` from
+`bijux_ontology_reasoning.profiles`, then call `check_profile(backend, prepared_source, profile="owl2-dl", imports=offline_map)`.
 Inspect `.in_profile`, `.violations`, `.loaders` and `.report`; a raw native answer
 alone does not qualify the supplied RDF. The finite runtime profile supports
 POSIX process ownership and one physical graph per supplied document. Missing
@@ -70,7 +70,7 @@ roles. `.unsupported` records actual selected axioms outside the finite model;
 structure or incomplete execution prevents a verified complete projection.
 Inspection makes no consistency, satisfiability or entailment claim.
 
-`templates.compile_table_template` executes the documented ROBOT 1.9.11 CSV/TSV
+`authoring.templates.compile_table_template` executes the documented ROBOT 1.9.11 CSV/TSV
 class templates: ID, LABEL, TYPE, named parents, named-property existentials and
 plain literal annotations. Supply exact `TemplateColumn`, `TemplateIdentifier`
 and role-specific `TemplateTerm` bindings, local declaration/label ontology,
@@ -83,7 +83,7 @@ jar pinned to SHA256
 Sealing its 82,708,624 bytes needs an explicit preparation allowance such as
 `Limits(max_total_bytes=128_000_000)`; execution uses a separate caller budget.
 
-`diagnosis.check_consistency(backend, source, named_classes=None)` asks actual
+`inference.consistency.check_consistency(backend, source, named_classes=None)` asks actual
 ontology consistency and separate named-class satisfiability questions. A
 consistent ontology may contain unsatisfiable classes. An inconsistent ontology
 provides no ordinary class proof. `None` selects the actual class signature;
@@ -93,14 +93,14 @@ qualified original input, complete supplied imports and OWL 2 DL membership.
 Unsupported datatypes, axioms and failed execution remain unknown. The reported
 Maven artifact version and native reasoner version are retained separately.
 
-`entailment.check_entailments(backend, source, obligations)` accepts existing typed
+`inference.entailment.check_entailments(backend, source, obligations)` accepts existing typed
 `SubClassOf` and `ClassAssertion` requests with supported class expressions.
 Each answer is `entailed`, `not_entailed` or `unknown`. A negative assertion uses
 an explicit `ClassComplement`; failure to entail a positive assertion never
 proves its negation. Actual consistency and complete input qualification precede
 all proofs. Unsupported queries retain their positions as unknown answers.
 
-`patterns.prepare_dosdp_pattern(content, prefixes=...)` captures the JSON subset
+`authoring.patterns.prepare_dosdp_pattern(content, prefixes=...)` captures the JSON subset
 of DOSDP's YAML input. `check_patterns(backend, source, patterns, expected,
 scope=...)` retains actual generated queries, complete named filler assignments
 and the single maintained RDFLib engine answer. Distinct assignments remain
@@ -126,7 +126,7 @@ syntax alone proves no consistency. Inspect the candidate, then publish unchange
 checked bytes with `write_axiom_change(candidate, path, accept=True)`. A failed
 check, stale receipt or interrupted operation cannot replace the destination.
 
-`relationships.query_inferred_contracts(backend, source, queries)` enumerates
+`inference.relationships.query_inferred_contracts(backend, source, queries)` enumerates
 named class and object/data property relationships through actual HermiT APIs.
 Use `InferredQuery` with existing typed entity values and explicit direct/indirect
 hierarchy selection. Native equivalence nodes, inverse expressions, builtins and
@@ -136,7 +136,7 @@ cover the selected named-signature query, not every possible expression; result
 caps, unsupported data-property ranges/inverses and unqualified inputs remain
 incomplete. The original source and selected physical graph stay unchanged.
 
-`entities.renaming.prepare_role_rename` checks one explicit structural-role rename
+`editing.renaming.prepare_role_rename` checks one explicit structural-role rename
 across a supplied, connected native module closure. Supply exact `AxiomBase`
 preconditions, owned document identities and selected `RoleRename` roles; `all`
 is an explicit separate choice. Required annotation IRI positions use
@@ -147,7 +147,7 @@ Nonempty `ModuleCheck` postconditions receive the complete candidate module set
 and shared budget. Returned checked bytes form a reviewable transaction;
 publication across multiple destinations remains the caller's responsibility.
 
-`datatypes.check_datatype_obligations` uses actual datatype difference/intersection
+`inference.datatypes.check_datatype_obligations` uses actual datatype difference/intersection
 satisfiability to check universal inclusion or disjointness. It qualifies original
 consistency and an explicitly fresh temporary property; finite samples prove no
 universal range relationship. `check_datatype_fields` checks every original value
@@ -158,7 +158,7 @@ through `check_datatype_branches` retains original field identity and indices;
 combined consumers own coverage of the remaining branches. Class-context and
 model co-emission obligations belong to model compatibility.
 
-`models.compatibility.check_model_compatibility(backend, source, declarations)`
+`inference.model_contracts.check_model_compatibility(backend, source, declarations)`
 checks a finite automatic subset of existing model contracts. Required endpoint
 subsumption, possible type satisfiability and declared co-emission contradictions
 remain separate answers at original model/field locations. Anonymous intersection
@@ -168,7 +168,7 @@ Unsupported contexts and uncovered scenarios remain unknown. Logical existence
 or cardinality never certifies emitted required fields; use ordinary model/output
 checking for those obligations.
 
-`instances.check_emitted_consistency(backend, ontology, emitted, bindings)`
+`inference.instances.check_emitted_consistency(backend, ontology, emitted, bindings)`
 checks all statements in the two explicitly selected prepared RDF graphs with
 one captured ontology import closure. Inspect `.diagnosis` for global logical
 consistency and `.records` for original node participation. Bindings never filter
@@ -177,7 +177,7 @@ from the derived joint input. Missing explicit existential values and different
 IRIs retain ordinary OWL semantics; submission conformance remains a separate
 model/output check.
 
-`explanations.explain_reasoning(backend, document, ExplanationQuestion(...))`
+`inference.explanations.explain_reasoning(backend, document, ExplanationQuestion(...))`
 returns one bounded maintained owlexplanation 5.0.1 justification for a selected
 entailment, named-class unsatisfiability or inconsistency. Original annotated
 structural axioms retain their source modules and rendering hashes; these are
@@ -188,7 +188,7 @@ proved logical findings. Smallest size, subset minimality and complete enumerati
 are not claimed. Anonymous support and unavailable tautology justifications remain
 unknown; generated signature declarations are separate replay scaffolding.
 
-`integration.check_integration` compares explicitly selected `TheoryCombination`
+`theories.integration.check_integration` compares explicitly selected `TheoryCombination`
 deployments from separately owned `TheoryComponent` originals. Supply the named
 classes and consumer entailments that must hold. Original modules retain their
 native import identities; conflicting versions cannot overwrite one another.
@@ -198,7 +198,7 @@ and exact source owners; pre-existing failures are preserved without new blame.
 Completion covers the selected combinations and obligations only; unselected
 subsets, absent imports or exhausted explanation work receive no certificate.
 
-`bridges.check_mapping_bridges` checks explicit `BridgeInterpretation` approvals
+`theories.bridges.check_mapping_bridges` checks explicit `BridgeInterpretation` approvals
 of original SSSOM `MappingOccurrence` rows. Choose declared class/property facets
 and nonempty protected entailments; an exactMatch relation or confidence never
 supplies an OWL interpretation. Original source and unbridged union baselines stay
@@ -207,21 +207,21 @@ rows through exact original module ownership, preserving duplicate occurrences
 and pre-existing failures without new blame. Unsupported qualifiers and endpoint
 facets remain unverified; completion covers only the selected obligations.
 
-`locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
+`extraction.locality.extract_locality_module` runs maintained OWLAPI BOT/TOP/STAR extraction
 for an explicit typed signature. Choose flattened imports, retained annotations
 and a fresh module identity. Inspect original annotated axiom owners and separate
 before/after consumer entailment proofs; only the selected obligations are
 certified. Unsupported original axioms prevent a complete certificate. This
 operation stays separate from RDF neighborhoods and MIREOT selection.
 
-`reductions.analyze_redundancy` tests explicit unannotated root subclass,
+`editing.reductions.analyze_redundancy` tests explicit unannotated root subclass,
 class-assertion and equivalent-class axioms against independent remaining
 theories. Proposals need joint verification with `prepare_reduction`: individual
 redundancy does not authorize the union. Choose retained annotations and read-only
 imports, and supply nonempty consumer entailments. Original inconsistency blocks
 proof; publish only verified candidates with `axioms.changes.write_axiom_change`.
 
-`imports.extract_mireot` runs maintained ROBOT extraction with explicit same-role
+`extraction.mireot.extract_mireot` runs maintained ROBOT extraction with explicit same-role
 `MireotBoundary` lower/upper pairs and `MireotRetention` property, axiom and
 annotation requirements. Supply an import-free Functional source, distinct module
 identity/version and nonempty consumer entailments. Actual hierarchy and
@@ -229,9 +229,9 @@ before/after proofs qualify the selected scope; missing boundaries or omitted
 required content publish no output. Paired Functional and Turtle outputs must
 preserve the same annotated axioms and headers. This syntactic import profile
 claims no locality or universal consequence preservation; it reuses the explicit
-pinned `robot.prepare_robot_backend` runtime and its separate sealing allowance.
+pinned `backend.robot.prepare_robot_backend` runtime and its separate sealing allowance.
 
-`repairs.propose_repairs` checks finite alternatives from one established native
+`editing.repairs.propose_repairs` checks finite alternatives from one established native
 inconsistency justification. Supply nonempty consumer entailments, exact protected
 source axioms and any caller-authored `AllowedReplacement` meanings. Imports stay
 read-only. Each proposal independently needs native consistency and all selected
@@ -240,7 +240,7 @@ consumer proofs; rejected candidates and original inconsistency remain visible.
 `enumeration_complete` stays false and minimality is unclaimed. Choose an accepted
 sealed candidate explicitly before using the ordinary axiom publication API.
 
-`upgrades.assess_logical_upgrade` compares explicit stable consumer IDs across
+`editing.upgrades.assess_logical_upgrade` compares explicit stable consumer IDs across
 owned before/after logical snapshots: entailments, satisfiability, model contracts
 and selected role-separation groups. Inspect `.transitions` and finite
 `.compatible` separately from the raw `.report`, which retains prior findings.
@@ -248,7 +248,7 @@ Changed contract fingerprints stay visible; unmatched consumers remain unknown.
 Selected explanations provide actual positive support and cannot erase a proved
 regression when unavailable. No ontology-wide compatibility is asserted.
 
-`sessions.prepare_reasoning_theory` captures one exact native/RDF closure and
+`inference.sessions.prepare_reasoning_theory` captures one exact native/RDF closure and
 backend revision. `with sessions.ReasoningSession(theory)` loads and classifies
 once, then recomputes supported queries and batches. Capture and `bind` a new
 theory for changed imports or backend semantics; external mutable inputs are
@@ -274,7 +274,7 @@ a separate ordinary RDF artifact, retaining quantifiers and unknown pairs.
 Its raw required-axiom answers remain inspectable separately from pair coverage;
 no class-instance assertions or complete inventory of all fillers is implied.
 
-`modules.prepare_module_refactor` moves exact annotated axioms or explicitly
+`editing.modules.prepare_module_refactor` moves exact annotated axioms or explicitly
 inlines owned local modules as one candidate set. Supply exact `axiom_base`
 preconditions for every original, unchanged required consumer contracts, explicit
 import/provider changes and a selected `TheoryCombination` deployment. Actual

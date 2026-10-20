@@ -3,22 +3,20 @@
 from rdflib import Dataset, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
-from bijux_ontology import (
-    FactGraph,
-    FactPredicate,
-    FactSelection,
+from bijux_ontology.declarations.resource_roles import ResourceRole
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
-    Limits,
     ModelDeclaration,
-    RdfSource,
-    ResourceRole,
-    RoleUse,
     ValueDeclaration,
-    Vocabulary,
-    assess_upgrade,
-    compare_vocabularies,
-    load_vocabulary,
 )
+from bijux_ontology.limits import Limits
+from bijux_ontology.models.resource_roles import RoleUse
+from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.vocabulary.comparison import compare_vocabularies
+from bijux_ontology.vocabulary.facts import FactGraph, FactPredicate, FactSelection
+from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 
 EX = Namespace("urn:fact-impact:")
 

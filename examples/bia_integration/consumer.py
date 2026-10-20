@@ -21,13 +21,17 @@ from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 import bijux_ontology
-from bijux_ontology import ContractObligation, OntologyObligation, WorkerExecutor
 from bijux_ontology.declarations import ValueDeclaration
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.namespaces import namespace_inventory
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
+from bijux_ontology.interfaces.execution.executor import WorkerExecutor
 from bijux_ontology.models.checking import assess_models, check_models
-from bijux_ontology.workflows.projects.contracts import check_contract
+from bijux_ontology.owl.obligations import OntologyObligation
+from bijux_ontology.workflows.projects.contracts import (
+    ContractObligation,
+    check_contract,
+)
 
 BIA_REVISION = "17e0a80ac02ef1f4878aff54cd415c040129d0d5"
 

@@ -6,13 +6,14 @@ from calendar import monthrange
 from rdflib import Literal
 from rdflib.namespace import RDF, XSD
 
-from ..errors import InputError, ResourceError
-from ..limits import Budget
+from ..errors import InputError, LimitExceeded, ResourceError
+from ..limits import Budget, IssueCollector
 from ..reports import Issue, Report
 from .datatype_evaluators.registry import DatatypeRegistry
 from .datatype_evaluators.types import DatatypeRelation as DatatypeRelation
 from .datatype_evaluators.types import Regime as Regime
-from .identifiers import absolute_iri, language_tag
+from .identifiers import absolute_iri
+from .terms import bound_node, bound_text
 from .xsd_lexicals import XSD_LEXICAL_TYPES, xsd_lexical
 
 _PARENT = {
@@ -59,6 +60,18 @@ _TIME = re.compile(
     r"(?P<hour>[0-9]{2}):(?P<minute>[0-9]{2}):(?P<second>[0-9]{2})(?P<fraction>\.[0-9]+)?"
 )
 _ZONE = re.compile(r"(?:Z|[+-](?:0[0-9]|1[0-3]):[0-5][0-9]|[+-]14:00)?")
+
+
+def integer_interval(datatype: str) -> tuple[int | None, int | None] | None:
+    """Read one exact builtin integer value interval, retaining unknown profiles.
+
+    None means no supported integer datatype; a pair of None endpoints instead
+    denotes the unbounded xsd:integer interval. The immutable bounds are shared
+    with datatype relations and original lexical validation.
+    """
+    if not datatype.startswith(str(XSD)):
+        return None
+    return _INTEGER_BOUNDS.get(datatype.removeprefix(str(XSD)))
 
 
 def _chain(iri: str) -> tuple[str, ...]:
@@ -224,55 +237,70 @@ def check_literal(
     """
     if not isinstance(value, Literal):
         raise InputError("Expected an RDF literal", location=location)
-    datatype = str(value.datatype or (RDF.langString if value.language else XSD.string))
-    absolute_iri(datatype, location=location)
+    if budget is not None and not isinstance(budget, Budget):
+        raise InputError("Expected a shared Budget")
+    if datatype_registry is not None and not isinstance(
+        datatype_registry, DatatypeRegistry
+    ):
+        raise InputError("Expected an explicit DatatypeRegistry")
     if datatype_registry is not None:
-        if not isinstance(datatype_registry, DatatypeRegistry):
-            raise InputError("Expected an explicit DatatypeRegistry")
+        datatype = str(
+            value.datatype or (RDF.langString if value.language else XSD.string)
+        )
         if datatype_registry.lookup(datatype, budget=budget) is not None:
             return datatype_registry.check(value, location=location, budget=budget)
-    valid: bool | None
-    unavailable: str | None = None
-    if value.language:
-        language_tag(value.language, location=location)
-        valid = datatype == str(RDF.langString)
-    elif datatype == str(RDF.langString):
-        valid = False
-    elif len(str(value)) > 4096:
-        return Report(
-            "literal",
-            1,
-            (
+    operation = budget if budget is not None else Budget()
+    issues = IssueCollector(operation)
+    checked = 0
+    complete = True
+    anchor = ""
+    try:
+        bound_text(location, operation)
+        anchor = location
+        bound_node(value, operation)
+        operation.consume("states")
+        operation.reserve_storage(128 + 4 * (len(value) + len(value.datatype or "")))
+        datatype = str(
+            value.datatype or (RDF.langString if value.language else XSD.string)
+        )
+        valid: bool | None
+        unavailable: str | None = None
+        checked = 1
+        if value.language:
+            valid = datatype == str(RDF.langString)
+        elif datatype == str(RDF.langString):
+            valid = False
+        elif len(value) > 4096:
+            issues.append(
                 Issue(
                     "literal.lexical_unverified",
                     "Literal exceeds supported lexical comparison size",
-                    location,
+                    anchor,
                     kind="unverified",
-                ),
-            ),
-        )
-    else:
-        try:
-            valid = _lexical(str(value), datatype)
-        except ResourceError as error:
-            valid = None
-            unavailable = str(error)
-    if valid is True:
-        return Report("literal", 1)
-    return Report(
-        "literal",
-        1,
-        (
-            Issue(
-                "literal.lexical_invalid"
-                if valid is False
-                else "literal.datatype_unverified",
-                "Lexical form is outside the datatype value space"
-                if valid is False
-                else unavailable or "Datatype lexical validation is unsupported",
-                location,
-                kind="finding" if valid is False else "unverified",
-                actual=datatype,
-            ),
-        ),
-    )
+                )
+            )
+            return Report("literal", checked, tuple(issues))
+        else:
+            try:
+                valid = _lexical(str(value), datatype)
+            except ResourceError as error:
+                valid = None
+                unavailable = str(error)
+        if valid is not True:
+            issues.append(
+                Issue(
+                    "literal.lexical_invalid"
+                    if valid is False
+                    else "literal.datatype_unverified",
+                    "Lexical form is outside the datatype value space"
+                    if valid is False
+                    else unavailable or "Datatype lexical validation is unsupported",
+                    anchor,
+                    kind="finding" if valid is False else "unverified",
+                    actual=datatype,
+                )
+            )
+    except LimitExceeded as stopped:
+        complete = False
+        issues.exhausted(str(stopped), location=anchor)
+    return Report("literal", checked, tuple(issues), requested=1, complete=complete)

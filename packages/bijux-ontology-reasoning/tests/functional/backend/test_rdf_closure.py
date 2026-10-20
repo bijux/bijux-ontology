@@ -9,9 +9,9 @@ from pathlib import Path
 import pytest
 from bijux_ontology_reasoning.axioms import ClassAssertion, NamedEntity
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.diagnosis import check_consistency
 from bijux_ontology_reasoning.documents.sources.rdf import capture_rdf_closure
-from bijux_ontology_reasoning.entailment import check_entailments
+from bijux_ontology_reasoning.inference.consistency import check_consistency
+from bijux_ontology_reasoning.inference.entailment import check_entailments
 from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 

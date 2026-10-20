@@ -8,7 +8,7 @@ from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from bijux_ontology.data.keys.checking import _relation
+from bijux_ontology.data.keys.evidence import compare_keys
 from bijux_ontology.data.keys.extraction import _Key, _KeyExtraction
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
@@ -246,6 +246,6 @@ class Coordinates:
                 contract,
                 components=tuple(contract.components[index] for index in positions),
             )
-        relation, pending = _relation(left, right, contract, budget)
+        relation, pending = compare_keys(left, right, contract, budget)
         issues.extend(pending)
         return relation

@@ -10,16 +10,13 @@ import rdflib
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDF, SH, XSD
 
-from bijux_ontology import (
-    QueryScope,
-    canonicalize_rdf,
-    compare_rdf,
-    export_rdf,
-    prepare_source,
-    query_rdf,
-)
+from bijux_ontology.documents.export import export_rdf
+from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.rdf.canonical.export import canonicalize_rdf
+from bijux_ontology.rdf.comparison import compare_rdf
+from bijux_ontology.rdf.queries.access import QueryScope, query_rdf
 from bijux_ontology.rdf.terms import literal_term, term_key
-from bijux_ontology.shacl import validate_shapes
+from bijux_ontology.shacl.checking import validate_shapes
 
 EX = Namespace("https://literal.example/")
 RAW = " a  b\tc\n "

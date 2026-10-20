@@ -1,8 +1,8 @@
 """Typed construction and checked root-axiom transactions through OWLAPI."""
 
-from .checking import axiom_base as axiom_base
 from .checking import compare_axioms as compare_axioms
 from .checking import prepare_axiom_change as prepare_axiom_change
+from .preconditions import axiom_base as axiom_base
 from .types import AxiomBase as AxiomBase
 from .types import AxiomCandidate as AxiomCandidate
 from .types import AxiomCheck as AxiomCheck

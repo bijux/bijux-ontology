@@ -6,7 +6,7 @@ import pytest
 from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import RDF, SH
 
-from bijux_ontology import prepare_source
+from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.snapshots import PreparedSource
 from bijux_ontology.shacl.findings import ShaclFinding

@@ -6,11 +6,12 @@ from dataclasses import dataclass
 
 from bijux_ontology.reports import Report
 
-from ..backend.types import BackendCapability as BackendCapability
-from ..backend.types import LoaderQualification as LoaderQualification
-from ..backend.types import OwlProfile as OwlProfile
-from ..backend.types import OwlProfileBackend as OwlProfileBackend
-from ..backend.types import ProfileDocument as ProfileDocument
+from ..backend.types import (
+    BackendCapability,
+    LoaderQualification,
+    OwlProfile,
+    ProfileDocument,
+)
 
 
 @dataclass(frozen=True)

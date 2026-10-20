@@ -649,7 +649,7 @@ provide its check callback and set `minimum_checked` or explicit
 `bindings`/`minimum_bindings` for extraction coverage. For example:
 
 ```python
-from bijux_ontology import ContractObligation, check_contract
+from bijux_ontology.workflows.projects.contracts import ContractObligation, check_contract
 
 result = check_contract([
     ContractObligation("mapping", lambda: extraction.report,
@@ -827,7 +827,7 @@ remain unverified when unavailable. `classify_statement` retains per-position
 roles: the two occurrences in `C rdf:type C` are individual and class.
 
 Install the optional `bijux-ontology-reasoning` distribution for actual OWL 2
-DL/EL/QL/RL membership. Its `profiles` API requires an explicit Java executable
+DL/EL/QL/RL membership. Its `backend` API prepares an explicit Java executable
 and pinned OWLAPI bundle; the package README gives the build commands.
 `check_profile(backend, source, profile="owl2-dl", imports=offline_map)` retains
 native violations and loader metadata. Unparsed triples, guessed declarations or
@@ -896,7 +896,7 @@ For ordinary nested Pydantic models, an authoritative context can supply the RDF
 mappings without duplicate primitive declarations:
 
 ```python
-from bijux_ontology import OutputRequirement
+from bijux_ontology.declarations.types import OutputRequirement
 from bijux_ontology.interfaces.adapters.pydantic import check_instance
 
 checked = check_instance(

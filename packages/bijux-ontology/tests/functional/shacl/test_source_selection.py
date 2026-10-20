@@ -5,7 +5,7 @@ from rdflib.namespace import OWL, RDF, SH
 
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.shacl import validate_shapes
+from bijux_ontology.shacl.checking import validate_shapes
 
 EX = Namespace("https://example.org/")
 

@@ -5,17 +5,16 @@ from collections.abc import Callable
 import pytest
 from rdflib import XSD, Literal
 
-from bijux_ontology import ABSENT as ROOT_ABSENT
-from bijux_ontology import EmissionCoverage
-from bijux_ontology import FieldDeclaration as Field
-from bijux_ontology import ModelDeclaration as Model
-from bijux_ontology import ValueDeclaration as Value
 from bijux_ontology.absence import ABSENT as SHARED_ABSENT
 from bijux_ontology.declarations import ABSENT, TermDeclaration
 from bijux_ontology.declarations.codecs import (
     models_from_data,
     terms_from_data,
 )
+from bijux_ontology.declarations.types import EmissionCoverage
+from bijux_ontology.declarations.types import FieldDeclaration as Field
+from bijux_ontology.declarations.types import ModelDeclaration as Model
+from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.codecs import expectations_from_data
 
@@ -112,7 +111,7 @@ def test_mapping_ingestion_matches_python_contracts_and_rejects_unknown_fields()
     selected = expectations_from_data(
         [{"path": ["title"], "predicate": EX + "title", "language": {"absent": True}}]
     )
-    assert selected[0].language is ABSENT is ROOT_ABSENT is SHARED_ABSENT
+    assert selected[0].language is ABSENT is SHARED_ABSENT
     with pytest.raises(InputError):
         expectations_from_data(
             [{"path": ["title"], "predicate": EX + "title", "language": {"absent": 1}}]

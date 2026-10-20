@@ -9,16 +9,15 @@ import pytest
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import XSD
 
-from bijux_ontology import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
-    RdfSource,
     ValueDeclaration,
-    check_rdf_emission,
-    prepare_source,
 )
+from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.errors import InputError
 from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.models.quantities import (
     PreparedQuantities,
@@ -26,6 +25,7 @@ from bijux_ontology.models.quantities import (
     UnitBinding,
     prepare_quantities,
 )
+from bijux_ontology.rdf.sources import RdfSource
 
 EX = Namespace("urn:quantity:")
 

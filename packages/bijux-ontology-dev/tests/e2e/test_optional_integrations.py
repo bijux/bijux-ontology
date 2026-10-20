@@ -14,7 +14,7 @@ import pytest
         """
         from rdflib import BNode, Graph, Literal, Namespace
         from rdflib.namespace import RDF, SH
-        from bijux_ontology.shacl import validate_shapes
+        from bijux_ontology.shacl.checking import validate_shapes
         ex = Namespace("https://example.org/")
         data = Graph().add((ex.record, ex.name, Literal("Image")))
         shapes = Graph().add((ex.Shape, RDF.type, SH.NodeShape))
@@ -116,10 +116,13 @@ import pytest
         """
         from rdflib import Graph, Literal, Namespace
         from rdflib.namespace import RDF, XSD
-        from bijux_ontology import (
-            FieldDeclaration, ModelDeclaration, RdfModelUsage, ValueConstraints,
-            ValueDeclaration, check_rdf_emission, prepare_source,
+        from bijux_ontology.declarations.types import (
+            FieldDeclaration, ModelDeclaration, ValueDeclaration,
         )
+        from bijux_ontology.models.emission.types import RdfModelUsage
+        from bijux_ontology.declarations.value_constraints import ValueConstraints
+        from bijux_ontology.models.emission.rdf import check_rdf_emission
+        from bijux_ontology.documents.preparation import prepare_source
         ex = Namespace("https://example.org/")
         def check(text, pattern):
             graph = Graph().add((ex.record, RDF.type, ex.Record))
@@ -182,11 +185,17 @@ def test_external_consumer_uses_installed_public_types(
         dedent("""
         from typing import assert_type
         from rdflib import Graph
-        from bijux_ontology import (
-            Issue, ModelDeclaration, ModelUsage, PreparedSource, Report,
-            TermDeclaration, TermInfo, VocabularyView, check_emission,
-            check_vocabulary, inspect_vocabulary, prepare_source,
+        from bijux_ontology.reports import Issue, Report
+        from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
+        from bijux_ontology.models.emission.types import ModelUsage
+        from bijux_ontology.rdf.snapshots import PreparedSource
+        from bijux_ontology.vocabulary.results import TermInfo
+        from bijux_ontology.vocabulary.inspection import (
+            VocabularyView, inspect_vocabulary,
         )
+        from bijux_ontology.models.emission.checking import check_emission
+        from bijux_ontology.vocabulary.checking import check_vocabulary
+        from bijux_ontology.documents.preparation import prepare_source
         source = prepare_source(
             "<https://example.org/Image> a <http://www.w3.org/2002/07/owl#Class> .",
             format="turtle",
@@ -289,8 +298,12 @@ def test_external_consumer_uses_installed_public_types(
         text=True,
     )
     source.write_text(
-        "from rdflib import Graph\nfrom bijux_ontology import check_vocabulary\n"
-        "check_vocabulary(Graph(), [42])\n",
+        (
+            "from rdflib import Graph\n"
+            "from bijux_ontology.vocabulary.checking import check"
+            "_vocabulary\n"
+            "check_vocabulary(Graph(), [42])\n"
+        ),
         encoding="utf-8",
     )
     rejected = subprocess.run(
@@ -319,18 +332,22 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
         from bijux_ontology.interfaces.adapters.linkml import (
             model_declarations as linkml_models,
         )
-        from bijux_ontology.shacl import validate_shapes
+        from bijux_ontology.shacl.checking import validate_shapes
         from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
-        from bijux_ontology import expand_document, compare_rdf
+        from bijux_ontology.jsonld.expansion import expand_document
+        from bijux_ontology.rdf.comparison import compare_rdf
         for name in (
             "pyld", "pyshacl", "pydantic", "linkml_runtime",
             "uri_template", "elementpath", "re2",
         ):
             assert find_spec(name) is None, name
-        from bijux_ontology import (
-            FieldDeclaration, ModelDeclaration, RdfModelUsage, ValueConstraints,
-            ValueDeclaration, check_rdf_emission, prepare_source,
+        from bijux_ontology.declarations.types import (
+            FieldDeclaration, ModelDeclaration, ValueDeclaration,
         )
+        from bijux_ontology.models.emission.types import RdfModelUsage
+        from bijux_ontology.declarations.value_constraints import ValueConstraints
+        from bijux_ontology.models.emission.rdf import check_rdf_emission
+        from bijux_ontology.documents.preparation import prepare_source
         from rdflib import Literal, Namespace
         from rdflib.namespace import RDF, XSD
         ex = Namespace("https://example.org/")
