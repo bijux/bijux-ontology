@@ -374,8 +374,8 @@ def test_output_caps_short_write_and_per_record_limits_are_visible(
         interrupted.consume("work", interrupted.remaining("work"))
         return report
 
-    with monkeypatch.context() as selected:
-        selected.setattr(PreparedModels, "check", stop_after_record)
+    with monkeypatch.context() as patched:
+        patched.setattr(PreparedModels, "check", stop_after_record)
         partial = stream_model_findings(
             plan,
             (document(0),),
