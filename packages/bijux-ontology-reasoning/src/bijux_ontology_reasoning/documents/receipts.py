@@ -12,6 +12,7 @@ from .types import NativeProfile
 
 
 def native_records(value: object, operation: Budget, maximum: int) -> list[Any]:
+    """Admit a bounded native result inventory before inspecting its entries."""
     if not isinstance(value, list) or len(value) > maximum:
         raise ResourceError("Invalid native result inventory")
     operation.consume("states", len(value))
@@ -22,6 +23,7 @@ def native_records(value: object, operation: Budget, maximum: int) -> list[Any]:
 def native_profiles(
     raw: object, selected: tuple[OwlProfile, ...], operation: Budget
 ) -> tuple[NativeProfile, ...]:
+    """Validate selected profile answers against their complete violation receipts."""
     records = native_records(raw, operation, len(selected))
     if len(records) != len(selected):
         raise ResourceError("Native worker omitted selected profiles")
