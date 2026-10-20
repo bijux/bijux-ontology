@@ -523,7 +523,7 @@ def test_unique_coordinate_population_avoids_unrelated_comparisons(
     iri: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """An exact coordinate discriminator keeps a practical cube linear."""
-    import bijux_ontology.data.cube.facts as facts
+    from bijux_ontology.data.keys.evidence import compare_keys
 
     graph = cube()
     graph.remove((EX.o1, None, None))
@@ -538,14 +538,14 @@ def test_unique_coordinate_population_avoids_unrelated_comparisons(
         graph.add((subject, EX.value, Literal("1", datatype=XSD.decimal)))
         graph.add((subject, EX.unit, EX.kg))
     calls = 0
-    original = facts.compare_keys
+    original = compare_keys
 
     def compared(*args: Any, **kwargs: Any) -> tuple[str, tuple[Issue, ...]]:
         nonlocal calls
         calls += 1
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(facts, "compare_keys", compared)
+    monkeypatch.setattr("bijux_ontology.data.cube.facts.compare_keys", compared)
     result = check(graph)
     assert result.report.verified, result.report.to_dict()
     assert calls == 0  # 32,640 unrelated pairs are excluded, not reinterpreted.
@@ -596,3 +596,87 @@ def test_coordinate_candidates_keep_nontransitive_and_unknown_relations() -> Non
         i.code == "cube.constraint_unverified" and "IC12" in i.message
         for i in unknown.report.issues
     )
+
+
+def test_measure_coordinate_neighbourhoods_are_shared_without_losing_findings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each exact coordinate group is evaluated once, with row-local findings."""
+    from bijux_ontology.data.keys.evidence import compare_keys
+
+    graph = cube(measures=True)
+    graph.remove((EX.o1, None, None))
+    graph.remove((EX.o2, None, None))
+    graph.set((EX.period, RDFS.range, XSD.string))
+    for index in range(128):
+        for measure in (EX.value, EX.other):
+            subject = EX[f"group-{index}-{str(measure).rsplit(':', 1)[-1]}"]
+            graph.add((subject, RDF.type, QB.Observation))
+            graph.add((subject, QB.dataSet, EX.data))
+            graph.add((subject, EX.period, Literal(str(index))))
+            graph.add((subject, QB.measureType, measure))
+            graph.add((subject, measure, Literal("1", datatype=XSD.decimal)))
+            graph.add((subject, EX.unit, EX.kg))
+    calls = 0
+    original = compare_keys
+
+    def compared(*args: Any, **kwargs: Any) -> tuple[str, tuple[Issue, ...]]:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr("bijux_ontology.data.cube.facts.compare_keys", compared)
+    result = check(graph)
+    assert result.report.verified, result.report.to_dict()
+    assert calls == 384  # IC12:128; IC17:256 members, rather than 65,536 pairs.
+    graph.remove((EX["group-0-other"], None, None))
+    missing = check(graph)
+    assert any(
+        i.code == "cube.ic17_measure_group_incomplete"
+        and i.location == str(EX["group-0-value"])
+        for i in missing.report.issues
+    )
+    # An additional observation with the same selected measure invalidates the
+    # original group's cardinality, even though its set of measures is unchanged.
+    for _, predicate, obj in tuple(graph.triples((EX["group-1-value"], None, None))):
+        graph.add((EX.duplicate, predicate, obj))
+    duplicate = check(graph)
+    assert any(
+        i.code == "cube.ic17_measure_group_incomplete" for i in duplicate.report.issues
+    )
+    graph.set((EX.duplicate, QB.measureType, EX.undeclared))
+    undeclared = check(graph)
+    assert any(
+        i.code == "cube.ic17_measure_group_incomplete" for i in undeclared.report.issues
+    )
+
+
+def test_measure_neighbourhoods_do_not_close_numeric_equality_transitively() -> None:
+    """Each integer sees the float; the float sees both distinct integers."""
+    graph = cube(measures=True)
+    graph.remove((EX.o1, None, None))
+    graph.remove((EX.o2, None, None))
+    graph.set((EX.period, RDFS.range, XSD.float))
+    graph.add((EX.dsd, QB.component, EX.third_component))
+    graph.add((EX.third_component, QB.measure, EX.third))
+    values = (
+        Literal("16777216", datatype=XSD.integer, normalize=False),
+        Literal("16777217", datatype=XSD.integer, normalize=False),
+        Literal("16777216", datatype=XSD.float, normalize=False),
+    )
+    for index, (value, measure) in enumerate(
+        zip(values, (EX.value, EX.other, EX.third), strict=True)
+    ):
+        subject = EX[f"mixed-{index}"]
+        graph.add((subject, RDF.type, QB.Observation))
+        graph.add((subject, QB.dataSet, EX.data))
+        graph.add((subject, EX.period, value))
+        graph.add((subject, QB.measureType, measure))
+        graph.add((subject, measure, Literal("1", datatype=XSD.decimal)))
+        graph.add((subject, EX.unit, EX.kg))
+    result = check(graph)
+    assert {
+        i.location
+        for i in result.report.issues
+        if i.code == "cube.ic17_measure_group_incomplete"
+    } == {str(EX["mixed-0"]), str(EX["mixed-1"])}
