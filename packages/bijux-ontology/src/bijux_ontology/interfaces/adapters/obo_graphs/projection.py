@@ -7,8 +7,8 @@ from rdflib.namespace import OWL, RDF, RDFS, XSD
 from rdflib.term import Node
 
 from bijux_ontology._json import array_value, object_value, text_value
-from bijux_ontology._jsonschema import capture
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.snapshots import PreparedSource

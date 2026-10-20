@@ -10,8 +10,7 @@ from uuid import uuid4
 
 from rdflib import Graph
 
-from bijux_ontology._json import own_json
-from bijux_ontology._jsonschema import _measure
+from bijux_ontology._json import _measure, own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
@@ -19,6 +18,7 @@ from bijux_ontology.jsonld.conversion import DirectionPolicy
 from bijux_ontology.jsonld.resources import OfflineDocumentLoader
 from bijux_ontology.limits import Budget, Limits, bound_text
 from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.context import same_context
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -165,7 +165,9 @@ class PreparedModels:
         context = json.loads(self._context_json)
         output = _prepared_json(document, operation)
         if isinstance(output, dict):
-            if "@context" in output and output["@context"] != context:
+            if "@context" in output and not same_context(
+                output["@context"], context, operation
+            ):
                 raise InputError("Prepared context conflicts with actual output")
             return {**output, "@context": context}
         if isinstance(output, list):

@@ -4,8 +4,10 @@ from decimal import Decimal
 from sys import getsizeof
 from typing import Any
 
-from bijux_ontology._jsonschema import DIALECT, backend, capture, owned_json, validator
+from bijux_ontology._json import owned_json
+from bijux_ontology._jsonschema import DIALECT, backend, validator
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report

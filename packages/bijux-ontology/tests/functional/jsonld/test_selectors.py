@@ -10,7 +10,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
@@ -323,17 +323,22 @@ def test_exhaustion_and_ambiguous_bindings_never_claim_complete_coverage() -> No
             {"@type": "Record", "label": "two"},
         ],
     }
-    prepared = prepare_usages(document, limits=Limits(max_work=100))
-    result = prepared.select(
-        SourceSelector((Property("items"), ArrayItems(), Property("label")))
+    with pytest.raises(LimitExceeded):
+        prepare_usages(document, limits=Limits(max_work=100))
+    selector = SourceSelector((Property("items"), ArrayItems(), Property("label")))
+    measurement = Budget()
+    measured = prepare_usages(document, budget=measurement)
+    measured.select(selector)
+    limits = Limits(
+        max_work=measurement.limits.max_work - measurement.remaining("work")
     )
+    prepared = prepare_usages(document, limits=limits)
+    result = prepared.select(selector)
     # Selection and processor derivatives share the finite operation budget.
     for _ in range(100):
         if not result.report.complete:
             break
-        result = prepared.select(
-            SourceSelector((Property("items"), ArrayItems(), Property("label")))
-        )
+        result = prepared.select(selector)
     assert not result.report.complete and result.report.issues[-1].kind == "exhausted"
     duplicate = prepare_usages(document)
     ambiguous = duplicate.select(
@@ -357,6 +362,34 @@ def test_selector_variants_reject_unbounded_query_text_and_invalid_bounds() -> N
     ):
         with pytest.raises(InputError):
             construct()
+
+
+def test_pointer_metadata_is_prepaid_and_escapes_source_keys() -> None:
+    key = EX + "a~/🧬"
+    document = {key: ["text"]}
+    prepared = prepare_usages(document)
+    bounded = Budget(Limits(max_total_bytes=4096))
+    stopped = resolve_selection(
+        SourceSelector((Property("🧬" * 400000),)),
+        document,
+        prepared.entities,
+        prepared.observe,
+        bounded,
+    )
+    assert stopped.report.outcome == "exhausted" and not stopped.report.complete
+    assert bounded._counts.get("bytes", 0) <= 4096
+    selected = prepared.select(SourceSelector((Property(key), ArrayItems())))
+    assert selected.report.verified and selected.paths == ((key, 0),)
+    checked = prepared.check(
+        [
+            ContextExpectation(
+                selected.paths[0],
+                key,
+                datatype="http://www.w3.org/2001/XMLSchema#integer",
+            )
+        ]
+    )
+    assert checked.issues[0].location == "/https:~1~1example.org~1a~0~1🧬/0"
 
 
 @pytest.mark.parametrize("keyword", ["@list", "@set"])

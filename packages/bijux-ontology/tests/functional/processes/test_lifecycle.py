@@ -50,7 +50,6 @@ def _exited_unreaped(process: subprocess.Popen[bytes]) -> None:
     "stop",
     [
         processes.stop_owned_process,
-        shacl_transport._stop_group,
         stop_process,
     ],
 )

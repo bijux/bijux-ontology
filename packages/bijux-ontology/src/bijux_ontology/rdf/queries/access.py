@@ -377,7 +377,7 @@ def query_rdf(
             # The fixed project worker's host owns cancellation and its absolute
             # job deadline, including opaque native search. A second process
             # group would escape that ownership when the project is stopped.
-            from bijux_ontology.rdf.queries.worker import process_request
+            from bijux_ontology.rdf.queries.execution import process_request
 
             raw = process_request(payload, selected.max_total_bytes)
         else:

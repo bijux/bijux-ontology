@@ -12,7 +12,7 @@ from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.stores.seals import seal_files, verify_files
 from bijux_ontology.rdf.terms import bound_text
 
-from .types import OwlProfileBackend
+from ..types import OwlProfileBackend
 
 OWLAPI_VERSION = "5.5.1"
 MAIN_CLASS = "org.bijux.ontology.profiles.ProfileWorker"

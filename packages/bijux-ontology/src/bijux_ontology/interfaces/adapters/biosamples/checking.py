@@ -6,11 +6,13 @@ from typing import cast
 
 from rdflib import Graph, Literal, URIRef
 
+from bijux_ontology._json import owned_json
 from bijux_ontology._jsonpaths import bounded_location
-from bijux_ontology._jsonschema import capture, operation, owned_json
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import operation
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
     compile_allowed,
 )

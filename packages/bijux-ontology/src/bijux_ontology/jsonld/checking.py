@@ -63,6 +63,7 @@ class PreparedUsages:
             document,
             max_bytes=self._budget.limits.max_bytes,
             max_depth=self._budget.limits.max_depth,
+            budget=self._budget,
         )
         self._base = base
         dropped: list[str | None] = []

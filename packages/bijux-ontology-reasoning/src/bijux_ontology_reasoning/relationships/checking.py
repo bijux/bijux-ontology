@@ -19,22 +19,22 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
 from ..axioms.types import DataProperty, NamedEntity, ObjectProperty
-from ..backend.bundles import qualify_backend
-from ..backend.execution import (
+from ..backend.owlapi.bundles import qualify_backend
+from ..backend.owlapi.execution import (
     invoke_worker,
     qualify_capability,
     result_counter,
     result_text,
 )
-from ..backend.qualification import (
+from ..backend.owlapi.receipts import (
     _boolean,
     _records,
     qualify_reasoning_result,
     reasoning_header,
 )
-from ..backend.rdf_sources import stage_documents
 from ..backend.types import LoaderQualification, OwlProfileBackend, ProfileDocument
-from ..documents.preparation import stage_native_documents
+from ..documents.sources.native import stage_native_documents
+from ..documents.sources.rdf import stage_documents
 from ..documents.types import OwlDocument
 from .types import (
     InferredAnswer,

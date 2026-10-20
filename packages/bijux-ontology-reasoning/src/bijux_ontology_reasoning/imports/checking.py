@@ -20,8 +20,9 @@ from ..axioms.types import (
     ObjectProperty,
     ProjectedAxiom,
 )
+from ..backend.robot.types import RobotBackend
 from ..backend.types import OwlProfileBackend
-from ..documents.preparation import prepare_owl_document
+from ..documents.sources.native import prepare_owl_document
 from ..documents.types import OwlDocument
 from ..entailment.checking import check_entailments
 from ..relationships.checking import query_inferred_contracts
@@ -30,7 +31,6 @@ from ..relationships.types import (
     InferredQuery,
     RelationshipValue,
 )
-from ..robot.types import RobotBackend
 from .backend import extract_native
 from .preparation import MireotPlan, prepare_import
 from .types import MireotBoundary, MireotImport, MireotRetention

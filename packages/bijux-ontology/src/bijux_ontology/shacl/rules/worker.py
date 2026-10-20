@@ -1,6 +1,5 @@
 """One isolated maintained rule program with same-scope convergence accounting."""
 
-import json
 import sys
 import warnings
 from contextlib import redirect_stdout
@@ -9,13 +8,10 @@ from dataclasses import replace
 from rdflib import Graph, URIRef
 from rdflib.namespace import RDF, SH
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.execution.budgets import ControlBudget
-from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.patches.codecs import read_witness, witness_data
+from bijux_ontology.rdf.patches.codecs import read_witness
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import SnapshotWitness
 from bijux_ontology.rdf.terms import bound_node, term_key
@@ -28,6 +24,13 @@ from .preparation import (
     graph_from_witness,
     qualify_program,
     selected_names,
+)
+from .protocol import (
+    RuleRequest,
+    completed_execution,
+    failed_execution,
+    read_request,
+    response_bytes,
 )
 
 
@@ -60,7 +63,7 @@ def _result(graph: Graph, scope: SnapshotWitness, budget: Budget) -> SnapshotWit
     )
 
 
-def _execute(request: dict[str, object], budget: Budget) -> dict[str, object]:
+def _execute(request: RuleRequest, budget: Budget) -> tuple[int, SnapshotWitness]:
     """Run full public ordered passes, never the backend's local iteration flag."""
     from pyshacl import shacl_rules
     from pyshacl.graph_abstraction import DataGraph
@@ -140,12 +143,7 @@ def _execute(request: dict[str, object], budget: Budget) -> dict[str, object]:
             raise RuleUnavailable("A required rule owner has no actual focus nodes")
         for target in targets:
             bound_node(target, budget)
-    witness = _result(graph, initial, budget)
-    return {
-        "status": "result",
-        "passes": passes,
-        "effective": witness_data(witness, budget),
-    }
+    return passes, _result(graph, initial, budget)
 
 
 def main() -> int:
@@ -154,52 +152,13 @@ def main() -> int:
         cap = int(sys.argv[1])
         if cap <= 0:
             return 2
-        request = decode_json(sys.stdin.buffer.read(cap + 1), max_bytes=cap)
-        keys = {
-            "data",
-            "rules",
-            "namespaces",
-            "selected",
-            "mode",
-            "maximum",
-            "functions",
-            "function_names",
-            "function_namespaces",
-            "limits",
-            "allowances",
-        }
-        if (
-            not isinstance(request, dict)
-            or set(request) != keys
-            or not isinstance(request["limits"], dict)
-        ):
-            return 2
-        budget = ControlBudget(Limits(**request["limits"]), request["allowances"])
+        request, budget = read_request(sys.stdin.buffer.read(cap + 1), cap)
         try:
-            result = _execute(request, budget)
-        except (LimitExceeded, MemoryError):
-            result = {"status": "exhausted"}
-        except ImportError:
-            result = {"status": "unavailable"}
-        except RuleUnavailable:
-            result = {"status": "unsupported"}
-        except Exception:
-            # Backend exception text and class names are caller-influenced and
-            # are not retained without a separate bounded metadata contract.
-            result = {"status": "backend_error"}
-        try:
-            size = json_bound(result, budget)
-            if size > cap:
-                raise LimitExceeded("Rule response exceeds max_bytes")
-            budget.consume("bytes", size)
-        except LimitExceeded:
-            result = {"status": "exhausted"}
-        result["consumed"] = budget.consumed()
-        output = json.dumps(result, ensure_ascii=True, separators=(",", ":")).encode(
-            "ascii"
-        )
-        if len(output) > cap:
-            return 2
+            passes, effective = _execute(request, budget)
+            result = completed_execution(passes, effective, budget)
+        except Exception as error:
+            result = failed_execution(error)
+        output = response_bytes(result, budget, cap)
         sys.stdout.buffer.write(output)
         return 0
     except (InputError, ValueError, IndexError):

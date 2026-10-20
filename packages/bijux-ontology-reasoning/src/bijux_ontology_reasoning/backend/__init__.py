@@ -1,7 +1,7 @@
 """Explicit pinned native backend; importing starts no JVM or downloader."""
 
-from .bundles import prepare_profile_backend
-from .execution import backend_capability
+from .owlapi.bundles import prepare_profile_backend
+from .owlapi.execution import backend_capability
 from .types import BackendCapability, OwlProfile, OwlProfileBackend
 
 __all__ = [

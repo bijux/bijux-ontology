@@ -4,8 +4,8 @@ from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import RDF, SKOS
 from rdflib.term import Node
 
-from bijux_ontology._jsonschema import operation
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata

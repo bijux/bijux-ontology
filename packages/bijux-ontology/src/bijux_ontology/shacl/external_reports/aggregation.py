@@ -2,8 +2,9 @@
 
 from collections.abc import Sequence
 
-from bijux_ontology._jsonschema import capture, operation
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import operation
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.execution.results import ShaclResult

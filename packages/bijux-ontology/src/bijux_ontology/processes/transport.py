@@ -17,7 +17,12 @@ __all__ = ["checkpoint", "exchange_worker", "run_worker", "stop_process"]
 
 
 def _validate_worker(
-    command: list[str], cap: int, timeout: float, cancel: Event | None
+    command: list[str],
+    cap: int,
+    timeout: float | None,
+    cancel: Event | None,
+    *,
+    allow_no_deadline: bool = False,
 ) -> None:
     """Qualify supervision policy before creating an owned process or pipe."""
     if (
@@ -28,7 +33,11 @@ def _validate_worker(
         raise InputError("Worker commands require a nonempty argument list")
     if type(cap) is not int or cap <= 0:
         raise InputError("Workers require a positive output cap")
-    if type(timeout) not in (int, float) or not 0 < timeout <= sys.float_info.max:
+    if not (timeout is None and allow_no_deadline) and (
+        timeout is None
+        or type(timeout) not in (int, float)
+        or not 0 < timeout <= sys.float_info.max
+    ):
         raise InputError("Worker timeout must be finite and positive")
     if cancel is not None and not isinstance(cancel, Event):
         raise InputError("Worker cancellation requires an Event")
@@ -138,11 +147,11 @@ def run_worker(
     return process.returncode, stopped, detail
 
 
-def checkpoint(deadline: float, cancel: Event | None) -> None:
+def checkpoint(deadline: float | None, cancel: Event | None) -> None:
     """Bound caller preparation and worker computation by the same deadline."""
     if cancel is not None and cancel.is_set():
         raise LimitExceeded("Worker operation was cancelled")
-    if time.monotonic() >= deadline:
+    if deadline is not None and time.monotonic() >= deadline:
         raise LimitExceeded("Worker operation exceeded its wall-clock deadline")
 
 
@@ -151,25 +160,25 @@ def exchange_worker(
     payload: bytes,
     *,
     cap: int,
-    timeout: float,
+    timeout: float | None,
     cancel: Event | None = None,
     completed: Callable[[bytes], None] | None = None,
 ) -> bytes:
     """Exchange opaque bounded bytes with one explicitly owned no-shell command.
 
     Protocols and runtime identity belong to callers. This transport owns bounded
-    concurrent pipes, one deadline and descendant cleanup for every command.
+    concurrent pipes, an optional explicit deadline and descendant cleanup.
     An explicit terminal handoff receives complete successful bytes before a
     later stop; its domain still qualifies and retains that bounded receipt.
     """
-    _validate_worker(command, cap, timeout, cancel)
+    _validate_worker(command, cap, timeout, cancel, allow_no_deadline=True)
     if not isinstance(payload, bytes):
         raise InputError("Workers require a bytes request")
     if len(payload) > cap:
         raise LimitExceeded("Worker input exceeds protocol byte bound")
     if completed is not None and not callable(completed):
         raise InputError("Completed worker receipts require a callable")
-    deadline = time.monotonic() + timeout
+    deadline = None if timeout is None else time.monotonic() + timeout
     checkpoint(deadline, cancel)
     try:
         process = spawn_owned_process(

@@ -2,10 +2,11 @@
 
 import io
 import json
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from threading import Event
 
+import pytest
 from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
@@ -17,7 +18,7 @@ from bijux_ontology.declarations import (
 from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.reports import combine_reports
+from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.workflows.finding_streams import (
     CallbackFindingSink,
     FindingEvent,
@@ -249,7 +250,9 @@ def test_broken_sink_and_callback_cancel_preserve_known_negative() -> None:
     assert stopped.failure and stopped.failure.kind == "exhausted"
 
 
-def test_output_caps_short_write_and_per_record_limits_are_visible() -> None:
+def test_output_caps_short_write_and_per_record_limits_are_visible(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Ordinary per-record exhaustion and incomplete output never become success."""
     plan = prepared()
     for selected in (
@@ -357,13 +360,29 @@ def test_output_caps_short_write_and_per_record_limits_are_visible() -> None:
         limits=Limits(max_issues=1),
     )
     assert enclosing.raw_outcome == "exhausted" and not enclosing.semantic_complete
-    partial = stream_model_findings(
-        plan,
-        (document(0),),
-        USAGES,
-        sink=JsonlFindingSink(io.BytesIO()),
-        limits=Limits(max_work=20),
-    )
+    interrupted = Budget()
+    check = PreparedModels.check
+
+    def stop_after_record(
+        self: PreparedModels,
+        supplied: object,
+        usages: Sequence[ModelUsage],
+        *,
+        budget: Budget | None = None,
+    ) -> Report:
+        report = check(self, supplied, usages, budget=budget)
+        interrupted.consume("work", interrupted.remaining("work"))
+        return report
+
+    with monkeypatch.context() as patched:
+        patched.setattr(PreparedModels, "check", stop_after_record)
+        partial = stream_model_findings(
+            plan,
+            (document(0),),
+            USAGES,
+            sink=JsonlFindingSink(io.BytesIO()),
+            budget=interrupted,
+        )
     assert partial.finding_count > 0 and not partial.finding_counts_complete
     assert not partial.semantic_complete and not partial.verified
     budget = Budget(Limits(max_work=1))

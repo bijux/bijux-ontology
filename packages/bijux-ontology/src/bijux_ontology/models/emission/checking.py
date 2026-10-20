@@ -147,7 +147,10 @@ def check_emission(
                             )
                         )
         snapshot = own_json(
-            document, max_bytes=selected.max_bytes, max_depth=selected.max_depth
+            document,
+            max_bytes=selected.max_bytes,
+            max_depth=selected.max_depth,
+            budget=budget,
         )
         prepared = (
             _prepared

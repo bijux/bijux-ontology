@@ -11,8 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn, cast
 
+from bijux_ontology._jsonpaths import bound_index
 from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.inputs import capture
+from bijux_ontology.limits import Limits, bound_text
 
 if TYPE_CHECKING:
     from bijux_ontology.limits import Budget
@@ -99,10 +101,33 @@ def _capture_json(
 
 @dataclass(frozen=True)
 class _JsonMeasurement:
-    """Exact compact encoding size and whether its Unicode storage is ASCII."""
+    """Exact compact bytes, default separator spaces and Unicode storage kind."""
 
     size: int
     ascii_only: bool
+    separating_spaces: int
+
+
+def encode_json(value: object, *, budget: Budget) -> str:
+    """Prepay maintained JSON encoding with the ordinary unescaped output format."""
+    from bijux_ontology.limits import Budget as RuntimeBudget
+
+    if not isinstance(budget, RuntimeBudget):
+        raise InputError("JSON encoding requires a Budget")
+    measurement = _measure_json(
+        value,
+        max_bytes=budget.limits.max_bytes,
+        max_depth=budget.limits.max_depth,
+        budget=budget,
+    )
+    size = measurement.size + measurement.separating_spaces
+    if size > budget.limits.max_bytes:
+        raise LimitExceeded("JSON output exceeds max_bytes")
+    budget.consume("work", size + 1)
+    # Reserve fixed encoder scratch, intermediate text and the retained result.
+    # Non-ASCII Python strings can use four-byte characters independently of UTF-8.
+    budget.reserve_storage(1024 + (4 if measurement.ascii_only else 8) * size)
+    return json.dumps(value, ensure_ascii=False, allow_nan=False)
 
 
 def _measure_json(
@@ -134,6 +159,7 @@ def _measure_json(
     active: set[int] = set()
     size = 0
     ascii_only = True
+    separating_spaces = 0
     try:
         while stack:
             if budget is not None:
@@ -165,9 +191,11 @@ def _measure_json(
                     )
                 active.add(id(item))
                 size += 2 + max(0, len(item) - 1)
+                separating_spaces += max(0, len(item) - 1)
                 if size > max_bytes:
                     raise LimitExceeded("JSON input exceeds max_bytes", location=source)
                 if isinstance(item, dict):
+                    separating_spaces += len(item)
                     for key in item:
                         if not isinstance(key, str):
                             raise InputError(
@@ -214,7 +242,61 @@ def _measure_json(
         if isinstance(error, InputError):
             raise
         raise InputError(str(error), location=source) from error
-    return _JsonMeasurement(size, ascii_only)
+    return _JsonMeasurement(size, ascii_only, separating_spaces)
+
+
+def _measure(value: object, budget: Budget) -> int:
+    """Bound JSON nodes and scalar comparison payloads before owned processing."""
+    count = 0
+
+    def visit(item: object, depth: int) -> None:
+        """Charge each actual JSON node before the maintained ownership copy."""
+        nonlocal count
+        budget.consume("work")
+        budget.consume("states")
+        count += 1
+        if depth > budget.limits.max_depth:
+            raise LimitExceeded("JSON output exceeds max_depth")
+        if isinstance(item, str):
+            bound_text(item, budget)
+            count += len(item)
+        elif item is None or type(item) is bool:
+            return
+        elif type(item) is int:
+            bound_index(item, budget)
+            count += max(1, (item.bit_length() * 30103) // 100000 + 1)
+        elif type(item) is float:
+            if not math.isfinite(item):
+                raise InputError("JSON output numbers must be finite")
+            bound_text(repr(item), budget)
+            count += len(repr(item))
+        elif type(item) is list:
+            for child in capture(item, budget):
+                visit(child, depth + 1)
+        elif type(item) is dict:
+            budget.consume("states", len(item))
+            for key, child in item.items():
+                if not isinstance(key, str):
+                    raise InputError("JSON output object keys require text")
+                bound_text(key, budget)
+                count += len(key)
+                visit(child, depth + 1)
+        else:
+            raise InputError("Expected finite JSON output values")
+
+    visit(value, 0)
+    return count
+
+
+def owned_json(value: object, budget: Budget) -> tuple[object, int]:
+    """Qualify finite JSON metadata before producing its independent snapshot."""
+    count = _measure(value, budget)
+    return own_json(
+        value,
+        max_bytes=budget.limits.max_bytes,
+        max_depth=budget.limits.max_depth,
+        budget=budget,
+    ), count
 
 
 class _ObjectPairs(list[tuple[str, object]]):

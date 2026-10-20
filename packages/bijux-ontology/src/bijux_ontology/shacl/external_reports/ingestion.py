@@ -7,8 +7,9 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, SH, XSD
 from rdflib.term import Node
 
-from bijux_ontology._jsonschema import operation, owned_json
+from bijux_ontology._json import owned_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import operation
 from bijux_ontology.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.snapshots import PreparedSource

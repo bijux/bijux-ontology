@@ -6,8 +6,9 @@ from dataclasses import replace
 from importlib.metadata import version
 from typing import Any
 
-from bijux_ontology._jsonschema import capture, owned_json
+from bijux_ontology._json import owned_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.jsonld.contexts.processing import _data, _preflight
 from bijux_ontology.jsonld.resources import (
     ContextResources,

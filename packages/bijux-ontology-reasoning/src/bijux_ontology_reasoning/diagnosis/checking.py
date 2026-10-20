@@ -21,20 +21,20 @@ from bijux_ontology.rdf.sources import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
-from ..backend.bundles import qualify_backend
-from ..backend.execution import (
+from ..backend.owlapi.bundles import qualify_backend
+from ..backend.owlapi.execution import (
     invoke_worker,
     qualify_capability,
     result_text,
 )
-from ..backend.qualification import _boolean as _boolean
-from ..backend.qualification import _loaders as _loaders
-from ..backend.qualification import _reasoner as _reasoner
-from ..backend.qualification import _records as _records
-from ..backend.qualification import qualify_reasoning_result, reasoning_header
-from ..backend.rdf_sources import stage_documents
+from ..backend.owlapi.receipts import _boolean as _boolean
+from ..backend.owlapi.receipts import _loaders as _loaders
+from ..backend.owlapi.receipts import _reasoner as _reasoner
+from ..backend.owlapi.receipts import _records as _records
+from ..backend.owlapi.receipts import qualify_reasoning_result, reasoning_header
 from ..backend.types import OwlProfileBackend, ProfileDocument
-from ..documents.preparation import stage_native_documents
+from ..documents.sources.native import stage_native_documents
+from ..documents.sources.rdf import stage_documents
 from ..documents.types import OwlDocument
 from ..profiles.types import LoaderQualification
 from .types import ClassSatisfiability, ConsistencyCheck

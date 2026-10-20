@@ -204,9 +204,19 @@ def compare_lists(
     budget: Budget,
 ) -> Iterator[Issue]:
     """Compare list boundaries, ordered members and unordered outer occurrences."""
-    where = location(usage.path)
     budget.consume("states", len(expected))
     wanted = tuple(item._read(budget) for item in expected)
+    yield from compare_list_values(wanted, usage, budget=budget)
+
+
+def compare_list_values(
+    wanted: tuple[tuple[object, ...], ...],
+    usage: ObservedUsage,
+    *,
+    budget: Budget,
+) -> Iterator[Issue]:
+    """Compare already-owned member groups through the same RDF term conversion."""
+    where = location(usage.path)
     if any(item.container != "list" for item in usage.occurrences):
         yield Issue(
             "context.list_group_mismatch", "Selected values are not RDF lists", where

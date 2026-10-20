@@ -20,6 +20,7 @@ from bijux_ontology.rdf.stores.seals import verify_files
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
+from ..types import BackendCapability, OwlProfile, OwlProfileBackend
 from .bundles import (
     LOADER_PROFILE,
     MAIN_CLASS,
@@ -27,7 +28,6 @@ from .bundles import (
     PROFILES,
     qualify_backend,
 )
-from .types import BackendCapability, OwlProfile, OwlProfileBackend
 
 
 def result_counter(value: object, budget: Budget, maximum: int) -> int:

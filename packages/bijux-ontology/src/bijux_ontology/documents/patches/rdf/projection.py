@@ -5,7 +5,7 @@ from itertools import islice
 
 from rdflib import BNode, Literal, Variable
 
-from bijux_ontology._jsonschema import _measure
+from bijux_ontology._json import _measure
 from bijux_ontology.documents.forms.types import FormRequirement
 from bijux_ontology.documents.patches.checking import apply_document_patch
 from bijux_ontology.documents.patches.operations import (

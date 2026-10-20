@@ -20,9 +20,9 @@ from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Issue, Report
 
 from ..axioms.types import ClassExpression, NamedEntity, ProjectedAxiom
-from ..backend.bundles import qualify_backend
-from ..backend.execution import qualify_capability, result_counter, result_text
-from ..backend.qualification import (
+from ..backend.owlapi.bundles import qualify_backend
+from ..backend.owlapi.execution import qualify_capability, result_counter, result_text
+from ..backend.owlapi.receipts import (
     QualifiedReceipt,
     _boolean,
     _records,

@@ -78,7 +78,13 @@ def _incomplete(
     plan: _ShapePlan, error: Exception, focus: tuple[URIRef | BNode | Literal, ...] = ()
 ) -> ShaclResult:
     """Retain an incomplete operation without inventing raw conformance."""
-    kind: IssueKind = "exhausted" if isinstance(error, LimitExceeded) else "input_error"
+    kind: IssueKind = (
+        "exhausted"
+        if isinstance(error, LimitExceeded)
+        else "unverified"
+        if isinstance(error, ResourceError)
+        else "input_error"
+    )
     return ShaclResult(
         Report(
             "shacl",

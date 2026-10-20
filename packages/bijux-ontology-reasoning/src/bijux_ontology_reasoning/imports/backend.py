@@ -6,8 +6,8 @@ from tempfile import TemporaryDirectory
 from bijux_ontology.errors import ResourceError
 from bijux_ontology.execution.budgets import Operation
 
-from ..robot.runtime import _verify, run_robot
-from ..robot.types import RobotBackend, RobotRun
+from ..backend.robot.runtime import _verify, run_robot
+from ..backend.robot.types import RobotBackend, RobotRun
 from .preparation import MireotPlan
 
 

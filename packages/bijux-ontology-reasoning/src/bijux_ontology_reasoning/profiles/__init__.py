@@ -1,7 +1,7 @@
 """Explicit optional OWLAPI profile operations; no import-time native execution."""
 
+from ..backend.owlapi.bundles import prepare_profile_backend
 from .execution import backend_capability, check_profile
-from .preparation import prepare_profile_backend
 from .types import (
     BackendCapability,
     LoaderQualification,

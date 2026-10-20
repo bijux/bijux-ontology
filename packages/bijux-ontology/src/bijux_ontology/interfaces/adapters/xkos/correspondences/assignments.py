@@ -4,8 +4,8 @@ from typing import Literal
 
 from rdflib import BNode, URIRef
 
-from bijux_ontology._jsonschema import operation
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.budgets import operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.migrations.values.types import ValueMap
 from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource

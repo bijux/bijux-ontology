@@ -9,15 +9,16 @@ from typing import Any, cast
 from rdflib import Literal
 from rdflib.namespace import XSD
 
+from bijux_ontology._json import owned_json
 from bijux_ontology._jsonpaths import (
     at_path,
     bound_path,
     bounded_location,
     validate_path,
 )
-from bijux_ontology._jsonschema import operation, owned_json
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.budgets import operation
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,

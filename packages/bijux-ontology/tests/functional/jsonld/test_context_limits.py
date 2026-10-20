@@ -24,7 +24,12 @@ EX = "https://example.org/"
 
 @pytest.mark.parametrize(
     "limits",
-    [Limits(max_bytes=16), Limits(max_depth=1), Limits(max_work=1)],
+    [
+        Limits(max_bytes=16),
+        Limits(max_depth=1),
+        Limits(max_work=1),
+        Limits(max_states=3),
+    ],
 )
 def test_owned_context_limits_stop_before_success(limits: Limits) -> None:
     document = {"@context": {"p": EX + "p"}, "p": "value"}
@@ -36,10 +41,7 @@ def test_owned_context_limits_stop_before_success(limits: Limits) -> None:
     assert not report.verified
 
 
-@pytest.mark.parametrize("limits", [Limits(max_issues=1), Limits(max_states=3)])
-def test_later_exhaustion_retains_the_first_completed_disagreement(
-    limits: Limits,
-) -> None:
+def test_later_exhaustion_retains_the_first_completed_disagreement() -> None:
     document = {"@context": {"@vocab": EX}, "p": "a", "q": "b"}
     report = check_context(
         document,
@@ -47,7 +49,7 @@ def test_later_exhaustion_retains_the_first_completed_disagreement(
             ContextExpectation(("p",), EX + "wrong"),
             ContextExpectation(("q",), EX + "wrong"),
         ],
-        limits=limits,
+        limits=Limits(max_issues=1),
     )
     assert report.exit_code() == 2
     assert not report.complete

@@ -7,9 +7,9 @@ from rdflib import Variable
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
 from bijux_ontology._json import decode_json, object_value
-from bijux_ontology._jsonschema import capture
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.inputs import capture
 from bijux_ontology.limits import (
     Budget,
     IssueCollector,

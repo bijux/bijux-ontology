@@ -1,97 +1,19 @@
 """Bounded, cancellable transport to the isolated SHACL process."""
 
-import subprocess
 import sys
 import threading
-import time
-from typing import BinaryIO
 
-from bijux_ontology.errors import LimitExceeded, ResourceError
+from bijux_ontology.errors import ResourceError
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.limits import Budget
-from bijux_ontology.processes.ownership import spawn_owned_process, stop_owned_process
 from bijux_ontology.processes.sessions import FramedSession
-
-_stop_group = stop_owned_process
 
 
 def execute_backend(payload: bytes, *, cap: int, timeout: float | None) -> bytes:
-    """Drain both streams while writing input, and reap every started process."""
-    try:
-        process = spawn_owned_process(
-            [sys.executable, "-I", "-B", "-m", "bijux_ontology.shacl.worker", str(cap)],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    except OSError as error:
-        raise ResourceError("SHACL worker could not be started") from error
-    overflow = threading.Event()
-    stdout = bytearray()
-    stderr = bytearray()
-
-    def read(stream: BinaryIO, target: bytearray) -> None:
-        """Drain one pipe while retaining at most its permitted byte count."""
-        try:
-            while chunk := stream.read(8192):
-                remaining = cap - len(target)
-                target.extend(chunk[:remaining])
-                if len(chunk) > remaining:
-                    overflow.set()
-                    break
-        finally:
-            stream.close()
-
-    def write(stream: BinaryIO) -> None:
-        """Feed the request concurrently so a full output pipe cannot deadlock."""
-        try:
-            stream.write(payload)
-        except (BrokenPipeError, OSError):
-            pass
-        finally:
-            stream.close()
-
-    assert (
-        process.stdin is not None
-        and process.stdout is not None
-        and process.stderr is not None
+    """Require delivered input and successful owned SHACL worker completion."""
+    return execute_worker(
+        "bijux_ontology.shacl.worker", payload, cap=cap, timeout=timeout
     )
-    threads = [
-        threading.Thread(target=write, args=(process.stdin,), daemon=True),
-        threading.Thread(target=read, args=(process.stdout, stdout), daemon=True),
-        threading.Thread(target=read, args=(process.stderr, stderr), daemon=True),
-    ]
-    started = time.monotonic()
-    failure: BaseException | None = None
-    try:
-        for thread in threads:
-            thread.start()
-        while process.poll() is None:
-            if overflow.is_set():
-                raise LimitExceeded("SHACL process output exceeds protocol byte bound")
-            if timeout is not None and time.monotonic() - started >= timeout:
-                raise LimitExceeded(
-                    "SHACL process exceeded requested wall-clock deadline"
-                )
-            try:
-                process.wait(timeout=0.02)
-            except subprocess.TimeoutExpired:
-                continue
-    except BaseException as error:
-        failure = error
-        raise
-    finally:
-        try:
-            _stop_group(process, failure=failure)
-        finally:
-            for thread in threads:
-                if thread.ident is not None:
-                    thread.join(timeout=1)
-    if overflow.is_set():
-        raise LimitExceeded("SHACL process output exceeds protocol byte bound")
-    if process.returncode and not stdout:
-        detail = stderr.decode(errors="replace")[:2000]
-        raise ResourceError(f"SHACL worker exited {process.returncode}: {detail}")
-    return bytes(stdout)
 
 
 class SessionBackend(FramedSession):

@@ -14,15 +14,15 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.reports import Issue, Report
 
-from ..backend.bundles import PROFILES, qualify_backend
-from ..backend.execution import (
+from ..backend.owlapi.bundles import PROFILES, qualify_backend
+from ..backend.owlapi.execution import (
     invoke_worker,
     qualify_capability,
     result_counter,
     result_text,
 )
 from ..backend.types import OwlProfile, OwlProfileBackend
-from .preparation import native_syntax, stage_native_documents
+from .sources.native import native_syntax, stage_native_documents
 from .types import (
     ConversionChange,
     NativeExport,

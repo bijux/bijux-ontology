@@ -1,7 +1,7 @@
 """Validated declarations of expected meanings for selected JSON-LD usages."""
 
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal, cast
 
 from bijux_ontology._json import own_json
@@ -13,7 +13,7 @@ from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.reports import Issue
 
 from ..errors import InputError
-from .lists import ExpectedList, compare_lists
+from .lists import ExpectedList, compare_list_values, compare_lists
 from .values import ValueKind
 
 ContainerKind = Literal["list", "unordered"]
@@ -151,14 +151,14 @@ def compare_usage(
             kind="unverified",
         )
     elif expectation.ordered_values is not None:
-        values = tuple(item.value for item in usage.occurrences if not item.empty)
-        if values != expectation.ordered_values:
-            yield Issue(
-                "context.order_mismatch",
-                "Selected list values differ in value or order",
-                where,
-                expected=str(expectation.ordered_values),
-                actual=str(values),
+        for issue in compare_list_values(
+            (expectation.ordered_values,), usage, budget=budget
+        ):
+            yield replace(
+                issue,
+                code="context.order_mismatch"
+                if issue.kind == "finding"
+                else "context.order_unverified",
             )
     for item in usage.occurrences:
         budget.consume("work")

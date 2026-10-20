@@ -12,7 +12,7 @@ from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, _result
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import term_data
 from bijux_ontology.rdf.stores.protocol import failure
-from bijux_ontology.rdf.stores.worker import _query
+from bijux_ontology.rdf.stores.queries import query_native
 from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.reports import Report
 
@@ -69,7 +69,7 @@ def query_external(
             raise InputError(
                 "External max_rows must be positive and within max_triples"
             )
-        response = _query(
+        response = query_native(
             {
                 "query": text,
                 "scope": scope.kind,

@@ -103,6 +103,11 @@ def encode_request(request: DatatypeRequest, operation: Budget) -> dict[str, obj
             raise ResourceError(
                 "Only outgoing literal branches have this global range profile"
             )
+        if value.container not in (None, "@set"):
+            raise ResourceError(
+                "List heads and unsupported containers are outside "
+                "the global literal endpoint profile"
+            )
         if value.constraints is not None or value.direction is not None:
             raise ResourceError(
                 "Application value constraints are outside this OWL profile"

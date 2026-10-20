@@ -161,7 +161,7 @@ def validate_shapes(
         # Execute the same backend there; a nested isolated process would escape
         # the outer POSIX process group when its owner is terminated.
         from bijux_ontology.execution.protocol import json_bound
-        from bijux_ontology.shacl.worker import execute
+        from bijux_ontology.shacl.execution.backend import execute
 
         response = execute(_options(plan, focus), supplied=roles, budget=budget)
         if budget is not None:

@@ -11,8 +11,8 @@ from bijux_ontology.reports import Issue, Report
 
 from ..axioms.decoding import ProjectionDecoder
 from ..axioms.types import NamedEntity, NativeLiteral
-from ..backend.execution import result_counter, result_text
-from ..backend.qualification import QualifiedReceipt, _boolean, _records
+from ..backend.owlapi.execution import result_counter, result_text
+from ..backend.owlapi.receipts import QualifiedReceipt, _boolean, _records
 from ..sessions.types import PreparedReasoningTheory
 from .preparation import capture_queries
 from .types import (

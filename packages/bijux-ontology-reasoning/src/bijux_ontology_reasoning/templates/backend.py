@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 
 from bijux_ontology.execution.budgets import Operation
 
-from ..robot.runtime import _verify, prepare_robot_backend, run_robot
+from ..backend.robot.runtime import _verify, prepare_robot_backend, run_robot
 from .types import TemplateBackend
 
 prepare_template_backend = prepare_robot_backend

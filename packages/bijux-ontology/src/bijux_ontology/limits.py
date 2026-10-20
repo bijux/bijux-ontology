@@ -274,8 +274,8 @@ def retain_report(report: Report, operation: Budget, issues: IssueCollector) -> 
         raise
 
 
-def bound_text(text: str, budget: Budget) -> None:
-    """Qualify text before encoding, formatting, hashing or diagnostic retention."""
+def _bound_text_size(text: str, budget: Budget) -> int:
+    """Charge bounded UTF-8 chunks and return their exact encoded size."""
     if not isinstance(text, str):
         raise InputError("Role metadata must be text")
     if len(text) > budget.limits.max_bytes:
@@ -293,3 +293,9 @@ def bound_text(text: str, budget: Budget) -> None:
             budget.consume("bytes", chunk_size)
     except UnicodeEncodeError as error:
         raise InputError("Role metadata requires valid Unicode") from error
+    return size
+
+
+def bound_text(text: str, budget: Budget) -> None:
+    """Qualify text before encoding, formatting, hashing or diagnostic retention."""
+    _bound_text_size(text, budget)

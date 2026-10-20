@@ -174,7 +174,17 @@ def test_budget_cancellation_paid_findings_and_optional_absence() -> None:
         ).report.outcome
         == "exhausted"
     )
+    dense: dict[str, object] = {str(index): None for index in range(1000)}
+    dense.update(DOCUMENT)
+    bounded = Budget(Limits(max_total_bytes=4096))
+    copied = check_temporal(dense, intervals=[INTERVAL], budget=bounded)
+    assert copied.report.outcome == "exhausted" and copied.document is None
+    assert bounded._counts.get("bytes", 0) <= 4096
     pytest.importorskip("elementpath")
+    recovered = check_temporal(dense, intervals=[INTERVAL])
+    assert recovered.report.verified and recovered.document == dense
+    dense["0"] = "changed"
+    assert recovered.document != dense
     assert check_temporal(DOCUMENT, intervals=[INTERVAL]).report.verified
     backwards = TemporalOrder(END, START)
     budget = Budget(Limits(max_issues=1))

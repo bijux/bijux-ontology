@@ -17,7 +17,7 @@ from typing import Any
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import XSD
 
-from bijux_ontology._jsonschema import owned_json
+from bijux_ontology._json import owned_json
 from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri

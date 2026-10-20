@@ -2,9 +2,9 @@
 
 from hashlib import sha256
 
-from bijux_ontology._json import decode_json
+from bijux_ontology._json import decode_json, owned_json
 from bijux_ontology._jsonpaths import bounded_location
-from bijux_ontology._jsonschema import DRAFT07, owned_json, validator
+from bijux_ontology._jsonschema import DRAFT07, validator
 from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
