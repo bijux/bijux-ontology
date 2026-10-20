@@ -11,7 +11,7 @@ from rdflib.namespace import XSD
 from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.literals.xsd import _datatypes
-from bijux_ontology.rdf.value_comparison.comparing import _calendar_value
+from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 
 if TYPE_CHECKING:
     from elementpath.datatypes import Date, DateTime, DayTimeDuration, YearMonthDuration
@@ -24,7 +24,7 @@ class TemporalUnavailable(ResourceError):
 def _calendar_value_owned(value: Literal, budget: Budget) -> Date | DateTime:
     """Require explicit timezone, supported precision and years 1 through 9999."""
     if value.datatype in (XSD.dateTime, XSD.dateTimeStamp):
-        result = _calendar_value(value, budget)
+        result = ScalarComparisons(budget).calendar_value(value)
         if result is None:
             raise TemporalUnavailable(
                 "Calendar timezone, precision or year is unsupported"

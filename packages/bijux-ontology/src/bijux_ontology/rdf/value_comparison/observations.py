@@ -283,6 +283,16 @@ class ScalarComparisons:
         )
         return value
 
+    def calendar_value(self, value: Literal) -> DateTime | None:
+        """Read one qualified finite OWL calendar using this operation's owner."""
+        if not isinstance(value, Literal):
+            raise InputError("Calendar interpretation requires an RDF literal")
+        self._initialize()
+        observed = self._observe(value, "value", "owl2-datatype-map", None, None)
+        if not observed.validation.verified or observed.family not in _CALENDAR:
+            return None
+        return self._qualified_calendar(observed, "owl2-datatype-map")
+
     def _promoted_equal(self, left: str, right: str) -> bool | None:
         """Execute each actual fixed numeric expression on one empty native Store."""
         budget = self.budget
