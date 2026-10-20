@@ -23,6 +23,7 @@ from bijux_ontology.workflows.projects.jobs.decoding import (
     GraphSelection,
     VocabularySelection,
     boolean,
+    shacl_coverage,
     strings,
 )
 from bijux_ontology.workflows.projects.jobs.descriptors import CheckKind, describe
@@ -126,22 +127,25 @@ def _execute_check(
         )
         from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
-        coverage = None
+        operation = budget if budget is not None else Budget(config.limits)
+        coverage = shacl_coverage(job.get("coverage"), operation)
         if shacl_input is not None:
             if boolean(job.get("preflight", False)):
                 raise InputError("Routed SHACL jobs require actual execution")
             if any(not isinstance(node, URIRef) for node in shacl_input.focus_nodes):
                 raise InputError("Runtime pair coverage requires named focus nodes")
-            operation = budget if budget is not None else Budget(config.limits)
             count = len(shacl_input.focus_nodes) * len(shacl_input.use_shapes)
             operation.consume("states", count)
             operation.consume("work", count)
             coverage = ShaclCoverageContract(
-                pairs=tuple(
+                minimum_focus=coverage.minimum_focus if coverage is not None else 0,
+                focus_nodes=coverage.focus_nodes if coverage is not None else (),
+                pairs=(coverage.pairs if coverage is not None else ())
+                + tuple(
                     (str(shape), str(focus))
                     for shape in shacl_input.use_shapes
                     for focus in shacl_input.focus_nodes
-                )
+                ),
             )
 
         supporting = job.get("ontology")
@@ -175,7 +179,7 @@ def _execute_check(
             timeout=cast(float | None, job.get("timeout", 30.0)),
             limits=config.limits,
             allow_empty=boolean(job.get("allow_empty", False)),
-            budget=budget,
+            budget=operation,
         ).report
     if kind == "query-rules":
         from bijux_ontology.data.query_rules.checking import (

@@ -675,7 +675,11 @@ focus_nodes=record_iris, pairs=shape_focus_pairs)` from
 requires completed root target evaluations when passed as `coverage=` to
 `validate_shapes`. Inspect `result.coverage` separately from `conforms` and
 `conformance_report`; a targetless shape can conform while required coverage fails.
-Nested conditional constraint execution is not inferred from root coverage.
+Portable `shacl` project jobs accept the same `coverage` object:
+`{"minimum_focus": 1, "focus_nodes": ["urn:record"], "pairs": [["urn:Shape", "urn:record"]]}`.
+Selections do not count as observations; an explicit empty object requests only
+inspection of completed targets. Nested conditional constraint execution is not
+inferred from root coverage.
 Use `required_constraints=(ShaclConstraintRequirement(shape_iri, parameter_iri),)`
 for explicit supported parameter/component bindings and inspect `result.constraints`
 for execution coverage. A required nested-only constraint remains unverified.

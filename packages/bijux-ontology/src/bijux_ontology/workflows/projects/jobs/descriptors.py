@@ -136,6 +136,7 @@ DESCRIPTORS: Mapping[CheckKind, JobDescriptor] = MappingProxyType(
             _COMMON
             | {
                 "allow_empty",
+                "coverage",
                 "data_graph",
                 "data_union",
                 "document",
