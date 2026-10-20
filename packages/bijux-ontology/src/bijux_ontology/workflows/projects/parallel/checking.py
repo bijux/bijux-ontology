@@ -370,8 +370,12 @@ def check_project_parallel(
                         result = future.result()
                         # Adoption still runs after cancellation: already bounded
                         # receipts must remain paid and completed reports survive.
+                        # A late deadline changes coverage, not qualified counters.
                         delegated = DelegatedAllowance(operation, grants[index])
-                        if result.state == "interrupted":
+                        if (
+                            result.state == "interrupted"
+                            and result.reason != "worker-deadline"
+                        ):
                             delegated.forfeit()
                         else:
                             delegated.settle(dict(result.consumed))
@@ -410,7 +414,7 @@ def check_project_parallel(
     finally:
         stop.set()
     try:
-        checkpoint(operation.deadline, cancel)
+        checkpoint(operation.deadline, operation.cancel)
     except LimitExceeded:
         failure = (
             failure or "Project execution was cancelled or reached its global deadline"
