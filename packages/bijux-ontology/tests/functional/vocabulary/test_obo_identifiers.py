@@ -196,11 +196,12 @@ def test_completed_candidate_prefix_survives_later_state_exhaustion() -> None:
     view = inspect_vocabulary(graph)
     graph.add((E.B, RDF.type, OWL.Class)).add((E.B, ALIAS, Literal("EX:other")))
     view = inspect_vocabulary(graph)
+    assert view.all_statements().report.verified
     retained = []
     for states in range(1, 100):
-        result = resolve_alternative_ids(
-            view, ("EX:old", "EX:other"), budget=Budget(Limits(max_states=states))
-        )
+        budget = Budget()
+        budget.consume("states", budget.limits.max_states - states)
+        result = resolve_alternative_ids(view, ("EX:old", "EX:other"), budget=budget)
         if (
             result.report.outcome == "exhausted"
             and result.items

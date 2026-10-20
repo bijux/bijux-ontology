@@ -239,7 +239,7 @@ def test_cycles_and_bounds_retain_findings_without_proving_absence() -> None:
         )
     view = inspect_vocabulary(graph)
     observed = False
-    for work in range(250, 1100, 25):
+    for work in range(1000, 100000, 1000):
         result = project_restrictions(
             view, str(EX.Component), budget=Budget(Limits(max_work=work))
         )

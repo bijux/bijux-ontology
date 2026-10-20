@@ -144,7 +144,7 @@ def _page(
         raise InputError("Cancellation must be a threading.Event")
     if cursor is not None and (
         not isinstance(cursor, VocabularyCursor)
-        or cursor._index is not view._index
+        or cursor._index is not view._reader
         or cursor._contract != contract
     ):
         raise InputError("Cursor does not match this snapshot, filters or ordering")
@@ -185,7 +185,7 @@ def _page(
         tuple(items),
         None
         if enumeration_complete
-        else VocabularyCursor._at(view._index, contract, position, phase),
+        else VocabularyCursor._at(view._reader, contract, position, phase),
         enumeration_complete,
         Report(
             family,
@@ -224,7 +224,9 @@ def terms_page(
         """Prepare exact filters and native positions inside the resumable read."""
         nonlocal kind_set
         kind_set = _filter_set(wanted_kinds, allowance)
-        return view._vocabulary._browse_terms(view._reader, view._index, allowance)
+        return view._vocabulary._browse_terms(
+            view._reader, view._prepare_index(allowance), allowance
+        )
 
     def include(term: TermInfo, _phase: int, allowance: Budget) -> TermInfo | None:
         """Bound each comparison without rebuilding filters for every term."""
@@ -280,7 +282,7 @@ def statements_page(
         """Prepare exact predicates without allocating a separate edge index."""
         nonlocal predicate_set
         predicate_set = _filter_set(wanted, allowance)
-        return view._index.edges
+        return view._prepare_index(allowance).edges
 
     def include(edge: Edge, _phase: int, allowance: Budget) -> Edge | None:
         """Retain original assertions after one bounded exact membership lookup."""
@@ -345,7 +347,9 @@ def search_page(
         nonlocal field_set, language_set
         field_set = _filter_set(wanted_fields, allowance)
         language_set = _filter_set(wanted_languages, allowance)
-        return view._vocabulary._browse_lexical(view._reader, view._index, allowance)
+        return view._vocabulary._browse_lexical(
+            view._reader, view._prepare_index(allowance), allowance
+        )
 
     def include(
         candidate: _LexicalCandidate, phase: int, allowance: Budget

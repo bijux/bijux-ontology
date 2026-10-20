@@ -100,7 +100,7 @@ def prepare_lexical_index(
         language_set = frozenset(tags)
         entries: dict[str, list[_LexicalCandidate]] = {}
         candidates = view._vocabulary._browse_lexical(
-            view._reader, view._index, operation
+            view._reader, view._prepare_index(operation), operation
         )
         for candidate in candidates:
             operation.consume("work")

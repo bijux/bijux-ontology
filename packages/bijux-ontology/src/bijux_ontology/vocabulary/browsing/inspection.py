@@ -1,8 +1,9 @@
 """Owned vocabulary snapshots for bounded exact-IRI inspection."""
 
 from collections.abc import Iterable, Iterator, Mapping, Sequence
+from functools import cmp_to_key, partial
 from typing import Literal as Direction
-from typing import TypeVar
+from typing import TypeVar, cast
 
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
@@ -27,7 +28,11 @@ from bijux_ontology.vocabulary.browsing.results import (
 )
 from bijux_ontology.vocabulary.registry.prefixes import expand_curie
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
-from bijux_ontology.vocabulary.sources.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import (
+    Vocabulary,
+    _compare_edges,
+    _VocabularyIndex,
+)
 
 T = TypeVar("T")
 
@@ -49,20 +54,34 @@ class VocabularyView:
             else load_vocabulary(vocabulary, limits=limits)
         )
         self.limits = limits if limits is not None else source.limits
-        self._reader = source._read(scopes, limits=self.limits, budget=budget)
-        index = source._inspect(self._reader, budget)
+        self._reader = source._read(
+            scopes, limits=self.limits, budget=budget, prepare_union=False
+        )
         self._vocabulary = source
-        self._index = index
         self._scopes = self._reader.scopes
-        self._edges = index.edges
-        self._outgoing = index.outgoing
-        self._incoming = index.incoming
-        self._terms = index.terms
+        self._preparation_budget = budget
+
+    def _operation_budget(self, budget: Budget | None) -> Budget:
+        """Share an explicit operation allowance, including deferred preparation."""
+        if budget is not None:
+            return budget
+        if self._preparation_budget is not None:
+            return self._preparation_budget
+        return Budget(self.limits)
+
+    def _prepare_index(self, budget: Budget | None = None) -> _VocabularyIndex:
+        """Request broad inspection only for operations that actually need it."""
+        return self._vocabulary._inspect(self._reader, self._operation_budget(budget))
+
+    @property
+    def _index(self) -> _VocabularyIndex:
+        """Expose the shared qualified derivative to internal complete readers."""
+        return self._prepare_index()
 
     def _select(
         self, values: Iterable[T | None], family: str, *, budget: Budget | None = None
     ) -> Selection[T]:
-        budget = budget if budget is not None else Budget(self.limits)
+        budget = self._operation_budget(budget)
         issues = IssueCollector(budget)
         items: list[T] = []
         complete = True
@@ -89,10 +108,49 @@ class VocabularyView:
             ),
         )
 
-    def lookup(self, iri: str) -> TermInfo:
+    def lookup(self, iri: str, *, budget: Budget | None = None) -> TermInfo:
         """Distinguish supplied declaration, referenced-only identifier and absence."""
         absolute_iri(iri)
-        return self._terms.get(iri, TermInfo(iri, "absent", (), ()))
+        selected = self._operation_budget(budget)
+        node = URIRef(iri)
+        kinds: set[str] = set()
+        declarations: list[str] = []
+        references: list[str] = []
+        for scope, graph in self._scopes:
+            declared = False
+            for kind in graph.objects(node, RDF.type):
+                selected.consume("work")
+                if isinstance(kind, URIRef):
+                    selected.consume("states")
+                    selected.consume("bytes", 128 + 4 * len(kind))
+                    kinds.add(str(kind))
+                    declared = True
+            if declared:
+                declarations.append(scope)
+                continue
+            selected.consume("work", 3)
+            used = (
+                next(graph.triples((node, None, None)), None) is not None
+                or next(graph.triples((None, node, None)), None) is not None
+                or next(graph.triples((None, None, node)), None) is not None
+            )
+            if not used:
+                # RDF stores do not generally index literal datatype references.
+                # Absence therefore needs a bounded scan of these positions.
+                for value in graph.objects():
+                    selected.consume("work")
+                    if isinstance(value, Literal) and value.datatype == node:
+                        used = True
+                        break
+            if used:
+                references.append(scope)
+        selected.consume("work", max(1, len(kinds) * max(1, len(kinds).bit_length())))
+        return TermInfo(
+            iri,
+            "declared" if kinds else "referenced" if references else "absent",
+            tuple(sorted(kinds)),
+            tuple(sorted(declarations if kinds else references)),
+        )
 
     def terms(
         self,
@@ -104,19 +162,26 @@ class VocabularyView:
         """Enumerate actual declared identifiers and all their kinds and roles."""
         for iri in (*kinds, *namespaces):
             absolute_iri(iri)
-        return self._select(
-            (
-                term
-                if (
-                    term.status == "declared"
-                    and (not kinds or set(kinds).intersection(term.kinds))
-                    and (not namespaces or iri.startswith(tuple(namespaces)))
+        selected = self._operation_budget(budget)
+
+        def candidates() -> Iterator[TermInfo | None]:
+            """Keep derivative preparation within the selection's failure boundary."""
+            index = self._prepare_index(selected)
+            for iri, term in sorted(index.terms.items()):
+                yield (
+                    term
+                    if (
+                        term.status == "declared"
+                        and (not kinds or set(kinds).intersection(term.kinds))
+                        and (not namespaces or iri.startswith(tuple(namespaces)))
+                    )
+                    else None
                 )
-                else None
-                for iri, term in sorted(self._terms.items())
-            ),
+
+        return self._select(
+            candidates(),
             "terms.inventory",
-            budget=budget,
+            budget=selected,
         )
 
     def resolve(
@@ -135,7 +200,13 @@ class VocabularyView:
 
     def all_statements(self, *, budget: Budget | None = None) -> Selection[Edge]:
         """Enumerate actual selected assertions with their source ownership intact."""
-        return self._select(self._edges, "terms.statements", budget=budget)
+        selected = self._operation_budget(budget)
+
+        def candidates() -> Iterator[Edge]:
+            """Build complete evidence only inside the bounded result operation."""
+            yield from self._prepare_index(selected).edges
+
+        return self._select(candidates(), "terms.statements", budget=selected)
 
     def relationships(
         self,
@@ -169,26 +240,81 @@ class VocabularyView:
         for predicate in predicates:
             absolute_iri(predicate)
         selected_predicates = frozenset(URIRef(predicate) for predicate in predicates)
-        candidates = (
-            self._outgoing.get(node, ())
-            if direction == "outgoing"
-            else self._incoming.get(node, ())
-            if direction == "incoming"
-            else tuple(
-                dict.fromkeys(
-                    (*self._outgoing.get(node, ()), *self._incoming.get(node, ()))
+        selected = self._operation_budget(budget)
+
+        def candidates() -> Iterator[Edge]:
+            """Order only adjacent selected assertions, retaining source duplicates."""
+            outgoing: list[Edge] = []
+            incoming: list[Edge] = []
+            for scope, graph in self._scopes:
+                patterns = (
+                    ((node, None, None), outgoing),
+                    ((None, None, node), incoming),
                 )
-            )
-        )
+                for pattern, values in patterns:
+                    if (values is outgoing and direction == "incoming") or (
+                        values is incoming and direction == "outgoing"
+                    ):
+                        continue
+                    for subject, predicate, value in graph.triples(pattern):
+                        selected.consume("work")
+                        if (
+                            values is incoming
+                            and direction == "both"
+                            and subject == node
+                        ):
+                            continue
+                        if selected_predicates and predicate not in selected_predicates:
+                            continue
+                        size = (
+                            len(cast(str, subject))
+                            + len(cast(str, predicate))
+                            + len(cast(str, value))
+                            + len(scope)
+                        )
+                        if isinstance(value, Literal):
+                            size += len(value.datatype or "") + len(
+                                value.language or ""
+                            )
+                        selected.consume("states")
+                        selected.consume("bytes", 512 + 24 * size)
+                        values.append(
+                            Edge(subject, cast(URIRef, predicate), value, scope)
+                        )
+            for values in (outgoing, incoming):
+                keyed: list[tuple[tuple[str, str, str, str], Edge]] = []
+                for edge in values:
+                    selected.consume(
+                        "work",
+                        len(cast(str, edge.subject))
+                        + len(edge.predicate)
+                        + len(cast(str, edge.object))
+                        + len(edge.scope),
+                    )
+                    keyed.append(
+                        (
+                            (
+                                str(edge.subject),
+                                str(edge.predicate),
+                                edge.object.n3(),
+                                edge.scope,
+                            ),
+                            edge,
+                        )
+                    )
+                keyed.sort(key=cmp_to_key(partial(_compare_edges, budget=selected)))
+                for _, edge in keyed:
+                    yield edge
+
         return self._select(
             (
                 edge
                 if not selected_predicates or edge.predicate in selected_predicates
                 else None
-                for edge in candidates
+                for edge in candidates()
             ),
             "terms.relationships",
-            budget=budget,
+            budget=selected,
         )
 
     def structure(self, iri: str) -> StructuralView:
@@ -329,7 +455,8 @@ class VocabularyView:
         issues = IssueCollector(budget)
         complete = True
         try:
-            for term in sorted(self._terms.values(), key=lambda term: term.iri):
+            index = self._prepare_index(budget)
+            for term in sorted(index.terms.values(), key=lambda term: term.iri):
                 budget.consume("work")
                 if term.status != "declared":
                     continue
@@ -341,7 +468,7 @@ class VocabularyView:
                     if "iri" in fields:
                         for scope in selected.scopes:
                             yield "iri", selected.iri, None, scope
-                    for edge in self._outgoing.get(URIRef(selected.iri), ()):
+                    for edge in index.outgoing.get(URIRef(selected.iri), ()):
                         budget.consume("work")
                         if str(edge.predicate) in fields and isinstance(
                             edge.object, Literal
@@ -467,19 +594,20 @@ class VocabularyView:
     def summary(self) -> Summary:
         """Summarise selected facts without inferred world counts."""
         kinds: dict[str, int] = {}
-        for term in self._terms.values():
+        index = self._index
+        for term in index.terms.values():
             for kind in term.kinds:
                 kinds[kind] = kinds.get(kind, 0) + 1
         return Summary(
             tuple(scope for scope, _ in self._scopes),
-            len(self._edges),
-            sum(term.status == "declared" for term in self._terms.values()),
-            sum(term.status == "referenced" for term in self._terms.values()),
+            len(index.edges),
+            sum(term.status == "declared" for term in index.terms.values()),
+            sum(term.status == "referenced" for term in index.terms.values()),
             tuple(sorted(kinds.items())),
             tuple(
                 sorted(
                     term.iri
-                    for term in self._terms.values()
+                    for term in index.terms.values()
                     if str(OWL.Ontology) in term.kinds
                 )
             ),
@@ -487,7 +615,7 @@ class VocabularyView:
                 sorted(
                     {
                         edge.object.language
-                        for edge in self._edges
+                        for edge in index.edges
                         if isinstance(edge.object, Literal)
                         and edge.object.language is not None
                     }

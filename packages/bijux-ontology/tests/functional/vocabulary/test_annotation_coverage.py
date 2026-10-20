@@ -173,7 +173,7 @@ def test_known_shape_and_maximum_failures_survive_later_incomplete_scope() -> No
         inspect_vocabulary(graph),
         [rule],
         entities=[str(EX.First), str(EX.Last)],
-        budget=Budget(Limits(max_work=1000)),
+        budget=Budget(Limits(max_work=3000)),
     )
     assert result.report.outcome == "exhausted" and not result.report.complete
     codes = {issue.code for issue in result.report.issues}

@@ -1,7 +1,8 @@
 """Owned vocabulary roles and shared immutable scoped inspection indexes."""
 
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from functools import cached_property, cmp_to_key, partial
 from threading import Lock
 from types import MappingProxyType
 from typing import cast
@@ -120,33 +121,53 @@ class _VocabularyPreparation:
     required_imports_qualified: bool
 
 
-def _index(
-    scopes: tuple[tuple[str, Graph], ...], budget: Budget | None
-) -> _VocabularyIndex:
-    """Build bounded term and edge indexes once, preserving source provenance."""
-    if budget is not None:
-        budget.consume("work", sum(len(graph) for _, graph in scopes))
-    edges = tuple(
-        sorted(
-            (
-                Edge(subject, cast(URIRef, predicate), value, scope)
-                for scope, graph in scopes
-                for subject, predicate, value in graph
-            ),
-            key=lambda edge: (
-                str(edge.subject),
-                str(edge.predicate),
-                edge.object.n3(),
-                edge.scope,
-            ),
-        )
-    )
+def _compare_edges(
+    left: tuple[tuple[str, str, str, str], Edge],
+    right: tuple[tuple[str, str, str, str], Edge],
+    budget: Budget,
+) -> int:
+    """Observe cancellation and charge lexical work during sorting."""
+    for a, b in zip(left[0], right[0], strict=True):
+        budget.consume("work", 1 + 2 * min(len(a), len(b)))
+        if a != b:
+            return 1 if a > b else -1
+    return 0
+
+
+def _index(scopes: tuple[tuple[str, Graph], ...], budget: Budget) -> _VocabularyIndex:
+    """Reserve owned index bookkeeping before allocation, without copying RDF.
+
+    Reservations cover records, hash entries, vectors, copied identifier text
+    and sorting workspace, rather than the backing RDF store's allocations.
+    """
+    keyed: list[tuple[tuple[str, str, str, str], Edge]] = []
+    for scope, graph in scopes:
+        for subject, predicate, value in graph:
+            budget.consume("work")
+            size = (
+                len(cast(str, subject))
+                + len(cast(str, predicate))
+                + len(cast(str, value))
+                + len(scope)
+            )
+            if isinstance(value, Literal):
+                size += len(value.datatype or "") + len(value.language or "")
+            budget.consume("work", size)
+            budget.consume("states", 16)
+            budget.consume("bytes", 2048 + 24 * size)
+            edge = Edge(subject, cast(URIRef, predicate), value, scope)
+            keyed.append(((str(subject), str(predicate), value.n3(), scope), edge))
+
+    keyed.sort(key=cmp_to_key(partial(_compare_edges, budget=budget)))
+    budget.consume("work", len(keyed))
+    edges = tuple(edge for _, edge in keyed)
     outgoing: dict[Node, list[Edge]] = {}
     incoming: dict[Node, list[Edge]] = {}
     kinds: dict[str, set[str]] = {}
     locations: dict[str, set[str]] = {}
     declared_locations: dict[str, set[str]] = {}
     for edge in edges:
+        budget.consume("work")
         outgoing.setdefault(edge.subject, []).append(edge)
         incoming.setdefault(edge.object, []).append(edge)
         for node in (edge.subject, edge.predicate, edge.object):
@@ -185,7 +206,17 @@ class _VocabularyRead:
     """Read-only source roles and their set-valued union without inspection work."""
 
     scopes: tuple[tuple[str, Graph], ...]
-    graph: Graph
+    _graph: Graph | None
+    _load_union: Callable[[], Graph] | None = None
+
+    @cached_property
+    def graph(self) -> Graph:
+        """Construct a set-valued union only when a consumer asks for it."""
+        if self._graph is not None:
+            return self._graph
+        if self._load_union is None:
+            raise InputError("Vocabulary reader has no owned union source")
+        return self._load_union()
 
 
 class Vocabulary:
@@ -236,7 +267,9 @@ class Vocabulary:
             (scope, source.selected) for scope, source in self._source_handles
         )
         self._reads: dict[tuple[str, ...], _VocabularyRead] = {}
+        self._scope_reads: dict[tuple[str, ...], _VocabularyRead] = {}
         self._indexes: dict[tuple[str, ...], _VocabularyIndex] = {}
+        self._inspection_footprints: dict[tuple[str, ...], tuple[int, int]] = {}
         self._kinds: dict[tuple[str, ...], Mapping[str, frozenset[str]]] = {}
         self._term_pages: dict[tuple[str, ...], tuple[TermInfo, ...]] = {}
         self._lexical_pages: dict[tuple[str, ...], tuple[_LexicalCandidate, ...]] = {}
@@ -399,6 +432,7 @@ class Vocabulary:
             )
             result._indexes[key] = frozen
             result._kinds[key] = frozen.kinds
+            result._inspection_footprints[key] = (count, 128 + 64 * count)
         return result
 
     @property
@@ -416,6 +450,7 @@ class Vocabulary:
         *,
         budget: Budget | None = None,
         limits: Limits | None = None,
+        prepare_union: bool = True,
     ) -> _VocabularyRead:
         """Select owned roles without preparing unrelated inspection indexes."""
         if (
@@ -425,6 +460,7 @@ class Vocabulary:
         ):
             raise InputError("Select local/imports/lookup source roles explicitly")
         key = tuple(role for role in ("local", "imports", "lookup") if role in scopes)
+        roles = key
         selected = tuple(
             (scope, graph)
             for scope, graph in self._sources
@@ -444,6 +480,14 @@ class Vocabulary:
         allowance.consume("resources", len(selected))
         allowance.consume("triples", sum(len(graph) for _, graph in selected))
         with self._read_lock:
+            if not prepare_union:
+                if key not in self._scope_reads:
+                    self._scope_reads[key] = _VocabularyRead(
+                        selected,
+                        selected[0][1] if len(selected) == 1 else None,
+                        lambda: self._read(roles, limits=limits).graph,
+                    )
+                return self._scope_reads[key]
             if key not in self._reads:
                 if len(selected) == 1:
                     graph = selected[0][1]
@@ -482,12 +526,29 @@ class Vocabulary:
         self, reader: _VocabularyRead, budget: Budget | None = None
     ) -> _VocabularyIndex:
         """Share fully built immutable term/edge indexes for the same source roles."""
+        selected = budget if budget is not None else Budget(self.limits)
+        selected.consume("work", 0)
         key = tuple(scope for scope, _ in reader.scopes)
         with self._read_lock:
             if key not in self._indexes:
-                index = _index(reader.scopes, budget)
+                states = selected.remaining("states")
+                storage = selected.remaining("bytes")
+                index = _index(reader.scopes, selected)
+                selected.consume("work", 0)
+                self._inspection_footprints[key] = (
+                    states - selected.remaining("states"),
+                    storage - selected.remaining("bytes"),
+                )
                 self._indexes[key] = index
                 self._kinds[key] = index.kinds
+            elif key in self._inspection_footprints:
+                # Reuse allocates no index. Admit the retained footprint against
+                # caller bounds without repeatedly charging the same storage.
+                admission = Budget(selected.limits)
+                states, storage = self._inspection_footprints[key]
+                admission.consume("states", states)
+                admission.consume("bytes", storage)
+            selected.consume("work", 0)
             return self._indexes[key]
 
     def _browse_terms(

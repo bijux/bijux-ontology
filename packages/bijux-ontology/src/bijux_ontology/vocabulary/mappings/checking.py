@@ -79,7 +79,7 @@ def _endpoint(
     declared: str = "",
 ) -> None:
     """Require supplied declaration evidence, never infer a global endpoint role."""
-    info = view.lookup(iri)
+    info = view.lookup(iri, budget=operation)
     if info.status != "declared":
         issues.append(
             Issue(
@@ -126,7 +126,8 @@ def _endpoint(
             return
         actual_roles: set[str] = set()
         node = URIRef(iri)
-        for edge in chain(view._outgoing.get(node, ()), view._incoming.get(node, ())):
+        index = view._prepare_index(operation)
+        for edge in chain(index.outgoing.get(node, ()), index.incoming.get(node, ())):
             operation.consume("work")
             occurrences = classify_statement(
                 (edge.subject, edge.predicate, edge.object),

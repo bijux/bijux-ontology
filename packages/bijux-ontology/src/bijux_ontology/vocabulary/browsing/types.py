@@ -5,7 +5,7 @@ from typing import Generic, TypeVar
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.vocabulary.sources.view import _VocabularyIndex
+from bijux_ontology.vocabulary.sources.view import _VocabularyRead
 
 T = TypeVar("T")
 
@@ -18,7 +18,7 @@ class VocabularyCursor:
     nor portable blank-node identifiers, and cannot follow a replaced snapshot.
     """
 
-    _index: _VocabularyIndex = field(repr=False)
+    _index: _VocabularyRead = field(repr=False)
     _contract: tuple[object, ...] = field(repr=False)
     _position: int
     _phase: int
@@ -30,7 +30,7 @@ class VocabularyCursor:
     @classmethod
     def _at(
         cls,
-        index: _VocabularyIndex,
+        index: _VocabularyRead,
         contract: tuple[object, ...],
         position: int,
         phase: int,

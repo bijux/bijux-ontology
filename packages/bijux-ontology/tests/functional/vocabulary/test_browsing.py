@@ -30,7 +30,9 @@ def test_five_thousand_terms_resume_in_native_order_without_offset_work() -> Non
     view = inspect_vocabulary(source)
     # One shared counter proves linear consumption across all pages. Offset
     # rescans would exceed this allowance after only a few pages.
-    assert terms_page(view, page_size=1).report.verified
+    assert terms_page(
+        view, page_size=1, budget=Budget(Limits(max_work=20_000_000))
+    ).report.verified
     budget = Budget(Limits(max_work=5000))
     cursor = None
     actual: list[str] = []
@@ -147,9 +149,11 @@ def test_exhausted_and_cancelled_pages_resume_without_omitting_candidates() -> N
     assert [term.iri for term in resumed.items] == [str(EX.B), str(EX.C)]
     assert resumed.enumeration_complete
     # State failure occurs after matching, before retaining the next candidate.
-    state_stop = terms_page(view, page_size=1, budget=Budget(Limits(max_states=1)))
-    used = Budget(Limits(max_states=1))
-    used.consume("states")
+    last_slot = Budget()
+    last_slot.consume("states", last_slot.limits.max_states - 1)
+    state_stop = terms_page(view, page_size=1, budget=last_slot)
+    used = Budget()
+    used.consume("states", used.limits.max_states)
     retry = terms_page(view, cursor=state_stop.next_cursor, page_size=1, budget=used)
     assert not retry.items and retry.report.outcome == "exhausted"
     assert (
