@@ -715,7 +715,7 @@ def application_project(path: Path) -> ProjectConfig:
 
 
 def test_mixed_contract_jobs_use_captured_files_and_real_parallel_budgets(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     config = application_project(tmp_path / "inputs")
     ordinary = check_project(config)
@@ -735,10 +735,40 @@ def test_mixed_contract_jobs_use_captured_files_and_real_parallel_budgets(
     observer = threading.Thread(target=replace_captured_originals, daemon=True)
     observer.start()
     budget = Budget(config.limits)
-    try:
-        result = check_project_parallel(
-            config, workers=3, budget=budget, artifacts=runs
+    rendezvous = threading.Barrier(3)
+    guard = threading.Lock()
+    participants = 0
+
+    def concurrent_workers(
+        module: str,
+        payload: bytes,
+        *,
+        cap: int,
+        timeout: float | None,
+        cancel: threading.Event | None = None,
+        completed: Callable[[bytes], None] | None = None,
+    ) -> bytes:
+        nonlocal participants
+        with guard:
+            join = participants < 3
+            participants += 1
+        if join:
+            rendezvous.wait(timeout=5)
+        return execute_worker(
+            module,
+            payload,
+            cap=cap,
+            timeout=timeout,
+            cancel=cancel,
+            completed=completed,
         )
+
+    try:
+        with monkeypatch.context() as scheduled:
+            scheduled.setattr(parallel_runtime, "execute_worker", concurrent_workers)
+            result = check_project_parallel(
+                config, workers=3, budget=budget, artifacts=runs
+            )
     finally:
         stopped.set()
         observer.join(timeout=1)
@@ -754,15 +784,12 @@ def test_mixed_contract_jobs_use_captured_files_and_real_parallel_budgets(
     assert [job.report.outcome for job in result.jobs] == [
         child.outcome for child in ordinary.children
     ]
-    assert any(
-        first.started_ns is not None
-        and first.finished_ns is not None
-        and second.started_ns is not None
-        and second.finished_ns is not None
-        and max(first.started_ns, second.started_ns)
-        < min(first.finished_ns, second.finished_ns)
-        for index, first in enumerate(result.jobs)
-        for second in result.jobs[index + 1 :]
+    assert not rendezvous.broken and rendezvous.n_waiting == 0 and participants == 6
+    assert all(
+        job.started_ns is not None
+        and job.finished_ns is not None
+        and job.started_ns <= job.finished_ns
+        for job in result.jobs
     )
     for kind in ("bytes", "work", "issues", "states", "resources", "triples"):
         maximum = getattr(
