@@ -11,7 +11,7 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDF, SH
 
-from bijux_ontology.diagnostics.errors import ResourceError
+from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.jena import (
@@ -261,3 +261,37 @@ def test_pinned_classpath_entries_cannot_expand_beyond_sealed_jars(
                 manifest_sha256=hashlib.sha256(raw).hexdigest(),
                 artifacts=tmp_path / "native",
             )
+
+
+def test_native_request_retains_prepared_policy_and_parent_allowance() -> None:
+    from bijux_ontology.interfaces.adapters.jena.shacl.preparation import prepare_plan
+    from bijux_ontology.shacl.native.requests import (
+        capture_native_sources,
+        encode_native_request,
+        prepare_native_request,
+    )
+
+    for trusted in (False, True):
+        allowance = Budget()
+        plan = prepare_plan(
+            graph("ex:S a sh:NodeShape; sh:targetNode ex:a."),
+            None,
+            None,
+            (),
+            "targets",
+            trusted,
+            False,
+            False,
+            None,
+            (),
+            allowance,
+        )
+        request = prepare_native_request(Graph(), plan, ())
+        request = capture_native_sources(request, ())
+        before = allowance.remaining("work")
+        encoded = json.loads(encode_native_request(request))
+        assert encoded["trusted_sparql"] is trusted
+        assert allowance.remaining("work") < before
+        allowance.consume("work", allowance.remaining("work"))
+        with pytest.raises(LimitExceeded):
+            encode_native_request(request)

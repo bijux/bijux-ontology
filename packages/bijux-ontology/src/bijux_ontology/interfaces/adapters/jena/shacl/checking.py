@@ -8,33 +8,26 @@ from rdflib import Graph
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
-    bound_text,
     retain_report,
 )
-from bijux_ontology.json.paths import bound_index
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.evidence.findings import ShaclSource
 from bijux_ontology.shacl.evidence.results import ShaclResult
+from bijux_ontology.shacl.native.planning import NativeShaclPlan
+from bijux_ontology.shacl.native.requests import (
+    capture_native_sources,
+    encode_native_request,
+    prepare_native_request,
+)
+from bijux_ontology.shacl.native.results import adopt_native_result
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
-from bijux_ontology.shacl.validation.adoption import adopt_result
-from bijux_ontology.shacl.validation.bindings import TermSelection, transport_roles
-from bijux_ontology.shacl.validation.contracts import (
-    ShaclConstraintRequirement,
-    ShaclPlan,
-    request_options,
-)
-from bijux_ontology.shacl.validation.encoding import encode_roles
-from bijux_ontology.shacl.validation.roles import (
-    prepare_data,
-    prepay_graph,
-    role_graphs,
-)
+from bijux_ontology.shacl.validation.bindings import TermSelection
+from bijux_ontology.shacl.validation.contracts import ShaclConstraintRequirement
 
 from ..runtime import invoke_jena
 from ..types import JenaBackend
@@ -80,7 +73,7 @@ def validate_jena_shapes(
     """
     operation = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(operation)
-    plan: ShaclPlan | None = None
+    plan: NativeShaclPlan | None = None
     focus: tuple[TermSelection, ...] = ()
     result = None
     try:
@@ -101,83 +94,21 @@ def validate_jena_shapes(
             required_constraints,
             operation,
         )
-        original_graph, original_union = graph_name, union
-        if isinstance(data, PreparedSource) and (
-            data.graph_name is not None or data.union
-        ):
-            original_graph, original_union = data.graph_name, data.union
-        prepay_graph(
-            data._read(graph_name, union=union, budget=operation)
-            if isinstance(data, PreparedSource)
-            else data,
-            operation,
-        )
-        dg, focus = prepare_data(
+        request = prepare_native_request(
             data,
             plan,
             focus_nodes,
             graph_name=graph_name,
             union=union,
         )
-        supplied_sources = capture(source_usages, operation)
-        operation.consume("bytes", 512 + 256 * len(supplied_sources))
-        owned_sources: list[ShaclSource] = []
-        for source in supplied_sources:
-            if type(source) is not ShaclSource:
-                raise InputError("Expected ordinary prepared SHACL source usages")
-            prepared, paths, label = source.prepared, source.paths, source.source
-            bound_text(label, operation)
-            owned_paths: list[tuple[str | int, ...]] = []
-            for path in capture(paths, operation):
-                members: list[str | int] = []
-                for member in capture(path, operation):
-                    if type(member) is str:
-                        bound_text(member, operation)
-                    elif type(member) is int:
-                        bound_index(member, operation)
-                    else:
-                        raise InputError("Source paths require string/integer members")
-                    members.append(member)
-                owned_paths.append(tuple(members))
-            owned_sources.append(ShaclSource(prepared, tuple(owned_paths), label))
-        selected_sources = tuple(owned_sources)
+        focus = request.focus
+        request = capture_native_sources(request, source_usages)
         if plan.features:
             issues.extend(plan.features)
         else:
-            operation.consume("bytes", 1024)
-            roles = transport_roles(
-                {"data": dg, **role_graphs(plan)},
-                focus,
-                plan.roots,
-                operation.limits,
-                budget=operation,
-            )
-            options = request_options(plan, focus)
-            options.update(
-                protocol=1,
-                operation="shacl",
-                trusted_sparql=trusted_sparql,
-                required_constraints=[
-                    {
-                        "shape": item.shape,
-                        "parameter": item.parameter,
-                        "component": item.component,
-                    }
-                    for item in plan.required_constraints
-                ],
-            )
-            payload = encode_roles(roles, options, operation)
+            payload = encode_native_request(request)
             raw = invoke_jena(backend, payload, operation, heap_mb)
-            result = adopt_result(
-                raw,
-                plan,
-                dg,
-                dg,
-                focus,
-                graph_name=original_graph,
-                union=original_union,
-                source_usages=selected_sources,
-            )
+            result = adopt_native_result(raw, request)
             retain_report(result.report, operation, issues)
     except LimitExceeded as error:
         issues.exhausted(str(error), location="shacl.jena")
