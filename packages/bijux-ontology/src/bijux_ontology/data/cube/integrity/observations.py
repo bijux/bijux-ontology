@@ -1,9 +1,9 @@
 """Finite integrity families over the same owned normalized Cube facts."""
 
-from itertools import islice
-
 from rdflib import BNode, URIRef
 from rdflib.term import Node
+
+from bijux_ontology.data.keys.candidates import KeyCandidates
 
 from ..facts import boolean_flag
 from ..normalization import QB
@@ -47,10 +47,11 @@ def check_coordinate_uniqueness(state: CubeIntegrity) -> int:
                 data, "IC12 requires at least one supported declared dimension"
             )
             continue
+        candidates = KeyCandidates(rows.contract, state.budget)
         for position, left in enumerate(rows.keys):
-            for right in islice(rows.keys, position):
+            count += position
+            for right in candidates.select(left):
                 state.budget.consume("work")
-                count += 1
                 relation = rows.relation(left, right, state.budget, state.issues)
                 if relation == "equal":
                     state.finding(
@@ -63,6 +64,7 @@ def check_coordinate_uniqueness(state: CubeIntegrity) -> int:
                         right.record.subject,
                         "IC12 coordinate equality is unavailable",
                     )
+            candidates.add(left)
     return count
 
 

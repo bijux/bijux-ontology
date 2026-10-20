@@ -1,7 +1,7 @@
 """Actual finite Data Cube normalization, integrity and scoped coverage controls."""
 
 from dataclasses import replace
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
@@ -512,8 +512,87 @@ def test_coordinate_and_measure_families_share_one_expression_store() -> None:
     finally:
         sys.setprofile(original_profile)
     assert result.report.verified, result.report.to_dict()
-    assert len(contexts) == 1 and counts["pairs"] == 5 and counts["stores"] == 1
-    # IC12 may encounter the unequal resource-valued measureType first; that
-    # established inequality legitimately avoids its numeric expression.
-    assert counts["queries"] in (4, 5)
+    assert len(contexts) == 1 and counts["pairs"] == 4 and counts["stores"] == 1
+    # IC12 excludes the distinct measureType values before scalar comparison.
+    assert counts["queries"] == 4
     assert all(result.coverage[index].status == "complete" for index in (12, 17))
+
+
+@pytest.mark.parametrize("iri", [False, True])
+def test_unique_coordinate_population_avoids_unrelated_comparisons(
+    iri: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An exact coordinate discriminator keeps a practical cube linear."""
+    import bijux_ontology.data.cube.facts as facts
+
+    graph = cube()
+    graph.remove((EX.o1, None, None))
+    graph.remove((EX.o2, None, None))
+    graph.set((EX.period, RDFS.range, RDFS.Resource if iri else XSD.string))
+    for index in range(256):
+        subject = EX[f"observation-{index}"]
+        value = EX[f"coordinate-{index}"] if iri else Literal(f"coordinate-{index}")
+        graph.add((subject, RDF.type, QB.Observation))
+        graph.add((subject, QB.dataSet, EX.data))
+        graph.add((subject, EX.period, value))
+        graph.add((subject, EX.value, Literal("1", datatype=XSD.decimal)))
+        graph.add((subject, EX.unit, EX.kg))
+    calls = 0
+    original = facts.compare_keys
+
+    def compared(*args: Any, **kwargs: Any) -> tuple[str, tuple[Issue, ...]]:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(facts, "compare_keys", compared)
+    result = check(graph)
+    assert result.report.verified, result.report.to_dict()
+    assert calls == 0  # 32,640 unrelated pairs are excluded, not reinterpreted.
+    graph.set(
+        (
+            EX["observation-255"],
+            EX.period,
+            EX["coordinate-0"] if iri else Literal("coordinate-0"),
+        )
+    )
+    duplicate = check(graph)
+    assert calls == 1
+    assert any(
+        issue.code == "cube.ic12_duplicate_coordinates"
+        and issue.location in (str(EX["observation-0"]), str(EX["observation-255"]))
+        for issue in duplicate.report.issues
+    )
+
+
+def test_coordinate_candidates_keep_nontransitive_and_unknown_relations() -> None:
+    """Numeric promotion and unsupported values are never exact hash identities."""
+    graph = cube()
+    graph.set((EX.period, RDFS.range, XSD.float))
+    values = (
+        Literal("16777216", datatype=XSD.integer, normalize=False),
+        Literal("16777217", datatype=XSD.integer, normalize=False),
+        Literal("16777216", datatype=XSD.float, normalize=False),
+    )
+    for index, value in enumerate(values):
+        subject = EX[f"numeric-{index}"]
+        graph.add((subject, RDF.type, QB.Observation))
+        graph.add((subject, QB.dataSet, EX.data))
+        graph.add((subject, EX.period, value))
+        graph.add((subject, EX.value, Literal("1", datatype=XSD.decimal)))
+        graph.add((subject, EX.unit, EX.kg))
+    graph.remove((EX.o1, None, None))
+    graph.remove((EX.o2, None, None))
+    result = check(graph)
+    assert (
+        sum(i.code == "cube.ic12_duplicate_coordinates" for i in result.report.issues)
+        == 2
+    )
+    for subject in (EX["numeric-0"], EX["numeric-1"]):
+        graph.set((subject, EX.period, Literal("opaque", datatype=EX.Custom)))
+    unknown = check(graph)
+    assert not unknown.report.verified
+    assert any(
+        i.code == "cube.constraint_unverified" and "IC12" in i.message
+        for i in unknown.report.issues
+    )
