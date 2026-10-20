@@ -1,6 +1,7 @@
 """Finite population identity, distinct ancestor counts and required pair coverage."""
 
 import math
+import sys
 from dataclasses import replace
 from threading import Event
 from typing import TypedDict, Unpack, cast
@@ -18,7 +19,8 @@ from bijux_ontology.data.analysis import (
     resnik_term_sets,
 )
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.vocabulary.browsing.inspection import (
     VocabularyView,
     inspect_vocabulary,
@@ -515,3 +517,52 @@ def test_prepared_population_amortises_admission_without_trusting_copies(
     finally:
         object.__setattr__(population, "identity", identity)
 
+
+def test_sparse_enrichment_joins_keep_fixed_universe_and_whole_family(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Singleton term memberships do not scan every study member for each term."""
+    from bijux_ontology.data.analysis import enrich_annotations, enrichment
+
+    candidates = []
+
+    class CountedOperation(Operation):
+        def consume(self, kind: BudgetKind, amount: int = 1) -> None:
+            if (
+                kind == "work"
+                and sys._getframe(1).f_code is enrich_annotations.__code__
+            ):
+                candidates.append(amount)
+            super().consume(kind, amount)
+
+    monkeypatch.setattr(enrichment, "Operation", CountedOperation)
+    terms = tuple(EX[f"Sparse{index}"] for index in range(64))
+    graph = Graph(identifier=EX.graph)
+    for term in terms:
+        graph.add((term, RDF.type, OWL.Class))
+    background = tuple(f"e{index}" for index in range(400))
+    rows = tuple(
+        EntityAnnotation(f"e{index * 4}", term) for index, term in enumerate(terms)
+    )
+    population = _population(
+        graph, terms=terms, background=background, annotations=(*rows, rows[0])
+    )
+    owner = Budget()
+    result = enrich_annotations(
+        population,
+        (*background[:200], "outside"),
+        family=terms,
+        family_id="sparse-family",
+        correction="by",
+        dependence="arbitrary",
+        outside_background="exclude",
+        budget=owner,
+    )
+    assert result.report.verified, result.report.to_dict()
+    assert len(result.tests) == len(terms) and result.excluded == ("outside",)
+    for index, counts in enumerate(result.counts):
+        a = int(index < 50)
+        assert counts.table == ((a, 200 - a), (1 - a, 199 + a))
+        assert counts.background_count == 400 and counts.term_count == 1
+    assert len(result.unannotated_study) == 150
+    assert candidates == [1] * len(terms)
