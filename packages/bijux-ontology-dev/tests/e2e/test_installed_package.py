@@ -8,6 +8,22 @@ from pathlib import Path
 import pytest
 
 
+def test_documented_optional_recipe_uses_the_installed_wheel(
+    installed_integrations: tuple[Path, Path, dict[str, str]],
+    distribution: tuple[Path, Path, dict[str, str]],
+) -> None:
+    python, work, env = installed_integrations
+    _, source, _ = distribution
+    result = subprocess.run(
+        [str(python), "-I", str(source / "examples/shacl/validate_records.py")],
+        cwd=work,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_installed_api_and_independent_example(
     installed_jsonld: tuple[Path, Path, dict[str, str]],
     distribution: tuple[Path, Path, dict[str, str]],
