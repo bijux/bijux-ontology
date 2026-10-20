@@ -243,3 +243,67 @@ def test_selected_graph_union_pins_cancel_and_prefix_limits_are_honest() -> None
     assert any(
         issue.code == "owl.assertion_contradiction" for issue in bounded.report.issues
     )
+
+
+def test_sparse_identity_witnesses_exclude_unrelated_assertion_products(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Index only established identity, retaining authored conflict premises."""
+    from typing import Any
+
+    from bijux_ontology.owl.assertions.context import AssertionContext
+
+    graph = _object(_object(Graph()), E.q)
+    graph.add((E.p, RDF.type, OWL.AsymmetricProperty))
+    graph.add((E.p, OWL.propertyDisjointWith, E.q))
+    members = [E[f"a-{index}"] for index in range(256)]
+    for index, subject in enumerate(members):
+        graph.add((subject, E.p, E[f"b-{index}"]))
+        graph.add((subject, E.q, E[f"c-{index}"]))
+    head = BNode()
+    Collection(graph, head, [*members])
+    graph.add((E.group, RDF.type, OWL.AllDifferent))
+    graph.add((E.group, OWL.distinctMembers, head))
+    negative = BNode()
+    for predicate, value in (
+        (RDF.type, OWL.NegativePropertyAssertion),
+        (OWL.sourceIndividual, members[0]),
+        (OWL.assertionProperty, E.p),
+        (OWL.targetIndividual, E["b-1"]),
+    ):
+        graph.add((negative, predicate, value))
+    calls = 0
+    original = AssertionContext.equal
+
+    def equal(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(AssertionContext, "equal", equal)
+    sparse = check_assertion_witnesses(graph)
+    assert sparse.report.verified, sparse.report.to_dict()
+    assert calls == 0  # No blanket 32,896/65,536/32,640 endpoint-proof scans.
+    blank = BNode()
+    graph.add((members[0], OWL.sameAs, members[1]))
+    graph.add((E["b-0"], OWL.sameAs, E["b-1"]))
+    graph.add((blank, OWL.sameAs, members[0]))
+    graph.add((blank, E.q, E["b-1"]))
+    graph.add((E["b-1"], E.p, members[1]))
+    selected = prepare_rdf(graph)
+    conflict = check_assertion_witnesses(selected)
+    assert {w.rule for w in conflict.witnesses} >= {
+        "asymmetric",
+        "disjoint_properties",
+        "negative_assertion",
+        "different_individuals",
+    }
+    original_terms = {
+        tuple(term_key(term) for term in triple) for triple in selected.graph()
+    }
+    assert all(set(w.premises) <= original_terms for w in conflict.witnesses)
+    assert any(
+        tuple(term_key(term) for term in (members[0], OWL.sameAs, members[1]))
+        in w.premises
+        for w in conflict.witnesses
+    )

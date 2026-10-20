@@ -46,29 +46,30 @@ def edge_witnesses(
             continue
         marker = state.patterns.statement(predicate, RDF.type, OWL.AsymmetricProperty)
         rows = state.rows(predicate)
+        indexed = state.indexed_rows(predicate)
         for index, left in enumerate(rows):
-            for right_index in range(index, len(rows)):
+            assert isinstance(left.value, URIRef | BNode)
+            subject = state.identity.find(state.key(left.subject))
+            value = state.identity.find(state.key(left.value))
+            for right in indexed.edges.get((value, subject), ()):
                 state.operation.consume("work")
-                right = rows[right_index]
-                assert isinstance(left.value, URIRef | BNode) and isinstance(
-                    right.value, URIRef | BNode
+                if indexed.positions[id(right)] < index:
+                    continue
+                assert isinstance(right.value, URIRef | BNode)
+                first = state.equal(left.subject, right.value)
+                second = state.equal(left.value, right.subject)
+                assert first is not None and second is not None
+                state.witness(
+                    "asymmetric",
+                    (
+                        marker,
+                        *declaration,
+                        left.premise,
+                        right.premise,
+                        *first,
+                        *second,
+                    ),
                 )
-                first, second = (
-                    state.equal(left.subject, right.value),
-                    state.equal(left.value, right.subject),
-                )
-                if first is not None and second is not None:
-                    state.witness(
-                        "asymmetric",
-                        (
-                            marker,
-                            *declaration,
-                            left.premise,
-                            right.premise,
-                            *first,
-                            *second,
-                        ),
-                    )
 
 
 def same_edge(
@@ -131,8 +132,16 @@ def disjoint(state: AssertionContext) -> None:
         if first is None or first != second:
             state.unknown("Disjoint properties lack one compatible logical category")
             continue
+        indexed = state.indexed_rows(right)
         for x in state.rows(left):
-            for y in state.rows(right):
+            subject = state.identity.find(state.key(x.subject))
+            if first == "object":
+                assert isinstance(x.value, URIRef | BNode)
+                value = state.identity.find(state.key(x.value))
+                candidates = indexed.edges.get((subject, value), ())
+            else:
+                candidates = indexed.subjects.get(subject, ())
+            for y in candidates:
                 state.operation.consume("work")
                 edge_proof = same_edge(state, x, y, first)
                 if edge_proof is not None:
@@ -157,7 +166,15 @@ def negatives(state: AssertionContext) -> None:
         if isinstance(negative.value, Literal):
             state.validate(negative.value, (*negative.premises, *declaration))
         row = _Row(negative.subject, negative.value, negative.premises[0])
-        for positive in state.rows(negative.predicate):
+        indexed = state.indexed_rows(negative.predicate)
+        subject = state.identity.find(state.key(negative.subject))
+        if kind == "object":
+            assert isinstance(negative.value, URIRef | BNode)
+            value = state.identity.find(state.key(negative.value))
+            candidates = indexed.edges.get((subject, value), ())
+        else:
+            candidates = indexed.subjects.get(subject, ())
+        for positive in candidates:
             state.operation.consume("work")
             proof = same_edge(state, row, positive, kind)
             if proof is not None:
@@ -208,11 +225,19 @@ def differences(state: AssertionContext) -> None:
             state.patterns.statement(group, predicate, head),
             *proof,
         )
-        for left, right in combinations(values, 2):
+        classes: dict[TermKey, list[Resource]] = {}
+        for value in values:
             state.operation.consume("work")
-            identity = state.equal(cast(Resource, left), cast(Resource, right))
-            if identity is not None:
+            state.operation.consume("states")
+            state.operation.reserve_storage(128)
+            member = cast(Resource, value)
+            representative = state.identity.find(state.key(member))
+            for earlier in classes.get(representative, ()):
+                state.operation.consume("work")
+                identity = state.equal(earlier, member)
+                assert identity is not None
                 state.witness("different_individuals", (*base, *identity))
+            classes.setdefault(representative, []).append(member)
 
 
 def type_witnesses(state: AssertionContext) -> None:

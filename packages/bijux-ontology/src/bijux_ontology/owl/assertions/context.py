@@ -20,6 +20,7 @@ from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
 from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values
 
 from .identity import Identity, retain_premises
+from .indexing import PropertyRows
 from .patterns import Patterns, Resource, Value
 from .types import AssertionWitness, Statement, TermKey
 
@@ -51,6 +52,7 @@ class AssertionContext:
             URIRef, tuple[Choice["object", "data"] | None, tuple[Statement, ...]]
         ] = {}
         self.assertions: dict[URIRef, tuple[_Row, ...]] = {}
+        self.row_indexes: dict[URIRef, tuple[int, PropertyRows]] = {}
         self.named: set[TermKey] = set()
         self.types: list[tuple[Resource, URIRef, Statement]] = []
         self.literal_relations: dict[
@@ -187,6 +189,17 @@ class AssertionContext:
         result = tuple(rows)
         self.assertions[predicate] = result
         return result
+
+    def indexed_rows(self, predicate: URIRef) -> PropertyRows:
+        """Rebuild only after a new individual identity changes row membership."""
+        generation = len(self.identity.consequences)
+        existing = self.row_indexes.get(predicate)
+        if existing is None or existing[0] != generation:
+            rows = PropertyRows(self, predicate)
+            self.operation.consume("states")
+            self.operation.reserve_storage(128)
+            self.row_indexes[predicate] = generation, rows
+        return self.row_indexes[predicate][1]
 
     def validate(self, value: Literal, premises: tuple[Statement, ...]) -> None:
         """Qualify actual selected data samples without changing their lexical form."""
