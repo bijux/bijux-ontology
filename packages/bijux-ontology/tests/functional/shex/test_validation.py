@@ -2,6 +2,7 @@
 
 import json
 import time
+from importlib.metadata import version
 from pathlib import Path
 from threading import Event, Thread
 from typing import cast
@@ -101,8 +102,21 @@ def test_recursive_native_results_and_changed_descendant(tmp_path: Path) -> None
         .add((E.B, E.knows, E.A))
     )
     original = set(graph)
+    mismatch = validate_shex(
+        graph,
+        supplied,
+        bindings=(ShexBinding(E.A, E.S),),
+        artifacts=tmp_path,
+        require_pyrudof="0.3.19",
+    )
+    assert not mismatch.report.verified
+    assert any(
+        issue.code == "shex.backend_unsupported" for issue in mismatch.report.issues
+    )
     good = check(graph, supplied, tmp_path)
-    assert good.report.verified and good.backend_version == "pyrudof 0.3.20"
+    assert good.report.verified and good.backend_version == "pyrudof " + version(
+        "pyrudof"
+    )
     assert cast(dict[str, object], good.obligations[0].native)["status"] == "conformant"
     assert set(graph) == original
     graph.remove((E.B, E.name, None))

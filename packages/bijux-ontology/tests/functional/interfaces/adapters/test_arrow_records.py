@@ -157,6 +157,8 @@ def test_real_two_batches_match_rdf_oracle_and_locate_second_batch_bad_term() ->
     pa = pytest.importorskip("pyarrow")
     plan = _plan()
     first, second = _batches(pa)
+    with pytest.raises(ResourceError, match="exact requirement"):
+        open_arrow_records(object(), plan, require_pyarrow="24.0.0")
     with open_arrow_records(
         pa.RecordBatchReader.from_batches(first.schema, (first, second)),
         plan,

@@ -7,6 +7,7 @@ import sys
 import tarfile
 import tomllib
 import zipfile
+from importlib.metadata import version
 from pathlib import Path
 
 import pytest
@@ -253,3 +254,53 @@ def installed_oak(
         tmp_path_factory.mktemp("installed-oak"),
         extras=("oak",),
     )
+
+
+@pytest.fixture(scope="session", params=("baseline", "alternative"))
+def installed_native_versions(
+    request: pytest.FixtureRequest,
+    distribution: tuple[Path, Path, dict[str, str]],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[Path, Path, dict[str, str]]:
+    """Install each declared API boundary with genuine resolved native dependencies."""
+    result = _install_distribution(
+        distribution,
+        tmp_path_factory.mktemp("installed-native-" + request.param),
+        extras=("analysis", "arrow", "biolink", "shex"),
+    )
+    python, work, environment = result
+    releases = (
+        (
+            "scipy==1.17.0",
+            "pyarrow==25.0.1",
+            "bmt==1.5.0",
+            "linkml-runtime==1.12.0",
+            "pyrudof==0.3.21",
+        )
+        if request.param == "alternative"
+        else ()
+    )
+    subprocess.run(
+        [
+            "uv",
+            "pip",
+            "install",
+            "--python",
+            str(python),
+            "pytest==" + version("pytest"),
+            "pytest-timeout==" + version("pytest-timeout"),
+            *releases,
+        ],
+        cwd=work,
+        env=environment,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["uv", "pip", "check", "--python", str(python)],
+        cwd=work,
+        env=environment,
+        check=True,
+        capture_output=True,
+    )
+    return result

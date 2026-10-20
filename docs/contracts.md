@@ -1997,7 +1997,7 @@ it does not assert the quoted positive edge or an OWL negative assertion.
 The supported field grammar and selected vocabulary checks are separate from
 GO editorial quality control; permitted retirement retains its raw evidence.
 
-Install `bijux-ontology[biolink]` for the qualified BMT 1.5.0/LinkML 1.12.1
+Install `bijux-ontology[biolink]` for the qualified BMT 1.5.0/LinkML 1.12.0–1.12.1
 profile. `interfaces.adapters.biolink.prepare_biolink` requires explicit local
 `BiolinkResource` bytes, SHA256 pins, model version, predicate map and every
 schema import, including `linkml:types`. `check_biolink` takes oriented
@@ -2033,7 +2033,7 @@ retains native, model and relationship reports separately. Its pinned RDF
 dependencies belong to that environment; the ordinary core installation stays
 independently usable.
 
-Install `bijux-ontology[arrow]` for the qualified PyArrow 26.0.0 profile.
+Install `bijux-ontology[arrow]` for the qualified PyArrow 25.0.1–26.0.0 profile.
 `interfaces.adapters.arrow.prepare_arrow_contract` binds a `PreparedModels` plan
 to explicit subject, physical column, predicate, datatype, list and graph choices.
 Use `with open_arrow_records(reader, contract) as checked` and consume its batches;
@@ -2044,3 +2044,12 @@ one-dimensional lists and distinct null/NaN policies. Required unknown metadata,
 extensions, changed schemas or failed producers leave coverage incomplete.
 Validation consumes/closes a supplied native reader; Table/C-stream imports use
 maintained Arrow ownership. Producer callbacks are cooperative in-process work.
+
+Maintained native API admission also supports SciPy 1.17.0–1.17.1 and pyrudof
+0.3.20–0.3.21; development locks retain exact releases. BMT remains 1.5.0:
+the tested earlier constructor requires remote predicate-map loading and is not
+admitted. Callers may require an exact release with `require_scipy` on
+`enrich_annotations`, `require_pyarrow` on `open_arrow_records`,
+`require_bmt`/`require_linkml` on `prepare_biolink`, or `require_pyrudof` on
+`validate_shex`. A mismatch stays unsupported before native interpretation;
+these ranges do not alter the supported scientific or schema profiles.

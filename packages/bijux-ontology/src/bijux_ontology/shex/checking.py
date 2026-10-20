@@ -18,6 +18,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.execution.processes.transport import run_worker
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.versions import exact_requirement, qualify_release
 from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 
@@ -54,6 +55,17 @@ def _read(path: Path, cap: int, limits: Limits) -> Any:
     return decode_json(raw, max_bytes=cap, max_depth=limits.max_depth)
 
 
+def _qualified_backend(value: object, required: str | None) -> bool:
+    """Adopt receipts only from a qualified exact native release identity."""
+    if type(value) is not str or not value.startswith("pyrudof "):
+        return False
+    try:
+        qualify_release("pyrudof", value.removeprefix("pyrudof "), required)
+    except InputError:
+        return False
+    return True
+
+
 def validate_shex(
     data: Graph | PreparedSource,
     schema: ShexSchema,
@@ -67,8 +79,9 @@ def validate_shex(
     timeout: float = 30,
     cancel: threading.Event | None = None,
     artifacts: Path | None = None,
+    require_pyrudof: str | None = None,
 ) -> ShexResult:
-    """Validate supplied native ShapeDecl ShExJ using optional pyrudof 0.3.20.
+    """Validate supplied native ShapeDecl ShExJ with qualified optional pyrudof.
 
     Named absolute focus/shape IRIs and positive structural expressions are the
     qualified profile. Other RDF focus terms, dialects, extension actions and
@@ -83,6 +96,7 @@ def validate_shex(
     invented semantic-work counter. Completed paid binding observations survive
     cancellation and later exhaustion, while every unfinished entry stays unknown.
     """
+    exact_requirement(require_pyrudof)
     operation = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(operation)
     requested = len(bindings) if isinstance(bindings, Sequence) else 1
@@ -148,6 +162,8 @@ def validate_shex(
             "limits": vars(operation.limits),
             "allowances": grant,
         }
+        if require_pyrudof is not None:
+            request["required_version"] = require_pyrudof
         size = json_bound(request, operation)
         operation.consume("bytes", size)
         if size > cap:
@@ -230,7 +246,9 @@ def validate_shex(
                         native = record.get("native")
                         binding = captured[index]
                         if (
-                            record.get("backend") != "pyrudof 0.3.20"
+                            not _qualified_backend(
+                                record.get("backend"), require_pyrudof
+                            )
                             or not isinstance(native, dict)
                             or native.get("node") != str(binding.focus)
                             or native.get("shape") != str(binding.shape)
@@ -255,7 +273,7 @@ def validate_shex(
                                 )
                             )
                         paid = receipt
-                        backend = "pyrudof 0.3.20"
+                        backend = str(record["backend"])
                 terminal = object_value(
                     _read(directory / "result.json", cap, operation.limits),
                     location="ShEx terminal",
@@ -265,9 +283,10 @@ def validate_shex(
                     raise InputError("ShEx terminal receipt regressed accounting")
                 paid = receipt
                 raw_backend = terminal.get("backend", "")
-                if not isinstance(raw_backend, str) or raw_backend not in (
-                    "",
-                    "pyrudof 0.3.20",
+                if (
+                    not isinstance(raw_backend, str)
+                    or raw_backend
+                    and not _qualified_backend(raw_backend, require_pyrudof)
                 ):
                     raise InputError("Unexpected ShEx backend identity")
                 backend = raw_backend
@@ -286,6 +305,7 @@ def validate_shex(
                 if not isinstance(raw_problem, str) or raw_problem not in (
                     "complete",
                     "shex.backend_unavailable",
+                    "shex.backend_unsupported",
                     "shex.input_invalid",
                     "shex.execution_incomplete",
                     "shex.engine_error",

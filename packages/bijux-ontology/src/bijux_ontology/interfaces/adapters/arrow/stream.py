@@ -43,6 +43,7 @@ class ArrowRecordStream:
         budget: Budget | None,
         timeout: float,
         cancel: Event | None,
+        require_pyarrow: str | None = None,
     ) -> None:
         """Retain one actual reader and capture its native schema before pulls."""
         if type(contract) is not ArrowContract:
@@ -59,7 +60,7 @@ class ArrowRecordStream:
             raise InputError("Arrow bounds require positive integers and an emit flag")
         self._operation.consume("states", 16)
         self._operation.consume("bytes", 2048)
-        self._native = backend()
+        self._native = backend(require_pyarrow)
         self._contract = contract
         self._emit = emit_rdf
         self._max_batches, self._max_rows, self._max_batch_rows = (
@@ -299,6 +300,7 @@ def open_arrow_records(
     contract: ArrowContract,
     *,
     emit_rdf: bool = False,
+    require_pyarrow: str | None = None,
     max_batches: int = 1000,
     max_rows: int = 100000,
     max_batch_rows: int = 10000,
@@ -312,6 +314,7 @@ def open_arrow_records(
         source,
         contract,
         emit_rdf=emit_rdf,
+        require_pyarrow=require_pyarrow,
         max_batches=max_batches,
         max_rows=max_rows,
         max_batch_rows=max_batch_rows,

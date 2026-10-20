@@ -16,6 +16,7 @@ from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.versions import exact_requirement, qualify_release
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.json.values import object_value
@@ -41,7 +42,10 @@ _KINDS: tuple[BudgetKind, ...] = (
 
 
 def _native(
-    counts: list[EnrichmentCounts], correction: str, operation: Operation
+    counts: list[EnrichmentCounts],
+    correction: str,
+    operation: Operation,
+    required_version: str | None = None,
 ) -> dict[str, object]:
     """Share host controls and adopt actual worker receipts before native values."""
     reserve(operation, len(counts) * 16 + 64)
@@ -54,6 +58,8 @@ def _native(
         "limits": asdict(operation.limits),
         "allowances": {kind: operation.remaining(kind) for kind in _KINDS},
     }
+    if required_version is not None:
+        request["required_version"] = required_version
     size = json_bound(request, operation)
     if size > capacity:
         raise LimitExceeded("Numerical request exceeds the owned protocol byte bound")
@@ -104,6 +110,7 @@ def enrich_annotations(
     correction: str,
     dependence: str,
     outside_background: str = "reject",
+    require_scipy: str | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
     timeout: float = 30,
@@ -116,6 +123,7 @@ def enrich_annotations(
     concern the supplied snapshot and are not independently established. No score,
     p-value or adjusted value establishes ontology truth or a biological verdict.
     """
+    exact_requirement(require_scipy)
     operation = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(operation)
     counts: list[EnrichmentCounts] = []
@@ -234,7 +242,7 @@ def enrich_annotations(
             family_identity = fingerprint(
                 tuple((str(term),) for term in selected), operation
             )
-            native = _native(counts, correction, operation)
+            native = _native(counts, correction, operation, require_scipy)
             status = native.get("status")
             if status == "complete":
                 if set(native) != {
@@ -247,6 +255,7 @@ def enrich_annotations(
                 }:
                     raise InputError("Malformed completed numerical response")
                 scipy_version = text(cast(str, native["scipy"]), operation)
+                qualify_release("scipy", scipy_version, require_scipy)
                 numpy_version = text(cast(str, native["numpy"]), operation)
                 values = []
                 for key in ("raw", "adjusted"):
