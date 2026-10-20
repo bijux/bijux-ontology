@@ -1,7 +1,7 @@
 """Exact selected-record quantity checks using one prepared native unit engine."""
 
 import json
-from decimal import Context, Decimal, DecimalException, Inexact, Rounded, localcontext
+from decimal import Decimal
 from sys import getsizeof
 from threading import RLock
 from typing import Any, cast
@@ -30,6 +30,7 @@ from bijux_ontology.json.values import owned_json
 from bijux_ontology.models.value_constraints.checking import application_matches
 from bijux_ontology.rdf.literals.checking import check_literal
 
+from .conversion import _DimensionMismatch, _Unavailable, convert_scalar
 from .types import QuantityCheck, QuantityContract, UnitBinding
 
 
@@ -93,14 +94,6 @@ class PreparedQuantities:
         return check_quantity(
             self, record, contract, convert=convert, limits=limits, budget=budget
         )
-
-
-class _Unavailable(Exception):
-    """A required quantity interpretation has no supported exact conversion."""
-
-
-class _DimensionMismatch(Exception):
-    """Native dimensional analysis proved incompatible bound dimensions."""
 
 
 def _diagnostic(issues: IssueCollector, issue: Issue) -> None:
@@ -185,48 +178,6 @@ def _numeric(value: object, budget: Budget, issues: IssueCollector) -> Decimal |
     return Decimal(text) if report.verified else None
 
 
-def _convert(
-    prepared: PreparedQuantities,
-    value: Decimal,
-    code: str,
-    reference: str,
-    budget: Budget,
-) -> Decimal:
-    """Use native dimension and conversion semantics with persistent pair failure."""
-    from pint.errors import DimensionalityError
-
-    bound_text(code, budget)
-    bound_text(reference, budget)
-    budget.consume("work", len(str(value)) + 1)
-    if code not in prepared._units or reference not in prepared._units:
-        raise _Unavailable("Quantity unit has no supported explicit binding")
-    pair = (str(prepared._units[code]), str(prepared._units[reference]))
-    precision = max(64, len(str(value)) + 32)
-    budget.consume("states", precision + 1)
-    budget.consume("bytes", precision * 16)
-    budget.consume("work", precision * precision)
-    context = Context(prec=precision, Emin=-999999, Emax=999999)
-    context.traps[Inexact] = True
-    context.traps[Rounded] = True
-    with prepared._lock:
-        if pair in prepared._failed:
-            raise _Unavailable("An earlier native conversion was not exact")
-        try:
-            with localcontext(context):
-                quantity = prepared._registry.Quantity(value, prepared._units[code])
-                converted = quantity.to(prepared._units[reference]).magnitude
-        except DimensionalityError as error:
-            raise _DimensionMismatch from error
-        except DecimalException as error:
-            prepared._failed.add(pair)
-            raise _Unavailable(
-                "Native conversion cannot establish an exact decimal"
-            ) from error
-    if not isinstance(converted, Decimal) or not converted.is_finite():
-        raise _Unavailable("Native conversion did not produce a finite decimal")
-    return converted
-
-
 def _lexical(value: Decimal, budget: Budget) -> str:
     """Reserve fixed-point lexical expansion before formatting the native value."""
     size = getsizeof(value)
@@ -274,7 +225,9 @@ def _selected(
     if number is None:
         return original, unit, None
     try:
-        converted = _convert(prepared, number, unit, contract.reference_unit, budget)
+        converted = convert_scalar(
+            prepared, number, unit, contract.reference_unit, budget
+        )
     except LimitExceeded:
         raise
     except _Unavailable:
