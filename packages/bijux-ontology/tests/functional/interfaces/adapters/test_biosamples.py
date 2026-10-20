@@ -11,6 +11,7 @@ from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
+from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.interfaces.adapters.biosamples import (
     CORE_SHA256,
     CORE_VERSION,
@@ -18,8 +19,11 @@ from bijux_ontology.interfaces.adapters.biosamples import (
     SampleCheck,
     SchemaResource,
     check_sample,
+    checking,
 )
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.limits import Budget
+from bijux_ontology.reports import Report
+from bijux_ontology.vocabulary.checking import check_vocabulary
 
 pytest.importorskip("jsonschema")
 
@@ -198,24 +202,28 @@ def test_real_core_structure_and_explicit_text_unit_requirements() -> None:
     assert not _check(_sample(), bindings=()).report.verified
 
 
-def test_cumulative_limits_preserve_completed_negative_findings() -> None:
+def test_cumulative_limits_preserve_completed_negative_findings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """A later budget stop retains actual earlier semantic failures."""
     sample = _sample()
     sample["characteristics"]["organism"][0]["ontologyTerms"] = [_OTHER]
     completed = _check(sample)
     assert completed.report.outcome == "disagreement"
-    retained = 0
-    for work in (100, 10000, 50000, 54000, 54500, 55000, 55100, 56000):
-        budget = Budget(Limits(max_work=work))
-        result = _check(sample, budget=budget)
-        assert not result.report.verified
-        assert all(
-            budget.remaining(kind) >= 0
-            for kind in ("work", "bytes", "states", "issues")
-        )
-        if any(
-            issue.code == "biosamples.value_disallowed"
-            for issue in result.report.issues
-        ):
-            retained += result.report.outcome == "exhausted"
-    assert retained
+
+    def stop_before_vocabulary(
+        source: Graph, terms: list[TermDeclaration], *, budget: Budget
+    ) -> Report:
+        budget.consume("work", budget.remaining("work"))
+        return check_vocabulary(source, terms, budget=budget)
+
+    monkeypatch.setattr(checking, "check_vocabulary", stop_before_vocabulary)
+    budget = Budget()
+    result = _check(sample, budget=budget)
+    assert result.report.outcome == "exhausted" and not result.report.complete
+    assert any(
+        issue.code == "biosamples.value_disallowed" for issue in result.report.issues
+    )
+    assert all(
+        budget.remaining(kind) >= 0 for kind in ("work", "bytes", "states", "issues")
+    )
