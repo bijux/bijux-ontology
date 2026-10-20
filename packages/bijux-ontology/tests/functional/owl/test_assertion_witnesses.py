@@ -407,3 +407,36 @@ def test_sparse_multivalued_owl_keys_join_only_shared_complete_subjects(
     graph.add((E["key-1"], E.r, Literal("opaque", datatype=E.Custom)))
     unknown = check_assertion_witnesses(graph)
     assert unknown.status == "incomplete" and not unknown.equalities
+
+
+def test_multivalued_key_candidates_preserve_original_member_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Overlapping value buckets must not order identity proofs by hash iteration."""
+    from collections.abc import Iterator
+
+    from bijux_ontology.owl.assertions.key_join import KeyJoin
+
+    graph = _object(_object(Graph()), E.q)
+    head = BNode()
+    Collection(graph, head, [E.p, E.q])
+    graph.add((E.Kind, OWL.hasKey, head))
+    for subject in (E.a, E.b, E.c, E.d):
+        graph.add((subject, RDF.type, E.Kind))
+        for value in (E.left_value, E.right_value):
+            graph.add((subject, E.p, value))
+        for value in (E.first_group, E.second_group):
+            graph.add((subject, E.q, value))
+    visits: list[list[int]] = []
+    original = KeyJoin.candidates
+
+    def candidates(join: KeyJoin, position: int) -> Iterator[int]:
+        actual = list(original(join, position))
+        visits.append(actual)
+        assert actual == sorted(actual)
+        yield from actual
+
+    monkeypatch.setattr(KeyJoin, "candidates", candidates)
+    result = check_assertion_witnesses(graph)
+    assert result.report.verified and len(result.equalities) == 3
+    assert any(len(actual) == 3 for actual in visits)

@@ -100,33 +100,32 @@ class KeyJoin:
         if selected is None:
             return
         subjects, actual = selected
-        seen: set[int] = set()
+        neighbours: set[int] = set()
         for value in actual:
-            matches = subjects[value]
-            self.state.operation.consume(
-                "work", len(matches) * max(1, len(matches).bit_length())
-            )
-            self.state.operation.consume("states", len(matches))
-            self.state.operation.reserve_storage(16 * len(matches))
-            for candidate in sorted(matches):
+            for candidate in subjects[value]:
                 self.state.operation.consume("work")
-                if candidate <= position or candidate in seen:
-                    continue
-                self.state.operation.consume("states")
-                self.state.operation.reserve_storage(64)
-                seen.add(candidate)
-                matched = True
-                for values in self.values:
-                    first = values[position]
-                    second = values.get(candidate)
-                    self.state.operation.consume(
-                        "work", len(first) + (len(second) if second else 0)
-                    )
-                    if second is None or first.isdisjoint(second):
-                        matched = False
-                        break
-                if matched:
-                    yield candidate
+                if candidate > position and candidate not in neighbours:
+                    self.state.operation.consume("states")
+                    self.state.operation.reserve_storage(64)
+                    neighbours.add(candidate)
+        self.state.operation.consume(
+            "work", len(neighbours) * max(1, len(neighbours).bit_length())
+        )
+        self.state.operation.consume("states", len(neighbours))
+        self.state.operation.reserve_storage(16 * len(neighbours))
+        for candidate in sorted(neighbours):
+            matched = True
+            for values in self.values:
+                first = values[position]
+                second = values.get(candidate)
+                self.state.operation.consume(
+                    "work", len(first) + (len(second) if second else 0)
+                )
+                if second is None or first.isdisjoint(second):
+                    matched = False
+                    break
+            if matched:
+                yield candidate
 
     def subject_rows(self, predicate: URIRef, subject: Resource) -> list[_Row]:
         """Read actual original assertions of one established subject class."""
