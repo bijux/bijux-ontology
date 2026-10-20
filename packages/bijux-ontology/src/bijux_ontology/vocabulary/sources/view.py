@@ -478,11 +478,8 @@ class Vocabulary:
             in key
         )
         key = tuple(scope for scope, _ in selected)
-        allowance = Budget(
-            limits or (budget.limits if budget is not None else self.limits)
-        )
-        allowance.consume("resources", len(selected))
-        allowance.consume("triples", sum(len(graph) for _, graph in selected))
+        operation.consume("resources", len(selected))
+        operation.consume("triples", sum(len(graph) for _, graph in selected))
         with self._read_lock:
             if not prepare_union:
                 return _VocabularyRead(
