@@ -160,7 +160,8 @@ def _json_operation(
             _text(request["models"]),
             max_bytes=budget.limits.max_bytes,
             max_depth=budget.limits.max_depth,
-        )
+        ),
+        budget=budget,
     )
     usages = usages_from_data(
         decode_json(

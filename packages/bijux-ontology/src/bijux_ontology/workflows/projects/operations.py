@@ -236,23 +236,29 @@ def _execute_check(
             budget=budget,
         )
     if kind == "models":
+        ingestion = budget if budget is not None else Budget(config.limits)
         return check_models(
             models_from_data(
                 snapshot("declarations"),
                 source=str(config.path(job.get("declarations"))),
+                budget=ingestion,
             ),
             vocabulary,
             regime=cast(ModelRegime, job.get("regime", "application")),
+            budget=ingestion,
             rdf_direction=cast(
                 DirectionPolicy | None, optional_string_value(job.get("rdf_direction"))
             ),
             limits=config.limits,
         )
     if kind == "vocabulary":
+        budget = budget if budget is not None else Budget(config.limits)
         return check_vocabulary(
             vocabulary,
             terms_from_data(
-                snapshot("inventory"), source=str(config.path(job.get("inventory")))
+                snapshot("inventory"),
+                source=str(config.path(job.get("inventory"))),
+                budget=budget,
             ),
             local_namespaces=strings(job.get("namespaces", [])),
             exclude=strings(job.get("exclude", [])),

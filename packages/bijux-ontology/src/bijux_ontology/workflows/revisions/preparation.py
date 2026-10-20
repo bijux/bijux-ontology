@@ -26,7 +26,6 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.encoding import json_bytes
-from bijux_ontology.json.values import measure_json
 from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
@@ -185,16 +184,8 @@ def prepare_revision(
         selected_context, documents, selected_base, selected_regime, direction = (
             _options(captured.options)
         )
-        declaration_nodes = measure_json(
-            captured.declarations,
-            budget=operation,
-            max_bytes=operation.limits.max_bytes,
-            max_depth=operation.limits.max_depth,
-        ).weight
-        operation.consume("bytes", 128 * declaration_nodes)
-        operation.consume("work", 8 * declaration_nodes)
         artifact = compile_model_artifact(
-            models_from_data(captured.declarations),
+            models_from_data(captured.declarations, budget=operation),
             captured.source,
             imports=captured.imports,
             lookup=captured.lookup,

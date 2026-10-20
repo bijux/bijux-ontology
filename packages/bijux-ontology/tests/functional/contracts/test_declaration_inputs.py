@@ -15,7 +15,8 @@ from bijux_ontology.declarations.types import EmissionCoverage, TermDeclaration
 from bijux_ontology.declarations.types import FieldDeclaration as Field
 from bijux_ontology.declarations.types import ModelDeclaration as Model
 from bijux_ontology.declarations.types import ValueDeclaration as Value
-from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 
 EX = "https://example.org/"
@@ -203,3 +204,53 @@ def test_index_traits_preserve_exact_absent_and_unchecked_json(field: str) -> No
     for invalid in invalid_values:
         with pytest.raises(InputError):
             expectations_from_data([{**base, field: invalid}], source="indexes.json")
+
+
+def test_ingestion_shares_nested_capacity_and_preserves_failure_path() -> None:
+    """Materialisation cannot finish a large nested document on a tiny allowance."""
+    data = [
+        {
+            "identifier": "record",
+            "types": [EX + "Record"],
+            "fields": [
+                {
+                    "name": f"value{index}",
+                    "predicate": EX + f"value{index}",
+                    "values": [{"kind": "literal"}],
+                }
+                for index in range(64)
+            ],
+        }
+    ]
+    owner = Budget(Limits(max_states=150))
+    with pytest.raises(LimitExceeded) as error:
+        models_from_data(data, source="models.json", budget=owner)
+    assert error.value.location.startswith("models.json#/0/fields")
+    assert owner._counts["states"] <= 150
+    larger = Budget(Limits(max_work=10_000_000, max_states=400_000))
+    namespaces = ["urn:allowed:"] * 100_001
+    declarations = models_from_data(
+        [
+            {
+                "identifier": "record",
+                "types": [],
+                "fields": [
+                    {
+                        "name": "resource",
+                        "predicate": EX + "resource",
+                        "values": [
+                            {
+                                "kind": "iri",
+                                "constraints": {"iri_namespaces": namespaces},
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+        budget=larger,
+    )
+    constraints = declarations[0].fields[0].values[0].constraints
+    assert constraints is not None and len(constraints.iri_namespaces) == 100_001
+    with pytest.raises(LimitExceeded):
+        terms_from_data([EX + "Record"], budget=Budget(Limits(max_total_bytes=1)))

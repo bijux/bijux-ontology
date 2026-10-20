@@ -12,7 +12,7 @@ from bijux_ontology.declarations.codecs import (
 )
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.execution.limits import Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.cli.arguments import vocabulary_input
 from bijux_ontology.interfaces.cli.inputs import (
     command_limits,
@@ -143,14 +143,16 @@ def run_check(
             limits=limits,
         )
     if options.action == "models":
+        allowance = Budget(limits)
         return check_models(
             models_from_data(
                 json_input(options.declarations, limits),
                 source=str(options.declarations),
+                budget=allowance,
             ),
             vocabulary,
             regime=cast(ModelRegime, options.regime),
-            limits=limits,
+            budget=allowance,
         )
     if options.action == "ontology":
         return check_ontology(
@@ -174,10 +176,13 @@ def run_check(
             replacement_predicates=options.replacement_predicate,
             limits=limits,
         )
+    allowance = Budget(limits)
     return check_vocabulary(
         vocabulary,
         terms_from_data(
-            json_input(options.inventory, limits), source=str(options.inventory)
+            json_input(options.inventory, limits),
+            source=str(options.inventory),
+            budget=allowance,
         ),
         local_namespaces=options.namespace,
         exclude=options.exclude,
@@ -189,7 +194,7 @@ def run_check(
         check_references=options.references,
         lint=options.lint,
         allow_empty=options.allow_empty,
-        limits=limits,
+        budget=allowance,
     )
 
 

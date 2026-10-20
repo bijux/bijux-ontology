@@ -9,7 +9,7 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.execution.limits import Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.json.values import (
     array_value,
     boolean_value,
@@ -143,9 +143,12 @@ def execute_operation(
             graph_name=optional_string_value(parameters.get("graph_name")),
             union=boolean_value(parameters.get("union", False)),
         )
-        vocabulary = load_vocabulary(source, limits=limits)
+        allowance = Budget(limits)
+        vocabulary = load_vocabulary(source, budget=allowance)
         return check_vocabulary(
-            vocabulary, terms_from_data(parameters.get("terms")), limits=limits
+            vocabulary,
+            terms_from_data(parameters.get("terms"), budget=allowance),
+            budget=allowance,
         ), None
     loader = OfflineDocumentLoader(
         object_value(
@@ -337,6 +340,7 @@ def execute_operation(
             limits=limits,
         ), None
     if operation == "emission":
+        allowance = Budget(limits)
         known_keys(
             parameters,
             common | {"models", "usages", "rdf_direction"},
@@ -344,7 +348,7 @@ def execute_operation(
         )
         return check_emission(
             document,
-            models_from_data(parameters.get("models")),
+            models_from_data(parameters.get("models"), budget=allowance),
             usages_from_data(parameters.get("usages")),
             rdf_direction=cast(
                 DirectionPolicy | None,
@@ -352,7 +356,7 @@ def execute_operation(
             ),
             base=base,
             document_loader=loader,
-            limits=limits,
+            budget=allowance,
         ), None
     known_keys(
         parameters,

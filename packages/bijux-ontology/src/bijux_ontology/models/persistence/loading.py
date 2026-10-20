@@ -168,7 +168,7 @@ def compile_model_artifact(
             document_loader=OfflineDocumentLoader(documents, limits=allowance.limits),
         )
         plan = PreparedModels(
-            models_from_data(inputs.declarations),
+            models_from_data(inputs.declarations, budget=allowance),
             vocabulary,
             context=selected_context,
             resources=documents,
@@ -318,7 +318,7 @@ def load_model_artifact(
         selected_context, documents, selected_base, regime, direction = _options(
             raw["options"]
         )
-        declarations = models_from_data(raw["declarations"])
+        declarations = models_from_data(raw["declarations"], budget=allowance)
         terms = read_terms(raw["terms"], allowance)
         sources = tuple(
             read_source(item, terms, allowance) for item in array_value(raw["sources"])

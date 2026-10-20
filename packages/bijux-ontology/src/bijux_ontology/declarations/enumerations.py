@@ -1,12 +1,12 @@
 """Owned finite membership evidence, with explicit open and closed boundaries."""
 
-from dataclasses import KW_ONLY, dataclass
+from dataclasses import KW_ONLY, InitVar, dataclass
 
 from rdflib import Literal, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import term_key
 
@@ -20,13 +20,16 @@ class ValueEnumeration:
     excluded: tuple[URIRef | Literal, ...] = ()
     closed: bool = True
     report: Report | None = None
+    budget: InitVar[Budget | None] = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, budget: Budget | None) -> None:
         """Require immutable finite terms and preserve the original scope report."""
-        budget = Budget()
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Enumeration admission requires a Budget")
+        budget = budget if budget is not None else Budget()
         keys = []
         for terms in (self.values, self.excluded):
-            if type(terms) is not tuple or len(terms) > Limits().max_states:
+            if type(terms) is not tuple or len(terms) > budget.limits.max_states:
                 raise InputError("Enumeration evidence needs bounded term tuples")
             selected = set()
             for term in terms:
