@@ -10,7 +10,7 @@ from typing import cast
 from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
 from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import ControlBudget, Operation
-from bijux_ontology.execution.limits import BUDGET_KINDS, Budget
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
@@ -19,6 +19,32 @@ _REQUEST = struct.Struct("!IQQ")
 _FRAME = struct.Struct("!4sBIIQ")
 _U32 = struct.Struct("!I")
 _MAGIC = b"BXH1"
+
+
+class _HopOperation(Operation):
+    """Fund protocol storage independently of an enclosing semantic wire ceiling.
+
+    HTTP receipts count parser/pipe/copy allocations, not only published evidence.
+    Their complete byte costs still settle into the original cumulative budget;
+    actual headers and body receive semantic admission after the hop returns.
+    """
+
+    def consume(self, kind: BudgetKind, amount: int = 1) -> None:
+        """Charge transport allocations under the original storage owner."""
+        if kind == "bytes":
+            self.reserve_storage(amount)
+        else:
+            super().consume(kind, amount)
+
+    def consume_completed(self, kind: BudgetKind, amount: int) -> None:
+        """Settle completed storage receipts even after the owning deadline."""
+        if kind == "bytes":
+            owner = self.shared
+            while isinstance(owner, Operation):
+                owner = owner.shared
+            owner.reserve_storage(amount)
+        else:
+            super().consume_completed(kind, amount)
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +138,13 @@ def read_hop(
     url: str, headers: dict[str, str], maximum: int, operation: Operation
 ) -> HopResponse:
     """Reserve disjoint native/host funds before any network process starts."""
+    operation.consume("work", 0)
+    operation = _HopOperation(
+        operation.limits,
+        operation,
+        operation.deadline - time.monotonic(),
+        operation.cancel,
+    )
     operation.consume("bytes", 65536)
     operation.consume("states", 64)
     operation.consume("work", 16)
