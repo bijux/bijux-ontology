@@ -185,7 +185,7 @@ def test_external_consumer_uses_installed_public_types(
     source.write_text(
         dedent("""
         from typing import assert_type
-        from rdflib import Graph
+        from rdflib import Graph, URIRef
         from bijux_ontology.diagnostics.reports import Issue, Report
         from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
         from bijux_ontology.models.emission.types import ModelUsage
@@ -195,6 +195,11 @@ def test_external_consumer_uses_installed_public_types(
             VocabularyView, inspect_vocabulary,
         )
         from bijux_ontology.models.emission.checking import check_emission
+        from bijux_ontology.models.contracts.checking import check_models
+        from bijux_ontology.models.emission.rdf import check_rdf_emission
+        from bijux_ontology.models.emission.types import RdfModelUsage
+        from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
+        from bijux_ontology.jsonld.usages.checking import check_context
         from bijux_ontology.vocabulary.checking import check_vocabulary
         from bijux_ontology.documents.preparation import prepare_source
         source = prepare_source(
@@ -216,6 +221,23 @@ def test_external_consumer_uses_installed_public_types(
         assert_type(report, Report)
         assert_type(report.issues, tuple[Issue, ...])
         assert_type(report.exit_code(), int)
+        model = ModelDeclaration("image", ("https://example.org/Image",))
+        assert_type(check_models([model], source.graph()), Report)
+        assert check_models([model], source.graph()).verified
+        output = prepare_source(
+            "<urn:image> a <https://example.org/Image> .", format="turtle",
+        )
+        observed = check_rdf_emission(
+            output, [model], [RdfModelUsage("image", URIRef("urn:image"))],
+        )
+        assert_type(observed, Report)
+        assert observed.verified
+        mapped = check_context(
+            {"@context": {"name": "https://example.org/name"}, "name": "Image"},
+            [ContextExpectation(("name",), "https://example.org/name")],
+        )
+        assert_type(mapped, Report)
+        assert mapped.verified
         assert_type(check_emission(
             {"@context": {"@vocab": "https://example.org/"}, "@type": "Image"},
             [ModelDeclaration("image", ("https://example.org/Image",))],
@@ -260,6 +282,10 @@ def test_external_consumer_uses_installed_public_types(
         from bijux_ontology.interfaces.adapters.pydantic import model_declarations
         from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
         from bijux_ontology.diagnostics.reports import Report
+        from bijux_ontology.shacl.checking import validate_shapes
+        from bijux_ontology.shacl.evidence.results import ShaclResult
+        from rdflib import Graph, Namespace
+        from rdflib.namespace import RDF, SH
         class Image(BaseModel):
             name: Annotated[str, RdfField(
                 "https://example.org/name",
@@ -272,6 +298,14 @@ def test_external_consumer_uses_installed_public_types(
         assert_type(extracted.report, Report)
         assert extracted.report.verified
         assert Image(name="Example").model_dump() == {"name": "Example"}
+        ex = Namespace("https://example.org/")
+        shapes = Graph().add((ex.Shape, RDF.type, SH.NodeShape))
+        shapes.add((ex.Shape, SH.targetNode, ex.record))
+        data = Graph().add((ex.record, RDF.type, ex.Record))
+        checked = validate_shapes(data, shapes)
+        assert_type(checked, ShaclResult)
+        assert_type(checked.report, Report)
+        assert checked.report.verified and checked.conforms is True
         """),
         encoding="utf-8",
     )
