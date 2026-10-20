@@ -5,6 +5,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
+import pytest
 from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, XSD
 
@@ -14,6 +15,9 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.interfaces.execution import operations as execution_operations
 from bijux_ontology.models.emission.observations import SerializedFieldBinding
 from bijux_ontology.models.emission.serialization import check_serialized
 from bijux_ontology.models.emission.types import ModelUsage
@@ -63,7 +67,9 @@ def _vocabulary() -> Graph:
     return graph
 
 
-def test_flat_graph_bindings_retain_independent_mapping(tmp_path: Path) -> None:
+def test_flat_graph_bindings_retain_independent_mapping(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     context = {
         "title": str(EX.title),
         "name": str(EX.name),
@@ -161,7 +167,7 @@ def test_flat_graph_bindings_retain_independent_mapping(tmp_path: Path) -> None:
 
     from bijux_ontology.interfaces.execution.executor import WorkerExecutor
 
-    request = {
+    request: dict[str, object] = {
         "document": before,
         "models": [
             {
@@ -215,6 +221,21 @@ def test_flat_graph_bindings_retain_independent_mapping(tmp_path: Path) -> None:
     assert isinstance(isolated.data, dict)
     assert len(isolated.data["declarations"]) == 2
     assert [item["owner"] for item in isolated.data["bindings"]] == ["Study", "Person"]
+
+    def exhaust_publication(report: Report, budget: Budget) -> dict[str, object]:
+        """Exhaust real response storage after independent semantic work completed."""
+        budget.consume("bytes", budget.remaining("bytes") + 1)
+        return report.to_dict()
+
+    monkeypatch.setattr(execution_operations, "report_to_data", exhaust_publication)
+    request["document"] = changed
+    retained, data = execution_operations.execute_operation(
+        "emission", request, Limits(), lambda report: None
+    )
+    assert data is None and retained.outcome == "exhausted"
+    assert any(
+        issue.code == "serialization.binding_predicate_mismatch" for issue in retained
+    )
 
 
 def test_nested_bindings_observe_native_fields() -> None:
