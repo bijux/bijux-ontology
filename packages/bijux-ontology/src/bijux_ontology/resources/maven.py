@@ -85,6 +85,10 @@ def build_maven_bundle(
         raise InputError("Supply the ordinary shipped Java source directory")
     if output.exists() or output.is_symlink():
         raise InputError("Native bundle output must not already exist")
+    for directory in (build_directory, dependency_directory, output):
+        resolved, supplied = directory.resolve(), source.resolve()
+        if resolved.is_relative_to(supplied) or supplied.is_relative_to(resolved):
+            raise InputError("Build roots must not overlap shipped source")
     if any(
         name in os.environ
         for name in (
@@ -147,13 +151,33 @@ def build_maven_bundle(
         if code != 0:
             raise ResourceError("Native Maven build failed; see " + str(log))
         operation.consume("work", 0)
-        jars = sorted((job / "dependencies").glob("*.jar"))
+        jars: list[Path] = []
+        with os.scandir(job / "dependencies") as produced:
+            for entry in produced:
+                operation.consume("work")
+                bound_text(entry.name, operation)
+                if entry.name.endswith(".jar"):
+                    operation.consume("resources")
+                    operation.consume("states")
+                    operation.consume("bytes", 256 + 4 * len(entry.name))
+                    jars.append(Path(entry.path))
+        operation.consume("resources")
+        operation.consume("states")
+        operation.consume("bytes", 256 + 4 * len(worker_jar))
         jars.append(job / "classes" / worker_jar)
+        count = len(jars)
+        operation.consume(
+            "work",
+            2
+            * count
+            * max(1, count.bit_length())
+            * max(len(path.name) for path in jars),
+        )
+        jars.sort(key=lambda path: path.name)
         output.mkdir()
         try:
             entries = []
-            for path in sorted(jars):
-                operation.consume("resources")
+            for path in jars:
                 bound_text(path.name, operation)
                 if path.is_symlink() or not path.is_file():
                     raise ResourceError("Native build omitted an ordinary required jar")

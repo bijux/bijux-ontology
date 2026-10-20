@@ -141,3 +141,22 @@ def test_installed_builders_qualify_shipped_java_outside_the_checkout(
             hashlib.sha256(manifest.read_bytes()).hexdigest()
             == receipt["manifest_sha256"]
         )
+
+        overlapping = list(command)
+        overlapping[overlapping.index("--build-directory") + 1] = str(
+            source_java / "generated"
+        )
+        overlapping[overlapping.index("--output") + 1] = str(work / (name + "-overlap"))
+        refused = subprocess.run(
+            overlapping,
+            cwd=work,
+            env=environment,
+            text=True,
+            capture_output=True,
+            timeout=30,
+        )
+        assert (
+            refused.returncode != 0
+            and "must not overlap shipped source" in refused.stderr
+        )
+        assert not (source_java / "generated").exists()
