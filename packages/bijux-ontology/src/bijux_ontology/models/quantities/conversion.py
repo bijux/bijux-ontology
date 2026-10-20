@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 from decimal import Context, Decimal, DecimalException, Inexact, Rounded, localcontext
-from typing import TYPE_CHECKING
+from threading import RLock
+from typing import Any, Protocol
 
 from bijux_ontology.execution.limits import Budget, bound_text
 
-if TYPE_CHECKING:
-    from .checking import PreparedQuantities
+
+class _QuantityState(Protocol):
+    """Only the native registry, exact bindings and cache owned by conversion."""
+
+    _registry: Any
+    _units: dict[str, Any]
+    _failed: set[tuple[str, str]]
+    _lock: RLock
 
 
 class _Unavailable(Exception):
@@ -20,7 +27,7 @@ class _DimensionMismatch(Exception):
 
 
 def convert_scalar(
-    prepared: PreparedQuantities,
+    prepared: _QuantityState,
     value: Decimal,
     code: str,
     reference: str,

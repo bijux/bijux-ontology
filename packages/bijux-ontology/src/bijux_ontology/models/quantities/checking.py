@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from decimal import Decimal
 from sys import getsizeof
 from threading import RLock
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 from rdflib import Literal
 from rdflib.namespace import XSD
@@ -35,6 +35,21 @@ from .conversion import _DimensionMismatch, _Unavailable, convert_scalar
 from .types import QuantityCheck, QuantityChecks, QuantityContract, UnitBinding
 
 
+class _RecordChecker(Protocol):
+    """One prepared engine's concrete named-record checking dependency."""
+
+    def __call__(
+        self,
+        prepared: "PreparedQuantities",
+        record: object,
+        contracts: Mapping[str, QuantityContract],
+        *,
+        convert: bool,
+        limits: Limits | None,
+        budget: Budget | None,
+    ) -> QuantityChecks: ...
+
+
 class PreparedQuantities:
     """Own finite bindings and native caches without exposing mutable registry state.
 
@@ -49,6 +64,7 @@ class PreparedQuantities:
     _units: dict[str, Any]
     _failed: set[tuple[str, str]]
     _lock: RLock
+    _records: _RecordChecker
 
     def __init__(self, *args: object, **kwargs: object) -> None:
         """Require preparation to establish bindings and the actual native plan."""
@@ -61,6 +77,7 @@ class PreparedQuantities:
         registry: Any,
         units: dict[str, Any],
         report: Report,
+        records: _RecordChecker,
     ) -> "PreparedQuantities":
         """Retain only the preparation operation's bounded, actual native plan."""
         result = object.__new__(cls)
@@ -70,6 +87,7 @@ class PreparedQuantities:
         result._units = units
         result._failed = set()
         result._lock = RLock()
+        result._records = records
         return result
 
     @property
@@ -106,9 +124,7 @@ class PreparedQuantities:
         budget: Budget | None = None,
     ) -> QuantityChecks:
         """Check named fields once and optionally publish a joint candidate."""
-        from .records import check_quantities
-
-        return check_quantities(
+        return self._records(
             self, record, contracts, convert=convert, limits=limits, budget=budget
         )
 

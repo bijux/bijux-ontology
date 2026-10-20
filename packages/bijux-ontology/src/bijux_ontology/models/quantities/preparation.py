@@ -13,6 +13,7 @@ from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 
 from .checking import PreparedQuantities
+from .records import check_quantities
 from .types import UnitBinding
 
 _LENGTH_TIME = frozenset(
@@ -157,4 +158,6 @@ def prepare_quantities(
         complete=checked == requested,
         regime="application",
     )
-    return PreparedQuantities._owned(tuple(owned), registry, units, report)
+    return PreparedQuantities._owned(
+        tuple(owned), registry, units, report, check_quantities
+    )
