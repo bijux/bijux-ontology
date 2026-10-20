@@ -24,6 +24,7 @@ from bijux_ontology.vocabulary.mappings.proposals import (
     MappingProposals,
     approve_mapping_proposals,
     propose_lexical_mappings,
+    propose_lexical_mappings_page,
 )
 from bijux_ontology.vocabulary.registry import IdentifierRegistry, NamespaceContribution
 
@@ -243,3 +244,84 @@ def test_native_absence_is_honest_and_advisory_generation_still_works() -> None:
         license=LICENSE,
     )
     assert result.mapping_set is None and result.report.outcome == "unverified"
+
+
+def test_resumable_many_to_many_pages_keep_owned_review_scope() -> None:
+    """Group positions resume exactly; actual completed pages can author native rows."""
+    source_graph, target_graph = Graph(), Graph()
+    for graph, namespace, count in (
+        (source_graph, SOURCE, 3),
+        (target_graph, TARGET, 4),
+    ):
+        for number in range(count):
+            graph.add((namespace[str(number)], RDF.type, OWL.Class))
+            graph.add((namespace[str(number)], RDFS.label, Literal("Shared")))
+    source, target = _index(source_graph), _index(target_graph)
+    funded = Budget()
+    first = propose_lexical_mappings_page(source, target, page_size=5, budget=funded)
+    assert first.report.verified and not first.enumeration_complete
+    second = propose_lexical_mappings_page(
+        source, target, page_size=5, cursor=first.next_cursor
+    )
+    third = propose_lexical_mappings_page(
+        source, target, page_size=5, cursor=second.next_cursor
+    )
+    expected = [
+        (str(SOURCE[str(left)]), str(TARGET[str(right)]))
+        for left in range(3)
+        for right in range(4)
+    ]
+    occurrences = first.items + second.items + third.items
+    assert [
+        (item.source.term.iri, item.target.term.iri) for item in occurrences
+    ] == expected
+    assert third.enumeration_complete and third.next_cursor is None
+    spent = funded.limits.max_work - funded.remaining("work")
+    partial = propose_lexical_mappings_page(
+        source, target, page_size=5, budget=Budget(Limits(max_work=spent // 2))
+    )
+    assert partial.report.outcome == "exhausted" and partial.items
+    assert partial.items == first.items[: len(partial.items)]
+    resumed = propose_lexical_mappings_page(source, target, cursor=partial.next_cursor)
+    assert partial.items + resumed.items == occurrences
+    for changed_source, language in ((_index(source_graph), "same"), (source, "any")):
+        with pytest.raises(InputError, match="cursor"):
+            propose_lexical_mappings_page(
+                changed_source, target, cursor=first.next_cursor, language=language
+            )
+    event = Event()
+    event.set()
+    stopped = propose_lexical_mappings_page(source, target, cancel=event)
+    assert stopped.report.outcome == "exhausted" and not stopped.items
+    event.clear()
+    assert (
+        propose_lexical_mappings_page(
+            source, target, cursor=stopped.next_cursor, cancel=event
+        ).items
+        == occurrences
+    )
+    rejected = approve_mapping_proposals(
+        first,
+        (MappingApproval(second.items[0], str(SKOS.closeMatch), JUSTIFICATION, ()),),
+        registry=_registry(),
+        mapping_set_id="urn:example:page",
+        license=LICENSE,
+    )
+    assert rejected.mapping_set is None and not rejected.report.verified
+    if importlib.util.find_spec("sssom") is None:
+        pytest.skip("Page approval requires maintained SSSOM interchange")
+    approved = approve_mapping_proposals(
+        first,
+        (MappingApproval(first.items[0], str(SKOS.closeMatch), JUSTIFICATION, ()),),
+        registry=_registry(),
+        mapping_set_id="urn:example:page",
+        license=LICENSE,
+    )
+    assert approved.report.verified and approved.mapping_set is not None
+    row = approved.mapping_set.rows[0]
+    assert (row.subject, row.predicate, row.object, row.justification) == (
+        expected[0][0],
+        str(SKOS.closeMatch),
+        expected[0][1],
+        JUSTIFICATION,
+    )

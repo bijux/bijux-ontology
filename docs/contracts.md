@@ -1435,6 +1435,11 @@ Modifiers, composed/literal endpoints, extension semantics and unmapped sentinel
 remain unknown; sentinels cannot satisfy required cardinality. The supported TSV
 body excludes hash characters because maintained comment handling can lose data.
 
+`propose_lexical_mappings_page(source, target, cursor=...)` traverses lexical
+key/source/target occurrences, including resumable positions within ambiguous
+groups. A complete page may be explicitly approved; it certifies neither global
+rank nor complete enumeration. Only `enumeration_complete` marks the join's end.
+
 `bijux_ontology.vocabulary.mappings.composition.compose_mappings` joins explicit
 intermediate IRIs in two owned mapping sets or raw `MappingRead` results. Supply
 finite `MappingCompositionRule` records: only exactMatch transitivity has a SKOS

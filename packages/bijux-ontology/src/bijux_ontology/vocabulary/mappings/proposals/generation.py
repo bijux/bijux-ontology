@@ -55,6 +55,44 @@ def _order(
     )
 
 
+def _qualify_indexes(
+    source: LexicalIndex, target: LexicalIndex, language: Literal["same", "any"]
+) -> None:
+    """Require explicit compatible index case and language selection."""
+    if not isinstance(source, LexicalIndex) or not isinstance(target, LexicalIndex):
+        raise InputError("Mapping proposals require two prepared lexical indexes")
+    if source.casefold != target.casefold or language not in ("same", "any"):
+        raise InputError("Select matching case policies and same or any language")
+
+
+def _pair(
+    first: _LexicalCandidate,
+    second: _LexicalCandidate,
+    source: LexicalIndex,
+    target: LexicalIndex,
+    language: Literal["same", "any"],
+    operation: Budget,
+) -> LexicalMappingProposal | None:
+    """Qualify one lexical occurrence without inferring a semantic predicate."""
+    operation.consume("work")
+    if language == "same":
+        left_tag = _comparison_text(first.language or "", operation, fold=True)
+        right_tag = _comparison_text(second.language or "", operation, fold=True)
+        if left_tag != right_tag:
+            return None
+    left, right = _match(first, operation), _match(second, operation)
+    operation.consume("work", len(left.value) + len(right.value))
+    exact = left.value == right.value
+    operation.consume("states", 2)
+    operation.consume("bytes", 160)
+    return LexicalMappingProposal(
+        left,
+        right,
+        "exact" if exact else "casefold",
+        (int(not exact), source._priority[left.field], target._priority[right.field]),
+    )
+
+
 def propose_lexical_mappings(
     source: LexicalIndex,
     target: LexicalIndex,
@@ -78,10 +116,7 @@ def propose_lexical_mappings(
     rank or completeness. Complete results sort by documented rank and exact
     evidence, not probability, confidence or a chosen winning mapping.
     """
-    if not isinstance(source, LexicalIndex) or not isinstance(target, LexicalIndex):
-        raise InputError("Mapping proposals require two prepared lexical indexes")
-    if source.casefold != target.casefold or language not in ("same", "any"):
-        raise InputError("Select matching case policies and same or any language")
+    _qualify_indexes(source, target, language)
     operation = Operation(
         source.limits if budget is None else None, budget, timeout, cancel
     )
@@ -97,33 +132,9 @@ def propose_lexical_mappings(
             matches = target._entries.get(key, ())
             for first in source._entries[key] if matches else ():
                 for second in matches:
-                    operation.consume("work")
-                    if language == "same":
-                        left_tag = _comparison_text(
-                            first.language or "", operation, fold=True
-                        )
-                        right_tag = _comparison_text(
-                            second.language or "", operation, fold=True
-                        )
-                        if left_tag != right_tag:
-                            continue
-                    left, right = _match(first, operation), _match(second, operation)
-                    operation.consume("work", len(left.value) + len(right.value))
-                    exact = left.value == right.value
-                    operation.consume("states", 2)
-                    operation.consume("bytes", 160)
-                    group.append(
-                        LexicalMappingProposal(
-                            left,
-                            right,
-                            "exact" if exact else "casefold",
-                            (
-                                int(not exact),
-                                source._priority[left.field],
-                                target._priority[right.field],
-                            ),
-                        )
-                    )
+                    proposal = _pair(first, second, source, target, language, operation)
+                    if proposal is not None:
+                        group.append(proposal)
             operation.consume("states", len(group))
             operation.consume("bytes", 64 + 8 * len(group))
             items.extend(group)
