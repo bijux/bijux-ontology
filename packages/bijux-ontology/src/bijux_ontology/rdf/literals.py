@@ -62,6 +62,18 @@ _TIME = re.compile(
 _ZONE = re.compile(r"(?:Z|[+-](?:0[0-9]|1[0-3]):[0-5][0-9]|[+-]14:00)?")
 
 
+def integer_interval(datatype: str) -> tuple[int | None, int | None] | None:
+    """Read one exact builtin integer value interval, retaining unknown profiles.
+
+    None means no supported integer datatype; a pair of None endpoints instead
+    denotes the unbounded xsd:integer interval. The immutable bounds are shared
+    with datatype relations and original lexical validation.
+    """
+    if not datatype.startswith(str(XSD)):
+        return None
+    return _INTEGER_BOUNDS.get(datatype.removeprefix(str(XSD)))
+
+
 def _chain(iri: str) -> tuple[str, ...]:
     if not iri.startswith(str(XSD)):
         return (iri,)

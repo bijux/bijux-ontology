@@ -202,10 +202,11 @@ def test_custom_capabilities_and_stopped_work_do_not_invent_membership() -> None
     validity_only = DatatypeRegistry(
         (DatatypeEvaluator(str(EX.custom), (lambda v: True,)),)
     )
-    assert (
-        check_data_compatibility(data, schema, datatype_registry=validity_only).outcome
-        == "unverified"
+    unknown = check_data_compatibility(
+        data, schema, datatype_registry=validity_only, limits=Limits(max_issues=1)
     )
+    assert unknown.outcome == "unverified"
+    assert [issue.code for issue in unknown.issues] == ["data.datatype_unverified"]
     registry = DatatypeRegistry(
         (
             DatatypeEvaluator(
@@ -254,7 +255,7 @@ def test_custom_capabilities_and_stopped_work_do_not_invent_membership() -> None
     data.add((EX.s, EX.p, Literal("1.0", datatype=XSD.decimal, normalize=False)))
     schema.add((EX.p, RDFS.range, XSD.integer))
     partial = check_data_compatibility(data, schema, limits=Limits(max_resources=2))
-    assert partial.outcome == "exhausted" and not partial.complete
+    assert partial.complete and partial.outcome == "disagreement"
     assert any(i.code == "data.disjoint_conflict" for i in partial.issues)
     assert not any(i.code == "data.datatype_conflict" for i in partial.issues)
     large = Graph().add((EX.s, EX.p, Literal("x" * 100000)))
@@ -263,3 +264,101 @@ def test_custom_capabilities_and_stopped_work_do_not_invent_membership() -> None
     )
     assert report.outcome == "exhausted" and not report.complete
     assert all(len(i.location) < 1000 for i in report.issues)
+
+
+def test_exact_decimal_integer_subtypes_keep_original_terms_and_invalids() -> None:
+    """Qualified numeric meaning preserves signs, extrema and lexical evidence."""
+    for text, required, member in (
+        ("+001.000", XSD.integer, True),
+        ("1.0001", XSD.integer, False),
+        ("-.000", XSD.nonNegativeInteger, True),
+        ("-0.0", XSD.positiveInteger, False),
+        ("+0.0", XSD.nonPositiveInteger, True),
+        ("-0.0", XSD.negativeInteger, False),
+        ("-1.000", XSD.negativeInteger, True),
+        ("127.000", XSD.byte, True),
+        ("128.000", XSD.byte, False),
+        ("-128.000", XSD.byte, True),
+        ("-129.000", XSD.byte, False),
+        ("32767.0", XSD.short, True),
+        ("32768.0", XSD.short, False),
+        ("2147483647.0", XSD.int, True),
+        ("2147483648.0", XSD.int, False),
+        ("-9223372036854775808.0", XSD.long, True),
+        ("9223372036854775808.0", XSD.long, False),
+        ("255.0", XSD.unsignedByte, True),
+        ("256.0", XSD.unsignedByte, False),
+        ("65535.0", XSD.unsignedShort, True),
+        ("65536.0", XSD.unsignedShort, False),
+        ("4294967295.0", XSD.unsignedInt, True),
+        ("4294967296.0", XSD.unsignedInt, False),
+        ("18446744073709551615.0", XSD.unsignedLong, True),
+        ("18446744073709551616.0", XSD.unsignedLong, False),
+    ):
+        value = Literal(text, datatype=XSD.decimal, normalize=False)
+        identity = term_key(value)
+        report = check_data_compatibility(
+            Graph().add((EX.s, EX.p, value)),
+            Graph().add((EX.p, RDFS.range, required)),
+            limits=Limits(max_issues=1),
+        )
+        assert report.complete and report.verified is member, report.to_dict()
+        assert term_key(value) == identity
+        if not member:
+            assert [issue.code for issue in report.issues] == ["data.datatype_conflict"]
+    schema = Graph().add((EX.p, RDFS.range, XSD.integer))
+    for text in ("1e3", "NaN", "INF", "1 0"):
+        value = Literal(text, datatype=XSD.decimal, normalize=False)
+        invalid = check_data_compatibility(Graph().add((EX.s, EX.p, value)), schema)
+        assert not invalid.verified and any(
+            issue.code == "literal.lexical_invalid" for issue in invalid.issues
+        )
+    oversized = check_data_compatibility(
+        Graph().add(
+            (
+                EX.s,
+                EX.p,
+                Literal("1" * 4097 + ".0", datatype=XSD.decimal, normalize=False),
+            )
+        ),
+        schema,
+    )
+    assert oversized.outcome == "unverified" and any(
+        issue.code == "literal.lexical_unverified" for issue in oversized.issues
+    )
+
+
+def test_bulk_decimal_membership_keeps_shared_resources_and_paid_findings() -> None:
+    """Numeric membership spends bounded work, not a native store per sample."""
+    schema = Graph().add((EX.p, RDFS.range, XSD.integer))
+    data = Graph()
+    for index in range(3000):
+        data.add(
+            (
+                EX.s,
+                EX.p,
+                Literal(f"{index}.0", datatype=XSD.decimal, normalize=False),
+            )
+        )
+    shared = Budget()
+    report = check_data_compatibility(data, schema, budget=shared)
+    assert report.verified and report.checked == 9000
+    assert shared._counts["resources"] == 2
+    schema.add((EX.A, OWL.disjointWith, EX.B))
+    data.add((EX.contradiction, RDF.type, EX.A))
+    data.add((EX.contradiction, RDF.type, EX.B))
+    for index in range(3000, 4000):
+        data.add(
+            (
+                EX.s,
+                EX.p,
+                Literal(f"{index}.0", datatype=XSD.decimal, normalize=False),
+            )
+        )
+    stopped = check_data_compatibility(data, schema)
+    assert stopped.outcome == "exhausted" and not stopped.complete
+    assert any(issue.code == "data.disjoint_conflict" for issue in stopped.issues)
+    assert any(
+        issue.code == "execution.limit_exceeded" and issue.kind == "exhausted"
+        for issue in stopped.issues
+    )
