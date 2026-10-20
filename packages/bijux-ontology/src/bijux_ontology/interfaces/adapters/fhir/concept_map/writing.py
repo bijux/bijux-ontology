@@ -5,12 +5,17 @@ import time
 from importlib import import_module
 from typing import Literal
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.mappings.interchange import export_sssom, read_sssom
 
 from ..identity import FhirCodeBinding, FhirCodeIdentity, capture_code_bindings

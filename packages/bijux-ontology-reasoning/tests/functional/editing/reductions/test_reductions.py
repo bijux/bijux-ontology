@@ -13,7 +13,7 @@ from bijux_ontology_reasoning.editing.reductions import (
     prepare_reduction,
 )
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 
 A, B, C = (NamedEntity("class", "urn:" + name) for name in ("A", "B", "C"))
 AB, BC, AC = SubClassOf(A, B, ()), SubClassOf(B, C, ()), SubClassOf(A, C, ())

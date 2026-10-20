@@ -10,14 +10,14 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, SKOS, XSD
 
 from bijux_ontology.absence import ABSENT
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.documents.migrations import export_migration
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.migrations import MigrationCheck
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term, term_key
-from bijux_ontology.reports import Report, combine_reports
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.labels import check_label_collisions
 from bijux_ontology.vocabulary.annotations import (
@@ -37,7 +37,7 @@ from bijux_ontology.vocabulary.annotations.hygiene import (
     check_annotation_hygiene,
     repair_annotation_hygiene,
 )
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
 E = Namespace("urn:hygiene:")
 OLD = Literal("Cell ", lang="en")

@@ -2,7 +2,8 @@
 
 from typing import cast
 
-from bijux_ontology._json import (
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.json.values import (
     array_value,
     boolean_value,
     known_keys,
@@ -11,7 +12,6 @@ from bijux_ontology._json import (
     string_value,
     string_values,
 )
-from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.selectors.types import (
     ArrayItems,
     CoverageUnit,

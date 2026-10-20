@@ -2,9 +2,9 @@
 
 from dataclasses import replace
 
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.comparison import compare_observed_usages
-from bijux_ontology.limits import Budget, Limits
 
 
 def test_renamed_source_paths_use_explicit_correspondence_without_reexpansion() -> None:

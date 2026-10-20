@@ -17,18 +17,18 @@ from bijux_ontology.declarations.types import (
     SubjectIdentity,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.rdfa import (
     RdfaRuntime,
     extract_rdfa,
     prepare_rdfa_runtime,
 )
 from bijux_ontology.jsonld.html.extraction import extract_html_jsonld
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import literal_term
 

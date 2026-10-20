@@ -6,8 +6,8 @@ from typing import cast
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.patches.planning import Captured
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,
@@ -17,9 +17,9 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     PatchValue,
 )
-from bijux_ontology.rdf.path_traversal import finite_path_steps, path_values
-from bijux_ontology.rdf.paths import RdfPath
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.paths.traversal import finite_path_steps, path_values
+from bijux_ontology.rdf.paths.types import RdfPath
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 

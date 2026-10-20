@@ -6,12 +6,17 @@ from typing import cast
 
 from rdflib import Graph
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.upgrades.applications.checking import check_application
 from bijux_ontology.workflows.upgrades.applications.preparation import _preflight
 from bijux_ontology.workflows.upgrades.applications.types import (

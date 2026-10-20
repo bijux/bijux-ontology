@@ -7,7 +7,7 @@ from rdflib.namespace import OWL, RDF, RDFS
 from bijux_ontology.declarations import FieldDeclaration as Field
 from bijux_ontology.declarations import ModelDeclaration as Model
 from bijux_ontology.declarations import ValueDeclaration as Value
-from bijux_ontology.models import check_models
+from bijux_ontology.models.contracts.checking import check_models
 
 EX = Namespace("https://example.org/")
 
@@ -107,7 +107,7 @@ def test_alternative_branch_types_are_not_combined_as_simultaneous() -> None:
 
 
 def test_work_exhaustion_preserves_completed_input_findings() -> None:
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     root = Model(
         "root",
@@ -122,7 +122,7 @@ def test_work_exhaustion_preserves_completed_input_findings() -> None:
 
 
 def test_recursive_states_and_diagnostic_retention_have_explicit_bounds() -> None:
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     child = Model(
         "child",

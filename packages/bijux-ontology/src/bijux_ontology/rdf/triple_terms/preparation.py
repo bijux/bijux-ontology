@@ -8,15 +8,20 @@ from threading import Event
 
 import pyoxigraph as ox
 
-from bijux_ontology._json import decode_json
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import (
+    BUDGET_KINDS,
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+)
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import BUDGET_KINDS, Budget, IssueCollector, Limits
-from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.json.values import decode_json
+from bijux_ontology.rdf.sources.types import RdfSource
 
 from .protocol import decode_quads, encode_quads, occurrences
 from .types import (

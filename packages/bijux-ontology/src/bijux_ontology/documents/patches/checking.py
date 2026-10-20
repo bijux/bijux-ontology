@@ -6,27 +6,27 @@ from typing import cast
 from rdflib import BNode, Variable
 from rdflib import Literal as RdfLiteral
 
-from bijux_ontology._jsonpaths import at_path, bound_path, bounded_location
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.documents.export import RDFExport
 from bijux_ontology.documents.forms.checking import check_document_form
 from bijux_ontology.documents.forms.types import DocumentFormCheck, FormRequirement
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import operation
-from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
-from bijux_ontology.jsonld.comparison import compare_observed_usages
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.jsonld.resources import ContextResources, DocumentLoader
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.paths import at_path, bound_path, bounded_location
+from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
+from bijux_ontology.jsonld.comparison import compare_observed_usages
+from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
+from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import ContextResources, DocumentLoader
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Issue, Location, Report
 
 from .operations import (
     _Precondition,

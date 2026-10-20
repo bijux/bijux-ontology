@@ -18,15 +18,21 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.jsonschema.types import SchemaModel
-from bijux_ontology.jsonld.paths import bound_index, bound_pointer_text
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.json.paths import bound_index, bound_pointer_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.terms import bound_node, bound_text, literal_term
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.literals.checking import check_literal
+from bijux_ontology.rdf.terms import bound_node, literal_term
 
 from .types import CompiledOutputSchema, JsonRepresentation, SchemaTranslation
 from .validation import DIALECT, backend, capture, operation, owned_json, validator

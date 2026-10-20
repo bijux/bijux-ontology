@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.rdf.stores.seals import StoreFile
 
 

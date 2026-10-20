@@ -16,11 +16,11 @@ from bijux_ontology.data.foreign_references import (
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.path_traversal import path_values
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.paths.traversal import path_values
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = Namespace("urn:references:")
 

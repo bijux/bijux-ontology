@@ -7,8 +7,9 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.owl.checking import (
     check_axiom_annotations,
     check_declarations,
@@ -16,7 +17,7 @@ from bijux_ontology.owl.checking import (
 )
 from bijux_ontology.owl.expressions import check_expression_shapes
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.builtins import (
     Regime,
     builtin_kinds,
@@ -24,9 +25,8 @@ from bijux_ontology.vocabulary.builtins import (
     validate_regime,
 )
 from bijux_ontology.vocabulary.checking import _lint_issues
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.ontology.deprecation import check_deprecated_terms
 
 _CLASS = (str(OWL.Class), str(RDFS.Class))

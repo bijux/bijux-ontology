@@ -2,10 +2,10 @@
 
 from rdflib import URIRef
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import IssueCollector
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.execution.limits import IssueCollector
 
 from .sources import reserve
 from .types import EntailmentComparison, TheoryComparison, TheoryObservation

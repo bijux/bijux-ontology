@@ -9,13 +9,13 @@ from pathlib import Path
 
 import pytest
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.execution.async_checks import (
     AsyncChecks,
     PreparedWorkerCheck,
 )
 from bijux_ontology.interfaces.execution.executor import ExecutionResult, WorkerExecutor
-from bijux_ontology.limits import Limits
 
 VOCABULARY: dict[str, object] = {
     "source": "<urn:A> a <http://www.w3.org/2002/07/owl#Class>.",

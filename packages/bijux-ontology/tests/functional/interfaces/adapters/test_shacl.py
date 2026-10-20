@@ -8,7 +8,8 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.shacl import (
     ShapeContractImport,
     ShapeFieldBinding,
@@ -16,12 +17,11 @@ from bijux_ontology.interfaces.adapters.shacl import (
     check_imported_rdf,
     import_shape_contracts,
 )
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import literal_term, term_key
 from bijux_ontology.shacl.checking import validate_shapes
 

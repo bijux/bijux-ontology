@@ -1,7 +1,7 @@
 """Concise human display of complete reports; presentation never alters policy."""
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import AcceptancePolicy, Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import AcceptancePolicy, Report
 
 
 def format_report(

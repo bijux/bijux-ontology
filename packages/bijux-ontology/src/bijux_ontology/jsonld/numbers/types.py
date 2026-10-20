@@ -4,9 +4,9 @@ import json
 from dataclasses import dataclass
 from typing import Literal
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.paths import SourcePath, validate_path
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.json.paths import SourcePath, validate_path
 
 NumberPolicy = Literal["processor", "portable-integer", "source-exact"]
 

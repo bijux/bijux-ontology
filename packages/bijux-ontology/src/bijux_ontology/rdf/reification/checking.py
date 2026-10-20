@@ -4,18 +4,23 @@ from collections.abc import Sequence
 
 from rdflib import BNode, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.rdf.reification.reading import inspect_reifications
 from bijux_ontology.rdf.reification.types import (
     ReificationCheck,
     ReificationContract,
     ReificationRecord,
 )
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.rdf.transforms import _budget
-from bijux_ontology.reports import Issue, Location, Report
 
 
 def _finding(record: ReificationRecord, message: str) -> Issue:

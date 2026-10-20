@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Protocol, TypeAlias
 
-from bijux_ontology.reports import Issue, Outcome, Report
+from bijux_ontology.diagnostics.reports import Issue, Outcome, Report
 
 
 @dataclass(frozen=True)

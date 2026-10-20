@@ -8,11 +8,11 @@ from rdflib import BNode, Dataset, Graph, Namespace, URIRef
 from rdflib import Literal as RdfLiteral
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.workflows.ontology.taxonomy import (
     ClassConcept,

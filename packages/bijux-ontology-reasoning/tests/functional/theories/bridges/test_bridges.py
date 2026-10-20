@@ -17,7 +17,7 @@ from bijux_ontology_reasoning.theories.bridges import (
 from bijux_ontology_reasoning.theories.integration import TheoryComponent
 from rdflib import URIRef
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.vocabulary.mappings import read_sssom
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.types import MappingSet

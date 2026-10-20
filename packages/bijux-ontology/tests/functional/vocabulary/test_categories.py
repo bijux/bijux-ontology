@@ -4,7 +4,8 @@ from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
 from bijux_ontology.declarations import TermDeclaration
-from bijux_ontology.vocabulary import Vocabulary, check_vocabulary, declared_kinds
+from bijux_ontology.vocabulary.checking import check_vocabulary, declared_kinds
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/")
 
@@ -86,7 +87,7 @@ def test_reserved_names_include_xsd_and_canonical_container_members() -> None:
 
 
 def test_vocabulary_limits_retain_findings_and_stop_without_verifying() -> None:
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     graph = Graph().add((EX.A, RDF.type, OWL.Class))
     terms = [TermDeclaration(str(EX.Missing)), TermDeclaration(str(EX.Other))]

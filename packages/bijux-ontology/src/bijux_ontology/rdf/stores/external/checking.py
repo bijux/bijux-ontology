@@ -5,16 +5,22 @@ from collections.abc import Sequence
 from rdflib import BNode, Dataset, Literal, URIRef
 from rdflib.namespace import RDF
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.queries.access import QueryScope
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.stores.protocol import failure
 from bijux_ontology.rdf.stores.types import MaterializedRdf
-from bijux_ontology.rdf.terms import bound_node, bound_text, validate_triple
-from bijux_ontology.reports import Report
+from bijux_ontology.rdf.terms import bound_node, validate_triple
 
 from .queries import query_external
 from .types import ExternalStore

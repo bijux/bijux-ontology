@@ -6,12 +6,12 @@ from typing import cast
 
 from rdflib import BNode, Namespace, URIRef
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.patches import BlankNodePair, apply_rdf_patch
 from bijux_ontology.rdf.patches.types import PatchLiteral
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.workflows.upgrades.instances import (
     InstanceEntity,
     InstanceEntityPair,

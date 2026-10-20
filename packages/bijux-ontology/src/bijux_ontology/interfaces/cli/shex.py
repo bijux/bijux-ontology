@@ -5,16 +5,15 @@ from pathlib import Path
 
 from rdflib import URIRef
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.interfaces.cli.inputs import (
     command_limits,
     protect_inputs,
     rdf_input,
 )
 from bijux_ontology.interfaces.cli.results import CommandResult
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_text
 from bijux_ontology.shex.checking import validate_shex
 from bijux_ontology.shex.types import ShexBinding, ShexSchema
 

@@ -3,7 +3,7 @@
 from collections import deque
 from collections.abc import Iterable
 
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 from .types import EqualityConsequence, EqualityRule, Statement, TermKey
 

@@ -4,9 +4,9 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
-from bijux_ontology.limits import Limits
-from bijux_ontology.vocabulary import load_vocabulary
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.vocabulary.comparison import compare_vocabularies
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://example.org/vocabulary#")
 

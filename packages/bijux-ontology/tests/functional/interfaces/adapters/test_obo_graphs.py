@@ -8,23 +8,23 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.compare import isomorphic
 from rdflib.namespace import OWL, RDF, RDFS
 
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.obo_graphs import (
     OboGraphsDocument,
     read_obo_graphs,
     write_obo_graphs,
 )
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.annotations.graphs.reading import (
     inspect_annotation_graph,
 )
 from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationStatement
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.obo.reading import read_obo_records
 from bijux_ontology.vocabulary.restrictions.projection import project_restrictions
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 pytest.importorskip("jsonschema")
 EX = Namespace("https://example.org/obographs/")

@@ -18,8 +18,8 @@ from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.persistence import (
     PreparationIdentity,
@@ -27,8 +27,8 @@ from bijux_ontology.models.persistence import (
     load_model_artifact,
     model_preparation_identity,
 )
-from bijux_ontology.rdf.literals import Regime
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.literals.checking import Regime
+from bijux_ontology.rdf.sources.types import RdfSource
 
 E = "https://example.org/contracts/"
 CONTEXT = E + "context"
@@ -146,7 +146,7 @@ def test_native_reuse_keeps_fresh_nested_checks_and_ownership() -> None:
     assert loaded.prepared is not None, loaded.report.to_dict()
     assert loaded.report.verified
     assert not any(key.endswith((".parse_dataset", ".view._index")) for key in calls)
-    assert calls["bijux_ontology.models.checking.check_models"] == 1
+    assert calls["bijux_ontology.models.contracts.checking.check_models"] == 1
     assert loaded.reused.sources == ("local", "import[0]")
     assert loaded.reused.inspections
     plan = loaded.prepared

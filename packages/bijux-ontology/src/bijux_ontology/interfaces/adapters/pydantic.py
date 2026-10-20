@@ -9,7 +9,9 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction, RdfField
 from bijux_ontology.interfaces.adapters.pydantic_contracts import (
     bound_contract,
@@ -19,8 +21,6 @@ from bijux_ontology.interfaces.adapters.pydantic_contracts import (
 from bijux_ontology.interfaces.adapters.pydantic_serialization import (
     check_instance as check_instance,
 )
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.reports import Issue, Report
 
 if TYPE_CHECKING:
     from pydantic import BaseModel

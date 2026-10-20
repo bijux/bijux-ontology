@@ -13,7 +13,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.corpus.checking import SerializerCase
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.workflows.upgrades.applications.types import (

@@ -3,13 +3,23 @@
 from collections.abc import Sequence
 from typing import cast
 
-from bijux_ontology._json import own_json
-from bijux_ontology.jsonld.observations import ObservedOccurrence, ObservedUsage
-from bijux_ontology.jsonld.paths import (
-    SourcePath,
-    bound_path,
-    bounded_location,
-    location,
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.json.paths import SourcePath, bound_path, bounded_location, location
+from bijux_ontology.json.values import own_json
+from bijux_ontology.jsonld.evidence.entities import EntityInventory
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence, ObservedUsage
+from bijux_ontology.jsonld.evidence.values import ValueTraits, value_traits
+from bijux_ontology.jsonld.processing.expansion import (
+    _drop_issues,
+    _validate_allowed_drops,
+    expand_document,
+)
+from bijux_ontology.jsonld.processing.resources import (
+    ContextInputError,
+    DocumentLoader,
+    context_resources,
 )
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import (
@@ -17,21 +27,10 @@ from bijux_ontology.jsonld.selectors.types import (
     Selection,
     SourceSelector,
 )
-from bijux_ontology.limits import Budget, IssueCollector, Limits
 
-from ..errors import InputError, LimitExceeded, ResourceError
-from ..reports import Issue, Report
-from .entities import EntityInventory
-from .expansion import _drop_issues, _validate_allowed_drops, expand_document
 from .expectations import ContextExpectation, compare_usage
 from .omissions import project_omissions
-from .resources import (
-    ContextInputError,
-    DocumentLoader,
-    context_resources,
-)
 from .selection import UsageIndex
-from .values import ValueTraits, value_traits
 
 
 class PreparedUsages:

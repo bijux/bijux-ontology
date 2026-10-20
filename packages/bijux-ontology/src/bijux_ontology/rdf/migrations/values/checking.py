@@ -9,12 +9,13 @@ from dataclasses import replace
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import XSD
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.processes.transport import checkpoint
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
+from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
 from bijux_ontology.rdf.migrations.candidates import (
     MigrationCheck,
     finish_migration,
@@ -31,15 +32,9 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     PatchValue,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import (
-    bound_node,
-    bound_text,
-    literal_datatype,
-    literal_term,
-)
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_node, literal_datatype, literal_term
 from bijux_ontology.rdf.transforms import Transformation
-from bijux_ontology.reports import Issue, Report
 
 from .types import (
     LiteralConversion,

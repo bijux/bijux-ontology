@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from typing import Protocol
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 
 from .types import StreamEvent
 

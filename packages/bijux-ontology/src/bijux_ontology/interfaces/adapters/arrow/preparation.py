@@ -8,12 +8,12 @@ from typing import Any
 from rdflib import URIRef
 from rdflib.namespace import XSD
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.preparation import PreparedModels
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 
 from .types import ArrowColumn, ArrowContract
 

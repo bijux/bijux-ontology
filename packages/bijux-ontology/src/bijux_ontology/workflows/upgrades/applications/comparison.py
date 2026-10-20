@@ -6,18 +6,17 @@ from dataclasses import replace
 from rdflib import Graph
 
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.vocabulary.comparison import (
     VocabularyChanges,
     compare_vocabularies,
     selected_view,
 )
 from bijux_ontology.vocabulary.facts.types import FactSelection
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.upgrades.anonymous import (
     AnonymousAffectedUse,
     anonymous_uses,

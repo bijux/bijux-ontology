@@ -12,7 +12,7 @@ from typing import Any, cast
 
 import pytest
 
-from bijux_ontology.processes.windows import parent_identity
+from bijux_ontology.execution.processes.windows import parent_identity
 
 pytestmark = pytest.mark.skipif(
     os.name != "nt", reason="Requires actual Windows Job Objects"
@@ -77,9 +77,9 @@ def test_real_windows_nested_workers_and_recovery(tmp_path: Path, stop: str) -> 
     )
     controller = (
         "import json,subprocess,sys,time;from pathlib import Path;"
-        "from bijux_ontology.processes.windows import parent_identity;"
+        "from bijux_ontology.execution.processes.windows import parent_identity;"
         "pid,created=parent_identity();"
-        "command=[sys.executable,'-I','-B','-m','bijux_ontology.processes.windows',str(pid),str(created),'--',sys.executable,'-c',"
+        "command=[sys.executable,'-I','-B','-m','bijux_ontology.execution.processes.windows',str(pid),str(created),'--',sys.executable,'-c',"
         f"{leader!r}];p=subprocess.Popen(command);"
         f"Path({str(helperfile)!r}).write_text(json.dumps({{'supervisor':p.pid}}));"
         "time.sleep(60)"
@@ -123,7 +123,7 @@ def test_real_windows_nested_workers_and_recovery(tmp_path: Path, stop: str) -> 
                     "-I",
                     "-B",
                     "-m",
-                    "bijux_ontology.processes.windows",
+                    "bijux_ontology.execution.processes.windows",
                     str(pid),
                     str(created),
                     "--",
@@ -143,7 +143,7 @@ def test_real_windows_nested_workers_and_recovery(tmp_path: Path, stop: str) -> 
                 "-I",
                 "-B",
                 "-m",
-                "bijux_ontology.processes.windows",
+                "bijux_ontology.execution.processes.windows",
                 str(pid),
                 str(created + 1),
                 "--",

@@ -5,7 +5,12 @@ from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
-from bijux_ontology._json import (
+from bijux_ontology.absence import ABSENT
+from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.values import (
     array_value,
     at_input_location,
     decode_json,
@@ -16,17 +21,11 @@ from bijux_ontology._json import (
     own_json,
     text_value,
 )
-from bijux_ontology.absence import ABSENT
-from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
-from bijux_ontology.errors import InputError
 from bijux_ontology.jsonld.codecs import expectations_from_data
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.limits import Budget
-from bijux_ontology.models.codecs import usages_from_data
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.emission.checking import check_emission
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Report
+from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.workflows.projects.jobs import VocabularySelection, strings
 from bijux_ontology.workflows.projects.resources import ProjectResources
 from bijux_ontology.workflows.upgrades.applications.comparison import (

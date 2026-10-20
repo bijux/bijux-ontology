@@ -8,12 +8,12 @@ from rdflib import Graph
 from rdflib.namespace import DefinedNamespace
 
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Limits
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 
 @dataclass(frozen=True)

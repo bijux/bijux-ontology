@@ -2,7 +2,7 @@
 
 import pyoxigraph as ox
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 
 from .types import ExternalStore
 

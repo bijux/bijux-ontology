@@ -6,10 +6,9 @@ from typing import cast
 from rdflib import BNode
 
 from bijux_ontology.declarations.keys import KeyContract
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 
 from .evidence import compare_keys, key_evidence
 from .extraction import _Key, _KeyExtraction

@@ -6,9 +6,9 @@ from typing import cast
 
 import pyoxigraph as ox
 
-from bijux_ontology._json import decode_json
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.json.values import decode_json
 
 
 def _memory_limit(memory: object) -> None:

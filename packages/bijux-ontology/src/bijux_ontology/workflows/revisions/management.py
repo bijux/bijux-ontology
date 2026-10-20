@@ -6,14 +6,14 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from threading import Event, RLock
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, Limits, bound_text
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.models.persistence.types import PreparationIdentity
-from bijux_ontology.processes.transport import checkpoint
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.shacl.session import ShaclSession
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.shacl.execution.session import ShaclSession
 
 from .preparation import named_terms, preparation_capacity, shape_bindings
 from .types import PreparedRevision, RevisionResult, RevisionStatus, _RevisionState

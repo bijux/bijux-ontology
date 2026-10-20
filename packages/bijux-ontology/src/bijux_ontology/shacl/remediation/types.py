@@ -5,9 +5,9 @@ from dataclasses import dataclass
 
 from rdflib import URIRef
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.findings import ShaclFinding
 

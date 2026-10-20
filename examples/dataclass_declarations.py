@@ -10,7 +10,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.contracts.checking import check_models
 
 CATALOGUE = Namespace("https://example.org/catalogue#")
 

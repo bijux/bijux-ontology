@@ -6,15 +6,14 @@ from dataclasses import dataclass
 from rdflib import URIRef
 
 from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate
 from bijux_ontology.rdf.patches.types import PatchQuad, SnapshotWitness
 from bijux_ontology.rdf.roles.types import TermPosition, TermRole
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Report
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.workflows.upgrades.uses import Use
 
 

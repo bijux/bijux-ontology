@@ -11,15 +11,15 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, SH, XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Location
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.reports import Location
 from bijux_ontology.shacl.paths import ShaclPath, decode_path
 
 if TYPE_CHECKING:
     from bijux_ontology.jsonld.checking import PreparedUsages
-    from bijux_ontology.jsonld.observations import ObservedOccurrence
+    from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 
 _Edge = tuple[Node, Node, Node]
 

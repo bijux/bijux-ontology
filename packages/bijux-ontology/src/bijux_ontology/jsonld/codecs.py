@@ -2,7 +2,9 @@
 
 from typing import Literal, cast
 
-from bijux_ontology._json import (
+from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.json.values import (
     array_value,
     at_input_location,
     boolean_value,
@@ -12,11 +14,9 @@ from bijux_ontology._json import (
     string_value,
     string_values,
 )
-from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError
+from bijux_ontology.jsonld.evidence.values import ValueKind as ContextValueKind
 from bijux_ontology.jsonld.expectations import ContainerKind, ContextExpectation
 from bijux_ontology.jsonld.lists import ExpectedList
-from bijux_ontology.jsonld.values import ValueKind as ContextValueKind
 
 
 def _trait(value: object) -> str | Absent | None:

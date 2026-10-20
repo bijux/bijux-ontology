@@ -5,11 +5,16 @@ from typing import Self
 
 from rdflib import Dataset, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 
 from .checking import check_row, convert_row, schema_indices
 from .preparation import backend

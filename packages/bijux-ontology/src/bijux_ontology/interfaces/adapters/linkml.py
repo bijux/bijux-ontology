@@ -12,12 +12,12 @@ from bijux_ontology.declarations.types import (
     SubjectIdentity,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction, RdfField
 from bijux_ontology.interfaces.adapters.field_contracts import select_contract
-from bijux_ontology.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Issue, Report
 
 if TYPE_CHECKING:
     from linkml_runtime.utils.schemaview import SchemaView  # type: ignore[import-untyped]

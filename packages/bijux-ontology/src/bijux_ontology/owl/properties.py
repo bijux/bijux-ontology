@@ -6,7 +6,7 @@ from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 from rdflib.term import Node
 
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
 
 
 @dataclass(frozen=True)

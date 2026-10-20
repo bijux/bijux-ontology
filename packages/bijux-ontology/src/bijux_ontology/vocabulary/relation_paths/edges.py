@@ -5,14 +5,19 @@ from collections.abc import Iterator
 from rdflib import BNode, URIRef
 from rdflib.namespace import OWL, RDFS
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 from bijux_ontology.vocabulary.restrictions.projection import project_restrictions
 from bijux_ontology.vocabulary.restrictions.types import RestrictionProjection
-from bijux_ontology.vocabulary.results import Edge, Selection
 
 from .automaton import named
 from .types import RelationStep, RelationWitness

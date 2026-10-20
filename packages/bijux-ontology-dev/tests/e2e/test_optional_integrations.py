@@ -37,7 +37,8 @@ import pytest
         from bijux_ontology.interfaces.adapters.contracts import RdfField
         from bijux_ontology.interfaces.adapters.pydantic import model_declarations
         from bijux_ontology.declarations import ValueDeclaration
-        from bijux_ontology.models import ModelUsage, check_emission
+        from bijux_ontology.models.emission.types import ModelUsage
+        from bijux_ontology.models.emission.checking import check_emission
         class Record(BaseModel):
             title: Annotated[str, RdfField(
                 "https://example.org/name",
@@ -105,7 +106,7 @@ import pytest
         """
         from rdflib import Literal
         from rdflib.namespace import XSD
-        from bijux_ontology.rdf.literals import check_literal
+        from bijux_ontology.rdf.literals.checking import check_literal
         assert check_literal(Literal("P1Y2M", datatype=XSD.yearMonthDuration,
                                      normalize=False)).verified
         bad = check_literal(Literal("P0D", datatype=XSD.yearMonthDuration,
@@ -185,12 +186,12 @@ def test_external_consumer_uses_installed_public_types(
         dedent("""
         from typing import assert_type
         from rdflib import Graph
-        from bijux_ontology.reports import Issue, Report
+        from bijux_ontology.diagnostics.reports import Issue, Report
         from bijux_ontology.declarations.types import ModelDeclaration, TermDeclaration
         from bijux_ontology.models.emission.types import ModelUsage
-        from bijux_ontology.rdf.snapshots import PreparedSource
-        from bijux_ontology.vocabulary.results import TermInfo
-        from bijux_ontology.vocabulary.inspection import (
+        from bijux_ontology.rdf.sources.snapshots import PreparedSource
+        from bijux_ontology.vocabulary.browsing.results import TermInfo
+        from bijux_ontology.vocabulary.browsing.inspection import (
             VocabularyView, inspect_vocabulary,
         )
         from bijux_ontology.models.emission.checking import check_emission
@@ -258,7 +259,7 @@ def test_external_consumer_uses_installed_public_types(
         )
         from bijux_ontology.interfaces.adapters.pydantic import model_declarations
         from bijux_ontology.declarations import ModelDeclaration, ValueDeclaration
-        from bijux_ontology.reports import Report
+        from bijux_ontology.diagnostics.reports import Report
         class Image(BaseModel):
             name: Annotated[str, RdfField(
                 "https://example.org/name",
@@ -325,7 +326,7 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
             dedent("""
         from importlib.util import find_spec
         from rdflib import Graph
-        from bijux_ontology.errors import ResourceError
+        from bijux_ontology.diagnostics.errors import ResourceError
         from bijux_ontology.interfaces.adapters.pydantic import (
             model_declarations as pydantic_models,
         )
@@ -334,7 +335,7 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
         )
         from bijux_ontology.shacl.checking import validate_shapes
         from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
-        from bijux_ontology.jsonld.expansion import expand_document
+        from bijux_ontology.jsonld.processing.expansion import expand_document
         from bijux_ontology.rdf.comparison import compare_rdf
         for name in (
             "pyld", "pyshacl", "pydantic", "linkml_runtime",
@@ -363,7 +364,7 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
                                       (RdfModelUsage("record", ex.record),))
         assert requested.outcome == "unverified"
         assert compare_rdf(Graph(), Graph()).verified
-        from bijux_ontology.rdf.literals import check_literal
+        from bijux_ontology.rdf.literals.checking import check_literal
         lexical = check_literal(Literal("P1Y", datatype=XSD.duration, normalize=False))
         assert lexical.outcome == "unverified"
         assert "[xsd]" in lexical.issues[0].message

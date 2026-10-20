@@ -11,9 +11,15 @@ from rdflib.namespace import RDF
 from rdflib.term import Node
 
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.migrations.lists.checking import _portable, _scope
 from bijux_ontology.rdf.migrations.lists.planning import copy_chain
@@ -29,10 +35,9 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     PatchValue,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.transforms import Transformation
-from bijux_ontology.reports import Issue, Report
 
 from .checking import check_containers
 from .types import ContainerContract, ContainerConversion

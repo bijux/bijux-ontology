@@ -15,7 +15,8 @@ import pytest
 from rdflib import URIRef
 from rdflib.namespace import OWL, RDFS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.ols import (
     OlsPage,
     OlsQuery,
@@ -24,7 +25,6 @@ from bijux_ontology.interfaces.adapters.ols import (
     lookup_ols,
     prepare_ols_snapshot,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.workflows.projects.acquisition.types import AcquisitionPolicy
 
 BASE = "https://www.ebi.ac.uk/ols4/api/v2"

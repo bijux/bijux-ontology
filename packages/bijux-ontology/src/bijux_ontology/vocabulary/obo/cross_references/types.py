@@ -5,16 +5,16 @@ from typing import Literal
 
 from rdflib import URIRef
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.vocabulary.accessions.types import (
     AccessionCheck,
     AccessionObservation,
 )
 from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationGraph
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge, TermInfo
 from bijux_ontology.vocabulary.obo.types import OboAttachment, OboRecord, OboRecords
-from bijux_ontology.vocabulary.results import Edge, TermInfo
 
 
 @dataclass(frozen=True)

@@ -6,9 +6,11 @@ from rdflib import URIRef
 from rdflib.namespace import OWL, RDFS
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
     compile_allowed,
 )
@@ -18,10 +20,8 @@ from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.types imp
     AllowedIntersection,
     AllowedUnion,
 )
-from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.patches.types import PatchUnavailable
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.navigation import traverse
+from bijux_ontology.vocabulary.browsing.navigation import traverse
 from bijux_ontology.vocabulary.relation_paths.checking import find_relation_path
 from bijux_ontology.vocabulary.relation_paths.types import (
     RelationChoice,

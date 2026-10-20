@@ -2,11 +2,11 @@
 
 import pytest
 
-from bijux_ontology._json import decode_json, own_json
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.json.values import decode_json, own_json
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.reports import Issue, Report
 
 
 def test_exact_identifiers_and_language_tags_use_rdf_validation() -> None:
@@ -89,3 +89,54 @@ def test_explicit_large_json_depth_cannot_leak_runtime_recursion() -> None:
         value = [value]
     with pytest.raises(LimitExceeded, match="runtime nesting"):
         own_json(value, max_depth=2000)
+
+
+def test_raw_json_size_is_checked_before_allocating_its_utf8_copy() -> None:
+    """A small admission limit cannot trigger a copy of the whole oversized input."""
+    import tracemalloc
+
+    payload = " " * 1_000_000 + "{}"
+    tracing = tracemalloc.is_tracing()
+    if not tracing:
+        tracemalloc.start()
+    current, _ = tracemalloc.get_traced_memory()
+    tracemalloc.reset_peak()
+    try:
+        with pytest.raises(LimitExceeded) as failure:
+            decode_json(payload, source="oversized.json", max_bytes=32)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        if not tracing:
+            tracemalloc.stop()
+    assert failure.value.location == "oversized.json"
+    assert peak - current < 100_000
+    assert decode_json(" {} ", max_bytes=32) == {}
+
+
+def test_input_context_preserves_the_original_native_parse_failure() -> None:
+    """Configuration paths cannot erase the actual failing content and parser span."""
+    from bijux_ontology.diagnostics.reports import Location
+    from bijux_ontology.json.values import at_input_location
+    from bijux_ontology.rdf.sources.loading import prepare_rdf
+    from bijux_ontology.rdf.sources.types import RdfSource
+
+    with pytest.raises(InputError) as original:
+        prepare_rdf(
+            RdfSource(
+                b"broken RDF",
+                format="turtle",
+                document_iri="https://example.org/data.ttl",
+            )
+        )
+    evidence = original.value.failure
+    assert evidence is not None and evidence.span is not None
+    with (
+        pytest.raises(type(original.value)) as wrapped,
+        at_input_location("model.json", ("models", 0)),
+    ):
+        raise original.value
+    assert wrapped.value.location == "model.json#/models/0"
+    assert wrapped.value.failure is evidence
+    location = Location.from_error(wrapped.value)
+    assert location is not None and location.failure is evidence
+    assert location.source == "https://example.org/data.ttl"

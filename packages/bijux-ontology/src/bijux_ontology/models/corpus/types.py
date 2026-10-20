@@ -6,8 +6,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from bijux_ontology.declarations.types import EmissionCondition
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.terms import term_key
 
 TermKey = tuple[str | None, ...]

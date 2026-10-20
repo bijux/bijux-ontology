@@ -14,20 +14,20 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
 from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.models.contracts.checking import check_models
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.serialization import (
     check_instance,
     check_serialized,
 )
 from bijux_ontology.models.emission.types import ModelUsage
-from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("https://example.org/")
 

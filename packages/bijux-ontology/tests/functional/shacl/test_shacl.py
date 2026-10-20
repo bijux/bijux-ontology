@@ -7,10 +7,15 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SH, XSD
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import AcceptancePolicy
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.reports import AcceptancePolicy
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
@@ -619,8 +624,8 @@ def test_implicit_class_targets_respect_roots_pairs_and_nested_constraints(
 def test_same_focus_message_results_survive_project_and_console_transport(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    from bijux_ontology.diagnostics.reports import report_from_data
     from bijux_ontology.interfaces.cli import main
-    from bijux_ontology.interfaces.cli.protocol import report_from_data
     from bijux_ontology.workflows.projects.checking import check_project
     from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
@@ -807,7 +812,7 @@ ex:Shape a sh:NodeShape; sh:targetNode ex:record;
         source_usages=(source,),
     )
     assert selected.conforms is False and selected.findings[0].locations == ()
-    from bijux_ontology.rdf.sources import RdfSource
+    from bijux_ontology.rdf.sources.types import RdfSource
 
     named = ShaclSource(
         prepare_usages({"@id": str(EX.graph), "@graph": [document]}),

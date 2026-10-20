@@ -9,7 +9,7 @@ from bijux_ontology.declarations.types import (
     TermDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.vocabulary.comparison import compare_vocabularies
 from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 
@@ -137,7 +137,7 @@ def test_actual_named_graph_move_and_tiny_bounds_remain_visible() -> None:
     for triple in vocabulary("after", E.B):
         after.graph(E.H).add(triple)
     from bijux_ontology.documents.preparation import prepare_source
-    from bijux_ontology.rdf.sources import RdfSource
+    from bijux_ontology.rdf.sources.types import RdfSource
 
     left = prepare_source(RdfSource(before, union=True))
     right = prepare_source(RdfSource(after, union=True))

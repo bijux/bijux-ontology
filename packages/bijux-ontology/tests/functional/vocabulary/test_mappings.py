@@ -12,10 +12,10 @@ import pytest
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, SKOS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.mappings import (
     MappingPolicy,
     MappingSet,
@@ -23,7 +23,7 @@ from bijux_ontology.vocabulary.mappings import (
     export_sssom,
     read_sssom,
 )
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 E = Namespace("urn:example:")
 LICENSE = "https://creativecommons.org/publicdomain/zero/1.0/"

@@ -5,7 +5,7 @@ from linkml_runtime.utils.schemaview import SchemaView  # type: ignore[import-un
 from rdflib.namespace import XSD
 
 from bijux_ontology.declarations import ValueDeclaration as Value
-from bijux_ontology.errors import ResourceError
+from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.linkml import model_declarations
 
@@ -66,7 +66,7 @@ def test_unprepared_imports_do_not_trigger_implicit_framework_retrieval() -> Non
 
 
 def test_induced_slot_limits_preserve_completed_models_and_diagnostics() -> None:
-    from bijux_ontology.limits import Limits
+    from bijux_ontology.execution.limits import Limits
 
     result = model_declarations(SchemaView(SCHEMA), limits=Limits(max_issues=1))
     assert len(result.declarations) == 1

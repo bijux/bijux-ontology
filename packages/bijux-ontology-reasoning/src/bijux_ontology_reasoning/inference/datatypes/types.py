@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from bijux_ontology.declarations.types import FieldDeclaration
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 from ...axioms.types import DataRange, PropertyDomainRange
 from ...backend.types import (

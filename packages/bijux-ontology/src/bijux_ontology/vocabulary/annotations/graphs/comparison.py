@@ -6,13 +6,18 @@ from typing import cast
 
 from rdflib import BNode, Dataset, Graph
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.obo.types import OboAttachment, OboRecord
 
 from .reading import _bound, _same, inspect_annotation_graph

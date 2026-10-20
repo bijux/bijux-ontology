@@ -9,6 +9,7 @@ from typing import Any, Literal
 import pytest
 from rdflib import URIRef
 
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.fhir.code_system import (
     FhirCodeSystem,
     read_code_system,
@@ -27,7 +28,6 @@ from bijux_ontology.interfaces.adapters.fhir.value_set import (
     FhirValueSet,
     read_value_set,
 )
-from bijux_ontology.limits import Budget, Limits
 
 NATIVE = importlib.util.find_spec("fhir") is not None
 native = pytest.mark.skipif(

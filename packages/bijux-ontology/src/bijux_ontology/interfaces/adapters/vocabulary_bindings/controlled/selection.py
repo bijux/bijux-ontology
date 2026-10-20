@@ -3,20 +3,20 @@
 import json
 from collections.abc import Sequence
 
-from bijux_ontology._json import owned_json
-from bijux_ontology._jsonpaths import SourcePath, at_path, bound_path, location
 from bijux_ontology.declarations.enumerations import ValueEnumeration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import operation
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.json.paths import SourcePath, at_path, bound_path, location
+from bijux_ontology.json.values import owned_json
 
 from .algebra import compile_allowed
 from .types import BindingCase, BindingSelection, CompiledBindingCase, CompiledBindings

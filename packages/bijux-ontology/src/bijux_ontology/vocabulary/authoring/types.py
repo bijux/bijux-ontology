@@ -8,9 +8,10 @@ from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.planning import Captured
 from bijux_ontology.rdf.patches.types import (
@@ -20,12 +21,11 @@ from bijux_ontology.rdf.patches.types import (
     PatchValue,
 )
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.annotations.graphs.types import (
     AnnotationLiteralRepair,
     AnnotationValueEdit,
 )
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 AnnotationValue = URIRef | BNode | Literal
 

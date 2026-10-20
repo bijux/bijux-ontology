@@ -11,15 +11,14 @@ from typing import cast
 
 from rdflib import URIRef
 
-from bijux_ontology._json import object_value
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.json.values import object_value
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 
 from ...backend.owlapi.bundles import qualify_backend
 from ...backend.owlapi.execution import invoke_worker, qualify_capability

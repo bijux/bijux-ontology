@@ -7,12 +7,12 @@ from typing import Any, cast
 
 import pytest
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.expectations import ContextExpectation
 from bijux_ontology.jsonld.lists import ExpectedList
-from bijux_ontology.limits import Limits
 
 P = "https://lists.example/items"
 XSD = "http://www.w3.org/2001/XMLSchema#"

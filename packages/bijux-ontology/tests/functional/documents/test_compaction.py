@@ -7,8 +7,8 @@ from rdflib.namespace import RDF, XSD
 
 from bijux_ontology.documents.compaction import export_jsonld
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 
 EX = "https://example.org/"
 S, P, G = (URIRef(EX + name) for name in ("subject", "predicate", "graph"))

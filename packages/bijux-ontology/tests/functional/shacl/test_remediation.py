@@ -7,8 +7,8 @@ from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import RDF, SH
 
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.findings import ShaclFinding
 from bijux_ontology.shacl.remediation import RemediationStrategy, propose_remediations
 

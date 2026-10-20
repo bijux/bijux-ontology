@@ -7,7 +7,7 @@ from typing import Literal as Choice
 
 from rdflib import Literal
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 JSONKind = Choice["object", "array", "string", "integer", "number", "boolean", "null"]
 

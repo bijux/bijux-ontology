@@ -7,17 +7,6 @@ from rdflib import Literal as RDFLiteral
 from rdflib import URIRef
 from rdflib.namespace import XSD
 
-from bijux_ontology._json import (
-    array_value,
-    at_input_location,
-    boolean_value,
-    input_location,
-    known_keys,
-    object_value,
-    optional_string_value,
-    string_value,
-    string_values,
-)
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.resource_roles import (
     ResourceKind,
@@ -39,10 +28,21 @@ from bijux_ontology.declarations.types import (
     ValueKind,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Limits
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Limits
+from bijux_ontology.json.values import (
+    array_value,
+    at_input_location,
+    boolean_value,
+    input_location,
+    known_keys,
+    object_value,
+    optional_string_value,
+    string_value,
+    string_values,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 
 
 def terms_from_data(value: object, *, source: str = "") -> tuple[TermDeclaration, ...]:

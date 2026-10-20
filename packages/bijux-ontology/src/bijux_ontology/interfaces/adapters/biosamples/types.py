@@ -2,11 +2,11 @@
 
 from dataclasses import dataclass
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.types import (
     AllowedExpression,
 )
-from bijux_ontology.reports import Report
 
 
 @dataclass(frozen=True)

@@ -6,22 +6,18 @@ from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, SH, XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.patches.types import (
     PatchBlank,
     PatchLiteral,
     PatchValue,
     SnapshotWitness,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import (
-    bound_node,
-    bound_text,
-    literal_term,
-)
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_node, literal_term
 from bijux_ontology.shacl.functions import (
     FunctionPlan,
     ShaclFunctionCatalog,

@@ -12,13 +12,8 @@ import pytest
 FOUNDATION = {
     "execution",
     "absence",
-    "errors",
-    "limits",
-    "reports",
-    "processes",
-    "_json",
-    "_jsonpaths",
-    "_jsonschema",
+    "diagnostics",
+    "json",
 }
 PACKAGES = {
     "rdf",
@@ -215,7 +210,7 @@ def test_library_dependencies_follow_feature_ownership(
             target_owner = _owner(target)
             if owner in FOUNDATION:
                 assert target_owner in FOUNDATION, f"{module} -> {target}"
-            if module == "bijux_ontology.jsonld.paths":
+            if module == "bijux_ontology.json.paths":
                 assert target_owner in FOUNDATION, f"{module} -> {target}"
             if owner == "rdf":
                 assert target_owner in FOUNDATION | {"rdf"}, f"{module} -> {target}"
@@ -234,7 +229,7 @@ def test_library_dependencies_follow_feature_ownership(
         forbidden = []
         if module in {
             "bijux_ontology.interfaces.cli.inputs",
-            "bijux_ontology.interfaces.cli.protocol",
+            "bijux_ontology.diagnostics.reports",
             "bijux_ontology.interfaces.cli.vocabularies",
             "bijux_ontology.interfaces.cli.transforms",
         }:
@@ -242,7 +237,7 @@ def test_library_dependencies_follow_feature_ownership(
         if module == "bijux_ontology.interfaces.cli.arguments":
             forbidden.append("bijux_ontology.interfaces.cli")
         if module in {
-            "bijux_ontology.jsonld.observations",
+            "bijux_ontology.jsonld.evidence.occurrences",
             "bijux_ontology.jsonld.expectations",
         }:
             forbidden.extend(
@@ -290,14 +285,19 @@ import bijux_ontology.shacl
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.values import own_json
 assert not any(name.startswith("rdflib") for name in sys.modules)
 assert "bijux_ontology.interfaces.api" not in sys.modules
-assert "bijux_ontology.models.checking" not in sys.modules
+assert "bijux_ontology.models.contracts.checking" not in sys.modules
 assert "bijux_ontology.shacl.checking" not in sys.modules
 assert "__getattr__" not in vars(bijux_ontology)
 assert "__getattr__" not in vars(bijux_ontology.shacl)
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 assert issubclass(InputError, Exception)
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.pages import terms_page
+assert all(callable(item) for item in (load_vocabulary, inspect_vocabulary, terms_page))
 """,
         ],
         text=True,

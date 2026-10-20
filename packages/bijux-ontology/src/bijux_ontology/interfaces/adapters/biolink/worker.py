@@ -9,13 +9,12 @@ from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any, cast
 
-from bijux_ontology._json import decode_json, object_value
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Location, Report
+from bijux_ontology.json.values import decode_json, object_value
 
 from .preparation import reserve
 

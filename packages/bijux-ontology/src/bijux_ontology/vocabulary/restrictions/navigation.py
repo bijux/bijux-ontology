@@ -6,9 +6,9 @@ from collections.abc import Sequence
 from rdflib import URIRef
 from rdflib.namespace import OWL
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 from .projection import _named, _operation, _Projection, _report
 from .types import RestrictionPath, RestrictionProjection

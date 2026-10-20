@@ -33,9 +33,9 @@ from bijux_ontology_reasoning.inference.sessions import (
 from rdflib import Dataset, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 
 _SOURCE = """Ontology(<urn:relationships>
  Declaration(Class(<urn:A>)) Declaration(Class(<urn:B>))

@@ -9,9 +9,10 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
@@ -21,7 +22,6 @@ from bijux_ontology.limits import (
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.terms import bound_node, literal_term, term_key
 from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values
-from bijux_ontology.reports import Issue, Report
 
 from .types import AnswerArtifact, AnswerSemantics
 

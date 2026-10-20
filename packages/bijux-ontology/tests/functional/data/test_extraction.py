@@ -13,9 +13,9 @@ from bijux_ontology.data.extraction import (
     record_plan_from_shape,
 )
 from bijux_ontology.data.projection import ReadField
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 EX = Namespace("urn:record-extraction:")
 

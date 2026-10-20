@@ -8,22 +8,22 @@ from rdflib import Literal, URIRef
 from rdflib.term import Node
 
 from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
-from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.entities import EntityInventory, object_key
-from bijux_ontology.jsonld.observations import ObservedOccurrence
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import Budget
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.jsonld.evidence.entities import EntityInventory, object_key
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.direction import DirectionCheck
 from bijux_ontology.models.emission.matching import matches_value
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.terms import bound_text, literal_term
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.literals.checking import check_literal
+from bijux_ontology.rdf.terms import literal_term
 
 
 def _matches(

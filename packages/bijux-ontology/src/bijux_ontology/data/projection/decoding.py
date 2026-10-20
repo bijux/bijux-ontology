@@ -6,11 +6,11 @@ from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from bijux_ontology.limits import Budget, IssueCollector, retain_report
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import Budget, IssueCollector, retain_report
+from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
-from bijux_ontology.reports import Issue
 
 from .types import FieldState, ProjectedValue, ReadField, ReferenceHandle
 

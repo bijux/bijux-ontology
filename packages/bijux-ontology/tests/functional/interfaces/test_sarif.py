@@ -8,24 +8,24 @@ import pytest
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, XSD
 
-from bijux_ontology.errors import (
+from bijux_ontology.diagnostics.errors import (
     InputError,
     InputFailure,
     LimitExceeded,
     SourceSpan,
     attach_input_failure,
 )
-from bijux_ontology.interfaces.cli import main
-from bijux_ontology.interfaces.exports.sarif import export_sarif, to_sarif
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.value_comparison import compare_literal_values
-from bijux_ontology.reports import (
+from bijux_ontology.diagnostics.reports import (
     AcceptancePolicy,
     Issue,
     IssueSelection,
     Location,
     Report,
 )
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.interfaces.cli import main
+from bijux_ontology.interfaces.exports.sarif import export_sarif, to_sarif
+from bijux_ontology.rdf.value_comparison import compare_literal_values
 from bijux_ontology.workflows.projects.checking import check_project
 from bijux_ontology.workflows.projects.configuration import load_project
 
@@ -236,9 +236,9 @@ def test_pointer_parser_region_and_iri_only_locations_are_not_conflated(
     assert "physicalLocation" not in semantic and "logicalLocations" in semantic
     _save(tmp_path / "locations.sarif", document)
 
-    from bijux_ontology._json import decode_json
-    from bijux_ontology.rdf.loading import prepare_rdf
-    from bijux_ontology.rdf.sources import RdfSource
+    from bijux_ontology.json.values import decode_json
+    from bijux_ontology.rdf.sources.loading import prepare_rdf
+    from bijux_ontology.rdf.sources.types import RdfSource
 
     with pytest.raises(InputError) as malformed_json:
         decode_json('{"😀": }')

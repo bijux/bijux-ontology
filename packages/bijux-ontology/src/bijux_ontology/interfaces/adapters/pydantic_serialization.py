@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Literal, cast, get_args
 
 from rdflib import Graph
 
-from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import (
     FieldDeclaration,
@@ -15,15 +14,22 @@ from bijux_ontology.declarations.types import (
     OutputRequirement,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
+from bijux_ontology.json.paths import SourcePath, at_path, location
+from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.jsonld.entities import object_key
-from bijux_ontology.jsonld.observations import ObservedOccurrence
-from bijux_ontology.jsonld.paths import SourcePath, at_path, location
-from bijux_ontology.jsonld.resources import DocumentLoader, context_resources
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.jsonld.evidence.entities import object_key
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_resources
 from bijux_ontology.models.emission.bindings import (
     candidate_paths,
     source_entity,
@@ -36,9 +42,8 @@ from bijux_ontology.models.emission.serialization import (
     check_serialized,
 )
 from bijux_ontology.models.emission.types import ModelUsage
-from bijux_ontology.reports import Issue, Report, combine_reports
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 if TYPE_CHECKING:
     from pydantic import BaseModel

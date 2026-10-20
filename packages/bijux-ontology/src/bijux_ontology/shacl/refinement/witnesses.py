@@ -6,21 +6,21 @@ from rdflib import BNode, Dataset, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.diagnostics.errors import LimitExceeded
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.rdf.literals import check_literal
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.literals.checking import check_literal
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.checking import ShaclResult
+from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.refinement.normalization import (
     Branch,
     Obligation,
     Unsupported,
 )
 from bijux_ontology.shacl.refinement.types import RefinementContract
-from bijux_ontology.shacl.session import ShaclSession
 
 _BASE = "urn:bijux:ontology:refinement:"
 

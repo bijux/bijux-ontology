@@ -3,8 +3,9 @@
 from collections.abc import Sequence
 from typing import Literal, cast
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import (
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
@@ -12,7 +13,6 @@ from bijux_ontology.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.languages.matching import _lookup, _range, _tag
 
 from .reading import reserve

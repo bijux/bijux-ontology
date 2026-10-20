@@ -4,10 +4,10 @@ import json
 from dataclasses import dataclass
 from typing import ClassVar, TypeAlias, TypeVar
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.paths import SourcePath
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.json.paths import SourcePath
 from bijux_ontology.rdf.patches.types import PatchResource, SnapshotWitness
-from bijux_ontology.reports import Issue, Report
 
 _T = TypeVar("_T", bound="_Owned")
 

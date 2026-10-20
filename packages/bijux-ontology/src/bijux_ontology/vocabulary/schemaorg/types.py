@@ -7,12 +7,12 @@ from typing import Literal as Choice
 from rdflib import BNode, Literal, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text
-from bijux_ontology.reports import Report
+from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.terms import bound_node
 
 Triple = tuple[Node, Node, Node]
 Mode = Choice["published", "application"]

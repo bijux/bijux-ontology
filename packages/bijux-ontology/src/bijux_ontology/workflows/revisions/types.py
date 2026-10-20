@@ -5,15 +5,15 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from threading import Lock
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.persistence.types import (
     ModelPreparationArtifact,
     PreparationIdentity,
 )
-from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Report
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.execution.results import ShaclResult
 
 

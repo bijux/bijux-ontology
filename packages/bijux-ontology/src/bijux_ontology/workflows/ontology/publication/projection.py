@@ -10,25 +10,33 @@ from rdflib import BNode, Dataset, Graph, URIRef
 from rdflib.namespace import RDF, RDFS, SKOS
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, MigrationCheck
 from bijux_ontology.rdf.patches.planning import capture_source, plan_rdf_patch
 from bijux_ontology.rdf.patches.types import BlankNodePair, PatchUnavailable
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.rdf.transforms import Transformation, _bind
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.skos.structure import _MAPPINGS, _RELATIONS
 from bijux_ontology.skos.subsets.selection import select_concepts
 from bijux_ontology.skos.xl import ROLES, XL, describe_xl_label
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
+from bijux_ontology.vocabulary.browsing.results import Edge
 from bijux_ontology.vocabulary.collections.expansion import expand_collection
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.upgrades.plans.execution import execute_migration_plan
 from bijux_ontology.workflows.upgrades.plans.types import (
     MigrationPlanResult,

@@ -6,9 +6,9 @@ from typing import Literal as Choice
 from rdflib import URIRef
 from rdflib.term import Node
 
-from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.models.contracts.preparation import PreparedModels
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 
 @dataclass(frozen=True)

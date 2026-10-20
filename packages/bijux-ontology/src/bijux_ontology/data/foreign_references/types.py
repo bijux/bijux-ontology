@@ -9,8 +9,8 @@ from rdflib.term import Node
 from bijux_ontology.data.keys.extraction import _Key
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.keys import KeyContract
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 
 
 @dataclass(frozen=True)

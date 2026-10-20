@@ -6,10 +6,10 @@ from collections.abc import Sequence
 
 from rdflib import Literal
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.terms import bound_node
 
 from .types import GeometryValue, SpatialDistance, SpatialRelation
 

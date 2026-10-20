@@ -7,12 +7,11 @@ from pathlib import Path
 from rdflib import BNode
 from rdflib import Literal as RdfLiteral
 
-from bijux_ontology._json import decode_json, known_keys, object_value
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.archive import bundle_reader, resource_path
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.json.values import decode_json, known_keys, object_value
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
 
 from .types import ProfileArtifact, ProfileParent, ProfileShapes, ValidationProfile
 

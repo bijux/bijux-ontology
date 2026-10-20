@@ -12,12 +12,12 @@ from bijux_ontology.declarations.resource_roles import (
     ResourceRole,
     RoleBridge,
 )
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.resource_roles import RoleUse, check_resource_roles
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.roles import classify_statement
 from bijux_ontology.rdf.roles.types import Statement
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 
 EX = Namespace("https://example.org/roles/")
 

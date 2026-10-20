@@ -6,25 +6,25 @@ from collections.abc import Sequence
 
 from rdflib import URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     retain_report,
 )
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import read_witness, witness_data
 from bijux_ontology.rdf.patches.correspondence import blank_tokens
 from bijux_ontology.rdf.patches.planning import capture_source, plan_rdf_patch
 from bijux_ontology.rdf.patches.types import SnapshotWitness
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.shacl.functions import ShaclFunctionCatalog
 
 from .preparation import RuleUnavailable, namespaces, selected_names, single_scope

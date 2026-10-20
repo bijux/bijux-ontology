@@ -9,16 +9,20 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Event
 
-from bijux_ontology._json import decode_json, object_value, own_json
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import (
+    Issue,
+    Report,
+    combine_reports,
+    report_from_data,
+)
+from bijux_ontology.execution.limits import Limits
+from bijux_ontology.execution.processes.transport import run_worker
 from bijux_ontology.interfaces.execution.checkpoints import (
     read_completed,
     read_deadline,
 )
-from bijux_ontology.interfaces.execution.protocol import report_from_data
-from bijux_ontology.interfaces.execution.transport import run_worker
-from bijux_ontology.limits import Limits
-from bijux_ontology.reports import Issue, Report, combine_reports
+from bijux_ontology.json.values import decode_json, object_value, own_json
 
 
 @dataclass(frozen=True)

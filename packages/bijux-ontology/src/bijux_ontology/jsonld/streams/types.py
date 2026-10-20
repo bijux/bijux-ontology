@@ -3,11 +3,11 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.preparation import JSONLDPreparation
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.jsonld.processing.preparation import JSONLDPreparation
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 RecordCheck = Callable[[PreparedSource, Budget], Report]
 

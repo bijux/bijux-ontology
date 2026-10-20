@@ -7,14 +7,20 @@ from typing import Literal
 from rdflib import Graph, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.profiles.execution import freeze_data as _data
 from bijux_ontology.shacl.profiles.execution import portable_roles as _portable_roles
@@ -147,7 +153,7 @@ def _changes(
             lg, le = _semantics(before, budget)
             rg, re = _semantics(after, budget)
             if le and re:
-                from bijux_ontology.rdf.loading import prepare_rdf
+                from bijux_ontology.rdf.sources.loading import prepare_rdf
 
                 same = _equal(
                     prepare_rdf(lg, budget=budget),

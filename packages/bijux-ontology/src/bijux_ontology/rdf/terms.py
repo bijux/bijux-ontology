@@ -7,9 +7,10 @@ from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
 
-from ..errors import InputError
-from ..limits import Budget
-from ..limits import bound_text as bound_text
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution import limits
+from bijux_ontology.execution.limits import Budget
+
 from .identifiers import absolute_iri, language_tag
 
 
@@ -72,10 +73,10 @@ def bound_node(node: Node, budget: Budget) -> None:
     """Bound existing RDF scalars without constructing a serialized statement."""
     if not isinstance(node, URIRef | BNode | Literal):
         raise InputError("Roles require RDF term inputs")
-    bound_text(node, budget)
+    limits.bound_text(node, budget)
     if isinstance(node, Literal):
-        bound_text(node.datatype or "", budget)
-        bound_text(node.language or "", budget)
+        limits.bound_text(node.datatype or "", budget)
+        limits.bound_text(node.language or "", budget)
     validate_node(node)
 
 

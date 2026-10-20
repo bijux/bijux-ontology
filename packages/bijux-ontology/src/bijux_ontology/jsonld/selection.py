@@ -7,17 +7,17 @@ from copy import deepcopy
 from dataclasses import replace
 from typing import cast
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.observations import (
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.json.paths import SourcePath, at_path, location
+from bijux_ontology.jsonld.evidence.occurrences import (
     ObservedOccurrence,
     ObservedUsage,
     occurrences,
 )
-from bijux_ontology.jsonld.paths import SourcePath, at_path, location
-from bijux_ontology.limits import Budget
+from bijux_ontology.jsonld.processing.resources import context_is_unscoped
 
 from .projections import NamedProjections
-from .resources import context_is_unscoped
 
 Expansion = Callable[[object], list[dict[str, object]]]
 

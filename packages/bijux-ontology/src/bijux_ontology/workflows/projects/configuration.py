@@ -6,19 +6,23 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import cast
 
-from bijux_ontology._json import (
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import (
+    AcceptancePolicy,
+    IssueSelection,
+    Severity,
+)
+from bijux_ontology.execution.limits import Limits
+from bijux_ontology.json.values import (
     known_keys,
     object_value,
     own_json,
     read_json,
     text_value,
 )
-from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.resources import DocumentLocation
-from bijux_ontology.limits import Limits
+from bijux_ontology.jsonld.processing.resources import DocumentLocation
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import AcceptancePolicy, IssueSelection, Severity
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.workflows.projects.jobs import (
     APPLICATION_KINDS,
     check_kind,

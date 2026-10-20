@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.models.preparation import PreparedModels
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.models.contracts.preparation import PreparedModels
 
 
 def _digest(value: str) -> None:

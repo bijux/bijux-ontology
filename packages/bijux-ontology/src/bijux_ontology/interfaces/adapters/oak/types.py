@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 Adapter = TypeVar("Adapter")
 

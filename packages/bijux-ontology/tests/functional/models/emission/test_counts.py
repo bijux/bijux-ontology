@@ -13,12 +13,12 @@ from bijux_ontology.declarations import (
 )
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.declarations.types import OutputRequirement
-from bijux_ontology.errors import InputError
-from bijux_ontology.models import ModelUsage, check_emission
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
-from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = "https://example.org/"
 

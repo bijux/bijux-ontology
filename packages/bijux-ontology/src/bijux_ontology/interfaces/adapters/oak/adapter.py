@@ -11,13 +11,13 @@ from oaklib.interfaces import BasicOntologyInterface  # type: ignore[import-unty
 from rdflib import Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.obo.reading import read_obo_records
 from bijux_ontology.vocabulary.obo.subsets.reading import read_obo_subsets
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry

@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 from rdflib import URIRef
 
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.fhir.code_system import read_code_system
 from bijux_ontology.interfaces.adapters.fhir.concept_map import (
     FhirConceptMap,
@@ -25,7 +26,6 @@ from bijux_ontology.interfaces.adapters.fhir.identity import (
     FhirCodeIdentity,
 )
 from bijux_ontology.interfaces.adapters.fhir.value_set import read_value_set
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.vocabulary.mappings import read_sssom
 
 NATIVE = importlib.util.find_spec("fhir") is not None

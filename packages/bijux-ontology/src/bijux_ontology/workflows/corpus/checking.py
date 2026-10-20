@@ -11,11 +11,12 @@ from rdflib import URIRef
 from bijux_ontology.data.keys.checking import check_record_keys
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.keys import KeyContract
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
@@ -26,8 +27,7 @@ from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.models.persistence.codecs import json_bytes
 from bijux_ontology.models.persistence.identity import _source
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Issue, Report, combine_reports
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.workflows.revisions.management import RevisionLease
 
 from .storage import Checkpoint, eligible

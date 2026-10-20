@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.types import (
     MappingPolicy,

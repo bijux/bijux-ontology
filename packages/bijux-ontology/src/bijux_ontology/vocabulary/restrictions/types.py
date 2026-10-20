@@ -6,8 +6,8 @@ from typing import Literal
 from rdflib import URIRef
 from rdflib.term import Node
 
-from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.vocabulary.browsing.results import Edge
 
 
 @dataclass(frozen=True)

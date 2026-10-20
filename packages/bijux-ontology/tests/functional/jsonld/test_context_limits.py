@@ -5,19 +5,19 @@ from pathlib import Path
 
 import pytest
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.checking import check_context, prepare_usages
-from bijux_ontology.jsonld.conversion import convert_to_rdf
-from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.jsonld.processing.conversion import convert_to_rdf
+from bijux_ontology.jsonld.processing.expansion import expand_document
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     OfflineDocumentLoader,
     context_document_loader,
     context_resources,
 )
-from bijux_ontology.limits import Budget, Limits
 
 EX = "https://example.org/"
 

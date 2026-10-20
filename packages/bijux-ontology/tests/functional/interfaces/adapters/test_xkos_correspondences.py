@@ -2,6 +2,7 @@
 
 from rdflib import RDF, SKOS, BNode, Dataset, Graph, Literal, URIRef
 
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.xkos.correspondences import (
     AssociationRequirement,
     ClassificationRelease,
@@ -12,12 +13,11 @@ from bijux_ontology.interfaces.adapters.xkos.correspondences import (
     write_correspondence,
 )
 from bijux_ontology.interfaces.adapters.xkos.correspondences.types import XKOS as X
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.values.types import ValueMap
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 T = URIRef("urn:correspondence:table")
 OLD = URIRef("urn:classification:old")

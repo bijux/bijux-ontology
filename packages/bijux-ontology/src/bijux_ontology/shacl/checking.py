@@ -5,11 +5,11 @@ from math import isfinite
 
 from rdflib import Graph
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.bindings import TermSelection, transport_roles
 from bijux_ontology.shacl.capabilities import (
     ShaclConstraintRequirement,
@@ -30,12 +30,12 @@ from bijux_ontology.shacl.execution.projection import (
     _retained_result,
 )
 from bijux_ontology.shacl.execution.results import ShaclResult as ShaclResult
+from bijux_ontology.shacl.execution.transport import execute_backend
 from bijux_ontology.shacl.findings import ShaclFinding as ShaclFinding
 from bijux_ontology.shacl.findings import ShaclSource
 from bijux_ontology.shacl.functions import (
     ShaclFunctionCatalog,
 )
-from bijux_ontology.shacl.transport import execute_backend
 
 
 def validate_shapes(

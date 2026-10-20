@@ -1,10 +1,10 @@
 """Shared precedence and truthful materialization of explicit output metadata."""
 
 from bijux_ontology.declarations.types import FieldDeclaration, ValueDeclaration
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import IssueCollector
 from bijux_ontology.interfaces.adapters.contracts import RdfField
-from bijux_ontology.limits import IssueCollector
-from bijux_ontology.reports import Issue
 
 
 def select_contract(

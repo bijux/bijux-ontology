@@ -12,24 +12,23 @@ from types import MappingProxyType
 
 from rdflib import ConjunctiveGraph, Dataset, Graph
 
-from bijux_ontology._json import _decode_json, own_json
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.values import _decode_json, own_json
+from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,
     DocumentLocation,
     OfflineDocument,
     OfflineDocumentLoader,
 )
-from bijux_ontology.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.loading import prepare_input
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.rdf.sources.loading import prepare_input
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 

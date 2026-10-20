@@ -5,8 +5,8 @@ from typing import Literal, TypeAlias
 
 from rdflib import BNode, URIRef
 
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.rdf.queries.protocol import QueryTerm
-from bijux_ontology.reports import Issue, Report
 
 GlobalCheck: TypeAlias = Literal["shapes", "identity", "cardinality"]
 

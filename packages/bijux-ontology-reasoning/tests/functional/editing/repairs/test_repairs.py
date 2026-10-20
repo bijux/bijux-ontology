@@ -18,7 +18,7 @@ from bijux_ontology_reasoning.inference.explanations import (
     explain_reasoning,
 )
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 
 A, B, C = (NamedEntity("class", "urn:" + name) for name in ("A", "B", "C"))
 AB = SubClassOf(A, B, ())

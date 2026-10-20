@@ -4,15 +4,15 @@ import json
 from pathlib import Path
 from typing import Literal, cast
 
-from bijux_ontology._json import (
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.json.values import (
     decode_json,
     known_keys,
     object_value,
     own_json,
     text_value,
 )
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import read_term
 

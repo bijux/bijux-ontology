@@ -6,7 +6,7 @@ from decimal import Decimal
 from pyparsing import ParseBaseException
 from rdflib.plugins.sparql.parser import parseQuery
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 

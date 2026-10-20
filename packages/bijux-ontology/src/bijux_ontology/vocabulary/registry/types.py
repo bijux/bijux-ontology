@@ -7,10 +7,10 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import cast
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Issue
-from bijux_ontology.vocabulary.identifiers import compact_iri, expand_curie
+from bijux_ontology.vocabulary.registry.prefixes import compact_iri, expand_curie
 
 
 def _prefix(value: str) -> str:

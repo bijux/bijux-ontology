@@ -4,11 +4,11 @@ import json
 from importlib import import_module
 from typing import cast
 
-from bijux_ontology._json import array_value, object_value, text_value
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.json.values import array_value, object_value, text_value
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.reports import Issue, Report
 
 from ..code_system.reading import _operation as operation
 from ..identity import FhirCodeIdentity

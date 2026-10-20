@@ -9,12 +9,12 @@ from rdflib.term import Node
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, bound_text
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
-from bijux_ontology.rdf.patterns import matches_pattern
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
+from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
+from bijux_ontology.rdf.literals.patterns import matches_pattern
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.reports import Report
 
 
 def _text(value: str, budget: Budget) -> str:

@@ -6,10 +6,10 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, XSD
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, BudgetKind, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, BudgetKind, Limits
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.external_reports import (
     ExternalShaclReport,

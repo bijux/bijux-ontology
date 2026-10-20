@@ -9,8 +9,8 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import SubjectIdentity
-from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.paths import SourcePath
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.json.paths import SourcePath
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 

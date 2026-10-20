@@ -4,10 +4,10 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Literal, cast
 
-from bijux_ontology._json import object_value
-from bijux_ontology.errors import ResourceError
-from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.reports import Issue
+from bijux_ontology.diagnostics.errors import ResourceError
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import Budget, IssueCollector
+from bijux_ontology.json.values import object_value
 
 from ...documents.types import OwlDocument
 from ..types import LoaderQualification, ProfileDocument, ReasonerIdentity

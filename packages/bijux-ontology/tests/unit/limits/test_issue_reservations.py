@@ -7,16 +7,16 @@ import weakref
 
 import pytest
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Location, Report, report_from_data
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
-from bijux_ontology.reports import Issue, Location, Report, report_from_data
 
 
 def test_nested_transfers_survive_full_budget_but_local_repetition_still_costs() -> (

@@ -6,11 +6,11 @@ from rdflib import RDF, Literal
 
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.types import OutputRequirement
-from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.observations import ObservedOccurrence
-from bijux_ontology.limits import Budget
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.reports import Issue
 
 
 def check_occurrences(

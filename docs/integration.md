@@ -511,7 +511,7 @@ selected retention, with no whole-dataset equivalence or pure-subset guarantee.
 runs in process; `WorkerExecutor.run("framing", ...)` supplies explicit isolated
 deadlines and cancellation using the same offline resource protocol.
 
-Loading errors expose `InputError.failure` from `bijux_ontology.errors`: the
+Loading errors expose `InputError.failure` from `bijux_ontology.diagnostics.errors`: the
 logical document IRI, supplied location and role, known import chain, and any
 parser-provided span. Pass `location=` and `role=` on `RdfSource` when available.
 Reports retain these as `Issue.details.failure`, independently of the job's

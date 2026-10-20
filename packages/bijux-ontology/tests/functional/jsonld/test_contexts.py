@@ -7,9 +7,9 @@ import pytest
 from pyld import jsonld  # type: ignore[import-untyped]
 
 from bijux_ontology.jsonld.checking import check_context
-from bijux_ontology.jsonld.expansion import expand_document
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.jsonld.processing.expansion import expand_document
+from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
     OfflineDocumentLoader,
     context_document_loader,
@@ -321,7 +321,7 @@ def test_drop_policy_is_exact_retains_observations_and_never_hides_unknown_terms
     None
 ):
     from bijux_ontology.jsonld.checking import prepare_usages
-    from bijux_ontology.jsonld.conversion import convert_to_rdf
+    from bijux_ontology.jsonld.processing.conversion import convert_to_rdf
 
     document = {"@context": {"p": EX + "p"}, "p": "kept", "ignored": "omitted"}
     prepared = prepare_usages(document, allowed_drops=frozenset({"ignored"}))
@@ -364,8 +364,8 @@ def test_native_processing_defects_withhold_proof_and_preserve_caller_type_error
     None
 ):
     """Actual malformed native input cannot crash or become a semantic success."""
-    from bijux_ontology.errors import ResourceError
-    from bijux_ontology.jsonld.preparation import prepare_jsonld
+    from bijux_ontology.diagnostics.errors import ResourceError
+    from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 
     document = {"@context": {"label": {"@id": []}}, "label": "x"}
     with pytest.raises(ResourceError, match="without a semantic input diagnostic"):

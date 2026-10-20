@@ -7,15 +7,24 @@ from types import MappingProxyType
 from rdflib import Literal, URIRef
 from rdflib.namespace import OWL, RDFS
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.terms import bound_node, bound_text
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.navigation import traverse
-from bijux_ontology.vocabulary.results import Edge
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.rdf.terms import bound_node
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
+from bijux_ontology.vocabulary.browsing.navigation import traverse
+from bijux_ontology.vocabulary.browsing.results import Edge
+from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import SdrfOntology, SdrfTerm
 

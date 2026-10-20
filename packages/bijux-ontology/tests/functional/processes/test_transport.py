@@ -1,18 +1,22 @@
 """Opaque request pipes preserve bytes and bound both worker output streams."""
 
+import os
+import signal
 import subprocess
 import sys
 import time
 from collections.abc import Sequence
-from threading import Event
+from contextlib import suppress
+from pathlib import Path
+from threading import Event, Thread
 from typing import Any, cast
 
 import pytest
 from rdflib import Graph
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.processes.transport import exchange_worker, run_worker
+from bijux_ontology.execution.processes.transport import exchange_worker, run_worker
 from bijux_ontology.shacl.checking import validate_shapes
 
 
@@ -162,7 +166,7 @@ def test_real_shacl_report_requires_successful_worker_exit_and_recovers(
     owned: list[subprocess.Popen[bytes]] = []
     program = """import runpy
 try:
-    runpy.run_module('bijux_ontology.shacl.worker', run_name='__main__')
+    runpy.run_module('bijux_ontology.shacl.execution.worker', run_name='__main__')
 except SystemExit as result:
     if result.code not in (0, None):
         raise
@@ -175,7 +179,7 @@ raise SystemExit(7)
         for index in range(len(arguments) - 1):
             if arguments[index : index + 2] == [
                 "-m",
-                "bijux_ontology.shacl.worker",
+                "bijux_ontology.shacl.execution.worker",
             ]:
                 arguments[index : index + 2] = ["-c", program]
                 process = original(arguments, **kwargs)
@@ -190,3 +194,74 @@ raise SystemExit(7)
     assert failed.report.outcome == "unverified" and not failed.report.verified
     assert failed.conforms is None and not failed.report.complete
     assert validate_shapes(data, shapes).report.verified
+
+
+@pytest.mark.skipif(os.name != "posix", reason="Requires detached POSIX pipe holders")
+@pytest.mark.parametrize("binary", [False, True])
+@pytest.mark.parametrize("cancelled", [False, True])
+def test_exited_leader_cannot_certify_unfinished_pipes(
+    binary: bool, cancelled: bool, tmp_path: Path
+) -> None:
+    """A zero leader exit cannot certify pipes still held outside its group."""
+    receipt = tmp_path / "holder.pid"
+    holder = (
+        "import os,time; from pathlib import Path; "
+        f"Path({str(receipt)!r}).write_text(str(os.getpid())); "
+        "time.sleep(3); os.write(1,b'LATE'); time.sleep(30)"
+    )
+    leader = (
+        "import subprocess,sys,time; from pathlib import Path; "
+        "sys.stdout.buffer.write(b'A'*8192); sys.stdout.buffer.flush(); "
+        f"subprocess.Popen([sys.executable,'-I','-B','-c',{holder!r}], "
+        "start_new_session=True); "
+        f"p=Path({str(receipt)!r}); "
+        "exec('while not p.exists(): time.sleep(.001)')"
+    )
+    command = [sys.executable, "-I", "-B", "-c", leader]
+    cancel, finished = Event(), Event()
+
+    def cancel_ready() -> None:
+        """Request cancellation only after the actual detached holder exists."""
+        while not receipt.exists() and not finished.wait(0.005):
+            pass
+        if not finished.is_set():
+            cancel.set()
+
+    watcher = Thread(target=cancel_ready, daemon=True) if cancelled else None
+    if watcher is not None:
+        watcher.start()
+    try:
+        if binary:
+            error_type = LimitExceeded if cancelled else ResourceError
+            with pytest.raises(error_type) as failed:
+                exchange_worker(command, b"", cap=16384, timeout=8, cancel=cancel)
+            assert "pipes remain held" in str(failed.value)
+            if cancelled:
+                assert "cancelled" in str(failed.value)
+        elif cancelled:
+            _, stopped, detail = run_worker(
+                command, cap=16384, timeout=8, cancellation=cancel
+            )
+            assert stopped == "execution.cancelled"
+            assert "pipes remain held" in detail
+        else:
+            with pytest.raises(ResourceError, match="pipes remain held"):
+                run_worker(command, cap=16384, timeout=8, cancellation=None)
+        assert receipt.exists()
+        os.kill(int(receipt.read_text()), 0)
+    finally:
+        finished.set()
+        if watcher is not None:
+            watcher.join(timeout=1)
+        if receipt.exists():
+            with suppress(ProcessLookupError):
+                os.kill(int(receipt.read_text()), signal.SIGKILL)
+    assert (
+        exchange_worker(
+            [sys.executable, "-I", "-B", "-c", "print('complete',end='')"],
+            b"",
+            cap=128,
+            timeout=3,
+        )
+        == b"complete"
+    )

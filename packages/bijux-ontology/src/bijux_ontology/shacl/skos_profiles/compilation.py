@@ -5,11 +5,17 @@ import hashlib
 from rdflib import Literal, URIRef
 from rdflib.namespace import RDF, SKOS, XSD
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.rdf.terms import bound_node, bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.parameters import ShaclParameter
 from bijux_ontology.shacl.authoring.types import (

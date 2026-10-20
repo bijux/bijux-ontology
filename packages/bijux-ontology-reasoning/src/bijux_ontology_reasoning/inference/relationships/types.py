@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 from ...axioms.types import DataProperty, NamedEntity, ObjectProperty
 from ...backend.types import (

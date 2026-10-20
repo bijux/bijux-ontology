@@ -9,10 +9,10 @@ from typing import cast
 
 import pytest
 
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.execution.executor import WorkerExecutor
 from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.codecs import expectations_from_data
-from bijux_ontology.limits import Limits
 
 
 def test_supported_operations_agree_and_resources_stay_explicit(tmp_path: Path) -> None:
@@ -28,7 +28,7 @@ def test_supported_operations_agree_and_resources_stay_explicit(tmp_path: Path) 
             "expectations": expectations,
         },
     )
-    from bijux_ontology.jsonld.resources import OfflineDocumentLoader
+    from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 
     direct = check_context(
         document,
@@ -395,7 +395,7 @@ def test_isolated_project_native_jobs_stay_owned_and_honor_timeout(
                 and any(
                     name in command
                     for name in (
-                        "bijux_ontology.shacl.worker",
+                        "bijux_ontology.shacl.execution.worker",
                         "bijux_ontology.rdf.queries.worker",
                     )
                 )

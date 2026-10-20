@@ -3,8 +3,8 @@
 import re
 from collections.abc import Iterator
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.identifiers import language_tag
 
 _BASIC = re.compile(r"(?:[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*|\*)\Z")

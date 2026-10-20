@@ -10,15 +10,15 @@ from bijux_ontology.declarations import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.vocabulary import load_vocabulary
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.obo import resolve_alternative_ids
 from bijux_ontology.vocabulary.registry import IdentifierRegistry, NamespaceContribution
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 E = Namespace("urn:accession:")
 ALIAS = URIRef("http://www.geneontology.org/formats/oboInOwl#hasAlternativeId")

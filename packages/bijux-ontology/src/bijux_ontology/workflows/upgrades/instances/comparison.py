@@ -6,10 +6,17 @@ from itertools import chain
 
 from rdflib import BNode, Literal, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.patches.correspondence import compare_witnesses
 from bijux_ontology.rdf.patches.planning import (
     Captured,
@@ -28,13 +35,12 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     PatchValue,
 )
-from bijux_ontology.rdf.paths import RdfPath, capture_path
-from bijux_ontology.rdf.terms import bound_text, literal_term
+from bijux_ontology.rdf.paths.types import RdfPath, capture_path
+from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values
 from bijux_ontology.rdf.value_comparison.types import (
     LiteralValueComparison,
 )
-from bijux_ontology.reports import Issue, Report
 
 from .observations import (
     EntityKey,

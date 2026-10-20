@@ -15,7 +15,7 @@ from bijux_ontology_reasoning.theories.integration import (
 )
 from rdflib import URIRef
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 
 A = URIRef("urn:A")
 DECLARATIONS = " ".join(

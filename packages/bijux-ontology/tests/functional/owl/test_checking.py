@@ -4,7 +4,7 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
-from bijux_ontology.vocabulary import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
 
 EX = Namespace("https://example.org/")

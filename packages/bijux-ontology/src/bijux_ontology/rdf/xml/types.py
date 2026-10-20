@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
 
 XMLEncoding = Literal["utf-8", "utf-16-le", "utf-16-be"]
 

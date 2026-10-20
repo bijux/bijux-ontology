@@ -6,14 +6,15 @@ from dataclasses import dataclass
 from bijux_ontology.declarations.types import (
     ModelDeclaration,
 )
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
+from bijux_ontology.json.paths import bound_index, bound_path
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
-from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.jsonld.paths import bound_index, bound_path
-from bijux_ontology.jsonld.preparation import prepare_jsonld
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.limits import Budget, IssueCollector
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
+from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.serialization import (
     InstanceCheck,
     check_instance,
@@ -21,11 +22,10 @@ from bijux_ontology.models.emission.serialization import (
 )
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.checking import check_resource_roles
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.checking import check_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.upgrades.uses import UseIndex, index_uses
 
 from .types import (

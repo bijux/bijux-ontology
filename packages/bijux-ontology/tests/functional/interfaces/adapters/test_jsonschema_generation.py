@@ -16,6 +16,7 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.jsonschema import (
     check_instance as check_schema_instance,
 )
@@ -26,7 +27,6 @@ from bijux_ontology.interfaces.adapters.jsonschema.generation import (
     JsonRepresentation,
     compile_output_schema,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.serialization import check_instance
 from bijux_ontology.models.emission.types import ModelUsage
 

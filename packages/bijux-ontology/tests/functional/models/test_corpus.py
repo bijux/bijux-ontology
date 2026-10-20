@@ -15,8 +15,8 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Limits
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.models.corpus import (
     BranchCoverage,
     ScenarioCoverage,

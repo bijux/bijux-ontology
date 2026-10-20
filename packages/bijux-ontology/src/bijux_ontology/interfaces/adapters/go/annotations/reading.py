@@ -19,19 +19,24 @@ from bijux_ontology.data.foreign_references.types import (
 )
 from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
-from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import (
+from bijux_ontology.diagnostics.errors import (
     InputError,
     InputFailure,
     LimitExceeded,
     ResourceError,
     SourceSpan,
 )
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
+from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Location, Report
 
 from .types import (
     GoAnnotation,

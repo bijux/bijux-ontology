@@ -6,21 +6,27 @@ from typing import Literal, cast
 
 from rdflib import Dataset, Graph, URIRef
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.queries import QueryScope
 from bijux_ontology.rdf.queries.access import _graphs
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource, copy_graph
-from bijux_ontology.rdf.sources import Payload, RdfSource
-from bijux_ontology.rdf.terms import bound_node, bound_text
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource, copy_graph
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.rdf.workloads.qualification import _engine, _plan
 from bijux_ontology.rdf.workloads.types import EngineConfig, WorkloadQuery
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.imports import required_imports
-from bijux_ontology.vocabulary.sources import OwnedSource
+from bijux_ontology.vocabulary.sources.imports import required_imports
+from bijux_ontology.vocabulary.sources.types import OwnedSource
 
 from .execution import generate_query
 from .types import (

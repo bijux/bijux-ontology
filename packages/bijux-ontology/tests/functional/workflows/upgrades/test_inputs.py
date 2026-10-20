@@ -7,8 +7,8 @@ import pytest
 from rdflib import Graph
 
 from bijux_ontology.declarations import TermDeclaration
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.vocabulary.comparison import compare_vocabularies
 from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 from bijux_ontology.workflows.upgrades.uses import index_uses

@@ -3,15 +3,15 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from bijux_ontology._jsonpaths import SourcePath
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.interfaces.adapters.fhir.code_system.types import (
     FhirCodeMembership,
     FhirCodeSystem,
 )
 from bijux_ontology.interfaces.adapters.fhir.identity import FhirCodeIdentity
 from bijux_ontology.interfaces.adapters.fhir.value_set.types import FhirValueSet
-from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.results import Annotation, Selection
+from bijux_ontology.json.paths import SourcePath
+from bijux_ontology.vocabulary.browsing.results import Annotation, Selection
 
 
 @dataclass(frozen=True)

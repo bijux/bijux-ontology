@@ -7,8 +7,8 @@ from typing import cast
 
 from rdflib import BNode, Graph
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.answers import (
     AnswerArtifact,
     AnswerFormat,

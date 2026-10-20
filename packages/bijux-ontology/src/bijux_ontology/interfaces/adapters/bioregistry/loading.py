@@ -6,12 +6,12 @@ from collections.abc import Sequence
 from importlib.resources.abc import Traversable
 from pathlib import Path
 
-from bijux_ontology._json import _decode_json, own_json
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.archive import bundle_reader, resource_path
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.json.values import _decode_json, own_json
 from bijux_ontology.vocabulary.accessions.types import AccessionRule
 from bijux_ontology.vocabulary.registry.types import _prefix
 

@@ -5,10 +5,9 @@ from dataclasses import dataclass
 from typing import Literal
 
 from bijux_ontology.absence import Absent
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget, bound_text
 
 
 @dataclass(frozen=True)

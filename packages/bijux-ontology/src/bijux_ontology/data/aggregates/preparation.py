@@ -7,11 +7,11 @@ from rdflib import Literal, URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology.declarations.aggregates import AggregateContract
-from bijux_ontology.errors import InputError, ResourceError
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
-from bijux_ontology.rdf.paths import capture_path
-from bijux_ontology.rdf.terms import bound_node, bound_text, literal_term
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
+from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
+from bijux_ontology.rdf.paths.types import capture_path
+from bijux_ontology.rdf.terms import bound_node, literal_term
 
 
 def reserve(operation: Budget, count: int = 1) -> None:

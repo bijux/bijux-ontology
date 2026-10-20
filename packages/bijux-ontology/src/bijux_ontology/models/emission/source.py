@@ -5,14 +5,14 @@ from __future__ import annotations
 from dataclasses import replace
 
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.errors import InputError
-from bijux_ontology.jsonld.entities import object_key
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.json.paths import SourcePath, at_path, location
+from bijux_ontology.jsonld.evidence.entities import object_key
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.paths import SourcePath, at_path, location
 from bijux_ontology.models.emission.bindings import same_contribution
 from bijux_ontology.models.emission.counts import check_occurrences
 from bijux_ontology.models.emission.coverage import source_properties
-from bijux_ontology.reports import Issue
 
 from .context import EmissionContext
 from .entities import check_entity

@@ -6,15 +6,19 @@ from dataclasses import is_dataclass
 from importlib import import_module
 from typing import Any, cast
 
-from bijux_ontology._json import _measure
-from bijux_ontology._jsonpaths import SourcePath, bound_path
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.limits import Budget, IssueCollector, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.json.paths import SourcePath, bound_path
+from bijux_ontology.json.values import _measure
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Location, Report
 from bijux_ontology.vocabulary.languages.matching import matches_language
 
 from ..code_system.reading import read_code_system

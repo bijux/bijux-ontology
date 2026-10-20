@@ -4,8 +4,8 @@ from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import SKOS
 
 from bijux_ontology.skos.checking import check_skos
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.navigation import traverse
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.navigation import traverse
 
 EX = "https://example.org/"
 graph = Graph().parse(

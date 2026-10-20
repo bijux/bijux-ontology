@@ -3,10 +3,9 @@
 from decimal import Context, Decimal, DecimalException
 from sys import getsizeof
 
-from bijux_ontology._json import _decode_json
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.values import _decode_json
 
 
 class _Unavailable(InputError):

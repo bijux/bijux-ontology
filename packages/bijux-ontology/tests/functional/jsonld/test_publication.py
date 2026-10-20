@@ -2,9 +2,12 @@
 
 from dataclasses import replace
 
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.checking import check_context
 from bijux_ontology.jsonld.composition.types import ContextCase
 from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.publication import (
     ContextOverride,
     ContextPublication,
@@ -12,9 +15,6 @@ from bijux_ontology.jsonld.publication import (
     PublishedTerm,
     check_context_publication,
 )
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.reports import Report
 
 
 def _fixture() -> tuple[dict[str, object], PublicationContract]:

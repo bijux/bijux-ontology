@@ -7,8 +7,8 @@ from importlib.resources.abc import Traversable
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.limits import Budget, Limits
 
 
 def resource_path(name: object) -> str:

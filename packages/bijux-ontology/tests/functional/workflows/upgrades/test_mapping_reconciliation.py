@@ -8,8 +8,8 @@ import pytest
 from rdflib import Graph, Namespace
 from rdflib.namespace import RDF, SKOS
 
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.mappings import (
     MappingPolicy,
     MappingSet,

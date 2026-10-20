@@ -6,21 +6,26 @@ from dataclasses import fields, is_dataclass
 from math import isfinite
 from typing import Any, TypeVar, cast
 
-from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.paths import bound_index
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.json.paths import bound_index
+from bijux_ontology.json.values import own_json
+from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
     ContextResources,
     DocumentLoader,
     context_resources,
 )
-from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Location, Report
 
 from .types import (
     ContextDefaults,

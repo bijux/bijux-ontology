@@ -3,10 +3,10 @@
 import threading
 from collections.abc import Mapping, Sequence
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.workflows.projects.bundles import PreparedBundle, load_bundle
 
 from .conflicts import shape_conflicts

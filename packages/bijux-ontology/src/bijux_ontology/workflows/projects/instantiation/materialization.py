@@ -8,13 +8,18 @@ from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
 
-from bijux_ontology._json import decode_json, object_value
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.archive import resource_path
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.profiles.composition import compose_profile
 from bijux_ontology.workflows.projects.profiles.identity import identities

@@ -2,8 +2,8 @@
 
 from collections.abc import Callable
 
-from bijux_ontology._json import _decode_json
-from bijux_ontology.limits import Budget
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.json.values import _decode_json
 
 
 class UnsupportedJsonNumber(Exception):

@@ -10,6 +10,7 @@ from typing import Any, cast
 import pytest
 from rdflib import Literal, URIRef
 
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.export import write_export
 from bijux_ontology.documents.forms.types import FormRequirement
 from bijux_ontology.documents.relocation import (
@@ -17,11 +18,13 @@ from bijux_ontology.documents.relocation import (
     export_relocation,
     relocate_document,
 )
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.resources import OfflineDocument, OfflineDocumentLoader
+from bijux_ontology.jsonld.processing.resources import (
+    OfflineDocument,
+    OfflineDocumentLoader,
+)
 from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 
 OLD = "https://old.example/records/document.jsonld"

@@ -6,22 +6,25 @@ from hashlib import sha256
 from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import IssueCollector, bound_text, retain_report
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.execution.limits import IssueCollector, bound_text, retain_report
 from bijux_ontology.rdf.patches.types import PatchUnavailable
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
+from bijux_ontology.vocabulary.browsing.results import Edge
 from bijux_ontology.vocabulary.restrictions.projection import project_restrictions
-from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 from .types import GoTaxonReceipt, GoTaxonRelease, GoTaxonResource, TaxonConstraint, iri
 

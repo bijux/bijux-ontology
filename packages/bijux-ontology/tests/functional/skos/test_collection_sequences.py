@@ -7,12 +7,12 @@ from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import RDF, SKOS
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.skos.collections import check_collection_sequence
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.navigation import collection_members
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.navigation import collection_members
 
 EX = Namespace("https://example.org/")
 

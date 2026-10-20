@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING, Literal
 
 from rdflib import BNode, URIRef
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 
 from .seals import StoreFile
 
 if TYPE_CHECKING:
-    from bijux_ontology.rdf.snapshots import PreparedSource
+    from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 
 @dataclass(frozen=True, init=False)

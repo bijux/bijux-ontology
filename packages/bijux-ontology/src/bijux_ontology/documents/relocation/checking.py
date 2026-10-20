@@ -8,25 +8,30 @@ from typing import Literal, cast
 from rdflib import BNode, Variable
 from rdflib import Literal as RdfLiteral
 
-from bijux_ontology._json import owned_json
-from bijux_ontology._jsonpaths import bound_path
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.documents.export import RDFExport
 from bijux_ontology.documents.forms.checking import check_document_form
 from bijux_ontology.documents.forms.types import DocumentFormCheck, FormRequirement
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import operation
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.json.paths import bound_path
+from bijux_ontology.json.values import owned_json
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.comparison import compare_observed_usages
-from bijux_ontology.jsonld.conversion import DirectionPolicy
+from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.jsonld.resources import ContextResources, DocumentLoader
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.processing.resources import ContextResources, DocumentLoader
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Location, Report
 
 from .preparation import _Unsupported, candidate, declarations, resources
 from .types import DocumentRelocation

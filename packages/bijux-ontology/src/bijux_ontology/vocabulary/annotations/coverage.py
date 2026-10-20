@@ -7,14 +7,14 @@ from rdflib import Literal, URIRef
 from rdflib.term import Node
 
 from bijux_ontology.absence import Absent
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 
-from ..inspection import VocabularyView
 from ..languages.matching import matches_language
-from ..results import Edge, Selection
 from .types import (
     AnnotationCoverage,
     AnnotationRequirement,

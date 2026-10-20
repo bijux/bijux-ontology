@@ -7,6 +7,7 @@ from threading import Event
 import pytest
 from rdflib import Literal, URIRef
 
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.jena import JenaBackend, prepare_jena_backend
 from bijux_ontology.interfaces.adapters.jena.geosparql import (
     GeometryValue,
@@ -14,7 +15,6 @@ from bijux_ontology.interfaces.adapters.jena.geosparql import (
     SpatialRelation,
     check_geometries,
 )
-from bijux_ontology.limits import Budget, Limits
 
 CRS84 = "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
 EPSG4326 = "http://www.opengis.net/def/crs/EPSG/0/4326"

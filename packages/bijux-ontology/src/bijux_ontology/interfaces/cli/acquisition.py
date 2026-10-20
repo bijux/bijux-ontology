@@ -4,10 +4,10 @@ import argparse
 from dataclasses import asdict
 from pathlib import Path
 
-from bijux_ontology._json import decode_json
 from bijux_ontology.documents.archive import bundle_reader
 from bijux_ontology.interfaces.cli.inputs import command_limits, protect_inputs
 from bijux_ontology.interfaces.cli.results import CommandResult
+from bijux_ontology.json.values import decode_json
 from bijux_ontology.workflows.projects.acquisition.preparation import acquire_bundle
 from bijux_ontology.workflows.projects.acquisition.types import (
     AcquisitionPolicy,

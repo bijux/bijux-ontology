@@ -5,15 +5,20 @@ from threading import Event
 
 from rdflib import Graph
 
-from bijux_ontology._jsonpaths import bound_index
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.sources import Payload, RdfSource
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.json.paths import bound_index
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.bindings import TermSelection, transport_roles
 from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
@@ -25,8 +30,8 @@ from bijux_ontology.shacl.execution.planning import (
 )
 from bijux_ontology.shacl.execution.projection import _project_result
 from bijux_ontology.shacl.execution.results import ShaclResult
+from bijux_ontology.shacl.execution.session import _payload, _prepay_graph
 from bijux_ontology.shacl.findings import ShaclSource
-from bijux_ontology.shacl.session import _payload, _prepay_graph
 
 from ..runtime import invoke_jena
 from ..types import JenaBackend

@@ -4,11 +4,11 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 from rdflib.term import Node
 
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.structure import read_rdf_list
 
-from ..errors import InputError, LimitExceeded
-from ..reports import Issue
 from .constructs import unsupported_constructs
 
 _LIST_EXPRESSIONS = frozenset(

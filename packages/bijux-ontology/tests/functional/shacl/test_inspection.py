@@ -6,14 +6,14 @@ import pytest
 from rdflib import BNode, Namespace
 from rdflib.namespace import SH
 
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.paths import RdfPath
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.paths.types import RdfPath
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.authoring import (
     ShaclCount,
     ShaclLogical,

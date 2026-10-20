@@ -4,11 +4,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.jsonld.selectors.types import EntitySelector, SourceSelector
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 
 def _keys(values: Sequence[str], budget: Budget) -> tuple[str, ...]:

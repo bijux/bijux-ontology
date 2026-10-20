@@ -13,8 +13,9 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.fhir.code_system import (
     FhirCodeSystem,
     read_code_system,
@@ -29,7 +30,6 @@ from bijux_ontology.interfaces.adapters.fhir.value_set import (
     read_value_set,
     write_value_set,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 

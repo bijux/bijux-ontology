@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from rdflib import BNode, Literal, Namespace, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.results import TermInfo
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.vocabulary.browsing.results import TermInfo
 
 ONTOLEX = Namespace("http://www.w3.org/ns/lemon/ontolex#")
 Resource = URIRef | BNode

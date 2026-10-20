@@ -11,13 +11,17 @@ from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.term import Node
 
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.loading import _charge_graph
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource, copy_graph
-from bijux_ontology.rdf.sources import Payload, RdfSource
-from bijux_ontology.reports import Issue
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.sources.loading import _charge_graph
+from bijux_ontology.rdf.sources.snapshots import (
+    GraphSelection,
+    PreparedSource,
+    copy_graph,
+)
+from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.bindings import TermSelection, resolve_terms
 from bijux_ontology.shacl.capabilities import (
     ShaclConstraintRequirement,
@@ -33,7 +37,7 @@ from bijux_ontology.shacl.functions import (
 )
 from bijux_ontology.shacl.paths import decode_path
 from bijux_ontology.shacl.targets.preparation import prepare_targets
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 _UNSUPPORTED = frozenset(
     (

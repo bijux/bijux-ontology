@@ -6,17 +6,17 @@ import pytest
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.browsing import (
-    VocabularyCursor,
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.pages import (
     search_page,
     statements_page,
     terms_page,
 )
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.results import Edge, SearchMatch
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.browsing.results import Edge, SearchMatch
+from bijux_ontology.vocabulary.browsing.types import VocabularyCursor
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/")
 

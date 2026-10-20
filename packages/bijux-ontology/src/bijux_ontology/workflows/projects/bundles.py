@@ -7,22 +7,21 @@ from pathlib import Path
 from types import MappingProxyType
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from bijux_ontology._json import decode_json, object_value, text_value
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.archive import bundle_reader, resource_path
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.resources import (
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.json.values import decode_json, object_value, text_value
+from bijux_ontology.jsonld.processing.resources import (
     DocumentLoader,
     DocumentLocation,
     OfflineDocument,
     OfflineDocumentLoader,
     context_resources,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.rdf.sources.types import RdfSource
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.jobs import check_kind, input_paths
 
@@ -475,7 +474,7 @@ def load_bundle(
             limits=capped,
         )
     if contexts or context_inputs:
-        from bijux_ontology.jsonld.expansion import expand_document
+        from bijux_ontology.jsonld.processing.expansion import expand_document
 
         for iri in contexts:
             expand_document({"@context": iri}, document_loader=resources, limits=capped)

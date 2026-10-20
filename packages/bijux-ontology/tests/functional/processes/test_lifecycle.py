@@ -15,14 +15,14 @@ from typing import Any, cast
 import pytest
 from rdflib import Graph
 
-import bijux_ontology.processes.ownership as processes
-from bijux_ontology.errors import LimitExceeded, ResourceError
+import bijux_ontology.execution.processes.ownership as processes
+from bijux_ontology.diagnostics.errors import LimitExceeded, ResourceError
+from bijux_ontology.execution.limits import Limits
+from bijux_ontology.execution.processes import transport as worker_transport
+from bijux_ontology.execution.processes.transport import stop_process
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.interfaces.execution.transport import stop_process
-from bijux_ontology.limits import Limits
-from bijux_ontology.processes import transport as worker_transport
 from bijux_ontology.rdf.queries.access import QueryScope, query_rdf
-from bijux_ontology.shacl import transport as shacl_transport
+from bijux_ontology.shacl.execution import transport as shacl_transport
 
 pytestmark = pytest.mark.skipif(
     os.name != "posix", reason="Requires POSIX fault workers"
@@ -211,7 +211,7 @@ def test_normal_exit_cleanup_denial_retains_completed_findings(
     program = """import sys
 from pathlib import Path
 from bijux_ontology.interfaces.execution.checkpoints import retain_completed
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.diagnostics.reports import Issue, Report
 retain_completed(Report('completed', 1, (Issue('vocabulary.term_missing',
     'retained finding'),)), Path(sys.argv[1]).parent, max_bytes=50000)
 """
@@ -260,7 +260,7 @@ def test_shacl_failed_results_and_held_pipes_remain_bounded(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from bijux_ontology.shacl.session import ShaclSession
+    from bijux_ontology.shacl.execution.session import ShaclSession
 
     ready = tmp_path / "ready"
     child = (
@@ -353,7 +353,7 @@ def test_one_shot_shacl_timeout_reaps_its_real_nested_worker(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The one-shot boundary owns descendants even after its leader exits."""
-    from bijux_ontology.errors import LimitExceeded
+    from bijux_ontology.diagnostics.errors import LimitExceeded
 
     ready = tmp_path / "descendant.pid"
     child = (

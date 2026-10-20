@@ -6,8 +6,8 @@ from typing import Literal as LiteralType
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import RDF
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.terms import bound_node
 
 Resource = URIRef | BNode

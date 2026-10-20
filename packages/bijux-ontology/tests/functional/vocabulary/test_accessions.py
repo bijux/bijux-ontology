@@ -6,9 +6,9 @@ from typing import Any, cast
 import pytest
 from rdflib import BNode, Literal, URIRef
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.reports import Location
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Location
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.vocabulary.accessions import (
     AccessionRule,
     AccessionValue,

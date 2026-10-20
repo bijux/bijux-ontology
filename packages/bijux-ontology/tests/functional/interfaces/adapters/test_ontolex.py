@@ -5,6 +5,7 @@ from threading import Event
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.ontolex import (
     LexicalPolicy,
     Lexicon,
@@ -13,12 +14,11 @@ from bijux_ontology.interfaces.adapters.ontolex import (
     read_lexicon,
     write_lexicon,
 )
-from bijux_ontology.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 EX = Namespace("urn:ontolex-test:")
 ONTOLEX = Namespace("http://www.w3.org/ns/lemon/ontolex#")

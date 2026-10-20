@@ -6,9 +6,9 @@ from typing import Literal
 from rdflib import URIRef
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.vocabulary.browsing.results import Edge
 from bijux_ontology.vocabulary.restrictions.types import RestrictionProjection
-from bijux_ontology.vocabulary.results import Edge
 
 Role = Literal["class", "skos", "existential", "asserted"]
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass, fields, is_dataclass
 
 from rdflib import BNode, Literal, URIRef
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 
 @dataclass(frozen=True)

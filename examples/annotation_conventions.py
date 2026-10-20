@@ -3,9 +3,9 @@
 from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF
 
-from bijux_ontology.reports import Issue
 from bijux_ontology.data.rules import DataView, run_rules
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 
 EX = "https://example.org/"
 conventions = {

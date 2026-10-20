@@ -15,15 +15,15 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.migrations import MigrationCheck
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import literal_term
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.authoring.allocations import (
     AllocationPolicy,
     AllocationRequest,
@@ -126,7 +126,7 @@ from bijux_ontology.vocabulary.authoring.allocations import (
  AllocationPolicy,CuratorRange,AllocationStore,AllocationRequest,prepare_allocations
 )
 from bijux_ontology.rdf.migrations import MigrationCheck
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 E=Namespace('urn:allocated:')
 p=AllocationPolicy(IdentifierRegistry((NamespaceContribution(str(E),'LOC','alice',('L',)),NamespaceContribution(str(E),'LOC','bob'))),(CuratorRange('alice','LOC',1,9,3),CuratorRange('bob','LOC',20,29,3)),reserved=(E['002'],),retired=(E['003'],))
 s=AllocationStore(Path(sys.argv[1]),p)

@@ -3,10 +3,10 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from bijux_ontology.errors import InputError, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.execution.limits import bound_text
 from bijux_ontology.workflows.ontology.modules.types import ModuleBinding
 
 from ...axioms.changes.preconditions import qualify_base, source_base

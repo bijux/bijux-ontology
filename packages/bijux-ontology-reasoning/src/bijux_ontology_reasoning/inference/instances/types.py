@@ -6,10 +6,10 @@ from dataclasses import dataclass
 
 from rdflib import BNode, URIRef
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
-from bijux_ontology.vocabulary.sources import GraphKind
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.vocabulary.sources.types import GraphKind
 
 from ..consistency.types import ConsistencyCheck
 

@@ -4,10 +4,11 @@ import argparse
 from pathlib import Path
 from typing import cast
 
-from bijux_ontology._json import object_value
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.documents.export import export_rdf, write_export
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.interfaces.cli.inputs import (
     command_limits,
     input_paths,
@@ -17,16 +18,15 @@ from bijux_ontology.interfaces.cli.inputs import (
     rdf_input,
 )
 from bijux_ontology.interfaces.cli.results import CommandResult
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.json.values import object_value
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import (
     extract_neighbourhood,
     merge_sources,
     recheck_transformation,
     remap_iris,
 )
-from bijux_ontology.reports import Report, combine_reports
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.ontology.checking import check_ontology
 
 

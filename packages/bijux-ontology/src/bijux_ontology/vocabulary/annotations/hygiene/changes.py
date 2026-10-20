@@ -5,7 +5,7 @@ from typing import cast
 from rdflib import Literal
 from rdflib.namespace import OWL
 
-from bijux_ontology.limits import retain_report
+from bijux_ontology.execution.limits import retain_report
 from bijux_ontology.rdf.patches.planning import Rejected
 from bijux_ontology.rdf.patches.types import PatchQuad, PatchResource, PatchUnavailable
 from bijux_ontology.rdf.terms import literal_datatype

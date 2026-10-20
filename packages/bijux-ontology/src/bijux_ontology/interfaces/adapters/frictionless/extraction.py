@@ -13,20 +13,20 @@ from typing import cast
 
 from rdflib import Graph
 
-from bijux_ontology._json import _measure, decode_json
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.budgets import operation
-from bijux_ontology.limits import (
+from bijux_ontology.execution.limits import (
     Budget,
     BudgetKind,
     IssueCollector,
     Limits,
     bound_text,
 )
-from bijux_ontology.processes.transport import checkpoint, exchange_worker
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Issue, Location, Report
+from bijux_ontology.execution.processes.transport import checkpoint, exchange_worker
+from bijux_ontology.json.values import _measure, decode_json
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .profile import UnsupportedPackage, array, capture, object_value, text
 from .projection import bindings as capture_bindings

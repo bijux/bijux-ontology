@@ -7,10 +7,11 @@ from typing import Literal, cast
 from rdflib import BNode, URIRef
 from rdflib.namespace import RDF
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.patches.planning import _plan_captured_patch, capture_source
 from bijux_ontology.rdf.patches.types import (
     BlankNodePair,
@@ -22,8 +23,7 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     SnapshotWitness,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 from .types import (
     MergeChanges,

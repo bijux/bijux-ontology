@@ -8,14 +8,14 @@ from rdflib import Dataset, Graph, Literal, Namespace
 from rdflib.namespace import RDF, RDFS, XSD
 
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.shape_interchange import (
     check_interchange,
     shacl_to_shex,
     shex_to_shacl,
 )
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.authoring import (
     ShaclClosed,
     ShaclCount,

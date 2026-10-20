@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from rdflib import BNode, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Report
 from bijux_ontology.workflows.projects.contracts import ContractResult
 from bijux_ontology.workflows.projects.profiles.execution import EffectiveProfile
 from bijux_ontology.workflows.projects.profiles.loading import _items, _text

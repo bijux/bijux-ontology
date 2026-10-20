@@ -21,7 +21,7 @@ from bijux_ontology_reasoning.inference.explanations import (
 )
 from rdflib import URIRef
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 
 A, B, C = (NamedEntity("class", "urn:" + name) for name in ("A", "B", "C"))
 DECLARATIONS = """

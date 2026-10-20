@@ -12,7 +12,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.queries import QueryScope, query_rdf
 
 EX = Namespace("https://queries.example/")
@@ -65,7 +65,7 @@ def test_explicit_local_import_dataset_join_default_named_union_and_empty_graphs
 
 
 def test_pinned_scope_and_owned_blank_graph_names() -> None:
-    from bijux_ontology.rdf.sources import RdfSource
+    from bijux_ontology.rdf.sources.types import RdfSource
 
     pinned = prepare_source(RdfSource(_dataset(), graph_name=str(EX.imports)))
     assert query_rdf(

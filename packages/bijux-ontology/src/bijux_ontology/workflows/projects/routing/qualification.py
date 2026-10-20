@@ -4,8 +4,8 @@ from collections.abc import Mapping, Sequence
 
 from rdflib import URIRef
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, IssueCollector, retain_report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.workflows.projects.jobs import check_kind
 from bijux_ontology.workflows.projects.profiles.execution import _selected_inventory
 from bijux_ontology.workflows.projects.profiles.loading import _items, _text

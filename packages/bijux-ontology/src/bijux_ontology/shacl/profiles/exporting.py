@@ -1,9 +1,14 @@
 """Faithful portable RDF output for separately owned shape and ontology roles."""
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.export import RDFExport, export_rdf
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    retain_report,
+)
 
 from .types import ProfileExport, ShapeProfile
 

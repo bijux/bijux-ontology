@@ -7,15 +7,15 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF, SKOS
 from rdflib.term import Node
 
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.navigation import _ordered_collection_members
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.navigation import _ordered_collection_members
 
-from ..errors import InputError, LimitExceeded
-from ..reports import Issue, Report
 from .selection import CollectionScope
 
 

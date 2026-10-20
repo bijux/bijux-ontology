@@ -6,11 +6,11 @@ from typing import cast
 
 import pytest
 
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.jsonld.comparison import (
     compare_context_usages,
     compare_serializations,
 )
-from bijux_ontology.limits import Limits
 
 EX = "https://example.org/"
 

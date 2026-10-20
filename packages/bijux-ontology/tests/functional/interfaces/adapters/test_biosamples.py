@@ -12,6 +12,8 @@ from rdflib.namespace import OWL, RDF
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.types import TermDeclaration
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.interfaces.adapters.biosamples import (
     CORE_SHA256,
     CORE_VERSION,
@@ -21,8 +23,6 @@ from bijux_ontology.interfaces.adapters.biosamples import (
     check_sample,
     checking,
 )
-from bijux_ontology.limits import Budget
-from bijux_ontology.reports import Report
 from bijux_ontology.vocabulary.checking import check_vocabulary
 
 pytest.importorskip("jsonschema")

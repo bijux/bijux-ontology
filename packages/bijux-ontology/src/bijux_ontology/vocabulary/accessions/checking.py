@@ -3,11 +3,16 @@
 from collections.abc import Sequence
 from typing import Literal
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits, _issue_metadata
-from bijux_ontology.rdf.patterns import matches_pattern
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    _issue_metadata,
+    bound_text,
+)
+from bijux_ontology.rdf.literals.patterns import matches_pattern
 from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
 
 from .checksums import valid_checksum

@@ -15,12 +15,12 @@ import pyoxigraph as ox
 from rdflib import Literal
 from rdflib.namespace import RDF, XSD
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, IssueCollector
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.literals import check_literal
+from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.terms import validate_node
-from bijux_ontology.reports import Issue, Report
 
 from .types import ComparisonRegime, LiteralValueComparison, ValueRelation
 

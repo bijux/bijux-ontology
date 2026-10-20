@@ -5,10 +5,10 @@ from typing import Literal
 
 from rdflib import URIRef
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.authoring.types import ShaclNodeShape, ShaclPropertyShape
 from bijux_ontology.shacl.checking import ShaclResult
 from bijux_ontology.shacl.inspection.types import ShapeInspection

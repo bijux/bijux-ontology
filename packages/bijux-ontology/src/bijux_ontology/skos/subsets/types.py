@@ -7,11 +7,11 @@ from rdflib import URIRef
 from bijux_ontology.declarations.enumerations import ValueEnumeration
 from bijux_ontology.declarations.types import FieldDeclaration
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.errors import InputError
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.vocabulary.browsing.navigation import Membership
+from bijux_ontology.vocabulary.browsing.results import Deprecation
 from bijux_ontology.vocabulary.collections.types import CollectionOccurrence
-from bijux_ontology.vocabulary.navigation import Membership
-from bijux_ontology.vocabulary.results import Deprecation
 
 from ..publication.types import ConceptReachability
 

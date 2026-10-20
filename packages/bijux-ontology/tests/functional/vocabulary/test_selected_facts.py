@@ -7,11 +7,12 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import term_key
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.comparison import compare_vocabularies
 from bijux_ontology.vocabulary.facts import (
     FactGraph,
@@ -19,8 +20,7 @@ from bijux_ontology.vocabulary.facts import (
     FactSelection,
     compare_selected_facts,
 )
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = Namespace("urn:selected:")
 

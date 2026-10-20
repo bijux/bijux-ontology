@@ -7,14 +7,14 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import cast
 
-from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.jsonld.conversion import DirectionPolicy
-from bijux_ontology.limits import Budget, Limits, bound_text
-from bijux_ontology.rdf.literals import Regime
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.json.values import own_json
+from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.rdf.literals.checking import Regime
+from bijux_ontology.rdf.sources.types import RdfSource
 
 from .codecs import declaration_data, json_bytes
 from .types import PreparationIdentity

@@ -10,24 +10,29 @@ from typing import Any, cast
 
 from rdflib import BNode, Graph
 
-from bijux_ontology._json import decode_json, object_value
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.diagnostics.reports import issue_from_data as read_issue
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
+from bijux_ontology.execution.limits import (
+    BUDGET_KINDS,
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+)
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import BUDGET_KINDS, Budget, IssueCollector, Limits
+from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.loading import prepare_input
 from bijux_ontology.rdf.queries.access import QueryScope
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_input
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.stores.seals import verify_files
 from bijux_ontology.rdf.stores.types import StoredRdf
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.reports import issue_from_data as read_issue
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .protocol import read_statement, stored_data
 from .types import GlobalCheck, StreamCheck, StreamFinding

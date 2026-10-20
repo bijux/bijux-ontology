@@ -12,20 +12,20 @@ from rdflib import Literal as RdfLiteral
 from rdflib.collection import Collection
 from rdflib.namespace import RDF, SKOS, XSD
 
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.documents.export import write_export
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.loading import prepare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
-from bijux_ontology.rdf.sources import RdfSource
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.collections import check_collection_sequence
 from bijux_ontology.skos.publication.roots import check_top_concepts
 from bijux_ontology.skos.publication.types import TopConceptPolicy
 from bijux_ontology.skos.xl import XL
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.workflows.ontology.publication import (
     SkosPublication,
     compile_skos_publication,

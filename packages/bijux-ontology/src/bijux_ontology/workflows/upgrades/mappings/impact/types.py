@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.types import MappingSet
 

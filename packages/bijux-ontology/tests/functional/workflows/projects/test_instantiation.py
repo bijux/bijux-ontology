@@ -9,7 +9,7 @@ from typing import cast
 from rdflib import Literal, URIRef
 from rdflib.namespace import SH
 
-from bijux_ontology.limits import Limits
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (

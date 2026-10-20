@@ -6,15 +6,14 @@ from itertools import chain
 from rdflib import URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
-from bijux_ontology._json import decode_json, object_value
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.roles.classification import classify_statement, declaration_role
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import MappingCheck, MappingPolicy, MappingSet, _iri, _iris
 

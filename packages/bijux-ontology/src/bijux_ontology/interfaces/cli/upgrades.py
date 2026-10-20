@@ -8,7 +8,8 @@ from bijux_ontology.declarations.codecs import (
     models_from_data,
     terms_from_data,
 )
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Location, Report, combine_reports
 from bijux_ontology.interfaces.cli.arguments import vocabulary_input
 from bijux_ontology.interfaces.cli.inputs import (
     UnsafeOutput,
@@ -23,9 +24,8 @@ from bijux_ontology.interfaces.cli.vocabularies import load_command_vocabulary
 from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.codecs import expectations_from_data
 from bijux_ontology.jsonld.comparison import compare_context_usages
-from bijux_ontology.jsonld.observations import ObservedUsage
-from bijux_ontology.jsonld.resources import OfflineDocumentLoader
-from bijux_ontology.reports import Issue, Location, Report, combine_reports
+from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
+from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
 
 

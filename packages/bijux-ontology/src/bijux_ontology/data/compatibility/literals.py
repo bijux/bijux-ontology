@@ -3,9 +3,9 @@
 from rdflib import Literal, URIRef
 from rdflib.namespace import XSD
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.literals import (
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.rdf.literals.checking import (
     check_literal,
     datatype_relation,
     integer_interval,

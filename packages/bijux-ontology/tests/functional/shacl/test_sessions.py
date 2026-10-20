@@ -12,13 +12,13 @@ import pytest
 from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, XSD
 
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError, LimitExceeded
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.coverage import ShaclCoverageContract
-from bijux_ontology.shacl.session import ShaclSession
+from bijux_ontology.shacl.execution.session import ShaclSession
 
 EX = Namespace("https://session.example/")
 

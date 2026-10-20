@@ -8,17 +8,17 @@ from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.vocabulary.annotations import (
     AnnotationRequirement,
     LanguageRequirement,
     check_annotation_coverage,
 )
-from bijux_ontology.vocabulary.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.languages import negotiate_annotations
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/coverage/")
 

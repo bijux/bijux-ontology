@@ -8,10 +8,11 @@ from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.owl.obligations import (
     ObligationResult,
     OntologyObligation,
@@ -19,12 +20,11 @@ from bijux_ontology.owl.obligations import (
 )
 from bijux_ontology.owl.properties import PropertyContract, property_contract
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.terms import bound_node, bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.terms import bound_node
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.builtins import builtin_kinds, kind_matches
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import (
     ModuleBinding,

@@ -4,10 +4,10 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import Self
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.jsonld.streams.checking import JSONLDRecordStream
 from bijux_ontology.jsonld.streams.types import JSONLDRecordResult
-from bijux_ontology.reports import Report
 
 
 def _pull(stream: JSONLDRecordStream) -> JSONLDRecordResult | None:

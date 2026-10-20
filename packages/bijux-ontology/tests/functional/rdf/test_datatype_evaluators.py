@@ -17,10 +17,10 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models.checking import check_models
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.serialization import check_instance
@@ -33,7 +33,7 @@ from bijux_ontology.rdf.datatype_evaluators.types import (
     RelationEvaluator,
     Validator,
 )
-from bijux_ontology.rdf.literals import check_literal, datatype_relation
+from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
 from bijux_ontology.rdf.terms import term_key
 
 EX = Namespace("https://example.org/custom-datatype/")

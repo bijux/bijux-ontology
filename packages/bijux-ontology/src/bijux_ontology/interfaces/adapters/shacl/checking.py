@@ -8,16 +8,23 @@ from typing import cast
 from rdflib import BNode, Graph, Literal
 from rdflib.namespace import RDF
 
-from bijux_ontology._json import own_json
 from bijux_ontology.absence import ABSENT, Absent
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.json.paths import at_path, bound_path
+from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.checking import prepare_usages
-from bijux_ontology.jsonld.entities import object_key
+from bijux_ontology.jsonld.evidence.entities import object_key
 from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.paths import at_path, bound_path
-from bijux_ontology.jsonld.resources import DocumentLoader
-from bijux_ontology.jsonld.runtime import processor
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.jsonld.processing.resources import DocumentLoader
+from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.models.emission.bindings import source_entity
 from bijux_ontology.models.emission.serialization import (
     InstanceCheck,
@@ -27,9 +34,7 @@ from bijux_ontology.models.emission.serialization import (
 )
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.terms import bound_text
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .types import ShapeContractImport
 

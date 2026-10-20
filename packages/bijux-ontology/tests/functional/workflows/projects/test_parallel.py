@@ -13,15 +13,15 @@ from typing import cast
 import pytest
 
 import bijux_ontology.workflows.projects.parallel.checking as parallel_checks
-from bijux_ontology.errors import InputError
-from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.limits import (
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import (
     Budget,
     BudgetKind,
     IssueCollector,
     Limits,
     retain_report,
 )
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.parallel.checking import check_project_parallel
@@ -287,7 +287,8 @@ def test_failed_or_timed_out_dependencies_do_not_hide_siblings(
             nested.extend(
                 int(pid)
                 for pid, parent, command in rows
-                if int(parent) in owned and "bijux_ontology.shacl.worker" in command
+                if int(parent) in owned
+                and "bijux_ontology.shacl.execution.worker" in command
             )
             if received.is_set() and len(owned) >= 2 and len(live) == 1:
                 cancel.set()

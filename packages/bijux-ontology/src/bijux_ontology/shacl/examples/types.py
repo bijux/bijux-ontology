@@ -5,9 +5,9 @@ from typing import Literal
 
 from rdflib import BNode, URIRef
 
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.analysis.types import ShapeAnalysis
 from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.inspection.types import ShapeInspection

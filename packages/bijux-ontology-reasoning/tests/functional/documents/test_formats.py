@@ -22,8 +22,8 @@ from bijux_ontology_reasoning.documents import (
     prepare_owl_document,
 )
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.limits import Budget, Limits
 
 _FUNCTIONAL = (
     "Ontology(<urn:native> <urn:version> "

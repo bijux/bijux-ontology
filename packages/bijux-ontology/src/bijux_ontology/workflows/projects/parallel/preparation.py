@@ -4,9 +4,8 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, BudgetKind
-from bijux_ontology.rdf.terms import bound_text
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, BudgetKind, bound_text
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
 from bijux_ontology.workflows.projects.jobs import check_kind
 from bijux_ontology.workflows.projects.resources import _CapturedFiles, _read_snapshot
@@ -135,7 +134,7 @@ def read_capture(
     path: Path, budget: Budget
 ) -> tuple[ProjectConfig, Mapping[Path, bytes | Exception]]:
     """Read only private captures; absent entries never reopen original files."""
-    from bijux_ontology._json import _decode_json
+    from bijux_ontology.json.values import _decode_json
 
     encoded = _read_snapshot(path, budget)
     value = _decode_json(

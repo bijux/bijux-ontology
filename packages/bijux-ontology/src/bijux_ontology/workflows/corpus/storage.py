@@ -7,11 +7,11 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from bijux_ontology._json import decode_json
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.limits import Budget, bound_text
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Report, report_from_data
+from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.json.values import decode_json
 from bijux_ontology.models.persistence.codecs import json_bytes
-from bijux_ontology.reports import Report, report_from_data
 
 _SCHEMA = (
     "CREATE TABLE completed (identifier TEXT PRIMARY KEY, "

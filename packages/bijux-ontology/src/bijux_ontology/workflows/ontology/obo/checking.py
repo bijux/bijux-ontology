@@ -6,24 +6,33 @@ from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import XSD
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.terms import bound_node, bound_text
-from bijux_ontology.reports import Issue, Location, Report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.annotations.coverage import check_annotation_coverage
 from bijux_ontology.vocabulary.annotations.types import (
     AnnotationCoverage,
     AnnotationRequirement,
 )
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
+from bijux_ontology.vocabulary.browsing.results import Edge, Selection
 from bijux_ontology.vocabulary.obo.reading import read_obo_records
 from bijux_ontology.vocabulary.obo.subsets.reading import read_obo_subsets
 from bijux_ontology.vocabulary.obo.subsets.types import OboSubsets
 from bijux_ontology.vocabulary.obo.types import OboRecord, OboRecords
-from bijux_ontology.vocabulary.results import Edge, Selection
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.upgrades.lifecycle.checking import check_lifecycle
 from bijux_ontology.workflows.upgrades.lifecycle.types import (
     HistoryCoverage,

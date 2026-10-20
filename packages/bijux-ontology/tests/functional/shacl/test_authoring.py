@@ -8,9 +8,9 @@ from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDF, SH, XSD
 from rdflib.paths import SequencePath
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Limits
-from bijux_ontology.rdf.paths import RdfPath, capture_path
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Limits
+from bijux_ontology.rdf.paths.types import RdfPath, capture_path
 from bijux_ontology.shacl.authoring import (
     ShaclClosed,
     ShaclComparison,
@@ -95,7 +95,7 @@ def test_closed_policy_and_ignored_predicates_survive_typed_inspection() -> None
     broken.add((EX.RecordShape, SH.ignoredProperties, head))
     broken.add((head, RDF.first, Literal("not a predicate")))
     broken.add((head, RDF.rest, RDF.nil))
-    from bijux_ontology.rdf.loading import prepare_rdf
+    from bijux_ontology.rdf.sources.loading import prepare_rdf
 
     assert not inspect_shapes(prepare_rdf(broken), (EX.RecordShape,)).report.verified
 

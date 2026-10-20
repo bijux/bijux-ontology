@@ -18,11 +18,12 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.models import RdfModelUsage, check_rdf_emission
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.models.emission.types import RdfModelUsage
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.types import RdfSource
 
 A, B, C, DEAD, P, INDIVIDUAL, J, K = (
     URIRef("urn:" + name) for name in ("A", "B", "C", "Dead", "p", "i", "j", "k")

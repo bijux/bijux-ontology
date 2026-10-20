@@ -9,8 +9,9 @@ from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 from bijux_ontology.declarations import ValueDeclaration as Value
+from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.errors import InputError
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.dataclasses import (
     model_declarations as dataclass_declarations,
@@ -18,9 +19,10 @@ from bijux_ontology.interfaces.adapters.dataclasses import (
 from bijux_ontology.interfaces.adapters.typed_dict import (
     model_declarations as typed_dict_declarations,
 )
-from bijux_ontology.limits import Limits
-from bijux_ontology.models import ModelUsage, check_emission, check_models
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.models.contracts.checking import check_models
+from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.types import ModelUsage
+from bijux_ontology.rdf.sources.types import RdfSource
 
 EX = Namespace("https://example.org/catalogue#")
 TITLE = RdfField(

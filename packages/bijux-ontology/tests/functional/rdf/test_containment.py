@@ -5,10 +5,10 @@ import threading
 from rdflib import BNode, Dataset, Graph, Namespace
 from rdflib.namespace import RDF, RDFS, XSD
 
-from bijux_ontology.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.containment import check_simple_entailment
-from bijux_ontology.rdf.loading import prepare_rdf
-from bijux_ontology.rdf.sources import RdfSource
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import literal_term
 
 E = Namespace("urn:containment:")

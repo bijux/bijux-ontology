@@ -10,16 +10,16 @@ import pytest
 from rdflib import Dataset, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.oak import OakOperationError, as_oak
-from bijux_ontology.limits import Budget, Limits
-from bijux_ontology.vocabulary.inspection import VocabularyView
-from bijux_ontology.vocabulary.loading import load_vocabulary
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.registry.types import (
     IdentifierRegistry,
     NamespaceContribution,
 )
 from bijux_ontology.vocabulary.restrictions import project_restrictions
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 BasicOntologyInterface = pytest.importorskip("oaklib.interfaces").BasicOntologyInterface
 

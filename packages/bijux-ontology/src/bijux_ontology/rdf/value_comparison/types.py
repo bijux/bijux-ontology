@@ -5,7 +5,7 @@ from typing import Literal as Choice
 
 from rdflib import Literal
 
-from bijux_ontology.reports import Report
+from bijux_ontology.diagnostics.reports import Report
 
 ComparisonRegime = Choice["sparql-1.1", "owl2-datatype-map"]
 ValueRelation = Choice["equal", "different", "indeterminate"]

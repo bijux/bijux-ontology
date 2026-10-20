@@ -4,10 +4,11 @@ import time
 from collections.abc import Sequence
 from dataclasses import replace
 
-from bijux_ontology.errors import LimitExceeded
+from bijux_ontology.diagnostics.errors import LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import IssueCollector, retain_report
+from bijux_ontology.execution.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
@@ -17,9 +18,8 @@ from bijux_ontology.rdf.patches.types import (
     PatchQuad,
     PatchUnavailable,
 )
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.skos.checking import check_skos
 
 from .types import LabelCandidate, LabelCorrespondence

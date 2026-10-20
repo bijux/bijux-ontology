@@ -6,14 +6,19 @@ from collections.abc import Iterable, Sequence
 from rdflib import URIRef
 
 from bijux_ontology.declarations.enumerations import ValueEnumeration
-from bijux_ontology.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.limits import Budget, IssueCollector, bound_text, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.browsing.results import Selection
 from bijux_ontology.vocabulary.restrictions.types import RestrictionProjection
-from bijux_ontology.vocabulary.results import Selection
 
 from .automaton import Automaton, named
 from .edges import _Inventory

@@ -10,16 +10,16 @@ from rdflib.plugins import sparql
 from rdflib.plugins.sparql.processor import SPARQLProcessor
 from rdflib.term import Identifier, Node
 
-from bijux_ontology._json import decode_json, object_value
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget
+from bijux_ontology.execution.limits import Limits
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Limits
-from bijux_ontology.rdf.loading import prepare_rdf
+from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.codecs import read_witness, term_data
 from bijux_ontology.rdf.patches.types import PatchBlank, PatchLiteral, PatchValue
 from bijux_ontology.rdf.queries.syntax import prepare_local_query
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.terms import literal_datatype, literal_term
 
 

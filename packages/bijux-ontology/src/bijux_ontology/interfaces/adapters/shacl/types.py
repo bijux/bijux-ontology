@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 from rdflib import BNode, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
-from bijux_ontology.reports import Report
 from bijux_ontology.shacl.inspection.types import ShapeInspection
 
 

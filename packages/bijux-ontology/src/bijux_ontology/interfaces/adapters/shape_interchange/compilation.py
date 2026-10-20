@@ -8,18 +8,24 @@ from typing import Literal, cast
 from rdflib import BNode, URIRef
 from rdflib.namespace import XSD
 
-from bijux_ontology._json import object_value
 from bijux_ontology.absence import ABSENT
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.json.values import object_value
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.paths import RdfPath
-from bijux_ontology.rdf.snapshot_metadata import SnapshotMetadata
-from bijux_ontology.rdf.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text
-from bijux_ontology.reports import Issue, Report
+from bijux_ontology.rdf.paths.types import RdfPath
+from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (
     ShaclClosed,

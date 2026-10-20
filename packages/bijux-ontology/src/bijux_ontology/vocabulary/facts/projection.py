@@ -5,9 +5,9 @@ import json
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.term import Node
 
-from bijux_ontology.limits import Budget
-from bijux_ontology.rdf.terms import bound_text, term_key
-from bijux_ontology.vocabulary.sources import source_role
+from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.rdf.terms import term_key
+from bijux_ontology.vocabulary.sources.types import source_role
 
 from .types import SelectedFact
 

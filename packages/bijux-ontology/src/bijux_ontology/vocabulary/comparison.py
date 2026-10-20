@@ -8,21 +8,24 @@ from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded
-from bijux_ontology.limits import Budget, IssueCollector, Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.snapshots import PreparedSource
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import term_key
-from bijux_ontology.reports import Issue, Report
 from bijux_ontology.vocabulary.anonymous.comparison import compare_anonymous
 from bijux_ontology.vocabulary.anonymous.types import AnonymousDifferences
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
+from bijux_ontology.vocabulary.browsing.results import TermInfo
 from bijux_ontology.vocabulary.facts.comparison import compare_selected_facts
 from bijux_ontology.vocabulary.facts.types import FactSelection, SelectedFactDifferences
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.results import TermInfo
-from bijux_ontology.vocabulary.sources import source_role
-from bijux_ontology.vocabulary.view import Vocabulary
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.types import source_role
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 ANNOTATIONS = (
     str(RDFS.label),

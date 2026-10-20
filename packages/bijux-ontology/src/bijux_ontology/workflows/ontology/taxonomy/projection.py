@@ -9,21 +9,30 @@ from rdflib import Literal as RdfLiteral
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 from rdflib.term import Node
 
-from bijux_ontology.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
-from bijux_ontology.limits import Budget, IssueCollector, Limits, retain_report
+from bijux_ontology.execution.limits import (
+    Budget,
+    IssueCollector,
+    Limits,
+    bound_text,
+    retain_report,
+)
 from bijux_ontology.owl.constructs import _UNSUPPORTED
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.patches.types import PatchUnavailable
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import TermRoleOccurrence
-from bijux_ontology.rdf.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_node, bound_text, term_key
-from bijux_ontology.reports import Issue, Report
-from bijux_ontology.vocabulary.inspection import VocabularyView, inspect_vocabulary
-from bijux_ontology.vocabulary.loading import load_vocabulary
-from bijux_ontology.vocabulary.results import Edge
+from bijux_ontology.rdf.sources.snapshots import PreparedSource
+from bijux_ontology.rdf.terms import bound_node, term_key
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
+from bijux_ontology.vocabulary.browsing.results import Edge
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.workflows.ontology.publication.projection import (
     compile_skos_publication,
 )
