@@ -13,7 +13,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.json.values import _decode_json
+from bijux_ontology.json.values import decode_json
 from bijux_ontology.jsonld.processing.preparation import (
     JSONLDPreparation,
     prepare_jsonld,
@@ -237,7 +237,7 @@ class JSONLDRecordStream(Iterator[JSONLDRecordResult]):
             if size > operation.limits.max_bytes:
                 raise LimitExceeded("JSON-LD record exceeds max_bytes")
             operation.consume("bytes", size)
-            document = _decode_json(
+            document = decode_json(
                 payload,
                 source=document_iri or anchor,
                 max_bytes=operation.limits.max_bytes,

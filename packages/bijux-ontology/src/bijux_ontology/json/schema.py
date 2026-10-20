@@ -6,7 +6,7 @@ from typing import Any
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, bound_text
-from bijux_ontology.json.values import _measure
+from bijux_ontology.json.values import measure_json
 
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 DRAFT07 = "http://json-schema.org/draft-07/schema#"
@@ -153,7 +153,12 @@ def validator(
         total = 1
         for key in ("enum", "const"):
             if key in node:
-                total += _measure(node[key], budget)
+                total += measure_json(
+                    node[key],
+                    budget=budget,
+                    max_bytes=budget.limits.max_bytes,
+                    max_depth=budget.limits.max_depth,
+                ).weight
         if "$ref" in node:
             resolved = current.lookup(node["$ref"])
             total += cost(

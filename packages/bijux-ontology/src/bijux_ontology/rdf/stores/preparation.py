@@ -17,16 +17,16 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.queries.protocol import read_term
+from bijux_ontology.resources.files import FileSnapshot, seal_files
 
 from .protocol import execute, failure
-from .seals import StoreFile, seal_files
 from .types import StoredRdf, StoredRdfResult
 
 
 def _adopt(
     directory: Path,
     metadata: dict[str, Any],
-    files: tuple[StoreFile, ...],
+    files: tuple[FileSnapshot, ...],
     operation: Operation,
 ) -> StoredRdf:
     """Keep native blank graph IDs private to newly owned public selector objects."""

@@ -15,9 +15,13 @@ from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
-
-from .codecs import read_witness, term_data, witness_data
-from .types import PatchBlank, PatchUnavailable, PatchValue, SnapshotWitness
+from bijux_ontology.rdf.records.codecs import read_witness, term_data, witness_data
+from bijux_ontology.rdf.records.types import (
+    PatchBlank,
+    PatchUnavailable,
+    PatchValue,
+    SnapshotWitness,
+)
 
 _BASE = "urn:bijux:ontology:patch:"
 

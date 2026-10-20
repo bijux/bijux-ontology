@@ -12,15 +12,16 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import PatchUnavailable
+from bijux_ontology.rdf.records.types import PatchUnavailable
 from bijux_ontology.rdf.reification.types import (
     ReificationInspection,
     ReificationRecord,
 )
 from bijux_ontology.rdf.roles.types import Statement
+from bijux_ontology.rdf.sources.selection import selected_contexts
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node, term_key
-from bijux_ontology.rdf.transforms import _authorized_contexts, _budget
+from bijux_ontology.rdf.transforms import _budget
 
 _COMPONENTS = (RDF.subject, RDF.predicate, RDF.object)
 
@@ -169,9 +170,7 @@ def inspect_reifications(
             selected = tuple(selected_list)
         owner = source
         seen: set[URIRef | BNode] = set()
-        for name, graph in _authorized_contexts(
-            source, operation, graph_name=graph_name
-        ):
+        for name, graph in selected_contexts(source, operation, graph_name=graph_name):
             if name is not None:
                 bound_node(name, operation)
             candidates = _discover(graph, operation) if selected is None else selected

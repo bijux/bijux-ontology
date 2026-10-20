@@ -22,7 +22,7 @@ from bijux_ontology.rdf.migrations.values import (
     ValueSelection,
     migrate_values,
 )
-from bijux_ontology.rdf.patches.types import PatchLiteral
+from bijux_ontology.rdf.records.types import PatchLiteral
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource

@@ -19,9 +19,9 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.rdf.sources.selection import physical_graph
 from bijux_ontology.vocabulary.annotations.graphs.reading import (
     _bound,
-    _physical,
     _Read,
     _same,
     inspect_annotation_graph,
@@ -164,7 +164,7 @@ def check_annotation_hygiene(
         )
         retain_report(owned.report, operation, issues)
         children = (owned.report,)
-        _, physical = _physical(owned.source, owned.graph, operation)
+        _, physical = physical_graph(owned.source, owned.graph, operation)
         reader = _Read(physical, owned.annotation_predicates, operation)
         if not selected:
             issues.append(

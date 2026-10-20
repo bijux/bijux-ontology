@@ -21,11 +21,10 @@ from bijux_ontology.rdf.migrations.candidates import (
     finish_migration,
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
-from bijux_ontology.rdf.patches.codecs import quad_data
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
-    PatchBlankBinding,
+from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
+from bijux_ontology.rdf.records.codecs import quad_data
+from bijux_ontology.rdf.records.types import (
     PatchLiteral,
     PatchQuad,
     PatchResource,

@@ -13,11 +13,8 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.paths import SourcePath, at_path, bound_path, bounded_location
-from bijux_ontology.jsonld.contexts.usages import (
-    SourceTerm,
-    UsageContextUnavailable,
-    source_terms,
-)
+from bijux_ontology.jsonld.contexts.types import SourceTerm, UsageContextUnavailable
+from bijux_ontology.jsonld.processing.contexts.observations import source_terms
 from bijux_ontology.jsonld.processing.resources import ContextInputError
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.usages.checking import PreparedUsages

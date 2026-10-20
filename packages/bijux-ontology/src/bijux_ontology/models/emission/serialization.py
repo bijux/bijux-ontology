@@ -14,6 +14,7 @@ from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.json.comparison import same_json
 from bijux_ontology.json.values import encode_json, own_json
 from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
@@ -21,7 +22,6 @@ from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.jsonld.usages.checking import PreparedUsages
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.checking import check_emission
-from bijux_ontology.models.emission.context import same_context
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
@@ -279,7 +279,7 @@ def _contextualized_output(
         budget=operation,
     )
     if isinstance(output, dict):
-        if "@context" in output and not same_context(
+        if "@context" in output and not same_json(
             output["@context"], owned_context, operation
         ):
             raise InputError("Supplied context conflicts with actual serializer output")

@@ -17,10 +17,10 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.codecs import term_data
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import PatchBlank, PatchLiteral, PatchValue
+from bijux_ontology.rdf.records.codecs import term_data
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import PatchBlank, PatchLiteral, PatchValue
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_term, term_key
 from bijux_ontology.rdf.transforms import merge_sources
@@ -293,7 +293,7 @@ def _owned(snapshot: CorpusSnapshot, operation: Operation) -> PreparedSource:
         effective_url=snapshot.origin.effective_url,
         literal_fidelity=snapshot.literal_fidelity,
     )
-    return _materialize(snapshot.witness, metadata, operation)
+    return materialize(snapshot.witness, metadata, operation)
 
 
 def consolidate_entities(
@@ -405,7 +405,7 @@ def consolidate_entities(
             if merged.source is not None and merged.report.verified:
                 captured = capture_source(merged.source, "candidate:", operation)
                 for declaration in required:
-                    check_source = _materialize(
+                    check_source = materialize(
                         captured.witness, merged.source, operation
                     )
                     try:

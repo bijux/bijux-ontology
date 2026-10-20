@@ -4,6 +4,7 @@ import subprocess
 import threading
 import time
 from contextlib import suppress
+from dataclasses import dataclass, field
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget
@@ -12,7 +13,26 @@ from bijux_ontology.execution.processes.ownership import (
     stop_owned_process,
 )
 
-_stop_group = stop_owned_process
+
+@dataclass(frozen=True, slots=True, eq=False)
+class WorkerGeneration:
+    """Identity-owned observation of one actual process launched by a session."""
+
+    number: int
+    pid: int
+
+
+@dataclass(eq=False)
+class _GenerationState:
+    """Keep detached cleanup attached to its original process and threads."""
+
+    token: WorkerGeneration
+    process: subprocess.Popen[bytes]
+    stderr_overflow: threading.Event = field(default_factory=threading.Event)
+    stderr_thread: threading.Thread | None = None
+    exchange_thread: threading.Thread | None = None
+    cleaned: threading.Event = field(default_factory=threading.Event)
+    cleanup_error: ResourceError | None = None
 
 
 class FramedSession:
@@ -32,48 +52,97 @@ class FramedSession:
         self._command = command
         self._label = label
         self._cap = cap
-        self._process: subprocess.Popen[bytes] | None = None
-        self._guard = threading.Lock()
+        self._worker: _GenerationState | None = None
+        self._retiring: _GenerationState | None = None
+        self._guard = threading.RLock()
         self._closed = threading.Event()
         self._launches = 0
-        self._stderr_overflow = threading.Event()
-        self._stderr_thread: threading.Thread | None = None
-        self._exchange_thread: threading.Thread | None = None
 
     @property
     def launches(self) -> int:
         """Count actual process launches, including recovery after failed jobs."""
         return self._launches
 
+    @property
+    def cap(self) -> int:
+        """Expose the fixed opaque frame bound to protocol owners."""
+        return self._cap
+
+    @property
+    def generation(self) -> WorkerGeneration | None:
+        """Observe a live owned process without exposing its mutable handles."""
+        with self._guard:
+            worker = self._worker
+            return (
+                worker.token
+                if worker is not None and worker.process.poll() is None
+                else None
+            )
+
     def close(self) -> None:
         """Cancel any active request and permanently release this session."""
         self._closed.set()
         self.reset()
 
-    def reset(self, *, failure: BaseException | None = None) -> None:
-        """Discard failed worker state; a later job may replay the owned plan."""
+    def reset(
+        self,
+        *,
+        generation: WorkerGeneration | None = None,
+        failure: BaseException | None = None,
+    ) -> None:
+        """Discard only the selected generation and reap it outside the state lock."""
         with self._guard:
-            process, self._process = self._process, None
-        if process is None:
-            return
+            worker = self._worker
+            if worker is not None and (
+                generation is None or worker.token is generation
+            ):
+                self._worker = None
+                self._retiring = worker
+                owner = True
+            else:
+                worker = self._retiring
+                if worker is None or (
+                    generation is not None and worker.token is not generation
+                ):
+                    return
+                owner = False
+        if owner:
+            try:
+                self._cleanup(worker, failure)
+            finally:
+                with self._guard:
+                    if self._retiring is worker:
+                        self._retiring = None
+                    worker.cleaned.set()
+        elif not worker.cleaned.wait(1.5):
+            self._closed.set()
+            error = ResourceError(
+                f"{self._label} generation cleanup did not finish within its bound"
+            )
+            if failure is None:
+                raise error
+            failure.add_note(str(error))
+        elif worker.cleanup_error is not None and failure is None:
+            raise worker.cleanup_error
+
+    def _cleanup(self, worker: _GenerationState, failure: BaseException | None) -> None:
+        """Release exactly one detached generation's process and pipe owners."""
+        process = worker.process
         cleanup_error: ResourceError | None = None
         try:
-            if process is not None:
-                _stop_group(process, failure=failure)
+            stop_owned_process(process, failure=failure)
         except ResourceError as error:
             cleanup_error = error
         finally:
-            exchange = self._exchange_thread
+            exchange = worker.exchange_thread
             if exchange is not None and exchange.ident is not None:
                 exchange.join(timeout=0.2)
             if exchange is not None and exchange.is_alive():
-                # Buffered close waits on an active read lock. The exchange owns
-                # its detached handles until that read returns; forbid reuse.
                 self._closed.set()
                 cleanup_error = cleanup_error or ResourceError(
                     f"{self._label} worker pipes remain held after bounded cleanup"
                 )
-            elif process is not None:
+            else:
                 for stream in (process.stdin, process.stdout):
                     if stream is not None:
                         try:
@@ -83,16 +152,24 @@ class FramedSession:
                                 f"Cannot close {self._label} worker pipe: {error}"
                             )
             if (
-                self._stderr_thread is not None
-                and self._stderr_thread.ident is not None
+                worker.stderr_thread is not None
+                and worker.stderr_thread.ident is not None
             ):
-                self._stderr_thread.join(timeout=0.2)
-                if self._stderr_thread.is_alive():
+                worker.stderr_thread.join(timeout=0.2)
+                if worker.stderr_thread.is_alive():
                     self._closed.set()
                     cleanup_error = cleanup_error or ResourceError(
                         f"{self._label} diagnostics pipe remains held "
                         "after bounded cleanup"
                     )
+            elif process.stderr is not None:
+                try:
+                    process.stderr.close()
+                except (OSError, ValueError) as error:
+                    cleanup_error = cleanup_error or ResourceError(
+                        f"Cannot close {self._label} diagnostics pipe: {error}"
+                    )
+        worker.cleanup_error = cleanup_error
         if cleanup_error is not None:
             if failure is not None:
                 if isinstance(failure, InputError):
@@ -102,9 +179,10 @@ class FramedSession:
             else:
                 raise cleanup_error
 
-    def _interrupted(
+    def checkpoint(
         self, deadline: float | None, cancel: threading.Event | None
     ) -> None:
+        """Check this session's close state and the current request's stop policy."""
         if self._closed.is_set():
             raise ResourceError(f"{self._label} session is closed")
         if cancel is not None and cancel.is_set():
@@ -114,7 +192,44 @@ class FramedSession:
                 f"{self._label} process exceeded requested wall-clock deadline"
             )
 
-    def _start(self) -> None:
+    def ensure_generation(
+        self, deadline: float | None, cancel: threading.Event | None
+    ) -> WorkerGeneration:
+        """Reuse one live worker or start after its retired predecessor is reaped."""
+        worker = None
+        try:
+            while True:
+                self.checkpoint(deadline, cancel)
+                with self._guard:
+                    self.checkpoint(deadline, cancel)
+                    worker, retiring = self._worker, self._retiring
+                    if worker is not None and worker.process.poll() is None:
+                        return worker.token
+                    if worker is None and retiring is None:
+                        worker = self._start_locked()
+                        self._start_diagnostics_locked(worker)
+                        break
+                if worker is not None:
+                    self.reset(generation=worker.token)
+                elif retiring is not None:
+                    while not retiring.cleaned.wait(0.01):
+                        self.checkpoint(deadline, cancel)
+            self.checkpoint(deadline, cancel)
+        except BaseException as error:
+            failure = (
+                ResourceError(f"{self._label} worker diagnostics could not be started")
+                if isinstance(error, RuntimeError)
+                else error
+            )
+            if worker is not None:
+                self.reset(generation=worker.token, failure=failure)
+            if failure is not error:
+                raise failure from error
+            raise
+        return worker.token
+
+    def _start_locked(self) -> _GenerationState:
+        """Install one process and its diagnostic owner under the short state lock."""
         try:
             process = spawn_owned_process(
                 self._command,
@@ -124,13 +239,16 @@ class FramedSession:
             )
         except OSError as error:
             raise ResourceError(f"{self._label} worker could not be started") from error
-        with self._guard:
-            if self._closed.is_set():
-                _stop_group(process)
-                raise ResourceError(f"{self._label} session is closed")
-            self._process = process
-            self._launches += 1
-        self._stderr_overflow = threading.Event()
+        self._launches += 1
+        worker = _GenerationState(
+            WorkerGeneration(self._launches, process.pid), process
+        )
+        self._worker = worker
+        return worker
+
+    def _start_diagnostics_locked(self, worker: _GenerationState) -> None:
+        """Register diagnostics after the caller owns failed-start cleanup."""
+        process = worker.process
 
         def drain() -> None:
             """Drain diagnostics without retaining repeated backend output."""
@@ -140,24 +258,42 @@ class FramedSession:
                 while chunk := process.stderr.read(8192):
                     size += len(chunk)
                     if size > self._cap:
-                        self._stderr_overflow.set()
+                        worker.stderr_overflow.set()
                         break
             except (OSError, ValueError):
                 return
             finally:
                 process.stderr.close()
 
-        self._stderr_thread = threading.Thread(target=drain, daemon=True)
-        self._stderr_thread.start()
+        worker.stderr_thread = threading.Thread(target=drain, daemon=True)
+        worker.stderr_thread.start()
 
-    def _exchange(
+    def _require_generation(
         self,
+        generation: WorkerGeneration,
+        deadline: float | None,
+        cancel: threading.Event | None,
+    ) -> _GenerationState:
+        """Reject foreign or retired identities before exchange and publication."""
+        with self._guard:
+            self.checkpoint(deadline, cancel)
+            worker = self._worker
+            if worker is None or worker.token is not generation:
+                raise ResourceError(
+                    f"{self._label} worker generation is no longer active"
+                )
+            return worker
+
+    def exchange(
+        self,
+        generation: WorkerGeneration,
         payload: bytes,
         deadline: float | None,
         cancel: threading.Event | None,
         *,
         budget: Budget | None = None,
     ) -> bytes:
+        """Exchange one bounded frame with the active owned worker generation."""
         import struct
 
         if len(payload) > self._cap:
@@ -168,8 +304,9 @@ class FramedSession:
             budget.consume("work", len(payload) + 1)
             budget.consume("states", 16)
             budget.consume("bytes", len(payload) + 2048)
-        process = self._process
-        if process is None or process.stdin is None or process.stdout is None:
+        worker = self._require_generation(generation, deadline, cancel)
+        process = worker.process
+        if process.stdin is None or process.stdout is None:
             raise ResourceError(f"{self._label} session worker is not available")
         incoming, outgoing = process.stdout, process.stdin
         complete = threading.Event()
@@ -177,6 +314,7 @@ class FramedSession:
         errors: list[Exception] = []
 
         def read_exact(amount: int) -> bytes:
+            """Read the admitted frame length or reject a closed response pipe."""
             data = bytearray()
             while len(data) < amount:
                 chunk = incoming.read(min(8192, amount - len(data)))
@@ -207,18 +345,34 @@ class FramedSession:
                 errors.append(error)
             finally:
                 complete.set()
-                if self._process is not process:
+                if self._worker is not worker:
                     for stream in (incoming, outgoing):
                         with suppress(OSError, ValueError):
                             stream.close()
 
         thread = threading.Thread(target=communicate, daemon=True)
-        self._exchange_thread = thread
-        thread.start()
+        registered = False
         try:
+            with self._guard:
+                self._require_generation(generation, deadline, cancel)
+                if (
+                    worker.exchange_thread is not None
+                    and worker.exchange_thread.is_alive()
+                ):
+                    raise ResourceError(
+                        f"{self._label} generation already has an active frame"
+                    )
+                worker.exchange_thread = thread
+                registered = True
+                try:
+                    thread.start()
+                except RuntimeError as error:
+                    raise ResourceError(
+                        f"{self._label} frame could not be started"
+                    ) from error
             while not complete.wait(0.01):
-                self._interrupted(deadline, cancel)
-                if self._stderr_overflow.is_set():
+                self.checkpoint(deadline, cancel)
+                if worker.stderr_overflow.is_set():
                     raise LimitExceeded(
                         f"{self._label} process diagnostics exceed protocol byte bound"
                     )
@@ -226,8 +380,8 @@ class FramedSession:
                     raise ResourceError(
                         f"{self._label} worker exited {process.returncode}"
                     )
-            self._interrupted(deadline, cancel)
-            if self._stderr_overflow.is_set():
+            self.checkpoint(deadline, cancel)
+            if worker.stderr_overflow.is_set():
                 raise LimitExceeded(
                     f"{self._label} process diagnostics exceed protocol byte bound"
                 )
@@ -237,9 +391,13 @@ class FramedSession:
                 raise ResourceError(
                     f"{self._label} worker protocol failed: {errors[0]}"
                 ) from errors[0]
-            return output[0]
+            with self._guard:
+                self._require_generation(generation, deadline, cancel)
+                return output[0]
         except BaseException as error:
-            self.reset(failure=error)
+            if registered:
+                self.reset(generation=generation, failure=error)
             raise
         finally:
-            thread.join(timeout=0.2)
+            if thread.ident is not None:
+                thread.join(timeout=0.2)

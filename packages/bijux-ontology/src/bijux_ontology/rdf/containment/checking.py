@@ -4,22 +4,22 @@ import json
 import threading
 import time
 from dataclasses import asdict
-from typing import cast
 
 from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.rdf.patches.codecs import read_term, witness_data
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
-from bijux_ontology.rdf.patches.types import PatchBlank, PatchLiteral, PatchUnavailable
 from bijux_ontology.rdf.queries.protocol import QueryTerm
+from bijux_ontology.rdf.records.codecs import read_term, witness_data
+from bijux_ontology.rdf.records.types import PatchBlank, PatchLiteral, PatchUnavailable
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import literal_term
 
@@ -63,7 +63,8 @@ def _run(
     operation.consume("bytes", 32 * cap)
     operation.consume("work", 4 * cap)
     allowances = {kind: operation.remaining(kind) // 2 for kind in _KINDS}
-    envelope["allowances"] = allowances
+    delegated = DelegatedAllowance(operation, allowances)
+    envelope["allowances"] = delegated.to_data()
     payload = json.dumps(envelope, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
@@ -83,21 +84,12 @@ def _run(
         )
         if set(response) != {"status", "data", "message", "controls"}:
             raise ResourceError("Malformed containment completion")
-        controls = object_value(response["controls"], location="worker receipt")
-        if set(controls) != set(_KINDS) or any(
-            type(controls[kind]) is not int
-            or not 0 <= cast(int, controls[kind]) <= allowances[kind]
-            for kind in _KINDS
-        ):
-            raise ResourceError("Malformed containment worker receipt")
-        for kind in _KINDS:
-            operation.consume_completed(kind, cast(int, controls[kind]))
+        delegated.settle(response["controls"])
         valid_receipt = True
     finally:
         if not valid_receipt:
             # Missing receipts cannot establish that delegated work was unused.
-            for kind in _KINDS:
-                operation.consume_completed(kind, allowances[kind])
+            delegated.forfeit()
     checkpoint(operation.deadline, operation.cancel)
     if response["status"] == "exhausted":
         raise LimitExceeded("Native containment exhausted its owned allowance")

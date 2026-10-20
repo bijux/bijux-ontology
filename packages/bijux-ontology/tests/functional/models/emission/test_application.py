@@ -19,11 +19,11 @@ from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.serialization import check_instance
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
+from bijux_ontology.models.value_constraints.checking import application_matches
 from bijux_ontology.rdf.terms import literal_term
 
 EX = Namespace("https://example.org/")
@@ -195,6 +195,48 @@ def test_owned_predicates_use_the_cumulative_operation_budget() -> None:
             EX.A,
             budget=Budget(Limits(max_states=1)),
         )
+
+
+@pytest.mark.parametrize("numeric", (False, True))
+def test_fallback_lexical_qualification_uses_the_selected_model_budget(
+    numeric: bool,
+) -> None:
+    """A fallback cannot borrow a fresh grant or repeat an explicit lexical proof."""
+    term = literal_term("1", datatype=str(XSD.integer)) if numeric else Literal("value")
+    constraints = (
+        ValueConstraints(minimum=Decimal(0))
+        if numeric
+        else ValueConstraints(min_length=1)
+    )
+    limits = Limits(max_total_bytes=256 if numeric else 8, max_states=1, max_work=1000)
+    with pytest.raises(LimitExceeded):
+        application_matches(constraints, term, budget=Budget(limits))
+    assert (
+        application_matches(
+            constraints, term, budget=Budget(limits), lexical_valid=True
+        )
+        is True
+    )
+    assert (
+        application_matches(
+            constraints, term, budget=Budget(limits), lexical_valid=False
+        )
+        is None
+    )
+    assert application_matches(constraints, term, budget=Budget()) is True
+    model = _model(
+        ValueDeclaration(
+            "literal",
+            str(XSD.integer if numeric else XSD.string),
+            constraints=constraints,
+        )
+    )
+    source = prepare_source(
+        Graph().add((EX.record, RDF.type, EX.Record)).add((EX.record, EX.score, term))
+    )
+    assert check_rdf_emission(
+        source, (model,), (RdfModelUsage("record", EX.record),), budget=Budget()
+    ).verified
 
 
 @pytest.mark.parametrize(

@@ -32,10 +32,10 @@ from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled import (
     compile_bindings,
     select_binding,
 )
-from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
+from bijux_ontology.models.value_constraints.checking import application_matches
 from bijux_ontology.shacl.authoring.compiling import compile_shapes
 from bijux_ontology.shacl.authoring.types import (
     ShaclCount,
@@ -179,10 +179,19 @@ def test_actual_captured_trait_is_required_and_cannot_fall_back_or_be_replaced()
         {"kind": {}},
         {"kind": 1},
         {"kind": URIRef("rooted")},
+        {"kind": Literal("rooted")},
     )
     for invalid in invalid_cases:
         result = select_binding(plan, invalid)
         assert result.report.outcome == "unverified" and result.enumeration is None
+    nested_plan = compile_bindings(
+        [BindingCase("rooted", "rooted", plan.cases[0].enumeration)],
+        discriminator=("records", 0, "kind"),
+    )
+    assert select_binding(
+        nested_plan, {"records": [{"kind": "rooted"}]}
+    ).report.verified
+    assert select_binding(nested_plan, {"records": []}).report.outcome == "unverified"
     no_case = select_binding(plan, {"kind": "ROOTED"})
     assert no_case.report.outcome == "disagreement" and no_case.report.checked == 1
     assert no_case.enumeration is None and not any(

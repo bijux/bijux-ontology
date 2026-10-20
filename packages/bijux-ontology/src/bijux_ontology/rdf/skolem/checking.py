@@ -19,11 +19,11 @@ from bijux_ontology.rdf.skolem.types import (
     SkolemResult,
 )
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata as _SnapshotMetadata
+from bijux_ontology.rdf.sources.selection import selected_contexts
 from bijux_ontology.rdf.sources.snapshots import PreparedSource, _read_graph
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.rdf.transforms import (
     Transformation,
-    _authorized_contexts,
     _bind,
     _budget,
 )
@@ -57,7 +57,7 @@ def _contexts(
             for graph in source._owned_contexts(budget)
         )
         if source.union
-        else _authorized_contexts(source, budget)
+        else selected_contexts(source, budget)
     )
     for name, graph in selected:
         budget.consume("states")

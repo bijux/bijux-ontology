@@ -10,8 +10,8 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.queries import QueryScope
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
-from bijux_ontology.rdf.stores.seals import StoreFile
 from bijux_ontology.rdf.workloads.types import EngineAnswer
+from bijux_ontology.resources.files import FileSnapshot
 
 
 @dataclass(frozen=True, init=False)
@@ -21,7 +21,7 @@ class DosdpQueryBackend:
     java: Path
     directory: Path
     jars: tuple[str, ...]
-    files: tuple[StoreFile, ...]
+    files: tuple[FileSnapshot, ...]
     manifest_sha256: str
     artifacts: Path
     version: str

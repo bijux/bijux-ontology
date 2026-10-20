@@ -12,14 +12,18 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.jsonld.composition.checking import _Case, _case, _document
-from bijux_ontology.jsonld.contexts.processing import (
-    _capture,
-    _dump,
-    _operation,
-    _own,
-    _preflight,
-    inspect_context,
+from bijux_ontology.jsonld.contexts.preparation import (
+    capture_context_json,
+    capture_selections,
+    context_budget,
+    encode_context_json,
+    preflight_context_json,
+)
+from bijux_ontology.jsonld.contexts.processing import inspect_context
+from bijux_ontology.jsonld.contracts.cases import (
+    PreparedContextCase,
+    bind_case,
+    capture_case,
 )
 from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
@@ -45,7 +49,7 @@ class _Contract:
     """Operation-owned qualified policy and immutable representative inputs."""
 
     terms: tuple[PublishedTerm, ...]
-    cases: tuple[_Case, ...]
+    cases: tuple[PreparedContextCase, ...]
     probes: tuple[_Probe, ...]
     version: bool
     vocabulary: object
@@ -56,8 +60,11 @@ def _capture_contract(contract: PublicationContract, budget: Budget) -> _Contrac
     """Capture all policy, samples and output slots before any loader call."""
     if not isinstance(contract, PublicationContract):
         raise InputError("Expected an explicit PublicationContract")
-    terms = _capture(contract.terms, budget)
-    cases = tuple(_case(case, budget) for case in _capture(contract.cases, budget))
+    terms = capture_selections(contract.terms, budget)
+    cases = tuple(
+        capture_case(case, budget)
+        for case in capture_selections(contract.cases, budget)
+    )
     selected = {}
     for selected_term in terms:
         if (
@@ -88,7 +95,7 @@ def _capture_contract(contract: PublicationContract, budget: Budget) -> _Contrac
     probes: list[_Probe] = []
     names: set[str] = set()
     covered: set[str] = set()
-    for probe in _capture(contract.overrides, budget):
+    for probe in capture_selections(contract.overrides, budget):
         if not isinstance(probe, ContextOverride):
             raise InputError("Expected typed ContextOverride scenarios")
         for value in (probe.name, probe.term, probe.expect):
@@ -101,8 +108,11 @@ def _capture_contract(contract: PublicationContract, budget: Budget) -> _Contrac
             raise InputError("Probe intent must match the selected protection promise")
         names.add(name)
         covered.add(term)
-        definition = _own(probe.definition, budget)
-        extension = tuple(_case(case, budget) for case in _capture(probe.cases, budget))
+        definition = capture_context_json(probe.definition, budget)
+        extension = tuple(
+            capture_case(case, budget)
+            for case in capture_selections(probe.cases, budget)
+        )
         if len({case.name for case in extension}) != len(extension):
             raise InputError("Extension case names must be distinct per probe")
         if expected == "allowed" and not any(
@@ -158,7 +168,7 @@ def check_context_publication(
     preserve every retained case; the raw expected native rejection remains
     available separately from the policy result that verifies the guard.
     """
-    operation = _operation(
+    operation = context_budget(
         limits,
         budget
         if budget is not None
@@ -178,8 +188,8 @@ def check_context_publication(
         if base is not None:
             bound_text(base, operation)
             absolute_iri(base)
-        owned = _own(context, operation)
-        context_json = _dump(owned, operation)
+        owned = capture_context_json(context, operation)
+        context_json = encode_context_json(owned, operation)
         captured = _capture_contract(contract, operation)
         case_reports = [None] * len(captured.cases)
         requested += len(captured.terms) + len(captured.cases) + len(captured.probes)
@@ -197,7 +207,7 @@ def check_context_publication(
                 except InputError as error:
                     bound_text(str(error), operation)
                     raise
-                _preflight(response, operation)
+                preflight_context_json(response, operation)
                 return response
 
             resources = context_resources(qualified, budget=operation)
@@ -280,7 +290,7 @@ def check_context_publication(
                         )
             for index, case in enumerate(captured.cases):
                 result = check_context(
-                    _document(case, owned, operation),
+                    bind_case(case, owned, operation),
                     case.expectations,
                     base=base,
                     document_loader=resources,

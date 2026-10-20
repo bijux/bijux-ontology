@@ -17,14 +17,15 @@ from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import Captured, Rejected, capture_source
-from bijux_ontology.rdf.patches.types import (
-    PatchBlankBinding,
+from bijux_ontology.rdf.patches.types import PatchBlankBinding
+from bijux_ontology.rdf.records.types import (
     PatchLiteral,
     PatchQuad,
     PatchResource,
     PatchUnavailable,
     PatchValue,
 )
+from bijux_ontology.rdf.sources.selection import physical_graph
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
@@ -79,10 +80,7 @@ def _scope(
     budget.consume("work")
     if graph_ref is not None and graph_ref not in captured.witness.graphs:
         raise PatchUnavailable("The selected list graph is outside the owned scope")
-    actual = source._read(
-        (graph if graph is not None else "@default") if source.is_dataset else None,
-        budget=budget,
-    )
+    _, actual = physical_graph(source, graph, budget)
     incoming = PatchQuad(subject, target.predicate, head, graph_ref)
     budget.consume("work", len(captured.witness.quads))
     if incoming not in captured.witness.quads:

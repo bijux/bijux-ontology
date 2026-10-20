@@ -11,7 +11,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import bound_text
 from bijux_ontology.execution.processes.transport import exchange_worker
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.rdf.stores.seals import verify_files
+from bijux_ontology.resources.files import verify_files
 
 from .bundles import MAIN_CLASS
 from .types import DosdpPattern, DosdpQueryBackend

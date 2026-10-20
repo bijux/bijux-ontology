@@ -5,7 +5,7 @@ import threading
 
 from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.execution.processes.sessions import FramedSession
+from bijux_ontology.execution.processes.sessions import FramedSession, WorkerGeneration
 from bijux_ontology.execution.workers import execute_worker
 
 
@@ -21,6 +21,7 @@ class SessionBackend(FramedSession):
 
     def __init__(self, preparation: bytes, *, cap: int) -> None:
         self._preparation = preparation
+        self._prepared_generation: WorkerGeneration | None = None
         super().__init__(
             (
                 sys.executable,
@@ -46,19 +47,17 @@ class SessionBackend(FramedSession):
         """Replay a fixed plan on fresh starts and exchange one independent job."""
         from bijux_ontology.json.values import decode_json
 
-        self._interrupted(deadline, cancel)
+        generation = self.ensure_generation(deadline, cancel)
         try:
-            if self._process is None or self._process.poll() is not None:
-                self.reset()
-                self._start()
-                prepared = self._exchange(
-                    self._preparation, deadline, cancel, budget=budget
+            if generation is not self._prepared_generation:
+                prepared = self.exchange(
+                    generation, self._preparation, deadline, cancel, budget=budget
                 )
                 if budget is not None:
                     budget.consume("work", len(prepared) + 1)
                     budget.consume("states", 2 * len(prepared) + 8)
                     budget.consume("bytes", 64 * len(prepared) + 512)
-                response = decode_json(prepared, max_bytes=self._cap)
+                response = decode_json(prepared, max_bytes=self.cap)
                 if not isinstance(response, dict):
                     raise ResourceError("Invalid SHACL session preparation response")
                 status = response.get("status")
@@ -75,11 +74,12 @@ class SessionBackend(FramedSession):
                     "input_error",
                     "shapes_invalid",
                 }:
-                    self.reset()
+                    self.reset(generation=generation)
                     return prepared
                 else:
                     raise ResourceError("Expected SHACL preparation acknowledgement")
-            return self._exchange(payload, deadline, cancel, budget=budget)
+            self._prepared_generation = generation
+            return self.exchange(generation, payload, deadline, cancel, budget=budget)
         except BaseException as error:
-            self.reset(failure=error)
+            self.reset(generation=generation, failure=error)
             raise

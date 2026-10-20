@@ -5,7 +5,7 @@ from sys import getsizeof
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, bound_text
-from bijux_ontology.json.values import _decode_json
+from bijux_ontology.json.values import decode_owned_json
 
 
 class _Unavailable(InputError):
@@ -59,14 +59,14 @@ def decode_exact(text: str, budget: Budget) -> object:
         numbers.append(value)
         return index
 
-    intermediate = _decode_json(
+    intermediate = decode_owned_json(
         text,
         max_bytes=budget.limits.max_bytes,
         max_depth=budget.limits.max_depth,
         number_hook=number,
         key_hook=lambda key: bound_text(key, budget),
         budget=budget,
-    )
+    ).value
 
     def restore(value: object, depth: int = 0) -> object:
         """Own ordinary containers with each final numeric value restored once."""

@@ -13,13 +13,13 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.jsonld.processing.preparation import JSONLDPreparation
-from bijux_ontology.models.emission.application import (
+from bijux_ontology.models.emission.counts import check_output_counts
+from bijux_ontology.models.emission.matching import identity_matches, matches_value
+from bijux_ontology.models.rdf.observations import observe_rdf_term
+from bijux_ontology.models.value_constraints.checking import (
     application_matches,
     retain_enumeration_report,
 )
-from bijux_ontology.models.emission.counts import check_output_counts
-from bijux_ontology.models.emission.matching import identity_matches, matches_value
-from bijux_ontology.models.emission.rdf import _traits
 from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.paths.traversal import (
     PathIdentityUnavailable,
@@ -27,6 +27,7 @@ from bijux_ontology.rdf.paths.traversal import (
     path_values,
 )
 from bijux_ontology.rdf.paths.types import capture_path
+from bijux_ontology.rdf.sources.selection import select_read
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
@@ -132,7 +133,7 @@ def _intermediate(
                 )
             )
             continue
-        traits = _traits(graph, node, budget)
+        traits = observe_rdf_term(graph, node, budget)
         if not identity_matches(requirement.identity, traits) or set(
             requirement.types
         ) - set(traits.types):
@@ -264,7 +265,9 @@ def check_path_fields(
                     complete=False,
                     regime="actual-rdf-output",
                 )
-            graph = prepared._read(graph_name, union=union, budget=operation)
+            graph = select_read(
+                prepared, operation, graph_name=graph_name, union=union
+            ).read()
             operation.consume("triples", len(graph))
             blanks: set[int] = set()
             present: set[Node] = set()
@@ -408,7 +411,7 @@ def check_path_fields(
                         checked += literal.checked
                         issues.extend(literal.issues)
                         valid = literal.verified
-                    actual = _traits(graph, node, operation)
+                    actual = observe_rdf_term(graph, node, operation)
                     results: list[bool | None] = []
                     for branch in field.values:
                         operation.consume("work")

@@ -11,10 +11,10 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
-from bijux_ontology.json.values import _decode_json
+from bijux_ontology.json.values import capture_json
 from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.groups import declaration_states, group_limitation
-from bijux_ontology.models.persistence.codecs import declaration_data, json_bytes
+from bijux_ontology.models.persistence.codecs import declaration_data
 
 from ..datatypes.types import DatatypeFieldBranch
 from .types import ModelQuestion
@@ -79,13 +79,13 @@ def plan_models(
         bound_text(model.identifier, budget)
         try:
             inert = declaration_data((model,), budget)
-            payload = json_bytes(inert, budget)
             copied = models_from_data(
-                _decode_json(
-                    payload,
+                capture_json(
+                    inert,
                     max_bytes=budget.limits.max_bytes,
                     max_depth=budget.limits.max_depth,
-                )
+                    budget=budget,
+                ).value
             )
             budget.consume("bytes", 128 + 64 * sum(len(item.fields) for item in copied))
             for item in copied:

@@ -10,7 +10,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.rdf.stores.seals import seal_files, verify_files
+from bijux_ontology.resources.files import seal_files, verify_files
 
 from ..types import OwlProfileBackend
 

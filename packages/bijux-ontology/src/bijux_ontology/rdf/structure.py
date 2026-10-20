@@ -1,8 +1,8 @@
-"""Bounded RDF-list decoding without interpreting member semantics."""
+"""Bounded RDF structural traversal without interpreting domain semantics."""
 
-from collections.abc import Iterator
+from collections.abc import Collection, Hashable, Iterable, Iterator, Mapping
 from itertools import islice
-from typing import cast
+from typing import TypeVar, cast
 
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF
@@ -104,3 +104,83 @@ def iter_rdf_list(
         yield first[0]
         current = rest[0]
         distance += 1
+
+
+_Vertex = TypeVar("_Vertex", bound=Hashable)
+
+
+def strong_components(
+    nodes: Collection[_Vertex],
+    forward: Mapping[_Vertex, Iterable[_Vertex]],
+    backward: Mapping[_Vertex, Iterable[_Vertex]],
+    *,
+    budget: Budget,
+    max_depth: int | None,
+) -> Iterator[list[_Vertex]]:
+    """Yield completed directed components over the caller's qualified identities.
+
+    Adjacency and physical scope belong to the caller. Iterative traversal owns
+    its bounded workspace; callers choose whether path depth has semantic force.
+    A yielded group is complete even if later work exhausts the allowance.
+    """
+    if max_depth is not None and (type(max_depth) is not int or max_depth < 0):
+        raise InputError("Directed traversal depth must be nonnegative or absent")
+    budget.reserve_storage(384)
+    seen: set[_Vertex] = set()
+    finished: list[_Vertex] = []
+    for seed in nodes:
+        budget.consume("work")
+        if seed in seen:
+            continue
+        budget.consume("states")
+        budget.reserve_storage(96)
+        stack = [(seed, False, 0)]
+        while stack:
+            node, exiting, depth = stack.pop()
+            budget.consume("work")
+            if exiting:
+                budget.consume("states")
+                budget.reserve_storage(16)
+                finished.append(node)
+                continue
+            if node in seen:
+                continue
+            if max_depth is not None and depth > max_depth:
+                raise LimitExceeded("Directed graph depth exceeds max_depth")
+            budget.consume("states", 2)
+            budget.reserve_storage(160)
+            seen.add(node)
+            stack.append((node, True, depth))
+            for child in forward[node]:
+                budget.consume("work")
+                if child not in seen:
+                    budget.consume("states")
+                    budget.reserve_storage(96)
+                    stack.append((child, False, depth + 1))
+    seen.clear()
+    for seed in reversed(finished):
+        budget.consume("work")
+        if seed in seen:
+            continue
+        budget.consume("states")
+        budget.reserve_storage(160)
+        group: list[_Vertex] = []
+        pending = [(seed, 0)]
+        while pending:
+            node, depth = pending.pop()
+            budget.consume("work")
+            if node in seen:
+                continue
+            if max_depth is not None and depth > max_depth:
+                raise LimitExceeded("Directed graph depth exceeds max_depth")
+            budget.consume("states", 2)
+            budget.reserve_storage(80)
+            seen.add(node)
+            group.append(node)
+            for parent in backward[node]:
+                budget.consume("work")
+                if parent not in seen:
+                    budget.consume("states")
+                    budget.reserve_storage(96)
+                    pending.append((parent, depth + 1))
+        yield group

@@ -12,7 +12,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
-from bijux_ontology.rdf.patches.types import (
+from bijux_ontology.rdf.records.types import (
     PatchLiteral,
     PatchQuad,
     PatchUnavailable,

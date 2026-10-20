@@ -6,7 +6,7 @@ from hashlib import sha256
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.json.values import _decode_json
+from bijux_ontology.json.values import capture_json
 from bijux_ontology.models.persistence.codecs import declaration_data, json_bytes
 
 from ...axioms.codec.decoding import ProjectionDecoder
@@ -103,12 +103,12 @@ def _snapshot(
             elif isinstance(item, ModelContract):
                 _members(item.models, encoder)
                 data = declaration_data(item.models, budget)
-                encoded = json_bytes(data, budget)
-                decoded = _decode_json(
-                    encoded,
+                decoded = capture_json(
+                    data,
                     max_bytes=budget.limits.max_bytes,
                     max_depth=budget.limits.max_depth,
-                )
+                    budget=budget,
+                ).value
                 owned = ModelContract(identifier, models_from_data(decoded), location)
                 if not owned.models:
                     raise InputError("A model contract requires a nonempty registry")

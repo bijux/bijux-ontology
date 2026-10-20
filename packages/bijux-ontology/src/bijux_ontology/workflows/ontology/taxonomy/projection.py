@@ -22,7 +22,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.owl.encoding.constructs import _UNSUPPORTED
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
-from bijux_ontology.rdf.patches.types import PatchUnavailable
+from bijux_ontology.rdf.records.types import PatchUnavailable
 from bijux_ontology.rdf.roles.classification import classify_statement
 from bijux_ontology.rdf.roles.types import TermRoleOccurrence
 from bijux_ontology.rdf.sources.snapshots import PreparedSource

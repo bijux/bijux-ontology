@@ -16,8 +16,10 @@ from bijux_ontology.rdf.patches.planning import _plan_captured_patch, capture_so
 from bijux_ontology.rdf.patches.types import (
     BlankNodePair,
     DatasetPatch,
-    PatchBlank,
     PatchBlankBinding,
+)
+from bijux_ontology.rdf.records.types import (
+    PatchBlank,
     PatchQuad,
     PatchResource,
     PatchUnavailable,

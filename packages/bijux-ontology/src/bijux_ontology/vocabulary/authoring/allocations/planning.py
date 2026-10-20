@@ -23,9 +23,8 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck, finish_migration
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import capture_source
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
-    PatchBlankBinding,
+from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
+from bijux_ontology.rdf.records.types import (
     PatchLiteral,
     PatchQuad,
     PatchResource,
@@ -36,15 +35,8 @@ from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, literal_datatype
 from bijux_ontology.vocabulary.accessions.recognition import prepare_rules
 
-from .storage import (
-    AllocationStore,
-    assignment_data,
-    encode,
-    policy_data,
-    qualify_draft,
-    read_assignment,
-    reserve_identifier,
-)
+from . import codecs, qualification
+from .storage import AllocationStore
 from .types import (
     AllocationAssignment,
     AllocationDraft,
@@ -138,7 +130,9 @@ def prepare_allocations(
             base, AllocationSnapshot
         ):
             raise InputError("Allocation preparation requires a store and loaded base")
-        current_policy = encode(policy_data(store.policy, operation), operation)
+        current_policy = codecs.encode(
+            qualification.policy_data(store.policy, operation), operation
+        )
         if current_policy != base._policy:
             raise InputError("Allocation base belongs to a different policy")
         selected, namespace = _range(store, owner, prefix, operation)
@@ -164,12 +158,12 @@ def prepare_allocations(
         )
         for request in supplied:
             if request.label is not None:
-                reserve_identifier(
+                qualification.reserve_identifier(
                     literal_datatype(request.label), blocked, registry, rules, operation
                 )
         assignments = []
         if proposed is not None:
-            qualify_draft(proposed, operation)
+            qualification.qualify_draft(proposed, operation)
             if (
                 proposed.store_id,
                 proposed.revision,
@@ -364,14 +358,16 @@ def allocation_draft_data(
 ) -> dict[str, object]:
     """Export only finite review intentions; no executable checks or reports."""
     operation = budget if budget is not None else Budget()
-    qualify_draft(draft, operation)
+    qualification.qualify_draft(draft, operation)
     return {
         "version": 1,
         "store": draft.store_id,
         "revision": draft.revision,
         "owner": draft.owner,
         "prefix": draft.prefix,
-        "assignments": [assignment_data(item, operation) for item in draft.assignments],
+        "assignments": [
+            codecs.assignment_data(item, operation) for item in draft.assignments
+        ],
     }
 
 
@@ -392,7 +388,7 @@ def read_allocation_draft(
         raise InputError("Malformed allocation review artifact")
     operation.consume("states", len(value["assignments"]))
     assignments = tuple(
-        read_assignment(item, operation) for item in value["assignments"]
+        codecs.read_assignment(item, operation) for item in value["assignments"]
     )
     result = AllocationDraft(
         text(value["store"], operation),
@@ -401,7 +397,7 @@ def read_allocation_draft(
         text(value["prefix"], operation),
         assignments,
     )
-    qualify_draft(result, operation)
+    qualification.qualify_draft(result, operation)
     return result
 
 
@@ -430,7 +426,7 @@ def reconcile_allocations(
         requests: dict[str, AllocationAssignment] = {}
         bases = set()
         for draft in supplied:
-            qualify_draft(draft, operation)
+            qualification.qualify_draft(draft, operation)
             operation.consume("states")
             bases.add((draft.store_id, draft.revision))
             for item in draft.assignments:

@@ -3,7 +3,7 @@
 from collections.abc import Callable
 
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.json.values import _decode_json
+from bijux_ontology.json.values import decode_owned_json
 
 
 class UnsupportedJsonNumber(Exception):
@@ -30,14 +30,14 @@ def decode_fhir_json(
         budget.consume("bytes", len(token))
         return int(token)
 
-    return _decode_json(
+    return decode_owned_json(
         payload,
         max_bytes=budget.limits.max_bytes,
         max_depth=budget.limits.max_depth,
         key_hook=key_hook,
         number_hook=qualify_number,
         budget=budget,
-    )
+    ).value
 
 
 def same_json(left: object, right: object, budget: Budget) -> bool:

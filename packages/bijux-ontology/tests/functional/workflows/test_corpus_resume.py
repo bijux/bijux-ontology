@@ -7,6 +7,8 @@ import sys
 import time
 from dataclasses import replace
 from pathlib import Path
+from threading import Event, Thread
+from types import FrameType
 
 import pytest
 from rdflib import URIRef
@@ -17,19 +19,28 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
-from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
+from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.workflows.corpus import CorpusRecord, ResumeCorpus
-from bijux_ontology.workflows.revisions import RevisionManager, prepare_revision
+from bijux_ontology.workflows.corpus.storage import Checkpoint
+from bijux_ontology.workflows.corpus.types import CorpusResult
+from bijux_ontology.workflows.revisions import (
+    PreparedRevision,
+    RevisionManager,
+    prepare_revision,
+)
 
 E = "https://example.org/corpus/"
 X = "http://www.w3.org/2001/XMLSchema#string"
 
 
-def manager(*, changed: bool = False, limits: Limits | None = None) -> RevisionManager:
-    """Prepare an actual named model contract, never a caller-labelled validator."""
+def prepared(
+    *, changed: bool = False, limits: Limits | None = None
+) -> PreparedRevision:
+    """Prepare an actual named model contract with its original semantic resources."""
     name = "other" if changed else "label"
     result = prepare_revision(
         (
@@ -57,8 +68,13 @@ def manager(*, changed: bool = False, limits: Limits | None = None) -> RevisionM
         limits=limits,
     )
     assert result.report.verified and result.prepared, result.report
+    return result.prepared
+
+
+def manager(*, changed: bool = False, limits: Limits | None = None) -> RevisionManager:
+    """Activate a verified actual contract under the caller's retention limits."""
     owned = RevisionManager(limits=limits)
-    owned.activate(result.prepared)
+    owned.activate(prepared(changed=changed, limits=limits))
     return owned
 
 
@@ -298,3 +314,79 @@ owned.close()
     assert a["verified"] and b["verified"] and a["count"] == b["count"] == 120
     assert a["reused"] >= committed and b["reused"] == 0
     assert a["semantic"] == b["semantic"]
+
+
+@pytest.mark.parametrize("cancelled", [False, True])
+def test_corpus_retains_one_revision_after_close_and_activation(
+    tmp_path: Path, cancelled: bool
+) -> None:
+    """Already admitted records retain their owner through close and cancellation."""
+    owned = manager()
+    lease = owned.lease()
+    original_revision, original_identity = lease.revision, lease.identity
+    successor = prepared(changed=True)
+    records = (record("one", value=None if cancelled else "valid"), record("two"))
+    store = ResumeCorpus(tmp_path / "retained.sqlite")
+    committed, resume, cancel = Event(), Event(), Event()
+    results: list[CorpusResult] = []
+    errors: list[BaseException] = []
+
+    def observe(frame: FrameType, event: str, argument: object) -> None:
+        # Observe a real committed record boundary without replacing validation.
+        if (
+            event == "return"
+            and frame.f_code is Checkpoint.write.__code__
+            and frame.f_locals.get("identifier") == "one"
+        ):
+            committed.set()
+            assert resume.wait(10)
+
+    def request() -> None:
+        sys.setprofile(observe)
+        try:
+            results.append(store.run(lease, records, cancel=cancel))
+        except BaseException as error:
+            errors.append(error)
+        finally:
+            sys.setprofile(None)
+
+    thread = Thread(target=request)
+    thread.start()
+    try:
+        assert committed.wait(10)
+        assert owned.status().operations == 1
+        owned.activate(successor, expected_active=original_revision)
+        lease.close()
+        assert owned.status().leases == 0 and owned.status().operations == 1
+        assert owned.status().active == successor.revision
+        with pytest.raises(ResourceError):
+            owned.retire(original_revision)
+        with pytest.raises(InputError, match="closed"):
+            store.run(lease, records)
+        with pytest.raises(InputError, match="closed"):
+            lease.check_rdf(prepare_source(records[0].source), records[0].usages)
+        if cancelled:
+            cancel.set()
+            draining = owned.close()
+            assert not draining.closed and draining.operations == 1
+    finally:
+        resume.set()
+        thread.join(10)
+        lease.close()
+    assert not thread.is_alive() and not errors
+    result = results[0]
+    assert result.revision == original_revision and result.identity == original_identity
+    assert result.records[0].durable
+    if cancelled:
+        assert result.report.outcome == "exhausted" and result.pending == ("two",)
+        assert result.records[0].report.outcome == "disagreement"
+        assert any(issue.kind == "finding" for issue in result.report)
+        assert owned.status().closed and owned.status().retained_bytes == 0
+    else:
+        assert result.report.verified and not result.pending
+        assert len(result.records) == 2 and all(
+            x.report.verified for x in result.records
+        )
+        assert owned.status().operations == 0 and owned.status().leases == 0
+        assert original_revision not in owned.retire(original_revision).retained
+        assert owned.close().closed

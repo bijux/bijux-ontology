@@ -9,7 +9,9 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.patches.planning import Captured
-from bijux_ontology.rdf.patches.types import (
+from bijux_ontology.rdf.paths.traversal import finite_path_steps, path_values
+from bijux_ontology.rdf.paths.types import RdfPath
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchLiteral,
     PatchQuad,
@@ -17,8 +19,6 @@ from bijux_ontology.rdf.patches.types import (
     PatchUnavailable,
     PatchValue,
 )
-from bijux_ontology.rdf.paths.traversal import finite_path_steps, path_values
-from bijux_ontology.rdf.paths.types import RdfPath
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import bound_node, literal_datatype

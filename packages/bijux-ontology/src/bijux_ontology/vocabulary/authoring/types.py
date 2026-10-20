@@ -14,7 +14,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.planning import Captured
-from bijux_ontology.rdf.patches.types import (
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchQuad,
     PatchResource,

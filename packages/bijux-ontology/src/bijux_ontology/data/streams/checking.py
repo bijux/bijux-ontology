@@ -29,8 +29,8 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.sources.loading import prepare_input
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.rdf.stores.seals import verify_files
 from bijux_ontology.rdf.stores.types import StoredRdf
+from bijux_ontology.resources.files import verify_files
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 

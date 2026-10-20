@@ -1,16 +1,18 @@
 """Owned JSON Patch operations executed by the maintained RFC implementation."""
 
-import json
 from collections.abc import Iterator, Sequence
 from dataclasses import replace
 from importlib.metadata import version
 from typing import Any
 
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, bound_text
-from bijux_ontology.json.values import owned_json
-from bijux_ontology.jsonld.contexts.processing import _data, _preflight
+from bijux_ontology.json import snapshots
+from bijux_ontology.jsonld.contexts.preparation import (
+    context_data,
+    preflight_context_json,
+)
 from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,
@@ -26,30 +28,6 @@ class _Precondition(InputError):
     """The supplied exact base or maintained JSON Patch test did not hold."""
 
 
-def serialized(value: object, budget: Budget) -> str:
-    """Reserve conservative escaped JSON storage before formatting owned values.
-
-    The existing ordinary-JSON measure counts every node and scalar character.
-    Thirty-two bytes per unit covers escaping, separators and finite float text.
-    Sorted object names give a conservative source snapshot comparison, keeping
-    bool, integer and floating spellings distinct without claiming RDF equality.
-    """
-    owned, cost = owned_json(value, budget)
-    size = 32 * (cost + 1)
-    if size > budget.limits.max_bytes:
-        raise LimitExceeded("Source patch representation exceeds max_bytes")
-    budget.consume("bytes", size)
-    return json.dumps(owned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-
-
-def snapshot(value: object, budget: Budget) -> tuple[object, str]:
-    """Own an ordinary JSON tree, eliminating caller container aliases."""
-    text = serialized(value, budget)
-    budget.consume("work", len(text) + 1)
-    budget.consume("bytes", len(text.encode("utf-8")))
-    return json.loads(text), text
-
-
 def declarations(
     values: Sequence[Any], kind: type[Any], budget: Budget
 ) -> tuple[Any, ...]:
@@ -58,7 +36,7 @@ def declarations(
     for value in capture(values, budget):
         if not isinstance(value, kind):
             raise InputError("Source patches require typed form/usage declarations")
-        _data(value, budget)
+        context_data(value, budget)
         result.append(replace(value))
     return tuple(result)
 
@@ -75,7 +53,7 @@ def loader_resources(loader: DocumentLoader | None, budget: Budget) -> ContextRe
         except InputError as error:
             bound_text(str(error), budget)
             raise
-        _preflight(response, budget)
+        preflight_context_json(response, budget)
         return response
 
     return context_resources(qualified, budget=budget)
@@ -87,7 +65,7 @@ def prepare_operations(
     """Own only the explicitly supported RFC operations, without parsing pointers."""
     result = []
     for value in capture(values, budget):
-        owned, _ = snapshot(value, budget)
+        owned, _ = snapshots.snapshot(value, budget)
         if not isinstance(owned, dict):
             raise InputError("JSON Patch operations require objects")
         op = owned.get("op")
@@ -131,8 +109,8 @@ def apply_operations(
         )
     current = document
     for operation in operations:
-        before = serialized(current, budget)
-        payload = serialized(operation, budget)
+        before = snapshots.serialized(current, budget)
+        payload = snapshots.serialized(operation, budget)
         budget.consume("work", len(before) + len(payload) + 1)
         # The backend owns pointer grammar, list insertion/removal and typed test
         # equality. Each operation has independent captured values; copy/move are
@@ -143,5 +121,5 @@ def apply_operations(
             raise _Precondition("A supplied JSON Patch test failed") from error
         except (jsonpatch.JsonPatchException, JsonPointerException) as error:
             raise InputError("The supplied JSON Patch cannot be applied") from error
-        serialized(current, budget)
+        snapshots.serialized(current, budget)
         yield current

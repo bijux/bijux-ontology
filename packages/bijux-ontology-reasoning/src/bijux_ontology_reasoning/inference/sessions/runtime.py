@@ -13,7 +13,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.execution.processes.sessions import FramedSession
+from bijux_ontology.execution.processes.sessions import FramedSession, WorkerGeneration
 from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.json.values import decode_json, object_value
 
@@ -67,6 +67,7 @@ class NativeSession:
         self._request: dict[str, Any] = {}
         self._preparation = b""
         self._ready = False
+        self._prepared_generation: WorkerGeneration | None = None
         self._prior_launches = 0
         self._classifications = 0
         self._theory: PreparedReasoningTheory | None = None
@@ -382,15 +383,16 @@ class NativeSession:
         transport = self._transport
         if transport is None:
             raise ResourceError("Reasoning session has no prepared transport")
-        if transport._process is not None and transport._process.poll() is not None:
-            transport.reset()
-            self._ready = False
-        if self._ready:
+        generation = transport.ensure_generation(operation.deadline, operation.cancel)
+        if self._ready and self._prepared_generation is generation:
             return
-        transport._interrupted(operation.deadline, operation.cancel)
-        transport._start()
-        raw = transport._exchange(
-            self._preparation, operation.deadline, operation.cancel, budget=operation
+        self._ready = False
+        raw = transport.exchange(
+            generation,
+            self._preparation,
+            operation.deadline,
+            operation.cancel,
+            budget=operation,
         )
         data = self._decode(raw, operation)
         _, receipt, _ = self._header(data, operation, issues, children)
@@ -400,6 +402,7 @@ class NativeSession:
         if loads != 1 or classifications != int(receipt.raw_consistent is True):
             raise ResourceError("Native preparation counters contradict qualification")
         self._classifications += classifications
+        self._prepared_generation = generation
         self._ready = True
         self.preparation = SessionPreparation(
             self.theory.identity,
@@ -451,8 +454,14 @@ class NativeSession:
             )
             payload = encode_request(request, operation)
             assert self._transport is not None
-            raw = self._transport._exchange(
-                payload, operation.deadline, operation.cancel, budget=operation
+            generation = self._prepared_generation
+            assert generation is not None
+            raw = self._transport.exchange(
+                generation,
+                payload,
+                operation.deadline,
+                operation.cancel,
+                budget=operation,
             )
             data = self._decode(raw, operation)
             if data["status"] != "completed" or data.get("qualified") is not True:

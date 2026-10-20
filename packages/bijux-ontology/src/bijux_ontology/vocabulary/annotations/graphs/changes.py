@@ -9,7 +9,7 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import IssueCollector, retain_report
 from bijux_ontology.rdf.patches.planning import Captured, Rejected
-from bijux_ontology.rdf.patches.types import (
+from bijux_ontology.rdf.records.types import (
     PatchQuad,
     PatchResource,
     PatchUnavailable,

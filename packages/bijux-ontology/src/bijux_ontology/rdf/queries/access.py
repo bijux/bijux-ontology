@@ -20,6 +20,7 @@ from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
+from bijux_ontology.rdf.sources.selection import select_read
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import validate_triple
 
@@ -92,24 +93,17 @@ def _graphs(
 ) -> Iterator[tuple[QueryTerm | None, Graph]]:
     """Inspect only the requested resource scope through the owned read boundary."""
     if isinstance(source, PreparedSource):
+        selected = select_read(
+            source,
+            budget,
+            graph_name="@default" if scope.kind == "default" else scope.graph_name,
+            union=scope.kind == "union",
+            dataset=scope.kind == "dataset",
+        )
         if scope.kind == "dataset":
-            if source.graph_name is not None or source.union:
-                raise InputError("Dataset query conflicts with the resource selection")
-            yield None, source._read("@default", budget=budget)
-            for name in source._graph_names(budget=budget):
-                yield name, source._read(name, budget=budget)
+            yield from selected.contexts(budget)
         else:
-            if isinstance(scope.graph_name, BNode) and not any(
-                name is scope.graph_name for name in source._graph_names(budget=budget)
-            ):
-                raise InputError("Blank graph name must come from its owned snapshot")
-            graph_name = "@default" if scope.kind == "default" else scope.graph_name
-            if isinstance(graph_name, URIRef):
-                graph_name = str(graph_name)
-            yield (
-                None,
-                source._read(graph_name, union=scope.kind == "union", budget=budget),
-            )
+            yield None, selected.read()
         return
     if not isinstance(source, Graph):
         raise InputError("Queries require a graph or prepared source")

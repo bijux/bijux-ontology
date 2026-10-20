@@ -14,8 +14,8 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.planning import capture_source
+from bijux_ontology.rdf.records.materialization import materialize
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
@@ -147,7 +147,7 @@ def write_correspondence(
         )
         captured = capture_source(carrier, "correspondence:", current)
         blanks: dict[str, BNode] = {}
-        candidate = _materialize(
+        candidate = materialize(
             captured.witness, table.source, current, bindings=blanks
         )
         pin = metadata.graph_name

@@ -10,9 +10,9 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.json.values import owned_json
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
+from bijux_ontology.rdf.sources.selection import physical_graph
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.vocabulary.annotations.graphs.reading import _physical
 from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationStatement
 
 from .projection import (
@@ -67,7 +67,7 @@ def write_obo_graphs(
         bound_text(graph_id, owned)
         identifier = named(graph_id)
         selected_literals = literals(literal_predicates, owned)
-        physical, selected = _physical(source, graph, owned)
+        physical, selected = physical_graph(source, graph, owned)
         triples = []
         for triple in selected:
             owned.consume("work")

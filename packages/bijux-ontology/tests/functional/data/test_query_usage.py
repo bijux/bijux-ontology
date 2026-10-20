@@ -1,7 +1,12 @@
 """Actual parser role evidence remains separate from dynamic dependency coverage."""
 
+import json
+import subprocess
+import sys
 from dataclasses import replace
 from threading import Event
+from types import FrameType
+from typing import Literal as EventKind
 
 import pytest
 from rdflib import Graph, Literal, Namespace
@@ -13,7 +18,9 @@ from bijux_ontology.data.query_usage import (
     read_query_usage,
 )
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
+from bijux_ontology.execution.workers import execute_worker
 
 EX = Namespace("urn:query-use:")
 PREFIX = "PREFIX e:<urn:query-use:> "
@@ -255,3 +262,78 @@ def test_parsed_dependencies_drive_actual_upgrade_checks_without_source_paths() 
     assert partial.report.children[0] is dynamic.report
     unchanged = assess_upgrade(before, before, query_usages=(dynamic,))
     assert not unchanged.report.verified and unchanged.verdict == "unverified"
+
+
+@pytest.mark.parametrize("phase", ("complete", "invalid", "admission"))
+def test_native_parser_terminal_costs_and_findings_survive_inherited_cancellation(
+    phase: str,
+) -> None:
+    """Settle actual parsing work without refunding a worker stopped without receipt."""
+    text = "SELECT WHERE {" if phase == "invalid" else "SELECT ?s WHERE {?s <urn:p> ?o}"
+    limits = Limits()
+    baseline = read_query_usage(text, limits=limits)
+    assert baseline.report.outcome == (
+        "input_error" if phase == "invalid" else "agreement"
+    )
+    cancellation = Event()
+    ledger = Budget(limits)
+    parent = Operation(limits, ledger, 30, cancellation)
+    native: list[bytes] = []
+    processes: list[subprocess.Popen[bytes]] = []
+    before: dict[BudgetKind, int] = {}
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        returned: object,
+    ) -> None:
+        if previous is not None:
+            previous(frame, event, returned)
+        if event != "return":
+            return
+        process = frame.f_locals.get("self")
+        if (
+            frame.f_code is subprocess.Popen.__init__.__code__
+            and isinstance(process, subprocess.Popen)
+            and isinstance(process.args, list)
+            and "bijux_ontology.data.query_usage.worker" in process.args
+        ):
+            processes.append(process)
+            if phase == "admission":
+                cancellation.set()
+        if (
+            frame.f_code is execute_worker.__code__
+            and frame.f_locals.get("module") == "bijux_ontology.data.query_usage.worker"
+            and isinstance(returned, bytes)
+        ):
+            native.append(returned)
+            before.update((kind, ledger.remaining(kind)) for kind in BUDGET_KINDS)
+            cancellation.set()
+
+    sys.setprofile(observe)
+    try:
+        stopped = read_query_usage(text, budget=parent)
+    finally:
+        sys.setprofile(previous)
+    assert cancellation.is_set()
+    assert len(processes) == 1 and processes[0].returncode is not None
+    if phase == "admission":
+        assert not native and stopped.report.outcome == "exhausted"
+        assert all(ledger.remaining(kind) == 0 for kind in BUDGET_KINDS)
+    else:
+        assert len(native) == 1
+        assert stopped.report == baseline.report
+        assert stopped.references == baseline.references
+        consumed = json.loads(native[0])["consumed"]
+        assert all(
+            ledger.remaining(kind) == before[kind] - consumed[kind]
+            for kind in BUDGET_KINDS
+        )
+    cancellation.clear()
+    recovered = read_query_usage(text, budget=parent)
+    if phase == "admission":
+        assert recovered.report.outcome == "exhausted"
+        assert read_query_usage(text, limits=limits).report.verified
+    else:
+        assert recovered.report == baseline.report

@@ -16,10 +16,10 @@ from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.processing.runtime import processor
-from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.direction import DirectionCheck
 from bijux_ontology.models.emission.matching import matches_value
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
+from bijux_ontology.models.value_constraints.checking import application_matches
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.rdf.literals.checking import check_literal

@@ -7,14 +7,14 @@ from rdflib import BNode, Graph, URIRef
 
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.documents.patches.operations import snapshot
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.json.snapshots import snapshot
 from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.planning import Captured, capture_source
-from bijux_ontology.rdf.patches.types import PatchBlank, PatchResource
+from bijux_ontology.rdf.records.types import PatchBlank, PatchResource
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node

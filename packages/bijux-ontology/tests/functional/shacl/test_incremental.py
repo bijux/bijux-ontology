@@ -15,9 +15,9 @@ from bijux_ontology.rdf.patches.planning import plan_rdf_patch
 from bijux_ontology.rdf.patches.types import (
     BlankNodePair,
     DatasetPatch,
-    PatchBlank,
     PatchBlankBinding,
 )
+from bijux_ontology.rdf.records.types import PatchBlank
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource

@@ -10,6 +10,7 @@ from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import (
     Budget,
@@ -117,7 +118,8 @@ def _dispatch(request: dict[str, object], operation: Operation) -> dict[str, obj
     operation.consume("states", 16)
     operation.consume("work", 4 * cap)
     allowances = {key: operation.remaining(key) // 4 for key in _KINDS}
-    request["allowances"] = allowances
+    delegated = DelegatedAllowance(operation, allowances)
+    request["allowances"] = delegated.to_data()
     request["output_cap"] = cap
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
     received = dispatched = False
@@ -157,24 +159,13 @@ def _dispatch(request: dict[str, object], operation: Operation) -> dict[str, obj
             or type(response["python"]) is not str
         ):
             raise ResourceError("Invalid native workload identity or status")
-        controls = object_value(response["controls"], location="controls")
-        if set(controls) != set(_KINDS):
-            raise ResourceError("Native workload omitted cumulative counters")
-        for key in _KINDS:
-            amount = controls[key]
-            if type(amount) is not int or not 0 <= amount <= allowances[key]:
-                raise ResourceError("Invalid native workload counter")
-        # Debit a fully validated receipt without allowing a late cancellation
-        # between counters to partially debit and then forfeit the same quota.
-        for key in _KINDS:
-            operation.consume_completed(key, cast(int, controls[key]))
+        delegated.settle(response["controls"])
         received = True
         operation.consume("work", 0)
         return response
     finally:
         if dispatched and not received:
-            for key in _KINDS:
-                operation.consume_completed(key, allowances[key])
+            delegated.forfeit()
 
 
 def _engine(

@@ -15,9 +15,9 @@ from bijux_ontology.diagnostics.errors import (
 )
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.json.values import (
-    _capture_json,
-    _measure_json,
+    capture_json,
     decode_json,
+    measure_json,
     own_json,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
@@ -139,10 +139,10 @@ class OfflineDocumentLoader:
                         size = os.fstat(handle.fileno()).st_size
                         if size > min(self._max_bytes, metadata.limits.max_bytes):
                             raise LimitExceeded("JSON-LD document exceeds max_bytes")
-                        # Prepay the maintained decoder and its ownership copy;
-                        # read only the bounded observed snapshot plus a growth marker.
+                        # The decoder owns its parser workspace. This boundary
+                        # prepays only the observed bytes and growth marker.
                         metadata.consume("work", size + 1)
-                        metadata.consume("bytes", 128 * (size + 1))
+                        metadata.consume("bytes", size + 1)
                         payload = handle.read(size + 1)
                     if len(payload) != size:
                         raise ContextInputError(
@@ -162,6 +162,7 @@ class OfflineDocumentLoader:
                         source=url,
                         max_bytes=self._max_bytes,
                         max_depth=self._limits.max_depth,
+                        budget=metadata,
                     )
                 except LimitExceeded:
                     raise
@@ -169,13 +170,14 @@ class OfflineDocumentLoader:
                     raise ContextInputError(
                         f"Cannot load JSON-LD document {url}: {error}"
                     ) from error
-            document = own_json(
-                document,
-                source=url,
-                max_bytes=self._max_bytes,
-                max_depth=self._limits.max_depth,
-                budget=metadata,
-            )
+            else:
+                document = own_json(
+                    document,
+                    source=url,
+                    max_bytes=self._max_bytes,
+                    max_depth=self._limits.max_depth,
+                    budget=metadata,
+                )
             location_metadata = self._locations[url]
             return {
                 "contextUrl": location_metadata.context_url,
@@ -324,13 +326,15 @@ class ContextResources:
             if isinstance(self._loader, OfflineDocumentLoader)
             else self._loader(url, options)
         )
-        raw, size = _capture_json(
+        captured = capture_json(
             supplied,
             source=url,
             max_bytes=self.budget.limits.max_bytes,
             max_depth=self.budget.limits.max_depth,
             budget=self.budget,
         )
+        raw = captured.value
+        size = captured.measurement.size
         # The processor's semantic input allowance is independent of immutable
         # scalar sharing in the ownership copy.
         self.budget.consume("bytes", size)
@@ -366,7 +370,7 @@ class ContextResources:
         else:
             response["contextUrl"] = None
         if changed:
-            _measure_json(
+            measure_json(
                 response,
                 source=url,
                 max_bytes=self.budget.limits.max_bytes,
@@ -390,7 +394,7 @@ class ContextResources:
             "document": response.get("document"),
             "contextUrl": response.get("contextUrl"),
         }
-        measurement = _measure_json(
+        measurement = measure_json(
             identity_input,
             source=source,
             max_bytes=self.budget.limits.max_bytes,

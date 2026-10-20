@@ -3,19 +3,18 @@
 import base64
 import json
 import time
-from collections.abc import Mapping
 from dataclasses import asdict
 from threading import Event
-from typing import cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, report_from_data
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.rdf.patches.codecs import term_data, witness_data
+from bijux_ontology.rdf.records.codecs import term_data, witness_data
 
 from .preparation import reserve
 from .types import (
@@ -96,7 +95,7 @@ def request_data(request: ReproductionRequest, budget: Budget) -> dict[str, obje
 def _response(
     raw: bytes,
     budget: Operation,
-    allowances: Mapping[BudgetKind, int],
+    delegated: DelegatedAllowance,
     capacity: int,
     request: ReproductionRequest,
 ) -> OperationResult:
@@ -106,18 +105,11 @@ def _response(
     )
     if set(response) != {"report", "obligations", "findings", "consumed"}:
         raise ResourceError("Malformed reproduction worker response")
-    receipt = object_value(response["consumed"], location="worker receipt")
-    if set(receipt) != set(_KINDS):
-        raise ResourceError("Malformed reproduction worker receipt")
-    for kind in _KINDS:
-        amount = receipt[kind]
-        if type(amount) is not int or not 0 <= amount <= allowances[kind]:
-            raise ResourceError("Reproduction worker exceeded its shared allowance")
-        budget.consume_completed(kind, amount)
+    receipt = delegated.settle(response["consumed"])
     report = report_from_data(response["report"])
     budget.shared._register_transferred_report(
         report,
-        paid_issues=cast(int, receipt["issues"]),
+        paid_issues=receipt["issues"],
         max_references=len(raw) * 2 + 1,
     )
     raw_obligations = response["obligations"]
@@ -188,7 +180,8 @@ def _run(request: ReproductionRequest, operation: Operation) -> OperationResult:
     reserve(operation, capacity * 2 + 1)
     operation.consume("bytes", 6 * capacity)
     allowances = {kind: operation.remaining(kind) for kind in _KINDS}
-    envelope["allowances"] = allowances
+    delegated = DelegatedAllowance(operation, allowances)
+    envelope["allowances"] = delegated.to_data()
     payload = json.dumps(envelope, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
@@ -203,13 +196,12 @@ def _run(request: ReproductionRequest, operation: Operation) -> OperationResult:
             timeout=remaining,
             cancel=operation.cancel,
         )
-        return _response(raw, operation, allowances, capacity, request)
+        return _response(raw, operation, delegated, capacity, request)
     except InputError as error:
         # No qualified receipt means no unused delegated allowance can be
         # recovered. This is conservative forfeiture, never a native work count.
         # Terminal accounting bypasses the expired/cancelled operation checkpoint.
-        for kind in _KINDS:
-            operation.consume_completed(kind, operation.remaining(kind))
+        delegated.forfeit()
         raise LimitExceeded(
             "Reproduction stopped without a qualified worker control receipt; "
             "the remaining delegated allowance was forfeited: " + str(error)

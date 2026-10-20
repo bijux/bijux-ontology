@@ -10,10 +10,10 @@ from rdflib import BNode, Graph, URIRef
 from bijux_ontology.declarations.codecs import models_from_data
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.documents.patches.operations import serialized, snapshot
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import IssueCollector, Limits, retain_report
 from bijux_ontology.json.paths import at_path
+from bijux_ontology.json.snapshots import serialized, snapshot
 from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.processing.resources import (
@@ -23,9 +23,9 @@ from bijux_ontology.jsonld.processing.resources import (
 from bijux_ontology.jsonld.usages.checking import check_context, prepare_usages
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
-from bijux_ontology.rdf.patches.applying import _materialize
-from bijux_ontology.rdf.patches.codecs import read_term, read_witness
-from bijux_ontology.rdf.patches.types import PatchBlank
+from bijux_ontology.rdf.records.codecs import read_term, read_witness
+from bijux_ontology.rdf.records.materialization import materialize
+from bijux_ontology.rdf.records.types import PatchBlank
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
@@ -54,7 +54,7 @@ def _source(
     witness = read_witness(value, budget)
     original = prepare_rdf(Graph(), require_complete_graphs=True, budget=budget)
     bindings: dict[str, BNode] = {}
-    result = _materialize(witness, original, budget, bindings=bindings)
+    result = materialize(witness, original, budget, bindings=bindings)
     return result, bindings
 
 

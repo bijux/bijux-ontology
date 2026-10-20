@@ -250,8 +250,7 @@ def compare_literal_values(
                     value, location=label, budget=operation
                 )
             else:
-                validation = check_literal(value, location=label)
-                operation.consume("issues", len(validation.issues))
+                validation = check_literal(value, location=label, budget=operation)
             children.append(validation)
         if all(child.verified for child in children):
             if None in families:

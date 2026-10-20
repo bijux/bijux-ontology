@@ -15,9 +15,9 @@ from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import read_term, term_data
 from bijux_ontology.rdf.stores.preparation import _adopt
 from bijux_ontology.rdf.stores.protocol import scope_data
-from bijux_ontology.rdf.stores.seals import StoreFile
 from bijux_ontology.rdf.stores.types import StoredRdf
 from bijux_ontology.rdf.terms import bound_node
+from bijux_ontology.resources.files import FileSnapshot
 
 from .types import StreamStatement
 
@@ -87,7 +87,7 @@ def read_stored(value: object, budget: Budget) -> tuple[StoredRdf, QueryScope]:
         ):
             raise ResourceError("Invalid sealed file revision")
         files.append(
-            StoreFile(
+            FileSnapshot(
                 cast(str, fields["name"]),
                 cast(int, fields["size"]),
                 cast(int, fields["modified_ns"]),

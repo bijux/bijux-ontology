@@ -1,34 +1,21 @@
-"""Observe selected processor-owned objects after actual context transitions."""
+"""Observe selected source objects under their actual maintained active contexts."""
 
-from dataclasses import dataclass
 from typing import Any
 
-from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.paths import SourcePath, at_path, bound_path
+from bijux_ontology.jsonld.contexts.preparation import preflight_context_json
+from bijux_ontology.jsonld.contexts.types import (
+    SourceTerm,
+    TermDefinition,
+    UsageContextUnavailable,
+)
 from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
     ContextResources,
 )
-from bijux_ontology.jsonld.processing.runtime import processor
 
-from .processing import _Bridge, _preflight, _Unsupported
-from .types import TermDefinition
-
-
-class UsageContextUnavailable(InputError):
-    """An actual source-object/context association cannot be established safely."""
-
-
-@dataclass(frozen=True)
-class SourceTerm:
-    """A key expanded under its actual maintained active context."""
-
-    term: str
-    iri: str | None
-    explicit: bool
-    compact: bool
-    vocabulary: str | None
+from .state import ContextProcessor, NativeContext, UnsupportedContext, _require_call
 
 
 def source_terms(
@@ -45,19 +32,33 @@ def source_terms(
     parent-context reconstruction or expanded-array correspondence is attempted.
     Unvisited/synthetic object scopes are omitted for the caller to qualify.
     """
-    runtime = processor()
-    _preflight(document, budget)
+    preflight_context_json(document, budget)
     for path in paths:
         bound_path(path, budget)
-    bridge = _Bridge(runtime, resources, base, "json-ld-1.1", budget)
-    engine = bridge.processor
-    if any(
-        not callable(getattr(engine, name, None))
-        for name in ("_expand", "_expand_object")
-    ):
-        raise UsageContextUnavailable(
-            "Maintained source-object observation is unavailable"
+    try:
+        bridge = ContextProcessor(resources, base, "json-ld-1.1", budget)
+        _require_call(
+            getattr(bridge.processor, "_expand", None),
+            "source expansion",
+            {},
+            None,
+            {},
+            {},
         )
+        _require_call(
+            getattr(bridge.processor, "_expand_object", None),
+            "source observation",
+            {},
+            None,
+            None,
+            {},
+            None,
+            {},
+        )
+    except UnsupportedContext as error:
+        raise UsageContextUnavailable(str(error)) from error
+    runtime = bridge.runtime
+    engine = bridge.processor
     original_expand = engine._expand
     original_object = engine._expand_object
     targets: dict[int, tuple[object, SourcePath]] | None = None
@@ -94,7 +95,7 @@ def source_terms(
         assert targets is not None
         target = targets.get(id(element))
         if target is not None and target[0] is element and isinstance(element, dict):
-            view = bridge.view(active)
+            view = bridge.view(NativeContext(active))
             terms = []
             budget.consume("states", len(element))
             budget.consume("bytes", 64 + 64 * len(element))
@@ -157,7 +158,7 @@ def source_terms(
     engine._expand_object = observe
     try:
         engine.expand(document, bridge.options)
-    except _Unsupported as error:
+    except UnsupportedContext as error:
         raise UsageContextUnavailable(
             "Maintained context layout is unsupported"
         ) from error

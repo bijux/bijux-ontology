@@ -16,15 +16,15 @@ from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json
-from bijux_ontology.rdf.patches.codecs import read_term, read_witness, witness_data
-from bijux_ontology.rdf.patches.types import (
+from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
+from bijux_ontology.rdf.records.codecs import read_term, read_witness, witness_data
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
     PatchLiteral,
     PatchQuad,
     PatchValue,
     SnapshotWitness,
 )
-from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.terms import (
     bound_node,
     literal_datatype,

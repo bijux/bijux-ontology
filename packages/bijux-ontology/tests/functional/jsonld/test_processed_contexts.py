@@ -21,6 +21,23 @@ EX = "https://example.org/v#"
 PREFIX = {"@id": EX, "@prefix": True}
 
 
+@pytest.mark.parametrize("contract", ["missing", "signature"])
+def test_unsupported_native_context_api_is_incomplete(
+    monkeypatch: pytest.MonkeyPatch, contract: str
+) -> None:
+    """An incompatible maintained API cannot masquerade as invalid caller input."""
+    from bijux_ontology.jsonld.processing.runtime import processor
+
+    native = processor().JsonLdProcessor
+    monkeypatch.setattr(
+        native, "get_context_value", None if contract == "missing" else lambda: None
+    )
+    result = inspect_context({"name": EX + "name"})
+    assert result.view is None and not result.report.complete
+    assert result.report.outcome == "unverified"
+    assert any("PyLD context value" in issue.message for issue in result.report)
+
+
 def test_effective_reordering_compact_iris_and_unused_coercions() -> None:
     """Unused definitions are inspected without fabricating a sample document."""
     first = {

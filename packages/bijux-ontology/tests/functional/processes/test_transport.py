@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from contextlib import suppress
 from pathlib import Path
 from threading import Event, Thread
+from types import FrameType
 from typing import Any, cast
 
 import pytest
@@ -16,6 +17,7 @@ from rdflib import Graph
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.processes.sessions import FramedSession, WorkerGeneration
 from bijux_ontology.execution.processes.transport import exchange_worker, run_worker
 from bijux_ontology.shacl.checking import validate_shapes
 
@@ -265,3 +267,142 @@ def test_exited_leader_cannot_certify_unfinished_pipes(
         )
         == b"complete"
     )
+
+
+def test_framed_generation_rejects_retired_and_foreign_response_ownership() -> None:
+    """An actual completed frame cannot cross a generation replacement boundary."""
+    program = """import struct,sys
+while True:
+ header=sys.stdin.buffer.read(8)
+ if not header:break
+ size=struct.unpack('>Q',header)[0]
+ data=sys.stdin.buffer.read(size)
+ sys.stdout.buffer.write(struct.pack('>Q',len(data))+data)
+ sys.stdout.buffer.flush()
+"""
+    command = (sys.executable, "-I", "-B", "-c", program)
+    session, foreign = FramedSession(command, cap=128), FramedSession(command, cap=128)
+    returned, resume = Event(), Event()
+    values: list[bytes] = []
+    failures: list[BaseException] = []
+    first = session.ensure_generation(time.monotonic() + 5, None)
+
+    def observe(frame: FrameType, event: str, argument: object) -> None:
+        # Pause only after real response I/O, before its final ownership check.
+        parent = frame.f_back
+        if (
+            event == "call"
+            and frame.f_code.co_name == "checkpoint"
+            and parent is not None
+            and parent.f_code is FramedSession.exchange.__code__
+            and isinstance(parent.f_locals.get("complete"), Event)
+            and parent.f_locals["complete"].is_set()
+        ):
+            returned.set()
+            assert resume.wait(10)
+
+    def request() -> None:
+        sys.setprofile(observe)
+        try:
+            values.append(session.exchange(first, b"old", time.monotonic() + 10, None))
+        except BaseException as error:
+            failures.append(error)
+        finally:
+            sys.setprofile(None)
+
+    thread = Thread(target=request)
+    thread.start()
+    try:
+        assert returned.wait(5)
+        session.reset(generation=first)
+        current = session.ensure_generation(time.monotonic() + 5, None)
+        assert current is not first and current.number == first.number + 1
+        foreign_generation = foreign.ensure_generation(time.monotonic() + 5, None)
+        for rejected in (
+            WorkerGeneration(current.number, current.pid),
+            foreign_generation,
+        ):
+            with pytest.raises(ResourceError, match="generation"):
+                session.exchange(rejected, b"foreign", time.monotonic() + 5, None)
+        resume.set()
+        thread.join(5)
+        assert not thread.is_alive() and not values
+        assert len(failures) == 1 and isinstance(failures[0], ResourceError)
+        # The late failed request can discard only its original generation.
+        assert session.generation is current
+        assert (
+            session.exchange(current, b"fresh", time.monotonic() + 5, None) == b"fresh"
+        )
+        assert session.launches == 2
+    finally:
+        resume.set()
+        thread.join(5)
+        session.close()
+        foreign.close()
+    for closed in (session, foreign):
+        with pytest.raises(ResourceError, match="closed"):
+            closed.ensure_generation(time.monotonic() + 5, None)
+
+
+@pytest.mark.parametrize("boundary", ["diagnostics", "frame"])
+def test_framed_thread_start_failure_reaps_real_worker_and_recovers(
+    monkeypatch: pytest.MonkeyPatch,
+    boundary: str,
+) -> None:
+    """A failed thread owner cannot strand a spawned child or its pipes."""
+    from bijux_ontology.execution.processes import sessions
+    from bijux_ontology.execution.processes.ownership import spawn_owned_process
+
+    spawn = spawn_owned_process
+    children: list[subprocess.Popen[bytes]] = []
+
+    def capture(
+        command: list[str] | tuple[str, ...],
+        *,
+        stdin: int | None = None,
+        stdout: int | None = None,
+        stderr: int | None = None,
+    ) -> subprocess.Popen[bytes]:
+        process = spawn(command, stdin=stdin, stdout=stdout, stderr=stderr)
+        children.append(process)
+        return process
+
+    def unavailable(thread: Thread) -> None:
+        raise RuntimeError("diagnostic thread unavailable")
+
+    program = (
+        "import struct,sys,time; header=sys.stdin.buffer.read(8); "
+        "data=sys.stdin.buffer.read(struct.unpack('>Q',header)[0]); "
+        "sys.stdout.buffer.write(header+data); sys.stdout.buffer.flush(); "
+        "time.sleep(60)"
+    )
+    session = FramedSession((sys.executable, "-I", "-B", "-c", program), cap=128)
+    monkeypatch.setattr(sessions, "spawn_owned_process", capture)
+    try:
+        first = (
+            session.ensure_generation(time.monotonic() + 5, None)
+            if boundary == "frame"
+            else None
+        )
+        with monkeypatch.context() as failed:
+            failed.setattr(Thread, "start", unavailable)
+            with pytest.raises(ResourceError, match=boundary + " could not be started"):
+                if first is None:
+                    session.ensure_generation(time.monotonic() + 5, None)
+                else:
+                    session.exchange(first, b"request", time.monotonic() + 5, None)
+        assert len(children) == 1 and children[0].poll() is not None
+        assert all(
+            stream is not None and stream.closed
+            for stream in (children[0].stdin, children[0].stdout, children[0].stderr)
+        )
+        assert session.generation is None and session.launches == 1
+        recovered = session.ensure_generation(time.monotonic() + 5, None)
+        assert recovered.number == 2
+        assert (
+            session.exchange(recovered, b"fresh", time.monotonic() + 5, None)
+            == b"fresh"
+        )
+    finally:
+        session.close()
+    assert len(children) == 2 and all(child.poll() is not None for child in children)

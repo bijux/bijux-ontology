@@ -10,6 +10,7 @@ from typing import Literal, cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, report_from_data
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import (
@@ -60,7 +61,7 @@ def position(value: object) -> AlgebraPosition:
 
 
 def _adopt(
-    raw: bytes, operation: Operation, allowances: dict[BudgetKind, int], cap: int
+    raw: bytes, operation: Operation, delegated: DelegatedAllowance, cap: int
 ) -> tuple[tuple[QueryReference, ...], tuple[QueryDynamicScope, ...], Report]:
     data = object_value(
         decode_json(raw, max_bytes=cap, max_depth=operation.limits.max_depth),
@@ -68,18 +69,10 @@ def _adopt(
     )
     if set(data) != {"references", "dynamic", "report", "consumed"}:
         raise InputError("Malformed query usage response fields")
-    receipt = object_value(data["consumed"], location="query usage receipt")
-    if set(receipt) != set(KINDS):
-        raise InputError("Malformed query usage control receipt")
-    for kind in KINDS:
-        count = receipt[kind]
-        if type(count) is not int or not 0 <= count <= allowances[kind]:
-            raise InputError("Query usage worker exceeded its shared allowance")
-    for kind in KINDS:
-        operation.consume(kind, cast(int, receipt[kind]))
+    receipt = delegated.settle(data["consumed"])
     report = report_from_data(data["report"])
     operation.shared._register_transferred_report(
-        report, paid_issues=cast(int, receipt["issues"]), max_references=2 * cap + 1
+        report, paid_issues=receipt["issues"], max_references=2 * cap + 1
     )
     references = []
     dynamic = []
@@ -214,7 +207,8 @@ def read_query_usage(
         reserve(operation, 2 * cap + 1)
         operation.consume("bytes", 6 * cap)
         allowances = {key: operation.remaining(key) for key in KINDS}
-        envelope["allowances"] = allowances
+        delegated = DelegatedAllowance(operation, allowances)
+        envelope["allowances"] = delegated.to_data()
         encoded = json.dumps(envelope, ensure_ascii=True, separators=(",", ":")).encode(
             "ascii"
         )
@@ -227,12 +221,11 @@ def read_query_usage(
                 encoded,
                 cap=cap,
                 timeout=remaining,
-                cancel=cancel,
+                cancel=operation.cancel,
             )
-            references, dynamic, report = _adopt(raw, operation, allowances, cap)
+            references, dynamic, report = _adopt(raw, operation, delegated, cap)
         except InputError as error:
-            for key in KINDS:
-                operation.shared.consume(key, operation.shared.remaining(key))
+            delegated.forfeit()
             raise LimitExceeded(
                 "Query usage lacks a qualified worker control receipt; "
                 "delegated allowances were forfeited: " + str(error)

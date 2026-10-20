@@ -28,9 +28,9 @@ from bijux_ontology.models.contracts.constraints import (
 )
 from bijux_ontology.models.contracts.propagation import ModelContracts
 from bijux_ontology.models.contracts.registry import index_models
-from bijux_ontology.models.emission.application import retain_enumeration_report
 from bijux_ontology.models.emission.direction import project_direction
 from bijux_ontology.models.emission.matching import trait_matches
+from bijux_ontology.models.value_constraints.checking import retain_enumeration_report
 from bijux_ontology.owl.obligations import (
     ObligationResult,
     OntologyObligation,

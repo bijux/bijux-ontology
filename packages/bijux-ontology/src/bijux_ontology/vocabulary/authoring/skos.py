@@ -9,7 +9,7 @@ from rdflib.namespace import OWL, RDF, SKOS
 
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.rdf.patches.planning import Rejected
-from bijux_ontology.rdf.patches.types import PatchLiteral, PatchResource
+from bijux_ontology.rdf.records.types import PatchLiteral, PatchResource
 
 from .types import (
     CreateSkosResource,

@@ -341,11 +341,11 @@ class ShaclSession:
         # Waiting callers own no worker computation and must not reset its state.
         try:
             while not self._lock.acquire(timeout=0.01):
-                self._backend._interrupted(deadline, cancel)
+                self._backend.checkpoint(deadline, cancel)
         except (LimitExceeded, ResourceError) as error:
             return _incomplete(plan, error)
         try:
-            self._backend._interrupted(deadline, cancel)
+            self._backend.checkpoint(deadline, cancel)
             source_usages = capture(source_usages, chosen)
             graph = (
                 data._read(graph_name, union=union, budget=chosen)
@@ -454,7 +454,7 @@ class ShaclSession:
                     ),
                 )
             try:
-                self._backend._interrupted(deadline, cancel)
+                self._backend.checkpoint(deadline, cancel)
             except (LimitExceeded, ResourceError) as error:
                 result.report = replace(
                     result.report,

@@ -21,7 +21,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.paths import SourcePath, bounded_location
-from bijux_ontology.json.values import _decode_json
+from bijux_ontology.json.values import decode_owned_json
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.rdf.literals.checking import check_literal
@@ -312,14 +312,14 @@ def _run(
             operation.consume("work", len(payload) + 1)
             operation.consume("bytes", len(payload))
         state.projections = _projections(projections, operation)
-        document = _decode_json(
+        document = decode_owned_json(
             payload,
             max_bytes=operation.limits.max_bytes,
             max_depth=operation.limits.max_depth,
             number_hook=state.number,
             key_hook=state.key if state.projections else None,
             budget=operation,
-        )
+        ).value
         for path in state.projections.keys() - state.seen:
             issues.append(
                 Issue(

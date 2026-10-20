@@ -17,7 +17,7 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.budgets import operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.json.schema import backend
-from bijux_ontology.json.values import _decode_json, array_value, owned_json
+from bijux_ontology.json.values import array_value, decode_owned_json, owned_json
 
 from .projection import (
     ImportProjection,
@@ -132,13 +132,13 @@ def read_obo_graphs(
             return int(token)
 
         document = obj(
-            _decode_json(
+            decode_owned_json(
                 payload,
                 max_bytes=owned.limits.max_bytes,
                 max_depth=owned.limits.max_depth,
                 number_hook=number,
                 budget=owned,
-            )
+            ).value
         )
         _validate(document, owned)
         keys(document, {"graphs"})

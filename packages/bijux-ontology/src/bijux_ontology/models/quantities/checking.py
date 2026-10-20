@@ -27,7 +27,7 @@ from bijux_ontology.json.paths import (
     validate_path,
 )
 from bijux_ontology.json.values import owned_json
-from bijux_ontology.models.emission.application import application_matches
+from bijux_ontology.models.value_constraints.checking import application_matches
 from bijux_ontology.rdf.literals.checking import check_literal
 
 from .types import QuantityCheck, QuantityContract, UnitBinding
@@ -178,7 +178,9 @@ def _numeric(value: object, budget: Budget, issues: IssueCollector) -> Decimal |
     if len(text) > 4096:
         raise _Unavailable("Decimal text exceeds the qualified lexical profile")
     budget.consume("work", len(text) + 1)
-    report = check_literal(Literal(text, datatype=datatype, normalize=False))
+    report = check_literal(
+        Literal(text, datatype=datatype, normalize=False), budget=budget
+    )
     retain_report(report, budget, issues)
     return Decimal(text) if report.verified else None
 
@@ -289,7 +291,9 @@ def _selected(
             return original, unit, None
         raise _Unavailable("The native quantity operation is unsupported") from error
     lexical = _lexical(converted, budget)
-    valid = check_literal(Literal(lexical, datatype=XSD.decimal, normalize=False))
+    valid = check_literal(
+        Literal(lexical, datatype=XSD.decimal, normalize=False), budget=budget
+    )
     retain_report(valid, budget, issues)
     if not valid.verified:
         return original, unit, None

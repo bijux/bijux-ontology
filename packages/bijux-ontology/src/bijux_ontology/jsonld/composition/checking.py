@@ -1,9 +1,8 @@
 """Ordered standards processing with every selected module contract retained."""
 
-import json
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
-from typing import Literal, cast
+from dataclasses import replace
+from typing import Literal
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
@@ -14,16 +13,19 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.jsonld.contexts.processing import (
-    _capture,
-    _data,
-    _dump,
-    _operation,
-    _own,
-    _preflight,
-    inspect_context,
+from bijux_ontology.jsonld.contexts.preparation import (
+    capture_context_json,
+    capture_selections,
+    context_budget,
+    encode_context_json,
+    preflight_context_json,
 )
-from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
+from bijux_ontology.jsonld.contexts.processing import inspect_context
+from bijux_ontology.jsonld.contracts.cases import (
+    PreparedContextCase,
+    bind_case,
+    capture_case,
+)
 from bijux_ontology.jsonld.processing.resources import (
     ContextResources,
     DocumentLoader,
@@ -33,49 +35,7 @@ from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.rdf.identifiers import absolute_iri
 
-from .types import ContextCase, ContextCaseResult, ContextComposition, ContextModule
-
-
-@dataclass(frozen=True)
-class _Case:
-    """Operation-owned immutable representative input and typed expectations."""
-
-    name: str
-    document_json: str
-    expectations: tuple[ContextExpectation, ...]
-
-
-def _case(case: ContextCase, budget: Budget) -> _Case:
-    """Qualify every field before copying, hashing or invoking a resource loader."""
-    if not isinstance(case, ContextCase):
-        raise InputError("Retained contracts require typed ContextCase records")
-    bound_text(case.name, budget)
-    if not case.name:
-        raise InputError("Retained cases require nonempty names")
-    document = _own(case.document, budget)
-    if not isinstance(document, dict) or "@context" in document:
-        raise InputError("Retained case roots must be objects without @context")
-    expectations = _capture(case.expectations, budget)
-    if not expectations:
-        raise InputError("Each retained case requires actual usage expectations")
-    captured_expectations = []
-    for expectation in expectations:
-        if not isinstance(expectation, ContextExpectation):
-            raise InputError("Expected typed ContextExpectation obligations")
-        _data(expectation, budget)
-        budget.consume("states")
-        budget.consume("bytes", 64)
-        captured_expectations.append(replace(expectation))
-    return _Case(str(case.name), _dump(document, budget), tuple(captured_expectations))
-
-
-def _document(case: _Case, context: object, budget: Budget) -> dict[str, object]:
-    """Bind the selected context to the same bounded representative object."""
-    document = json.loads(case.document_json)
-    budget.consume("states")
-    budget.consume("bytes", 32)
-    document["@context"] = context
-    return cast(dict[str, object], document)
+from .types import ContextCaseResult, ContextComposition, ContextModule
 
 
 def compose_contexts(
@@ -97,7 +57,7 @@ def compose_contexts(
     Nested/scoped/null contexts are processed by the maintained implementation;
     unsupported occurrence association stays unknown. No dictionary merge occurs.
     """
-    operation = _operation(
+    operation = context_budget(
         limits,
         budget
         if budget is not None
@@ -111,7 +71,7 @@ def compose_contexts(
     outcomes: list[ContextCaseResult] = []
     children: list[Report] = []
     contexts: list[object] = []
-    captured: list[tuple[int, _Case, int]] = []
+    captured: list[tuple[int, PreparedContextCase, int]] = []
     candidate = None
     checked = 0
     requested = 1
@@ -123,7 +83,7 @@ def compose_contexts(
         if base is not None:
             bound_text(base, operation)
             absolute_iri(base)
-        selected = _capture(modules, operation)
+        selected = capture_selections(modules, operation)
         if not selected:
             raise InputError("Context composition requires selected modules")
         seen: set[str] = set()
@@ -136,8 +96,8 @@ def compose_contexts(
             if not name or name in seen:
                 raise InputError("Selected module names must be nonempty and unique")
             seen.add(name)
-            context = _own(module.context, operation)
-            cases = _capture(module.cases, operation)
+            context = capture_context_json(module.context, operation)
+            cases = capture_selections(module.cases, operation)
             if not cases:
                 raise InputError("Every context module requires retained cases")
             operation.consume("states")
@@ -147,7 +107,7 @@ def compose_contexts(
             order.append(name)
             case_names = set()
             for supplied_case in cases:
-                owned = _case(supplied_case, operation)
+                owned = capture_case(supplied_case, operation)
                 if owned.name in case_names:
                     raise InputError("Retained case names must be unique per module")
                 case_names.add(owned.name)
@@ -171,13 +131,13 @@ def compose_contexts(
                 except InputError as error:
                     bound_text(str(error), operation)
                     raise
-                _preflight(response, operation)
+                preflight_context_json(response, operation)
                 return response
 
             resources = context_resources(qualified, budget=operation)
         for index, case, slot in captured:
             result = check_context(
-                _document(case, contexts[index], operation),
+                bind_case(case, contexts[index], operation),
                 case.expectations,
                 base=base,
                 document_loader=resources,
@@ -196,7 +156,7 @@ def compose_contexts(
         if inspection.report.verified:
             for _, case, slot in captured:
                 result = check_context(
-                    _document(case, contexts, operation),
+                    bind_case(case, contexts, operation),
                     case.expectations,
                     base=base,
                     document_loader=resources,
@@ -210,7 +170,7 @@ def compose_contexts(
                 child.complete for child in children
             )
             if complete and all(child.verified for child in children):
-                candidate = _dump(contexts, operation)
+                candidate = encode_context_json(contexts, operation)
     except (LimitExceeded, MemoryError, RecursionError):
         issues.exhausted("Context composition exceeded its operation limits")
     except InputError as error:

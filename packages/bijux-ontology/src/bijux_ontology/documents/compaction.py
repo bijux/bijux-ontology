@@ -5,6 +5,7 @@ import json
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.json.comparison import same_json
 from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.resources import (
@@ -71,7 +72,9 @@ def export_jsonld(
             if not isinstance(frame_snapshot, dict):
                 raise InputError("An export frame must be a JSON object")
             owned_frame = frame_snapshot
-            if "@context" in owned_frame and owned_frame["@context"] != owned_context:
+            if "@context" in owned_frame and not same_json(
+                owned_frame["@context"], owned_context, operation
+            ):
                 raise InputError("The export frame conflicts with the supplied context")
             operation.consume("bytes", _json_size(owned_frame))
             _consume_work(owned_frame, operation)

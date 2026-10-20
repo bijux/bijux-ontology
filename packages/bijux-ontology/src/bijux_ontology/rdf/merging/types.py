@@ -8,13 +8,8 @@ from rdflib import BNode
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate
-from bijux_ontology.rdf.patches.types import (
-    BlankNodePair,
-    PatchBlankBinding,
-    PatchQuad,
-    PatchResource,
-    SnapshotWitness,
-)
+from bijux_ontology.rdf.patches.types import BlankNodePair, PatchBlankBinding
+from bijux_ontology.rdf.records.types import PatchQuad, PatchResource, SnapshotWitness
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
 

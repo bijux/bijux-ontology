@@ -31,6 +31,100 @@ class _Retained:
     operations: int = 0
 
 
+class _RevisionOperation:
+    """Borrow one retained semantic owner until the enclosing request returns.
+
+    The revision manager owns the reference count. Child checks use this already
+    retained owner, so closing the public lease cannot interrupt an admitted
+    multi-record request. No mutable revision state is returned to consumers.
+    """
+
+    def __init__(self, state: _RevisionState) -> None:
+        self._state: _RevisionState | None = state
+
+    def _require_open(self) -> _RevisionState:
+        """Deny new child work once the borrowing context has returned."""
+        if self._state is None:
+            raise InputError("The borrowed revision operation is closed")
+        return self._state
+
+    def _close(self) -> None:
+        """Release this handle's state before the manager drains its reference."""
+        self._state = None
+
+    @property
+    def revision(self) -> str:
+        """Identify the exact retained semantic owner for every child receipt."""
+        return self._require_open().revision
+
+    @property
+    def identity(self) -> PreparationIdentity:
+        """Expose the retained immutable input identity without mutable owners."""
+        return self._require_open().identity
+
+    def check_emission(
+        self, document: object, usages: Sequence[ModelUsage]
+    ) -> RevisionResult:
+        """Run the existing fresh bounded JSON-LD model checker on this revision."""
+        state = self._require_open()
+        return RevisionResult(state.revision, state.models.check(document, usages))
+
+    def check_rdf(
+        self,
+        source: PreparedSource,
+        usages: Sequence[RdfModelUsage],
+        *,
+        graph_name: GraphSelection | None = None,
+        union: bool = False,
+        budget: Budget | None = None,
+    ) -> RevisionResult:
+        """Run ordinary owned RDF model checking without optional JSON-LD setup."""
+        state = self._require_open()
+        return RevisionResult(
+            state.revision,
+            state.models.check_rdf(
+                source, usages, graph_name=graph_name, union=union, budget=budget
+            ),
+        )
+
+    def validate_shapes(
+        self,
+        source: PreparedSource,
+        *,
+        focus_nodes: Sequence[str],
+        timeout: float = 30,
+        cancel: Event | None = None,
+    ) -> RevisionResult:
+        """Validate selected named shape/focus pairs with one owned native lifetime."""
+        state = self._require_open()
+        if state.shapes is None:
+            raise InputError("This revision declares no shape contract")
+        operation = Operation(state.models.limits, None, timeout, cancel)
+        focus = named_terms(focus_nodes, operation)
+        if not focus:
+            raise InputError("Leased shape checking needs nonempty named focus")
+        selected_roots, selected_focus, coverage = shape_bindings(
+            state.roots, focus, operation
+        )
+        operation.consume("work", 0)
+        remaining = operation.deadline - time.monotonic()
+        if remaining <= 0:
+            raise LimitExceeded("Leased shape validation exceeded its deadline")
+        with ShaclSession(
+            state.shapes,
+            ontology=state.ontology,
+            imports=state.imports,
+            use_shapes=selected_roots,
+            mode="pairs",
+            preflight=True,
+            coverage=coverage,
+            budget=operation,
+            timeout=remaining,
+        ) as session:
+            result = session.validate(source, focus_nodes=selected_focus, cancel=cancel)
+        return RevisionResult(state.revision, result.report, result)
+
+
 class RevisionLease:
     """Check fresh outputs against one exact resource/compiled-contract revision.
 
@@ -67,20 +161,24 @@ class RevisionLease:
         return self._record.identity
 
     @contextmanager
-    def _run(self) -> Iterator[_RevisionState]:
-        """Retain an active operation independently of concurrent lease close."""
+    def _borrow(self) -> Iterator[_RevisionOperation]:
+        """Retain one revision operation independently of concurrent lease close."""
         state = self._manager._start(self)
+        operation = None
         try:
-            yield state
+            operation = _RevisionOperation(state)
+            yield operation
         finally:
+            if operation is not None:
+                operation._close()
             self._manager._finish(self)
 
     def check_emission(
         self, document: object, usages: Sequence[ModelUsage]
     ) -> RevisionResult:
         """Run the existing fresh bounded JSON-LD model checker on this revision."""
-        with self._run() as state:
-            return RevisionResult(state.revision, state.models.check(document, usages))
+        with self._borrow() as operation:
+            return operation.check_emission(document, usages)
 
     def check_rdf(
         self,
@@ -92,12 +190,9 @@ class RevisionLease:
         budget: Budget | None = None,
     ) -> RevisionResult:
         """Run ordinary owned RDF model checking without optional JSON-LD setup."""
-        with self._run() as state:
-            return RevisionResult(
-                state.revision,
-                state.models.check_rdf(
-                    source, usages, graph_name=graph_name, union=union, budget=budget
-                ),
+        with self._borrow() as operation:
+            return operation.check_rdf(
+                source, usages, graph_name=graph_name, union=union, budget=budget
             )
 
     def validate_shapes(
@@ -109,37 +204,10 @@ class RevisionLease:
         cancel: Event | None = None,
     ) -> RevisionResult:
         """Validate selected named shape/focus pairs with one owned native lifetime."""
-        with self._run() as state:
-            if state.shapes is None:
-                raise InputError("This revision declares no shape contract")
-            operation = Operation(state.models.limits, None, timeout, cancel)
-            focus = named_terms(focus_nodes, operation)
-            if not focus:
-                raise InputError("Leased shape checking needs nonempty named focus")
-            selected_roots, selected_focus, coverage = shape_bindings(
-                state.roots, focus, operation
+        with self._borrow() as operation:
+            return operation.validate_shapes(
+                source, focus_nodes=focus_nodes, timeout=timeout, cancel=cancel
             )
-            operation.consume("work", 0)
-            remaining = operation.deadline - time.monotonic()
-            if remaining <= 0:
-                raise LimitExceeded("Leased shape validation exceeded its deadline")
-            with ShaclSession(
-                state.shapes,
-                ontology=state.ontology,
-                imports=state.imports,
-                use_shapes=selected_roots,
-                mode="pairs",
-                preflight=True,
-                coverage=coverage,
-                budget=operation,
-                timeout=remaining,
-            ) as session:
-                result = session.validate(
-                    source,
-                    focus_nodes=selected_focus,
-                    cancel=cancel,
-                )
-            return RevisionResult(state.revision, result.report, result)
 
     def close(self) -> None:
         """Release this lease while preserving any already running operations."""

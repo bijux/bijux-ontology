@@ -1,9 +1,8 @@
 """Explicit syntactic transformations of owned RDF, never ontology approval."""
 
 from collections import deque
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
-from itertools import chain
 from typing import cast
 
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
@@ -14,6 +13,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.rdf.sources.selection import selected_contexts
 from bijux_ontology.rdf.sources.snapshots import PreparedSource, bind_namespaces
 from bijux_ontology.rdf.terms import bound_node, literal_term
 
@@ -127,9 +127,7 @@ def extract_neighbourhood(
         bound_namespaces = False
         if graph_name is not None:
             bound_text(graph_name, operation)
-        for name, graph in _authorized_contexts(
-            source, operation, graph_name=graph_name
-        ):
+        for name, graph in selected_contexts(source, operation, graph_name=graph_name):
             operation.consume("work")
             if not bound_namespaces:
                 _bind(result, (graph,), operation)
@@ -221,7 +219,7 @@ def remap_iris(
     try:
         _fidelity(source, issues)
         iris: set[URIRef] = set()
-        for name, graph in _authorized_contexts(source, operation):
+        for name, graph in selected_contexts(source, operation):
             if isinstance(name, URIRef):
                 operation.consume("states")
                 iris.add(name)
@@ -268,7 +266,7 @@ def remap_iris(
             return term
 
         bound_namespaces = False
-        for name, graph in _authorized_contexts(source, operation):
+        for name, graph in selected_contexts(source, operation):
             operation.consume("work")
             if not bound_namespaces:
                 _bind(result, (graph,), operation)
@@ -298,26 +296,6 @@ def remap_iris(
     return Transformation(
         candidate, _report("rdf.remapping", len(replacements), issues)
     )
-
-
-def _authorized_contexts(
-    source: PreparedSource, budget: Budget, *, graph_name: str | None = None
-) -> Iterator[tuple[URIRef | BNode | None, Graph]]:
-    """Read only authorized partitions without exporting a second input dataset."""
-    if graph_name is not None:
-        for _, name, graph in source._contexts(graph_name, budget=budget):
-            yield name, graph
-    elif source.union:
-        yield None, source._read(budget=budget)
-    elif source.is_dataset and source.graph_name is None:
-        for name in chain((None,), source._graph_names(budget=budget)):
-            yield (
-                name,
-                source._read("@default" if name is None else name, budget=budget),
-            )
-    else:
-        for _, name, graph in source._contexts(budget=budget):
-            yield name, graph
 
 
 def _bind(target: Dataset, sources: Sequence[Graph], budget: Budget) -> None:
@@ -372,7 +350,7 @@ def merge_sources(
                 return term
 
             namespace_source: Graph | None = None
-            for name, graph in _authorized_contexts(source, operation):
+            for name, graph in selected_contexts(source, operation):
                 operation.consume("work")
                 if namespace_source is None:
                     namespace_source = graph
@@ -436,7 +414,7 @@ def recheck_transformation(
             operation.consume("work")
             dataset = Dataset()
             bound_namespaces = False
-            for graph_name, graph in _authorized_contexts(source, operation):
+            for graph_name, graph in selected_contexts(source, operation):
                 if not bound_namespaces:
                     _bind(dataset, (graph,), operation)
                     bound_namespaces = True

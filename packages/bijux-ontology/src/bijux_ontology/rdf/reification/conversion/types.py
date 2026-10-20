@@ -7,7 +7,7 @@ from rdflib import BNode, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.rdf.patches.types import PatchBlank, SnapshotWitness
+from bijux_ontology.rdf.records.types import PatchBlank, SnapshotWitness
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 

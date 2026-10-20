@@ -5,61 +5,39 @@ from itertools import chain
 from typing import cast
 
 from rdflib import BNode, Graph, Literal, URIRef
-from rdflib.namespace import RDF, XSD
+from rdflib.namespace import RDF
 from rdflib.term import Node
 
 from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.jsonld.evidence.values import ValueTraits
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.models.contracts.registry import index_models
-from bijux_ontology.models.emission.application import (
-    application_matches,
-    retain_enumeration_report,
-)
 from bijux_ontology.models.emission.counts import check_output_counts
 from bijux_ontology.models.emission.coverage import predicate_issues
 from bijux_ontology.models.emission.direction import project_direction
 from bijux_ontology.models.emission.groups import TermKey, check_groups
-from bijux_ontology.models.emission.matching import identity_matches, matches_value
+from bijux_ontology.models.emission.matching import (
+    ValueObservation,
+    identity_matches,
+    matches_value,
+)
 from bijux_ontology.models.emission.types import RdfModelUsage
+from bijux_ontology.models.rdf.observations import observe_rdf_term
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
+from bijux_ontology.models.value_constraints.checking import (
+    application_matches,
+    retain_enumeration_report,
+)
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals.checking import check_literal
+from bijux_ontology.rdf.sources.selection import select_read
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import read_rdf_list
-from bijux_ontology.rdf.terms import bound_node, term_key
+from bijux_ontology.rdf.terms import term_key
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.view import Vocabulary
-
-
-def _traits(graph: Graph, node: Node, budget: Budget) -> ValueTraits:
-    """Read exact native term traits without constructing JSON-LD or expansion."""
-    bound_node(node, budget)
-    if isinstance(node, Literal):
-        return ValueTraits(
-            "literal",
-            datatype=str(
-                node.datatype or (RDF.langString if node.language else XSD.string)
-            ),
-            language=node.language,
-        )
-    if isinstance(node, URIRef | BNode):
-        kinds = []
-        for kind in graph.objects(node, RDF.type):
-            budget.consume("work")
-            if isinstance(kind, URIRef):
-                bound_node(kind, budget)
-                kinds.append(str(kind))
-        return ValueTraits(
-            "iri" if isinstance(node, URIRef) else "blank",
-            identifier=str(node) if isinstance(node, URIRef) else None,
-            identifier_kind="iri" if isinstance(node, URIRef) else "blank",
-            types=tuple(sorted(kinds)),
-        )
-    return ValueTraits("unknown")
 
 
 def check_rdf_emission(
@@ -128,7 +106,7 @@ def check_rdf_emission(
                                 actual=branch.model,
                             )
                         )
-        graph = source._read(graph_name, union=union, budget=budget)
+        graph = select_read(source, budget, graph_name=graph_name, union=union).read()
         role_checks = (
             _RoleChecks(vocabulary, budget, graph)
             if vocabulary is not None and needs_roles
@@ -137,7 +115,7 @@ def check_rdf_emission(
 
         def match_value(
             branch: ValueDeclaration,
-            traits: ValueTraits,
+            traits: ValueObservation,
             node: Node,
             *,
             container: str = "unordered",
@@ -253,7 +231,7 @@ def check_rdf_emission(
                     )
                 )
                 continue
-            traits = _traits(graph, subject, budget)
+            traits = observe_rdf_term(graph, subject, budget)
             if not identity_matches(model.subject, traits):
                 issues.append(
                     Issue(
@@ -405,7 +383,7 @@ def check_rdf_emission(
                             )
                     elif need_list:
                         non_list = True
-                    endpoint_traits = _traits(graph, endpoint, budget)
+                    endpoint_traits = observe_rdf_term(graph, endpoint, budget)
                     unordered = any(
                         match_value(branch, endpoint_traits, endpoint) is True
                         for branch in field.values
@@ -422,7 +400,7 @@ def check_rdf_emission(
                         observed = ((endpoint, "unordered", False),)
                     for node, container, empty in observed:
                         budget.consume("work", 1 + len(field.values))
-                        actual = _traits(graph, node, budget)
+                        actual = observe_rdf_term(graph, node, budget)
                         recognized, projected = (
                             project_direction(graph, node, rdf_direction, budget)
                             if any(branch.kind == "literal" for branch in field.values)

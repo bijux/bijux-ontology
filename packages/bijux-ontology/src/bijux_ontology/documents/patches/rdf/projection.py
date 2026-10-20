@@ -14,8 +14,6 @@ from bijux_ontology.documents.patches.operations import (
     _Unsupported,
     declarations,
     loader_resources,
-    serialized,
-    snapshot,
 )
 from bijux_ontology.documents.patches.types import DocumentPatch, RetainedUsage
 from bijux_ontology.execution.limits import (
@@ -25,7 +23,8 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.json.values import _measure
+from bijux_ontology.json.snapshots import serialized, snapshot
+from bijux_ontology.json.values import measure_json
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.resources import ContextResources, DocumentLoader
@@ -155,7 +154,12 @@ def project_rdf_patch(
             raise _Stopped
         # Existing preparation owns several defensive source copies. Reserve
         # their JSON traversal/storage before invoking that concrete boundary.
-        cost = _measure(original, operation)
+        cost = measure_json(
+            original,
+            budget=operation,
+            max_bytes=operation.limits.max_bytes,
+            max_depth=operation.limits.max_depth,
+        ).weight
         operation.consume("bytes", 128 * (cost + 1))
         usages = prepare_usages(
             original, base=base, document_loader=loader, budget=operation

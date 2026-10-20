@@ -7,13 +7,9 @@ from rdflib import BNode, URIRef
 from rdflib.paths import Path
 
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
-    PatchQuad,
-    PatchResource,
-    PatchValue,
-)
+from bijux_ontology.rdf.patches.types import DatasetPatch
 from bijux_ontology.rdf.paths.types import RdfPath
+from bijux_ontology.rdf.records.types import PatchQuad, PatchResource, PatchValue
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.value_comparison.types import LiteralValueComparison
 

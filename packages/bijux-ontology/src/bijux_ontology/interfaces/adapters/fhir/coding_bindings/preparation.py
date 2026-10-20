@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.paths import SourcePath, bound_path
-from bijux_ontology.json.values import _measure
+from bijux_ontology.json.values import measure_json
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.vocabulary.languages.matching import matches_language
 
@@ -70,7 +70,12 @@ def adopt(
 
 def encode(value: object, budget: Budget) -> str:
     """Serialize already captured JSON after measuring escaped workspace."""
-    size = _measure(value, budget)
+    size = measure_json(
+        value,
+        budget=budget,
+        max_bytes=budget.limits.max_bytes,
+        max_depth=budget.limits.max_depth,
+    ).weight
     if size > budget.limits.max_bytes:
         raise LimitExceeded("Selected FHIR JSON exceeds max_bytes")
     budget.consume("bytes", 16 * (size + 1))

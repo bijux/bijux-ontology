@@ -1,15 +1,48 @@
 """Pure actual-value contract matching shared by RDF and JSON-LD outputs."""
 
+from typing import Protocol
+
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import (
     ModelDeclaration,
     SubjectIdentity,
     ValueDeclaration,
 )
-from bijux_ontology.jsonld.evidence.values import ValueTraits
 
 
-def identity_matches(contract: SubjectIdentity, traits: ValueTraits) -> bool:
+class ValueObservation(Protocol):
+    """Read only the scalar facts consumed by model value matching."""
+
+    @property
+    def kind(self) -> str:
+        """Return the observed RDF value category."""
+
+    @property
+    def datatype(self) -> str | None:
+        """Return the literal datatype IRI when supplied."""
+
+    @property
+    def language(self) -> str | None:
+        """Return the supplied literal language tag."""
+
+    @property
+    def identifier(self) -> str | None:
+        """Return the observed resource identifier when available."""
+
+    @property
+    def identifier_kind(self) -> str:
+        """Distinguish named, blank and unavailable resource identities."""
+
+    @property
+    def types(self) -> tuple[str, ...]:
+        """Return only the types present in the observed output."""
+
+    @property
+    def direction(self) -> str | None:
+        """Return the supplied literal text direction."""
+
+
+def identity_matches(contract: SubjectIdentity, traits: ValueObservation) -> bool:
     """Compare explicit subject identity without inferring missing names."""
     if contract.expected_iri is not None and traits.identifier != contract.expected_iri:
         return False
@@ -18,7 +51,7 @@ def identity_matches(contract: SubjectIdentity, traits: ValueTraits) -> bool:
 
 def matches_value(
     value: ValueDeclaration,
-    traits: ValueTraits,
+    traits: ValueObservation,
     registry: dict[str, ModelDeclaration],
     *,
     container: str = "unordered",

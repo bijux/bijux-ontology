@@ -13,9 +13,9 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.patches.applying import _materialize
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import DatasetPatch
+from bijux_ontology.rdf.records.materialization import materialize
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
@@ -96,7 +96,7 @@ def finish_migration(
         )
         if transformed.source is not None and transformed.report.verified:
             candidate_capture = capture_source(transformed.source, "candidate:", budget)
-            scoped_source = _materialize(
+            scoped_source = materialize(
                 candidate_capture.witness, transformed.source, budget
             )
             for side, (role, source, selected) in enumerate(
@@ -153,7 +153,7 @@ def finish_migration(
                     budget.consume("bytes", size + 64)
                     budget.consume("states", 2)
                     anchor = role + "." + declaration.name
-                    owned = _materialize(captured.witness, source, budget)
+                    owned = materialize(captured.witness, source, budget)
                     checked = declaration.check(owned)
                     if not isinstance(checked, Report):
                         raise InputError(

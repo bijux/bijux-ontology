@@ -282,3 +282,75 @@ def test_native_literal_metadata_obeys_resource_and_shared_byte_limits() -> None
         prepare_source(
             graph, limits=Limits(max_bytes=1000, max_total_bytes=expected_bytes - 1)
         )
+
+
+def test_owned_blank_graph_selection_rejects_equal_labels_even_after_caching() -> None:
+    """Reading an admitted graph never authorizes a separately created blank term."""
+    dataset = Dataset()
+    dataset.graph(BNode("authored")).add((EX.s, EX.p, EX.o))
+    source = prepare_source(dataset)
+    owned = next(
+        graph.identifier
+        for graph in source.dataset().graphs()
+        if isinstance(graph.identifier, BNode)
+    )
+    assert len(source.graph(owned)) == 1
+    foreign = BNode(str(owned))
+    assert foreign == owned and foreign is not owned
+    with pytest.raises(InputError, match="actual owned"):
+        source.graph(foreign)
+    assert len(source.graph(owned)) == 1
+    source.graph_name = owned
+    with pytest.raises(InputError, match="resource declaration"):
+        source.graph(foreign)
+
+
+@pytest.mark.parametrize("declaration", ["graph_name", "union"])
+def test_selected_read_keeps_empty_graphs_and_rejects_changed_declaration(
+    declaration: str,
+) -> None:
+    """A captured read cannot silently follow later public source selection edits."""
+    from bijux_ontology.rdf.sources.selection import select_read
+
+    dataset = Dataset()
+    dataset.graph(EX.hidden).add((EX.Hidden, RDF.type, OWL.Class))
+    dataset.graph(EX.empty)
+    dataset.graph(BNode("owned-empty"))
+    source = prepare_source(dataset)
+    budget = Budget()
+    with pytest.raises(InputError, match="requires a graph name"):
+        select_read(source, budget)
+    whole = select_read(source, budget, dataset=True)
+    with pytest.raises(InputError, match="not one RDF graph"):
+        whole.read()
+    contexts = tuple(whole.contexts(budget))
+    blank = next(name for name, _ in contexts if isinstance(name, BNode))
+    exported_blank = next(
+        graph.identifier
+        for graph in source.dataset().graphs()
+        if isinstance(graph.identifier, BNode)
+    )
+    assert blank is exported_blank
+    assert {name for name, _ in contexts} == {None, EX.hidden, EX.empty, blank}
+    assert not next(graph for name, graph in contexts if name == EX.empty)
+    selected = select_read(source, budget, graph_name="@default")
+    retained = selected.read()
+    assert not retained and select_read(source, budget, union=True).read()
+    for _, graph in contexts:
+        with pytest.raises(InputError, match="mutation"):
+            graph.add((EX.injected, RDF.type, OWL.Class))
+        assert all(
+            not tuple(owners) for _, owners in graph.store.triples((None, None, None))
+        )
+    with pytest.raises(InputError, match="actual owned"):
+        select_read(source, budget, graph_name=BNode(str(blank)))
+    iterator = whole.contexts(budget)
+    assert next(iterator)[0] is None
+    setattr(
+        source, declaration, str(EX.hidden) if declaration == "graph_name" else True
+    )
+    assert not retained
+    with pytest.raises(InputError, match="declaration changed"):
+        selected.read()
+    with pytest.raises(InputError, match="declaration changed"):
+        next(iterator)

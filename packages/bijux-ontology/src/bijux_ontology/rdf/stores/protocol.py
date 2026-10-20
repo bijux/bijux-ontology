@@ -16,8 +16,9 @@ from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import term_data
+from bijux_ontology.rdf.sources.snapshots import owned_graph_name
+from bijux_ontology.resources.files import verify_files
 
-from .seals import verify_files
 from .types import StoredRdf
 
 
@@ -28,19 +29,8 @@ def scope_data(
     if not isinstance(snapshot, StoredRdf) or not isinstance(scope, QueryScope):
         raise InputError("Disk reads require an owned snapshot and explicit QueryScope")
     if scope.kind == "named":
-        found = False
-        blank = isinstance(scope.graph_name, BNode)
-        for name in snapshot.graph_names:
-            operation.consume("work")
-            if (name is scope.graph_name) if blank else (name == scope.graph_name):
-                found = True
-                break
-        if not found:
-            raise InputError(
-                "Blank graph selector must belong to this disk snapshot"
-                if blank
-                else "Named graph is absent from the disk snapshot"
-            )
+        assert scope.graph_name is not None
+        owned_graph_name(snapshot.graph_names, scope.graph_name, operation)
     operation.consume("work")
     return {
         "scope": scope.kind,

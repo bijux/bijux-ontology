@@ -17,7 +17,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
-from bijux_ontology.rdf.structure import iter_rdf_list
+from bijux_ontology.rdf.structure import iter_rdf_list, strong_components
 from bijux_ontology.rdf.terms import bound_node, term_key
 from bijux_ontology.shacl.profiles.types import ShapeDependency, ShapeProfile, Triple
 
@@ -375,67 +375,25 @@ def _components(analysis: _Analysis) -> None:
     budget = analysis.budget
     nodes = analysis.shapes
     budget.consume("states", 2 * len(nodes))
-    forward: dict[Node, list[int]] = {node: [] for node in nodes}
+    forward: dict[Node, list[Node]] = {node: [] for node in nodes}
     backward: dict[Node, list[Node]] = {node: [] for node in nodes}
-    for index, edge in enumerate(analysis.edges):
+    for edge in analysis.edges:
         budget.consume("work")
         if edge.active:
             budget.consume("states", 2)
-            forward[edge.dependency.shape].append(index)
+            forward[edge.dependency.shape].append(edge.dependency.dependency)
             backward[edge.dependency.dependency].append(edge.dependency.shape)
-    seen = set()
-    finished = []
-    for seed in nodes:
-        budget.consume("work")
-        if seed in seen:
-            continue
-        stack = [(seed, False, 0)]
-        while stack:
-            node, exiting, depth = stack.pop()
-            budget.consume("work")
-            if exiting:
-                budget.consume("states")
-                finished.append(node)
-                continue
-            if node in seen:
-                continue
-            if depth > budget.limits.max_depth:
-                raise LimitExceeded("Shape dependency depth exceeds max_depth")
-            budget.consume("states", 2)
-            seen.add(node)
-            stack.append((node, True, depth))
-            for index in forward[node]:
-                budget.consume("work")
-                child = analysis.edges[index].dependency.dependency
-                if child not in seen:
-                    budget.consume("states")
-                    stack.append((child, False, depth + 1))
     assigned: dict[Node, int] = {}
     groups: list[list[Node]] = []
-    for seed in reversed(finished):
-        budget.consume("work")
-        if seed in assigned:
-            continue
-        budget.consume("states")
-        group: list[Node] = []
+    for group in strong_components(
+        nodes, forward, backward, budget=budget, max_depth=budget.limits.max_depth
+    ):
+        budget.consume("states", len(group))
+        budget.consume("work", len(group))
+        budget.reserve_storage(64 * len(group))
         number = len(groups)
         groups.append(group)
-        pending = [(seed, 0)]
-        while pending:
-            node, depth = pending.pop()
-            budget.consume("work")
-            if node in assigned:
-                continue
-            if depth > budget.limits.max_depth:
-                raise LimitExceeded("Shape dependency depth exceeds max_depth")
-            budget.consume("states", 2)
-            assigned[node] = number
-            group.append(node)
-            for parent in backward[node]:
-                budget.consume("work")
-                if parent not in assigned:
-                    budget.consume("states")
-                    pending.append((parent, depth + 1))
+        assigned.update((node, number) for node in group)
     budget.consume("states", len(groups))
     internal: list[list[SignedDependency]] = [[] for _ in groups]
     for edge in analysis.edges:

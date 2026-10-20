@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.rdf.stores.seals import StoreFile
+from bijux_ontology.resources.files import FileSnapshot
 
 
 @dataclass(frozen=True, init=False)
@@ -14,7 +14,7 @@ class JenaBackend:
     java: Path
     directory: Path
     jars: tuple[str, ...]
-    files: tuple[StoreFile, ...]
+    files: tuple[FileSnapshot, ...]
     artifacts: Path
     manifest_sha256: str
 

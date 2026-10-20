@@ -24,10 +24,9 @@ from bijux_ontology.rdf.migrations.candidates import (
 )
 from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.planning import Captured, Rejected, capture_source
-from bijux_ontology.rdf.patches.types import (
-    DatasetPatch,
+from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
+from bijux_ontology.rdf.records.types import (
     PatchBlank,
-    PatchBlankBinding,
     PatchLiteral,
     PatchQuad,
     PatchResource,
