@@ -418,3 +418,52 @@ def test_lossy_literal_intermediates_cannot_establish_resource_keys() -> None:
                 issue.code in ("data.key_absent", "data.key_collision")
                 for issue in result.issues
             )
+
+
+def test_compound_discriminators_bound_mixed_key_candidates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An exact tenant excludes unrelated numeric and unknown value comparisons."""
+    from bijux_ontology.data.keys.evidence import compare_keys
+
+    graph = Graph()
+    subjects = tuple(EX[f"record-{index}"] for index in range(256))
+    for index, subject in enumerate(subjects):
+        graph.add((subject, EX.tenant, Literal(str(index))))
+        graph.add((subject, EX.value, Literal("1", datatype=XSD.integer)))
+    prepared = prepare_rdf(graph)
+    records = tuple(KeyRecord(str(s), prepared, s) for s in subjects)
+    contract = KeyContract(
+        "tenant-value",
+        (KeyComponent(EX.value, equality="sparql-1.1"), KeyComponent(EX.tenant)),
+    )
+    calls = 0
+
+    def compared(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        return compare_keys(*args, **kwargs)
+
+    monkeypatch.setattr("bijux_ontology.data.keys.checking.compare_keys", compared)
+    assert check_record_keys(records, contract, complete=True).verified
+    assert calls == 0  # Previously all 32,640 numeric pairs were compared.
+    graph.set((subjects[-1], EX.tenant, Literal("0")))
+    prepared = prepare_rdf(graph)
+    collision = check_record_keys(
+        tuple(KeyRecord(str(s), prepared, s) for s in subjects), contract, complete=True
+    )
+    assert calls == 1
+    assert sum(i.code == "data.key_collision" for i in collision.issues) == 1
+    graph.set((subjects[-1], EX.value, Literal("opaque", datatype=EX.Custom)))
+    prepared = prepare_rdf(graph)
+    unknown = check_record_keys(
+        tuple(KeyRecord(str(s), prepared, s) for s in subjects), contract, complete=True
+    )
+    assert calls == 2
+    assert any(i.code == "data.key_comparison_unverified" for i in unknown.issues)
+    graph.set((subjects[-1], EX.tenant, Literal("unrelated")))
+    prepared = prepare_rdf(graph)
+    assert check_record_keys(
+        tuple(KeyRecord(str(s), prepared, s) for s in subjects), contract, complete=True
+    ).verified
+    assert calls == 2  # Known tenant inequality defeats unsupported value equality.
