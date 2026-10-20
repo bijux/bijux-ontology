@@ -15,6 +15,7 @@ from bijux_ontology.vocabulary.lexical import (
     LexicalIndex,
     annotate_text,
     prepare_lexical_index,
+    prepare_mention_index,
 )
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
@@ -96,11 +97,11 @@ def test_unicode_case_expansion_and_exact_composition_preserve_original_spans() 
 
 def test_interrupted_capture_keeps_complete_ambiguous_mentions() -> None:
     """Shared budgets/cancellation qualify coverage and retain completed hit groups."""
-    index = _index(("heart", "heart", "failure"))
+    index = _index(("heart", "heart", "heart failure", "failure"))
     text = "heart failure heart"
     full_budget = Budget()
     full = annotate_text(index, text, budget=full_budget)
-    assert full.report.verified and len(full.mentions) == 3
+    assert full.report.verified and len(full.mentions) == 4
     work = full_budget.limits.max_work - full_budget.remaining("work")
     saw_prefix = False
     for cap in range(1, work, max(1, work // 25)):
@@ -109,7 +110,7 @@ def test_interrupted_capture_keeps_complete_ambiguous_mentions() -> None:
         assert result.mentions == full.mentions[: len(result.mentions)]
         saw_prefix |= bool(result.mentions)
         assert all(
-            len(m.candidates) == 2 for m in result.mentions if m.start in (0, 14)
+            len(m.candidates) == 2 for m in result.mentions if m.end - m.start == 5
         )
     assert saw_prefix
     event = Event()
@@ -137,3 +138,37 @@ def test_empty_text_dictionary_and_invalid_boundary_contract() -> None:
         annotate_text(
             index, "word", boundary=cast("Boundary['word', 'substring']", "tokens")
         )
+
+
+def test_prepared_failure_transitions_bound_shared_prefix_scanning() -> None:
+    limits = Limits(
+        max_work=20_000_000, max_states=1_000_000, max_total_bytes=300_000_000
+    )
+    graph = Graph()
+    for number in range(1, 301):
+        graph.add((EX[str(number)], RDF.type, OWL.Class))
+        graph.add((EX[str(number)], RDFS.label, Literal("a" * number + "b")))
+    base = prepare_lexical_index(
+        inspect_vocabulary(Vocabulary(graph, limits=limits)), fields=(str(RDFS.label),)
+    )
+    assert base.index is not None
+    refused = prepare_mention_index(base.index, budget=Budget(Limits(max_states=1)))
+    assert refused.index is None and refused.report.outcome == "exhausted"
+    prepared = prepare_mention_index(base.index)
+    assert prepared.index is not None and prepared.report.verified
+    text = "a" * 10_000 + "b"
+    budget = Budget(Limits(max_work=500_000))
+    result = annotate_text(prepared.index, text, boundary="substring", budget=budget)
+    assert result.report.verified and len(result.mentions) == 300
+    assert [(mention.start, mention.end) for mention in result.mentions] == [
+        (start, len(text)) for start in range(9700, 10000)
+    ]
+    assert budget.remaining("work") > 0
+    assert (
+        annotate_text(base.index, "ab", boundary="substring").mentions
+        == annotate_text(prepared.index, "ab", boundary="substring").mentions
+    )
+    event = Event()
+    event.set()
+    assert prepare_mention_index(base.index, cancel=event).index is None
+    assert annotate_text(prepared.index, "ab", boundary="substring").report.verified

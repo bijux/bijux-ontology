@@ -1,7 +1,6 @@
 """Dictionary mentions over shared lexical keys and original text boundaries."""
 
 import unicodedata
-from bisect import bisect_left
 from dataclasses import dataclass
 from threading import Event
 from typing import Literal
@@ -12,6 +11,7 @@ from bijux_ontology.execution.limits import Budget, IssueCollector
 from bijux_ontology.vocabulary.browsing.admission import _comparison_text, _PageBudget
 from bijux_ontology.vocabulary.browsing.results import SearchMatch
 
+from .automaton import MentionIndex, _prepare_mentions
 from .types import LexicalIndex
 
 
@@ -30,7 +30,7 @@ class TextMention:
 
 @dataclass(frozen=True)
 class TextAnnotation:
-    """Original text and complete mentions, or a proved prefix on interruption."""
+    """Original text, complete mentions and truthful interrupted-prefix coverage."""
 
     text: str
     mentions: tuple[TextMention, ...]
@@ -47,7 +47,7 @@ def _word(character: str) -> bool:
 
 
 def annotate_text(
-    index: LexicalIndex,
+    index: LexicalIndex | MentionIndex,
     text: str,
     *,
     boundary: Literal["word", "substring"] = "word",
@@ -57,6 +57,8 @@ def annotate_text(
     """Locate overlapping exact dictionary mentions without resolving ambiguity.
 
     The prepared index owns fields, languages, source roles and case policy.
+    A MentionIndex reuses its completed automaton; a base LexicalIndex prepares
+    the same bounded derivative within this operation.
     Unicode casefold may expand characters, but matches must begin and end at
     original character boundaries: half of a folded sharp-s is never a mention.
     No Unicode normalization, tokenization or semantic disambiguation occurs.
@@ -64,7 +66,7 @@ def annotate_text(
     substring mode removes that restriction. Offsets count Unicode codepoints,
     not bytes, grapheme clusters or positions in the casefolded comparison text.
     """
-    if not isinstance(index, LexicalIndex) or type(text) is not str:
+    if not isinstance(index, LexicalIndex | MentionIndex) or type(text) is not str:
         raise InputError("Text annotation requires a prepared index and text")
     if boundary not in ("word", "substring"):
         raise InputError("Text boundary must be word or substring")
@@ -72,70 +74,106 @@ def annotate_text(
         raise InputError("Text annotation budget requires Budget")
     if cancel is not None and not isinstance(cancel, Event):
         raise InputError("Text annotation cancellation requires threading.Event")
-    selected = budget if budget is not None else Budget(index.limits)
+    lexical = index._index if isinstance(index, MentionIndex) else index
+    selected = budget if budget is not None else Budget(lexical.limits)
     operation = _PageBudget(selected, cancel)
     issues = IssueCollector(selected)
-    mentions: list[TextMention] = []
+    buckets: list[list[TextMention] | None] = []
     original = ""
     checked = 0
     complete = False
+    settled = 0
     try:
         original = _comparison_text(text, operation)
-        compared = _comparison_text(original, operation, fold=index.casefold)
-        operation.consume("states", 2 * (len(original) + 1))
-        operation.consume("bytes", 128 + 112 * (len(original) + 1))
+        dictionary = (
+            index
+            if isinstance(index, MentionIndex)
+            else _prepare_mentions(index, operation)
+        )
+        compared = _comparison_text(original, operation, fold=lexical.casefold)
+        operation.consume("states", 3 * (len(original) + 1))
+        operation.consume("bytes", 128 + 144 * (len(original) + 1))
+        # Ordering buckets avoid a post-interruption sort. Their traversal and
+        # the final reference vector are prepaid before matching begins.
+        operation.consume("work", 2 * (len(original) + 1))
+        buckets = [None] * (len(original) + 1)
+        boundaries = {0: 0}
         starts = [0]
-        ends = {0: 0}
         position = 0
         for offset, character in enumerate(original):
             operation.consume("work", 4)
-            position += len(character.casefold()) if index.casefold else 1
+            position += len(character.casefold()) if lexical.casefold else 1
+            boundaries[position] = offset + 1
             starts.append(position)
-            ends[position] = offset + 1
-        for start in range(len(original)):
+        state = 0
+        for position, character in enumerate(compared, 1):
             operation.consume("work")
-            if boundary == "word" and start and _word(original[start - 1]):
-                checked += 1
+            while state and character not in dictionary._transitions[state]:
+                operation.consume("work")
+                state = dictionary._failures[state]
+            operation.consume("work")
+            state = dictionary._transitions[state].get(character, 0)
+            end = boundaries.get(position)
+            if end is None:
                 continue
-            prefix = ""
-            for offset in range(starts[start], len(compared)):
-                length = len(prefix) + 1
-                operation.consume("work", length * (len(index._keys).bit_length() + 3))
-                operation.consume("bytes", 64 + 4 * length)
-                prefix += compared[offset]
-                lower = bisect_left(index._keys, prefix)
-                if lower == len(index._keys) or not index._keys[lower].startswith(
-                    prefix
+            checked = end
+            if boundary == "word" and end < len(original) and _word(original[end]):
+                while (
+                    settled < len(original)
+                    and starts[settled] + dictionary._max_length <= position
                 ):
-                    break
-                end = ends.get(offset + 1)
-                if end is None or prefix not in index._entries:
-                    continue
-                if boundary == "word" and end < len(original) and _word(original[end]):
-                    continue
-                entries = index._entries[prefix]
-                operation.consume("states", len(entries) + 1)
-                operation.consume("bytes", 128 + 128 * len(entries))
-                operation.consume("work", len(entries))
-                candidates = tuple(
-                    SearchMatch(
-                        candidate.term,
-                        _comparison_text(candidate.field, operation),
-                        _comparison_text(candidate.value, operation),
-                        candidate.language,
-                        candidate.scope,
-                        0,
-                    )
-                    for candidate in entries
-                )
-                mentions.append(TextMention(start, end, candidates))
-            checked += 1
+                    settled += 1
+                continue
+            output = state
+            while output:
+                operation.consume("work")
+                key = dictionary._terminal[output]
+                if key is not None:
+                    start = boundaries.get(position - len(key))
+                    if start is not None and not (
+                        boundary == "word" and start and _word(original[start - 1])
+                    ):
+                        entries = lexical._entries[key]
+                        operation.consume("states", len(entries) + 1)
+                        operation.consume("bytes", 160 + 128 * len(entries))
+                        operation.consume("work", len(entries) + 2)
+                        candidates = tuple(
+                            SearchMatch(
+                                candidate.term,
+                                _comparison_text(candidate.field, operation),
+                                _comparison_text(candidate.value, operation),
+                                candidate.language,
+                                candidate.scope,
+                                0,
+                            )
+                            for candidate in entries
+                        )
+                        mention = TextMention(start, end, candidates)
+                        bucket = buckets[start]
+                        if bucket is None:
+                            bucket = []
+                            buckets[start] = bucket
+                        bucket.append(mention)
+                output = dictionary._suffix[output]
+            while (
+                settled < len(original)
+                and starts[settled] + dictionary._max_length <= position
+            ):
+                settled += 1
+        operation.consume("work", 0)
         complete = True
     except LimitExceeded as error:
         issues.exhausted(str(error), location="terms.lexical.annotate")
+    # Only funded complete matches are present, even after a failed candidate.
+    mentions = tuple(
+        mention
+        for start, bucket in enumerate(buckets)
+        if (complete or start < settled) and bucket
+        for mention in bucket
+    )
     return TextAnnotation(
         original,
-        tuple(mentions),
+        mentions,
         Report(
             "terms.lexical.annotate",
             checked,

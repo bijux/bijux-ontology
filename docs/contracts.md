@@ -369,13 +369,16 @@ For JSON-LD, pass original usages and expectations to `check_context`. Reuse exp
 ## Lexical lookup and domain adapters
 
 `vocabulary.lexical.prepare_lexical_index(view, fields=..., languages=...)`
-reuses the selected vocabulary's lexical inventory for repeated `autocomplete`
-and `suggest` calls. Results retain labels, identifiers, languages, source roles
+prepares exact/prefix lookup. `prepare_typo_index(index)` adds optional bounded
+one-edit suggestions while sharing the completed base records. Repeated
+`autocomplete` and `suggest` calls retain labels, identifiers, languages, source roles
 and ranking evidence. Suggestions allow one codepoint insertion, deletion or
 substitution; they never replace identifiers or assert semantic mappings.
 Inspect both `.report.complete` and `.truncated` when consuming bounded results.
 
-`annotate_text(index, text)` reuses that index to locate overlapping dictionary
+`prepare_mention_index(index)` prepares a reusable bounded dictionary automaton;
+`annotate_text(index, text)` also accepts the base index and prepares it within
+the operation. Both locate overlapping dictionary
 mentions with all selected candidate terms and lexical evidence. Its half-open
 spans count original Python characters, including when casefold expands a
 character. Word boundaries are explicit; `boundary="substring"` also permits
