@@ -301,8 +301,9 @@ def test_data_integrity_and_budget_failures_cannot_return_empty_success() -> Non
             )
         )
     )
+    # The second malformed definition stops diagnostics after a paid first finding.
     bounded = as_oak(
-        malformed, registry=IdentifierRegistry(()), limits=Limits(max_work=110)
+        malformed, registry=IdentifierRegistry(()), limits=Limits(max_issues=1)
     ).adapter
     assert bounded is not None
     with pytest.raises(OakOperationError) as caught:
