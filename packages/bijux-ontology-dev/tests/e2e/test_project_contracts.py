@@ -55,3 +55,53 @@ def test_installed_shape_coverage_survives_portable_cli_and_parallel(
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_installed_core_project_checks_native_rdf_without_optional_consumers(
+    installed: tuple[Path, Path, dict[str, str]],
+) -> None:
+    python, work, env = installed
+    program = """
+        import json
+        from pathlib import Path
+        import subprocess
+        import sys
+        import importlib.util
+        assert importlib.util.find_spec("pyld") is None
+        assert importlib.util.find_spec("ckan") is None
+        root = Path("rdf-project").resolve()
+        root.mkdir()
+        (root / "output.ttl").write_text(
+            '<urn:record> a <urn:Record>; <urn:title> "Produced".')
+        models = [{"identifier": "Record", "types": ["urn:Record"], "fields": [{
+            "name": "title", "predicate": "urn:title", "emission": "guaranteed",
+            "values": [{"kind": "literal",
+                        "datatype": "http://www.w3.org/2001/XMLSchema#string"}]}]}]
+        (root / "models.json").write_text(json.dumps(models))
+        (root / "bindings.json").write_text(json.dumps([
+            {"model": "Record", "subject": "urn:record"}]))
+        (root / "project.json").write_text(json.dumps({
+            "version": 2, "rdf": {"output": {"path": "output.ttl"}},
+            "checks": [{"name": "records", "kind": "rdf-emission",
+                "document": "output", "declarations": "models.json",
+                "usages": "bindings.json"}]}))
+        command = [sys.executable, "-I", "-m", "bijux_ontology", "project",
+                   str(root / "project.json"), "--json"]
+        result = subprocess.run(command, text=True, capture_output=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        (root / "output.ttl").write_text('<urn:record> a <urn:Record>.')
+        result = subprocess.run(command, text=True, capture_output=True)
+        assert result.returncode == 1, result.stdout + result.stderr
+        report = json.loads(result.stdout)
+        assert not report["verified"]
+        assert any(i["location"] == "usages/0.title" for i in report["issues"])
+    """
+    result = subprocess.run(
+        [str(python), "-I", "-c", dedent(program)],
+        cwd=work,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

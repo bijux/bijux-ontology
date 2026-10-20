@@ -1614,6 +1614,16 @@ cells; other known combinations and unused consumers remain visibly untested.
 Missing versions, inputs or representative corpora keep required cells incomplete.
 A passing majority cannot hide a failed or unknown selected obligation.
 
+## Native RDF project output
+
+A `rdf-emission` project job names a registered RDF `document`, a `declarations`
+JSON file and a `usages` JSON file such as
+`[{"model":"Record","subject":"urn:record","location":"record"}]`.
+Use `data_graph` (including `"@default"`) or explicit `data_union` for datasets.
+Only named root subjects are configurable; nested blank children retain their
+owned RDF identity. Required RDF occurrences use `emission="guaranteed"` or
+`minimum_values`; JSON source-presence claims are not inferred from RDF.
+
 ## Stored and streamed data
 
 `bijux_ontology.rdf.stores` creates/reopens sealed native disk snapshots from
