@@ -18,7 +18,7 @@ from bijux_ontology.data.analysis import (
     resnik_term_sets,
 )
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.vocabulary.browsing.inspection import (
     VocabularyView,
     inspect_vocabulary,
@@ -473,3 +473,45 @@ def test_inverse_population_retains_unsupported_projection_coverage() -> None:
     )
     assert result.population is None and not result.report.verified
     assert any(issue.code == "analysis.projection_unknown" for issue in result.report)
+
+
+def test_prepared_population_amortises_admission_without_trusting_copies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Queries charge retained capacity but never revisit unrelated corpus evidence."""
+    import bijux_ontology.data.analysis.population as preparation
+
+    population = _population()
+    calls = 0
+    original = preparation._qualify_evidence
+
+    def observed(
+        value: AnnotationPopulation, budget: Budget, issues: IssueCollector
+    ) -> None:
+        nonlocal calls
+        calls += 1
+        original(value, budget, issues)
+
+    monkeypatch.setattr(preparation, "_qualify_evidence", observed)
+    for _ in range(20):
+        result = resnik_similarity(population, EX.A, EX.B)
+        assert result.report.verified and result.score == 1.0
+    assert calls == 0
+    budget = Budget()
+    assert resnik_similarity(population, EX.A, EX.B, budget=budget).report.verified
+    limited = resnik_similarity(
+        population,
+        EX.A,
+        EX.B,
+        limits=replace(Limits(), max_states=budget._counts["states"] - 1),
+    )
+    assert limited.score is None and limited.report.outcome == "exhausted"
+    copied = AnnotationPopulation._owned(**vars(population))
+    assert resnik_similarity(copied, EX.A, EX.B).report.outcome == "input_error"
+    identity = population.identity
+    object.__setattr__(population, "identity", replace(identity, corpus_id="changed"))
+    try:
+        assert resnik_similarity(population, EX.A, EX.B).report.outcome == "input_error"
+    finally:
+        object.__setattr__(population, "identity", identity)
+

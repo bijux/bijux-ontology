@@ -46,6 +46,7 @@ class AnnotationPopulation:
     members: Mapping[URIRef, frozenset[str]]
     unannotated: tuple[str, ...]
     report: Report
+    _admission: object | None = None
 
     def __init__(self) -> None:
         raise InputError("Use prepare_annotation_population to qualify annotations")
