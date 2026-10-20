@@ -194,11 +194,6 @@ def compose_mappings(
                 operation.consume("work")
                 product += len(index_left[iri]) * len(index_right[iri])
             requested = len(selected) + product
-            # Pay the actual selected join product and worst-case rule outputs
-            # before entering fanout, rather than copying an unbounded join.
-            operation.consume("work", product * (len(approved) + 2))
-            operation.consume("states", product * (len(approved) * 2 + 6))
-            operation.consume("bytes", product * (len(approved) * 256 + 512))
             operation.consume("states", 3 * len(approved))
             operation.consume("bytes", 192 * len(approved))
             rule_index: dict[tuple[str, str], list[MappingCompositionRule]] = {}
@@ -227,6 +222,48 @@ def compose_mappings(
                     group = []
                     rule_index[key_pair] = group
                 group.append(rule)
+            usable_rows: list[dict[int, bool]] = []
+            for mapping, index_rows, extensions, metadata_unknown in (
+                (first, index_left, extension_left, left_metadata_unknown),
+                (second, index_right, extension_right, right_metadata_unknown),
+            ):
+                qualified: dict[int, bool] = {}
+                usable_rows.append(qualified)
+                for positions in index_rows.values():
+                    for position in positions:
+                        row = mapping.rows[position]
+                        operation.consume("work", len(row.cells) + 1)
+                        operation.consume("states")
+                        operation.consume("bytes", 96)
+                        qualified[position] = _interpretable(
+                            row, extensions, metadata_unknown
+                        )
+            # Reserve paths independently of rule inventory size. Only admitted
+            # rules matching usable selected rows can allocate derived outputs.
+            operation.consume("work", product * 2)
+            operation.consume("states", product * 6)
+            operation.consume("bytes", product * 512)
+            outputs = 0
+            for iri in selected:
+                for left_index in index_left[iri]:
+                    for right_index in index_right[iri]:
+                        left_row, right_row = (
+                            first.rows[left_index],
+                            second.rows[right_index],
+                        )
+                        operation.consume(
+                            "work",
+                            len(left_row.predicate) + len(right_row.predicate) + 1,
+                        )
+                        if usable_rows[0][left_index] and usable_rows[1][right_index]:
+                            outputs += len(
+                                rule_index.get(
+                                    (left_row.predicate, right_row.predicate), ()
+                                )
+                            )
+            operation.consume("work", outputs)
+            operation.consume("states", outputs * 2)
+            operation.consume("bytes", outputs * 256)
             for iri in selected:
                 for left_index in index_left[iri]:
                     for right_index in index_right[iri]:
@@ -235,13 +272,8 @@ def compose_mappings(
                             first.rows[left_index],
                             second.rows[right_index],
                         )
-                        operation.consume(
-                            "work", len(left_row.cells) + len(right_row.cells)
-                        )
-                        usable = _interpretable(
-                            left_row, extension_left, left_metadata_unknown
-                        ) and _interpretable(
-                            right_row, extension_right, right_metadata_unknown
+                        usable = (
+                            usable_rows[0][left_index] and usable_rows[1][right_index]
                         )
                         operation.consume(
                             "work", len(left_row.predicate) + len(right_row.predicate)
