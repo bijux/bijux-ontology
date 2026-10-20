@@ -388,25 +388,29 @@ def test_parser_completeness_and_execution_bounds(backend: OwlProfileBackend) ->
     bounded = convert_ontology(backend, document, format="functional", budget=operation)
     assert bounded.report.outcome == "exhausted" and bounded.content is None
     assert convert_ontology(backend, document, format="owlxml").report.verified
+    classpath_bytes = sum(
+        len(str(backend.directory / name).encode()) + 1 for name in backend.jars
+    )
+    output_cap = max(10000, classpath_bytes + 1)
     expanded = prepare_owl_document(
-        "Ontology(<urn:bounded> "
+        "Prefix(:=<urn:>) Ontology(<urn:bounded> Declaration(Class(:Root)) "
         + " ".join(
-            f"Declaration(Class(<urn:C{i}>)) Declaration(Class(<urn:D{i}>)) "
-            f"SubClassOf(<urn:C{i}> <urn:D{i}>)"
-            for i in range(80)
+            f"Declaration(Class(:C{i})) SubClassOf(:C{i} :Root)"
+            for i in range(max(80, output_cap // 80))
         )
         + ")",
         format="functional",
         document_iri="urn:bounded",
     )
-    classpath_bytes = sum(
-        len(str(backend.directory / name).encode()) + 1 for name in backend.jars
-    )
+    assert len(expanded.content) < output_cap
+    ordinary_output = convert_ontology(backend, expanded, format="owlxml")
+    assert ordinary_output.report.verified and ordinary_output.content is not None
+    assert len(ordinary_output.content) > output_cap
     limited_output = convert_ontology(
         backend,
         expanded,
-        format="functional",
-        limits=Limits(max_bytes=max(10000, classpath_bytes + 1)),
+        format="owlxml",
+        limits=Limits(max_bytes=output_cap),
     )
     assert limited_output.report.outcome == "exhausted"
     assert limited_output.content is None
