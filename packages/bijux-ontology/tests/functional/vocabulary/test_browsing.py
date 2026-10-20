@@ -96,6 +96,8 @@ def test_scoped_statements_and_ranked_lexical_results_match_existing_reader() ->
     local.add(
         (EX.C, SKOS.notation, Literal("01", datatype=XSD.integer, normalize=False))
     )
+    local.add((EX.A, RDFS.label, Literal("Straße", lang="de")))
+    local.add((EX.B, RDFS.label, Literal("STRASSE", lang="de")))
     imported = Graph().add((EX.A, RDF.type, SKOS.Concept))
     imported.add((EX.A, RDFS.label, Literal("Image", lang="en")))
     view = inspect_vocabulary(Vocabulary(local, imports=(imported,)))
@@ -117,6 +119,7 @@ def test_scoped_statements_and_ranked_lexical_results_match_existing_reader() ->
         (str(EX.A), {}),
         ("01", {"exact": True, "fields": (str(SKOS.notation),)}),
         ("Image", {"languages": ("EN",), "exact": True}),
+        ("STRASSE", {"casefold": True, "languages": ("DE",)}),
         ("absent", {}),
     ):
         matches: list[SearchMatch] = []
@@ -275,3 +278,26 @@ def test_page_filters_share_exact_membership_and_bound_prefix_comparisons() -> N
         view, predicates=(*filters, str(RDF.type)), page_size=200
     )
     assert len(statements.items) == 200 and statements.enumeration_complete
+
+
+def test_eager_and_paged_search_honour_shared_exhaustion_and_cancellation() -> None:
+    graph = Graph().add((EX.A, RDF.type, OWL.Class))
+    graph.add((EX.A, RDFS.label, Literal("Straße", lang="de")))
+    view = inspect_vocabulary(graph)
+    assert view.search("strasse", casefold=True).report.verified
+    budget = Budget()
+    budget.consume("work", budget.limits.max_work)
+    result = view.search("strasse", casefold=True, budget=budget)
+    assert result.report.outcome == "exhausted" and not result.items
+    with pytest.raises(LimitExceeded):
+        search_page(view, "strasse", casefold=True, budget=budget)
+    event = Event()
+    event.set()
+    assert (
+        view.search("strasse", casefold=True, cancel=event).report.outcome
+        == "exhausted"
+    )
+    assert (
+        search_page(view, "strasse", casefold=True, cancel=event).report.outcome
+        == "exhausted"
+    )

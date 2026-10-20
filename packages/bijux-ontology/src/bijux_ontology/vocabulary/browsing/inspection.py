@@ -2,6 +2,7 @@
 
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from functools import cmp_to_key, partial
+from threading import Event
 from typing import Literal as Direction
 from typing import TypeVar, cast
 
@@ -31,8 +32,13 @@ from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import (
     Vocabulary,
     _compare_edges,
+    _lexical_candidates,
+    _ordered_terms,
     _VocabularyIndex,
 )
+
+from .admission import _PageBudget, _text
+from .matching import _Search
 
 T = TypeVar("T")
 
@@ -59,6 +65,9 @@ class VocabularyView:
         )
         self._vocabulary = source
         self._scopes = self._reader.scopes
+        self._roles = tuple(
+            role for role in ("local", "imports", "lookup") if role in scopes
+        )
         self._preparation_budget = budget
 
     def _operation_budget(self, budget: Budget | None) -> Budget:
@@ -110,8 +119,9 @@ class VocabularyView:
 
     def lookup(self, iri: str, *, budget: Budget | None = None) -> TermInfo:
         """Distinguish supplied declaration, referenced-only identifier and absence."""
-        absolute_iri(iri)
         selected = self._operation_budget(budget)
+        _text(iri, selected)
+        absolute_iri(iri)
         node = URIRef(iri)
         kinds: set[str] = set()
         declarations: list[str] = []
@@ -439,87 +449,38 @@ class VocabularyView:
         languages: Sequence[str] = (),
         exact: bool = False,
         casefold: bool = False,
+        budget: Budget | None = None,
+        cancel: Event | None = None,
     ) -> Selection[SearchMatch]:
-        """Search bounded evidence, ranking exact identifiers before labels."""
-        if not isinstance(query, str) or not query:
-            raise InputError("Search requires nonempty text")
-        for field in fields:
-            if field != "iri":
-                absolute_iri(field)
-        for tag in languages:
-            language_tag(tag)
-        match_query = query.casefold() if casefold else query
-        wanted_languages = {tag.lower() for tag in languages}
+        """Collect bounded exact/substring evidence in the shared ranked order."""
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Search budget requires Budget")
+        if cancel is not None and not isinstance(cancel, Event):
+            raise InputError("Search cancellation requires threading.Event")
+        selected = self._operation_budget(budget)
+        operation = _PageBudget(selected, cancel)
+        issues = IssueCollector(selected)
         matches: list[SearchMatch] = []
-        budget = Budget(self.limits)
-        issues = IssueCollector(budget)
-        complete = True
+        complete = False
         try:
-            index = self._prepare_index(budget)
-            for term in sorted(index.terms.values(), key=lambda term: term.iri):
-                budget.consume("work")
-                if term.status != "declared":
-                    continue
-
-                def candidates(
-                    selected: TermInfo,
-                ) -> Iterator[tuple[str, str, str | None, str]]:
-                    """Count scanned annotations, including excluded fields."""
-                    if "iri" in fields:
-                        for scope in selected.scopes:
-                            yield "iri", selected.iri, None, scope
-                    for edge in index.outgoing.get(URIRef(selected.iri), ()):
-                        budget.consume("work")
-                        if str(edge.predicate) in fields and isinstance(
-                            edge.object, Literal
-                        ):
-                            yield (
-                                str(edge.predicate),
-                                str(edge.object),
-                                edge.object.language,
-                                edge.scope,
-                            )
-
-                for field, value, language, scope in candidates(term):
-                    budget.consume("work")
-                    if (
-                        wanted_languages
-                        and field != "iri"
-                        and (language or "").lower() not in wanted_languages
-                    ):
-                        continue
-                    compared = value.casefold() if casefold else value
-                    if compared == match_query or (
-                        not exact and match_query in compared
-                    ):
-                        budget.consume("states")
-                        matches.append(
-                            SearchMatch(
-                                term,
-                                field,
-                                value,
-                                language,
-                                scope,
-                                0
-                                if field == "iri" and compared == match_query
-                                else 1
-                                if compared == match_query
-                                else 2,
-                            )
-                        )
+            search = _Search.prepare(
+                query, fields, languages, exact, casefold, operation
+            )
+            search = search.admit(operation)
+            index = self._prepare_index(operation)
+            terms = _ordered_terms(index, operation)
+            candidates = _lexical_candidates(index, terms, operation)
+            for phase in range(3):
+                for candidate in candidates:
+                    operation.consume("work")
+                    match = search.match(candidate, phase, operation)
+                    if match is not None:
+                        operation.consume("states")
+                        operation.consume("bytes", 16)
+                        matches.append(match)
+            complete = True
         except LimitExceeded as error:
             issues.exhausted(str(error), location="terms.search")
-            complete = False
-        matches.sort(
-            key=lambda match: (
-                match.rank,
-                match.term.iri,
-                match.field,
-                match.language or "",
-                match.value,
-                match.scope,
-            )
-        )
         return Selection(
             tuple(matches),
             Report(
@@ -626,14 +587,16 @@ class VocabularyView:
     def graph(self) -> Graph:
         """Export an independent explicit union of this already-selected graph scope."""
         return copy_graph(
-            self._reader.graph,
+            self._read(),
             max_triples=self.limits.max_triples,
             standardize_apart=False,
         )
 
-    def _read(self) -> Graph:
-        """Read the existing selected snapshot without creating an export."""
-        return self._reader.graph
+    def _read(self, *, budget: Budget | None = None) -> Graph:
+        """Read a selected union within the active operation allowance."""
+        return self._vocabulary._read(
+            self._roles, budget=self._operation_budget(budget), limits=self.limits
+        ).graph
 
     def describe(
         self, iri: str, *, replacement_predicates: Sequence[str] = ()

@@ -2,7 +2,7 @@
 
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from functools import cached_property, cmp_to_key, partial
+from functools import cmp_to_key, partial
 from threading import Lock
 from types import MappingProxyType
 from typing import cast
@@ -208,10 +208,13 @@ class _VocabularyRead:
     scopes: tuple[tuple[str, Graph], ...]
     _graph: Graph | None
     _load_union: Callable[[], Graph] | None = None
+    _budget: Budget | None = None
 
-    @cached_property
+    @property
     def graph(self) -> Graph:
         """Construct a set-valued union only when a consumer asks for it."""
+        if self._budget is not None:
+            self._budget.consume("work", 0)
         if self._graph is not None:
             return self._graph
         if self._load_union is None:
@@ -267,7 +270,6 @@ class Vocabulary:
             (scope, source.selected) for scope, source in self._source_handles
         )
         self._reads: dict[tuple[str, ...], _VocabularyRead] = {}
-        self._scope_reads: dict[tuple[str, ...], _VocabularyRead] = {}
         self._indexes: dict[tuple[str, ...], _VocabularyIndex] = {}
         self._inspection_footprints: dict[tuple[str, ...], tuple[int, int]] = {}
         self._kinds: dict[tuple[str, ...], Mapping[str, frozenset[str]]] = {}
@@ -453,6 +455,8 @@ class Vocabulary:
         prepare_union: bool = True,
     ) -> _VocabularyRead:
         """Select owned roles without preparing unrelated inspection indexes."""
+        operation = budget if budget is not None else Budget(limits or self.limits)
+        operation.consume("work")
         if (
             isinstance(scopes, (str, bytes))
             or not scopes
@@ -481,13 +485,12 @@ class Vocabulary:
         allowance.consume("triples", sum(len(graph) for _, graph in selected))
         with self._read_lock:
             if not prepare_union:
-                if key not in self._scope_reads:
-                    self._scope_reads[key] = _VocabularyRead(
-                        selected,
-                        selected[0][1] if len(selected) == 1 else None,
-                        lambda: self._read(roles, limits=limits).graph,
-                    )
-                return self._scope_reads[key]
+                return _VocabularyRead(
+                    selected,
+                    selected[0][1] if len(selected) == 1 else None,
+                    lambda: self._read(roles, limits=limits, budget=operation).graph,
+                    operation,
+                )
             if key not in self._reads:
                 if len(selected) == 1:
                     graph = selected[0][1]
@@ -495,11 +498,13 @@ class Vocabulary:
                     union = Graph(bind_namespaces="none")
                     for _, source in selected:
                         for triple in source:
-                            if budget is not None:
-                                budget.consume("work")
+                            operation.consume("work")
+                            operation.consume("states")
+                            operation.consume("bytes", 128)
                             union.add(triple)
                     bind_namespaces(union, *(source for _, source in selected))
                     graph = _read_graph(union)
+                operation.consume("work", 0)
                 self._reads[key] = _VocabularyRead(selected, graph)
             return self._reads[key]
 
