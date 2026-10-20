@@ -252,7 +252,6 @@ class Vocabulary:
             tuple(map(own, imports)),
             tuple(map(own, lookup)),
             selected,
-            admitted_budget=budget,
         )
 
     def _initialize(

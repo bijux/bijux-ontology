@@ -99,7 +99,7 @@ def test_vocabulary_limits_retain_findings_and_stop_without_verifying() -> None:
     report = check_vocabulary(
         view, [TermDeclaration(str(EX.A)), TermDeclaration(str(EX.A))]
     )
-    assert report.checked == 1 and report.outcome == "exhausted"
+    assert report.checked == 0 and report.outcome == "exhausted"
     excluded = check_vocabulary(
         view, terms, exclude=(str(EX.Missing), str(EX.Other)), allow_empty=True
     )

@@ -149,6 +149,7 @@ def test_public_prepared_source_still_owns_dataset_and_preserves_blank_relations
 def test_source_footprint_is_admitted_once_per_actual_operation_owner() -> None:
     """Repeated and overlapping reads never invent new resource acquisitions."""
     from bijux_ontology.execution.budgets import Operation
+    from bijux_ontology.jsonld.processing.resources import context_resources
 
     local = Graph().add((EX.A, RDF.type, OWL.Class)).add((EX.B, RDF.type, OWL.Class))
     imported = Graph().add((EX.C, RDF.type, OWL.Class))
@@ -177,9 +178,14 @@ def test_source_footprint_is_admitted_once_per_actual_operation_owner() -> None:
         assert len(vocabulary._read(budget=custom).graph) == 4
         assert custom.remaining("resources") == 0
 
-    paid = Budget(Limits(max_resources=1, max_triples=2))
-    loaded = load_vocabulary(local, budget=paid)
-    assert len(loaded._read(budget=paid).graph) == 2
-    assert paid.remaining("resources") == 0 and paid.remaining("triples") == 0
-    with pytest.raises(LimitExceeded):
-        loaded._read(budget=Budget(Limits(max_triples=1)))
+    for inherited in (False, True):
+        paid = Budget(Limits(max_resources=1, max_triples=2))
+        loaded = (
+            load_vocabulary(local, document_loader=context_resources(budget=paid))
+            if inherited
+            else load_vocabulary(local, budget=paid)
+        )
+        assert len(loaded._read(budget=paid).graph) == 2
+        assert paid.remaining("resources") == 0 and paid.remaining("triples") == 0
+        with pytest.raises(LimitExceeded):
+            loaded._read(budget=Budget(Limits(max_triples=1)))
