@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from itertools import combinations
-
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import OWL, RDF
 
 from .context import AssertionContext, _Row
-from .patterns import KeyPattern, Resource
-from .types import Statement
+from .key_join import KeyJoin
+from .patterns import KeyPattern
 
 
 def functional_pair(
@@ -51,95 +49,79 @@ def functional_pair(
 
 
 def key_identities(state: AssertionContext, keys: tuple[KeyPattern, ...]) -> bool:
-    """Use shared key witnesses without making properties functional."""
-    changed = False
+    """Join actual shared witnesses; properties never become functional."""
     for key in keys:
-        members: list[tuple[Resource, tuple[Statement, ...]]] = []
-        for subject, actual, premise in state.types:
-            state.operation.consume("work")
-            ancestry = state.member(actual, key.klass)
-            named = state.named_proof(subject)
-            if ancestry is None or named is None:
-                continue
-            state.operation.consume("states")
-            members.append((subject, (premise, *ancestry, *named)))
-        if key.klass == OWL.Thing:
-            for predicate in key.properties:
-                for row in state.rows(predicate):
-                    state.operation.consume("work")
-                    named = state.named_proof(row.subject)
-                    if named is not None:
-                        state.operation.consume("states")
-                        members.append((row.subject, (row.premise, *named)))
-        state.operation.consume("states", len(members))
-        state.operation.consume("bytes", 8 * len(members))
-        for (left, left_proof), (right, right_proof) in combinations(members, 2):
-            state.operation.consume("work")
-            if state.equal(left, right) is not None:
-                continue
-            proof = [*key.premises, *left_proof, *right_proof]
-            complete = True
-            for predicate in key.properties:
+        join = KeyJoin(state, key)
+        for position, (left, left_proof) in enumerate(join.members):
+            for right_position in join.candidates(position):
+                right, right_proof = join.members[right_position]
                 state.operation.consume("work")
-                kind, declaration = state.kind(predicate)
-                if kind is None:
-                    state.unknown(
-                        "A key property lacks an unambiguous object/data declaration"
-                    )
-                    complete = False
-                    break
-                common = None
-                unnamed_common = False
-                for a in state.rows(predicate):
+                if state.equal(left, right) is not None:
+                    continue
+                proof = [*key.premises, *left_proof, *right_proof]
+                complete = True
+                for predicate in key.properties:
                     state.operation.consume("work")
-                    first = state.equal(left, a.subject)
-                    if first is None:
-                        continue
-                    for b in state.rows(predicate):
+                    kind, declaration = state.kind(predicate)
+                    if kind is None:
+                        complete = False
+                        break
+                    common = None
+                    unnamed_common = False
+                    for a in join.subject_rows(predicate, left):
                         state.operation.consume("work")
-                        second = state.equal(right, b.subject)
-                        if second is None:
-                            continue
-                        if kind == "object":
-                            assert isinstance(a.value, URIRef | BNode) and isinstance(
-                                b.value, URIRef | BNode
-                            )
-                            identity = state.equal(a.value, b.value)
-                            if identity is None:
-                                continue
-                            named = state.named_proof(a.value)
-                            if named is None:
-                                unnamed_common = True
-                                continue
-                            common = (
-                                *first,
-                                *second,
-                                *identity,
-                                *named,
-                                a.premise,
-                                b.premise,
-                            )
-                        else:
-                            assert isinstance(a.value, Literal) and isinstance(
-                                b.value, Literal
-                            )
-                            if state.literal_equal(a.value, b.value) != "equal":
-                                continue
-                            common = (*first, *second, a.premise, b.premise)
-                        break
-                    if common is not None:
-                        break
-                if common is None:
-                    if unnamed_common:
-                        state.unknown(
-                            "A common anonymous key filler is not established named"
+                        first = state.equal(left, a.subject)
+                        assert first is not None
+                        targets = (
+                            join.value_rows(predicate, right, a.value)
+                            if isinstance(a.value, URIRef | BNode)
+                            else join.subject_rows(predicate, right)
                         )
-                    complete = False
-                    break
-                state.operation.consume("states", len(common) + len(declaration))
-                proof.extend((*declaration, *common))
-            if complete:
-                changed |= state.identity.merge(
+                        for b in targets:
+                            state.operation.consume("work")
+                            second = state.equal(right, b.subject)
+                            assert second is not None
+                            if kind == "object":
+                                assert isinstance(
+                                    a.value, URIRef | BNode
+                                ) and isinstance(b.value, URIRef | BNode)
+                                identity = state.equal(a.value, b.value)
+                                assert identity is not None
+                                named = state.named_proof(a.value)
+                                if named is None:
+                                    unnamed_common = True
+                                    continue
+                                common = (
+                                    *first,
+                                    *second,
+                                    *identity,
+                                    *named,
+                                    a.premise,
+                                    b.premise,
+                                )
+                            else:
+                                assert isinstance(a.value, Literal) and isinstance(
+                                    b.value, Literal
+                                )
+                                if state.literal_equal(a.value, b.value) != "equal":
+                                    continue
+                                common = (*first, *second, a.premise, b.premise)
+                            break
+                        if common is not None:
+                            break
+                    if common is None:
+                        if unnamed_common:
+                            state.unknown(
+                                "A common anonymous key filler is not established named"
+                            )
+                        complete = False
+                        break
+                    state.operation.consume("states", len(common) + len(declaration))
+                    proof.extend((*declaration, *common))
+                if complete and state.identity.merge(
                     state.key(left), state.key(right), "key", proof
-                )
-    return changed
+                ):
+                    # The affected-key queue will rebuild value indexes against
+                    # the new classes before considering another inference.
+                    return True
+    return False

@@ -359,3 +359,51 @@ def test_identity_merge_queue_revisits_only_affected_functional_buckets(
     assert calls == 16 and len(interrupted.equalities) == 17
     original = {tuple(term_key(term) for term in triple) for triple in selected.graph()}
     assert all(set(item.premises) <= original for item in interrupted.equalities)
+
+
+def test_sparse_multivalued_owl_keys_join_only_shared_complete_subjects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Every property needs its own witness; missing and unknown values cannot merge."""
+    from typing import Any
+
+    from bijux_ontology.owl.assertions.context import AssertionContext
+
+    graph = _object(_object(Graph()), E.q)
+    graph.add((E.r, RDF.type, OWL.DatatypeProperty))
+    head = BNode()
+    Collection(graph, head, [E.p, E.q, E.r])
+    graph.add((E.Kind, OWL.hasKey, head))
+    for index in range(256):
+        subject = E[f"key-{index}"]
+        graph.add((subject, RDF.type, E.Kind))
+        graph.add((subject, E.p, E[f"value-{index}"]))
+        graph.add((subject, E.p, E[f"extra-{index}"]))
+        graph.add((subject, E.q, E.shared))
+        graph.add((subject, E.r, literal_term("1", datatype=str(XSD.integer))))
+    calls = 0
+    original = AssertionContext.equal
+
+    def equal(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(AssertionContext, "equal", equal)
+    sparse = check_assertion_witnesses(graph)
+    assert sparse.report.verified, sparse.report.to_dict()
+    assert not sparse.equalities and calls == 0  # No 32,640 member-pair scans.
+    graph.add((E["key-1"], E.p, E["value-0"]))
+    shared = check_assertion_witnesses(graph)
+    assert shared.report.verified, shared.report.to_dict()
+    assert len(shared.equalities) == 1 and shared.equalities[0].rule == "key"
+    assert {shared.equalities[0].left, shared.equalities[0].right} == {
+        term_key(E["key-0"]),
+        term_key(E["key-1"]),
+    }
+    graph.remove((E["key-1"], E.r, None))
+    missing = check_assertion_witnesses(graph)
+    assert missing.report.verified and not missing.equalities
+    graph.add((E["key-1"], E.r, Literal("opaque", datatype=E.Custom)))
+    unknown = check_assertion_witnesses(graph)
+    assert unknown.status == "incomplete" and not unknown.equalities

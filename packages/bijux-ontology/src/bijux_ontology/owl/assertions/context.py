@@ -17,7 +17,7 @@ from bijux_ontology.owl.obligations import OntologyObligation, _NativeProofs
 from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.roles.classification import declaration_role
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
-from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values
+from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 
 from .identity import Identity, retain_premises
 from .indexing import PropertyRows
@@ -59,6 +59,7 @@ class AssertionContext:
             tuple[TermKey, TermKey], Choice["equal", "different"] | None
         ] = {}
         self.validated: set[TermKey] = set()
+        self.comparisons = ScalarComparisons(operation)
         self.memberships: dict[tuple[URIRef, URIRef], tuple[Statement, ...] | None] = {}
 
     def unknown(self, message: str) -> None:
@@ -237,8 +238,8 @@ class AssertionContext:
             self.children.append(report)
             answer = "equal" if report.verified else None
         else:
-            comparison = compare_literal_values(
-                left, right, regime="owl2-datatype-map", budget=self.operation
+            comparison = self.comparisons.compare(
+                left, right, regime="owl2-datatype-map"
             )
             retain_report(comparison.report, self.operation, self.issues)
             self.children.append(comparison.report)
