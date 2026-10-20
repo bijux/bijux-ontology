@@ -208,24 +208,31 @@ def test_selected_graph_exact_iris_and_actual_query_reuse(
     selected = dataset.graph(EX.G)
     selected.add((EX.Fine, RDF.type, OWL.Class))
     selected.add((EX.Left, RDF.type, OWL.Class))
+    selected.add((EX.Right, RDF.type, OWL.Class))
+    selected.add((EX.Left, RDFS.subClassOf, EX.Right))
     dataset.graph(EX.H).add((EX.Fine, RDFS.subClassOf, EX.Left))
     view = inspect_vocabulary(load_vocabulary(dataset, graph_name=str(EX.G)))
     annotations = [SlimAnnotation("r", str(EX.Fine)), SlimAnnotation("r", EX.Fine)]
     result = assign_slim(view, annotations, roots=[str(EX.Left)], policy="nearest")
     assert result.uncovered == 2 and result.report.outcome == "disagreement"
-    from bijux_ontology.vocabulary.relation_paths.checking import find_relation_path
+    from bijux_ontology.vocabulary.relation_paths.checking import (
+        find_relation_endpoints,
+    )
 
-    actual = find_relation_path
+    actual = find_relation_endpoints
     calls = []
 
     def counted(*args: Any, **kwargs: Any) -> Any:
         calls.append((args, kwargs))
         return actual(*args, **kwargs)
 
-    monkeypatch.setattr(checking, "find_relation_path", counted)
+    monkeypatch.setattr(checking, "find_relation_endpoints", counted)
     union = inspect_vocabulary(load_vocabulary(dataset, union=True))
     assert assign_slim(
-        union, annotations, roots=[str(EX.Left), str(EX.Left)], policy="all"
+        union,
+        annotations,
+        roots=[str(EX.Left), str(EX.Right), str(EX.Left)],
+        policy="all",
     ).report.verified
     assert len(calls) == 1
     graph = Graph().add(
