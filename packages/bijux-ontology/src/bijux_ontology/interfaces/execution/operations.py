@@ -32,6 +32,9 @@ from bijux_ontology.jsonld.usages.checking import check_context, prepare_usages
 from bijux_ontology.jsonld.usages.comparison import compare_serializations
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.codecs import usages_from_data
+from bijux_ontology.models.emission.observation_codecs import bindings_from_data
+from bijux_ontology.models.emission.serialization import check_serialized
+from bijux_ontology.models.persistence.codecs import declaration_data
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
@@ -343,12 +346,65 @@ def execute_operation(
         allowance = Budget(limits)
         known_keys(
             parameters,
-            common | {"models", "usages", "rdf_direction"},
+            common | {"models", "usages", "rdf_direction", "bindings", "vocabulary"},
             location="worker request",
         )
+        models = models_from_data(parameters.get("models"), budget=allowance)
+        if "bindings" in parameters:
+            source_data = object_value(
+                parameters.get("vocabulary"), location="vocabulary"
+            )
+            known_keys(
+                source_data,
+                {"source", "format", "base", "graph_name", "union"},
+                location="vocabulary",
+            )
+            vocabulary = load_vocabulary(
+                RdfSource(
+                    string_value(source_data.get("source")),
+                    format=optional_string_value(source_data.get("format")),
+                    document_iri=optional_string_value(source_data.get("base")),
+                    graph_name=optional_string_value(source_data.get("graph_name")),
+                    union=boolean_value(source_data.get("union", False)),
+                ),
+                budget=allowance,
+            )
+            result = check_serialized(
+                document,
+                models,
+                usages_from_data(parameters.get("usages")),
+                vocabulary=vocabulary,
+                bindings=bindings_from_data(parameters["bindings"], allowance),
+                rdf_direction=cast(
+                    DirectionPolicy | None,
+                    optional_string_value(parameters.get("rdf_direction")),
+                ),
+                base=base,
+                document_loader=loader,
+                budget=allowance,
+            )
+            observation = result.observed
+            return result.report, {
+                "declarations": declaration_data(observation.declarations, allowance)
+                if observation
+                else [],
+                "bindings": [
+                    {
+                        "owner": item.identity.owner,
+                        "path": list(item.identity.path),
+                        "report": item.report.to_dict(),
+                        "exclusion": item.exclusion,
+                    }
+                    for item in observation.bindings
+                ]
+                if observation
+                else [],
+            }
+        if "vocabulary" in parameters:
+            raise InputError("A vocabulary requires explicit serialized bindings")
         return check_emission(
             document,
-            models_from_data(parameters.get("models"), budget=allowance),
+            models,
             usages_from_data(parameters.get("usages")),
             rdf_direction=cast(
                 DirectionPolicy | None,

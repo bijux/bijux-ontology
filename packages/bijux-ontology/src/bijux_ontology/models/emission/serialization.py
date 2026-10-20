@@ -10,15 +10,22 @@ from typing import TYPE_CHECKING
 from rdflib import Graph
 
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.declarations.bindings import ContractEvidence
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report, combine_reports
+from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.jsonld.usages.checking import PreparedUsages
+from bijux_ontology.models.emission.observations import (
+    SerializedFieldBinding,
+    SerializedObservations,
+    observe_serialized_bindings,
+)
 from bijux_ontology.models.emission.samples import SampledOutput, serialization_failure
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
@@ -39,6 +46,14 @@ class InstanceCheck:
     output_json: str | None
     document_json: str | None
     report: Report
+    observed: SerializedObservations | None = None
+
+    @property
+    def contract_evidence(self) -> ContractEvidence:
+        """Expose actual binding receipts without replacing independent output truth."""
+        return ContractEvidence(
+            self.report, self.observed.bindings if self.observed is not None else ()
+        )
 
     @property
     def output(self) -> object:
@@ -153,6 +168,7 @@ def check_serialized(
     datatype_registry: DatatypeRegistry | None = None,
     context_expectations: Sequence[ContextExpectation] = (),
     _prepared: PreparedUsages | None = None,
+    bindings: Sequence[SerializedFieldBinding] = (),
 ) -> InstanceCheck:
     """Check one already serialized output using the shared semantic budget.
 
@@ -165,12 +181,45 @@ def check_serialized(
         raise InputError("declaration_report requires a Report")
     operation = _operation(limits, budget)
     sample = SampledOutput(operation)
+    observed = None
     try:
         sample.capture_output(output)
         sample.capture_context(context)
         sample.apply_context()
         if _prepared is not None:
             sample.adopt_prepared(_prepared)
+        selected_bindings = (
+            ()
+            if type(bindings) is tuple and not bindings
+            else capture_items(bindings, SerializedFieldBinding, operation)
+        )
+        if selected_bindings:
+            intended = capture_items(models, ModelDeclaration, operation)
+            usages = capture_items(usages, ModelUsage, operation)
+            operation.consume("states", len(usages))
+            operation.reserve_storage(128 + 64 * len(usages))
+            selected_usages = set(usages)
+            for binding in selected_bindings:
+                operation.consume("work")
+                if binding.usage not in selected_usages:
+                    raise InputError(
+                        "An observed binding requires its independent model usage"
+                    )
+            prepared = (
+                sample.prepared
+                if sample.prepared is not None
+                else sample.prepare(base=base, document_loader=document_loader)
+            )
+            document_loader = prepared._loader
+            observed = observe_serialized_bindings(
+                prepared,
+                intended,
+                selected_bindings,
+                budget=operation,
+                datatype_registry=datatype_registry,
+                rdf_direction=rdf_direction,
+            )
+            models = intended
         report = sample.check(
             models,
             usages,
@@ -188,4 +237,6 @@ def check_serialized(
         report = combine_reports(
             "serialization.sample", *reports, serialization_failure(error, operation)
         )
-    return InstanceCheck(sample.output_json, sample.document_json, report)
+    if observed is not None:
+        report = combine_reports("serialization.sample", report, observed.report)
+    return InstanceCheck(sample.output_json, sample.document_json, report, observed)
