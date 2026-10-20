@@ -150,6 +150,20 @@ def arguments(argv: list[str] | None = None) -> argparse.Namespace:
         elif name == "project":
             action.add_argument("configuration", type=Path)
             action.add_argument(
+                "--execution",
+                choices=("serial", "parallel"),
+                default="serial",
+                help="Choose execution without changing semantic job definitions",
+            )
+            action.add_argument("--workers", type=int, default=2)
+            action.add_argument("--job-timeout", type=float, default=30.0)
+            action.add_argument(
+                "--execution-artifacts",
+                type=Path,
+                default=Path.cwd() / "artifacts" / "project-checks",
+                help="Owned capture and worker scratch root for parallel execution",
+            )
+            action.add_argument(
                 "--bundle",
                 action="store_true",
                 help="Read a portable directory or ZIP resource bundle offline",

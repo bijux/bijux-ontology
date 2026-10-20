@@ -13,7 +13,6 @@ from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.values import (
     array_value,
     at_input_location,
-    decode_json,
     input_location,
     known_keys,
     object_value,
@@ -52,23 +51,17 @@ from bijux_ontology.workflows.upgrades.corpus import (
 class _Inputs:
     """Bound actual input acquisition before existing concrete operation stages."""
 
-    def __init__(self, resources: ProjectResources) -> None:
+    def __init__(
+        self, resources: ProjectResources, budget: Budget | None = None
+    ) -> None:
+        self.resources = resources
         self.config = resources.configuration
-        self.budget = Budget(self.config.limits)
+        self.budget = budget if budget is not None else Budget(self.config.limits)
 
     def read(self, value: object) -> tuple[object, Path]:
         """Read one selected file with cumulative preparation byte/resource bounds."""
         path = self.config.path(value, location="project input")
-        self.budget.consume("resources")
-        with path.open("rb") as handle:
-            payload = handle.read(self.config.limits.max_bytes + 1)
-        self.budget.consume("bytes", len(payload))
-        return decode_json(
-            payload,
-            source=str(path),
-            max_bytes=self.config.limits.max_bytes,
-            max_depth=self.config.limits.max_depth,
-        ), path
+        return self.resources.read_json(path, budget=self.budget), path
 
     def array(self, value: object) -> list[object]:
         """Reserve finite owned inventory references before typed construction."""
@@ -248,10 +241,15 @@ def _corpus(job: Mapping[str, object], inputs: _Inputs) -> Report:
 
 
 def run_application_job(
-    kind: str, job: Mapping[str, object], resources: ProjectResources
+    kind: str,
+    job: Mapping[str, object],
+    resources: ProjectResources,
+    *,
+    budget: Budget | None = None,
 ) -> Report:
     """Reuse concrete checkers; configuration never imports serializer callbacks."""
     config = resources.configuration
+    inputs = _Inputs(resources, budget)
     # Configurations own JSON already; this also qualifies a job under its smaller
     # selected operation metadata bounds before constructing typed records.
     selected = cast(
@@ -260,9 +258,9 @@ def run_application_job(
             dict(job),
             max_bytes=config.limits.max_bytes,
             max_depth=config.limits.max_depth,
+            budget=inputs.budget,
         ),
     )
-    inputs = _Inputs(resources)
     if kind == "context-corpus":
         return _corpus(selected, inputs)
     if kind == "rdf-emission":
@@ -308,7 +306,7 @@ def run_application_job(
         return check_emission(
             document,
             models_from_data(declarations, source=str(path), budget=inputs.budget),
-            usages_from_data(usages),
+            usages_from_data(usages, budget=inputs.budget),
             vocabulary=vocabulary,
             base=optional_string_value(selected.get("base")),
             document_loader=resources.context_loader(inputs.budget),

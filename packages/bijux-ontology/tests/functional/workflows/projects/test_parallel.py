@@ -488,10 +488,9 @@ def test_unsupported_revisions_and_jobs_are_required_not_stale(tmp_path: Path) -
     raw = config.to_dict()
     raw["checks"] = [
         {
-            "name": "models",
-            "kind": "models",
+            "name": "encoding",
+            "kind": "ontology",
             "source": "terms",
-            "declarations": "missing.json",
         }
     ]
     result = check_project_parallel(
@@ -636,3 +635,139 @@ def test_completed_native_receipt_survives_late_stop_and_preserves_counters(
     monkeypatch.setattr(parallel_runtime, "execute_worker", actual_exchange)
     recovered = check_project_parallel(config, artifacts=tmp_path / "recovery")
     assert recovered.report.complete and recovered.report.verified is not missing
+
+
+def application_project(path: Path) -> ProjectConfig:
+    """Share one actual declared record across JSON-LD, RDF and SHACL jobs."""
+    original = project(path)
+    with (path / "vocab.ttl").open("a") as stream:
+        stream.write(
+            f"<{EX}Record> a <http://www.w3.org/2002/07/owl#Class>."
+            f"<{EX}title> a <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>."
+        )
+    (path / "models.json").write_text(
+        json.dumps(
+            [
+                {
+                    "identifier": "Record",
+                    "types": [EX + "Record"],
+                    "fields": [
+                        {
+                            "name": "title",
+                            "predicate": EX + "title",
+                            "emission": "guaranteed",
+                            "values": [
+                                {
+                                    "kind": "literal",
+                                    "datatype": "http://www.w3.org/2001/XMLSchema#string",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ]
+        )
+    )
+    (path / "usages.json").write_text('[{"model":"Record","path":[]}]')
+    (path / "roots.json").write_text(
+        json.dumps([{"model": "Record", "subject": EX + "record"}])
+    )
+    (path / "document.json").write_text(
+        json.dumps(
+            {"@context": EX + "context", "@type": EX + "Record", "title": "Example"}
+        )
+    )
+    (path / "data.ttl").write_text(
+        f'<{EX}record> a <{EX}Record>; <{EX}title> "Example".'
+    )
+    data = original.to_dict()
+    terms, context, shapes = original.checks()
+    data["checks"] = [
+        terms,
+        {
+            "name": "models",
+            "kind": "models",
+            "source": "terms",
+            "declarations": "models.json",
+            "depends_on": ["terms"],
+        },
+        context,
+        {
+            "name": "output",
+            "kind": "emission",
+            "source": "terms",
+            "declarations": "models.json",
+            "usages": "usages.json",
+            "document": "document.json",
+            "depends_on": ["models"],
+        },
+        {
+            "name": "native",
+            "kind": "rdf-emission",
+            "document": "data",
+            "declarations": "models.json",
+            "usages": "roots.json",
+            "depends_on": ["models"],
+        },
+        {**shapes, "coverage": {"pairs": [[EX + "Shape", EX + "record"]]}},
+    ]
+    return ProjectConfig(data, directory=path)
+
+
+def test_mixed_contract_jobs_use_captured_files_and_real_parallel_budgets(
+    tmp_path: Path,
+) -> None:
+    config = application_project(tmp_path / "inputs")
+    ordinary = check_project(config)
+    assert ordinary.verified, ordinary.to_dict()
+    runs = tmp_path / "runs"
+    stopped, mutated = threading.Event(), threading.Event()
+
+    def replace_captured_originals() -> None:
+        """Delete application inputs only after immutable capture has completed."""
+        while not stopped.wait(0.001):
+            if list(runs.glob("project-checks-*/project.json")):
+                for path in config.input_paths():
+                    path.unlink()
+                mutated.set()
+                return
+
+    observer = threading.Thread(target=replace_captured_originals, daemon=True)
+    observer.start()
+    budget = Budget(config.limits)
+    try:
+        result = check_project_parallel(
+            config, workers=3, budget=budget, artifacts=runs
+        )
+    finally:
+        stopped.set()
+        observer.join(timeout=1)
+    assert mutated.is_set() and result.report.verified, result.report.to_dict()
+    assert [job.name for job in result.jobs] == [
+        "terms",
+        "models",
+        "context",
+        "output",
+        "native",
+        "shapes",
+    ]
+    assert [job.report.outcome for job in result.jobs] == [
+        child.outcome for child in ordinary.children
+    ]
+    assert any(
+        first.started_ns is not None
+        and first.finished_ns is not None
+        and second.started_ns is not None
+        and second.finished_ns is not None
+        and max(first.started_ns, second.started_ns)
+        < min(first.finished_ns, second.finished_ns)
+        for index, first in enumerate(result.jobs)
+        for second in result.jobs[index + 1 :]
+    )
+    for kind in ("bytes", "work", "issues", "states", "resources", "triples"):
+        maximum = getattr(
+            config.limits, "max_total_bytes" if kind == "bytes" else "max_" + kind
+        )
+        assert sum(dict(job.consumed).get(kind, 0) for job in result.jobs) <= (
+            maximum - budget.remaining(kind)
+        )

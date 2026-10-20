@@ -1614,6 +1614,17 @@ cells; other known combinations and unused consumers remain visibly untested.
 Missing versions, inputs or representative corpora keep required cells incomplete.
 A passing majority cannot hide a failed or unknown selected obligation.
 
+## Parallel project execution
+
+`bijux-ontology project project.json --execution parallel --workers 3` runs
+qualified vocabulary, single-document context, model, JSON-LD/RDF output and
+SHACL jobs against captured inputs. Other job kinds remain explicitly unsupported.
+Dependencies use raw verification; returned results retain declaration order.
+Configured cumulative limits fund both captured preparation and disjoint workers.
+`--timeout` and SIGINT use the same parallel owner, retaining completed sibling
+findings while cancelling/reaping native work. Host filesystem preparation remains
+cooperative; this is not an OS hard deadline for arbitrary filesystem operations.
+
 ## Native RDF project output
 
 A `rdf-emission` project job names a registered RDF `document`, a `declarations`

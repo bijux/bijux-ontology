@@ -92,6 +92,17 @@ def run_check(
     protect_inputs(options)
     limits = command_limits(options)
     if options.action == "project":
+        if options.execution == "parallel":
+            from bijux_ontology.interfaces.cli.execution import execute_parallel_project
+
+            return execute_parallel_project(
+                configuration or project(options),
+                workers=options.workers,
+                timeout=options.timeout if options.timeout is not None else 30.0,
+                job_timeout=options.job_timeout,
+                artifacts=options.execution_artifacts,
+                completed=completed,
+            )
         return check_project(
             PreparedChecks(configuration or project(options)), completed=completed
         )

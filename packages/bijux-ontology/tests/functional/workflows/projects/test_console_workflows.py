@@ -4,13 +4,17 @@ import argparse
 import io
 import json
 import os
+import signal
 import time
 from pathlib import Path
 
 import pytest
 
+from bijux_ontology.execution.limits import BudgetKind
 from bijux_ontology.interfaces.cli import main
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
+from bijux_ontology.workflows.projects.parallel import checking as parallel_runtime
+from bijux_ontology.workflows.projects.parallel.types import ParallelJobResult
 
 EX = "https://example.org/"
 
@@ -269,3 +273,97 @@ def test_policy_permissions_are_visible_exact_and_do_not_change_truth(
     inventory.write_text(json.dumps([EX + "Missing", EX + "Other"]), encoding="utf-8")
     assert main(args + permitted + ["--display-limit", "0"]) == 1
     assert "2 additional diagnostics" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("stop_kind", ("deadline", "interrupt"))
+def test_parallel_cli_deadline_retains_finished_negative_sibling(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    stop_kind: str,
+) -> None:
+    """The native parallel owner settles siblings before returning its timeout."""
+    (tmp_path / "terms.ttl").write_text(
+        "<urn:Record> a <http://www.w3.org/2002/07/owl#Class>."
+    )
+    (tmp_path / "terms.json").write_text('["urn:Missing"]')
+    (tmp_path / "data.ttl").write_text(
+        "\n".join(f"<urn:r{i}> <urn:number> {i}." for i in range(100))
+    )
+    (tmp_path / "shapes.ttl").write_text(
+        "@prefix sh:<http://www.w3.org/ns/shacl#>. <urn:Shape> a sh:NodeShape;"
+        'sh:targetNode <urn:r0>; sh:sparql [sh:select """SELECT $this WHERE { '
+        "?a <urn:number> ?b. ?c <urn:number> ?d. ?e <urn:number> ?f. "
+        'FILTER ((?b + ?d + ?f) < 0) }"""].'
+    )
+    config = {
+        "version": 2,
+        "limits": {
+            "max_work": 10000000,
+            "max_states": 1000000,
+            "max_total_bytes": 200000000,
+        },
+        "rdf": {
+            "terms": {"path": "terms.ttl"},
+            "data": {"path": "data.ttl"},
+            "shapes": {"path": "shapes.ttl"},
+        },
+        "checks": [
+            {
+                "name": "slow",
+                "kind": "shacl",
+                "document": "data",
+                "shapes": "shapes",
+                "trusted_sparql": True,
+            },
+            {
+                "name": "terms",
+                "kind": "vocabulary",
+                "source": "terms",
+                "inventory": "terms.json",
+            },
+        ],
+    }
+    selected = tmp_path / "project.json"
+    selected.write_text(json.dumps(config))
+    received = parallel_runtime._reply
+    previous_handler = signal.getsignal(signal.SIGINT)
+    if stop_kind == "interrupt":
+        if os.name != "posix":
+            pytest.skip("Native SIGINT delivery in this probe requires POSIX")
+
+        def interrupt_after_receipt(
+            raw: bytes, name: str, grant: dict[BudgetKind, int]
+        ) -> ParallelJobResult:
+            """Signal only after a real sibling finding has been qualified."""
+            result = received(raw, name, grant)
+            if name == "terms":
+                assert any(i.code == "vocabulary.term_missing" for i in result.report)
+                os.kill(os.getpid(), signal.SIGINT)
+            return result
+
+        monkeypatch.setattr(parallel_runtime, "_reply", interrupt_after_receipt)
+    before = time.monotonic()
+    assert (
+        main(
+            [
+                "project",
+                str(selected),
+                "--execution",
+                "parallel",
+                "--workers",
+                "2",
+                "--timeout",
+                "3",
+                "--execution-artifacts",
+                str(tmp_path / "runs"),
+                "--json",
+            ]
+        )
+        == 2
+    )
+    assert time.monotonic() - before < 8
+    assert signal.getsignal(signal.SIGINT) is previous_handler
+    report = json.loads(capsys.readouterr().out)
+    assert report["outcome"] == "exhausted"
+    assert any(issue["code"] == "vocabulary.term_missing" for issue in report["issues"])

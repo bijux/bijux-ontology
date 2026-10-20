@@ -2,11 +2,14 @@
 
 import json
 import math
+import signal
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from threading import Thread
+from threading import Event, Thread, current_thread, main_thread
+from types import FrameType
 
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.diagnostics.reports import (
@@ -156,3 +159,49 @@ def execute_bounded(
             response.get("data"),
             output_safe=response.get("output_safe") is True,
         )
+
+
+def execute_parallel_project(
+    configuration: ProjectConfig,
+    *,
+    workers: int,
+    timeout: float,
+    job_timeout: float,
+    artifacts: Path,
+    completed: Callable[[Report], None] | None = None,
+) -> Report:
+    """Let the parallel owner settle interrupted children and completed siblings.
+
+    The coordinator already owns process deadlines. A second CLI supervisor can
+    terminate it before receipts settle. SIGINT instead requests that same owned
+    cancellation; temporary signal handling is confined to the CLI main thread.
+    """
+    from bijux_ontology.workflows.projects.parallel.checking import (
+        check_project_parallel,
+    )
+
+    cancel = Event()
+    previous = signal.getsignal(signal.SIGINT)
+    owns_signal = current_thread() is main_thread()
+
+    def interrupt(_signum: int, _frame: FrameType | None) -> None:
+        """Request cooperative host cancellation and prompt owned-process cleanup."""
+        cancel.set()
+
+    if owns_signal:
+        signal.signal(signal.SIGINT, interrupt)
+    try:
+        return check_project_parallel(
+            configuration,
+            workers=workers,
+            timeout=timeout,
+            job_timeout=job_timeout,
+            artifacts=artifacts,
+            cancel=cancel,
+            completed=(lambda job: completed(job.report))
+            if completed is not None
+            else None,
+        ).report
+    finally:
+        if owns_signal:
+            signal.signal(signal.SIGINT, previous)
