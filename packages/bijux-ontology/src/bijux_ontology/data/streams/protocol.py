@@ -167,6 +167,8 @@ def read_completion(
     allowances: dict[BudgetKind, int],
     maximum: int,
     budget: Budget,
+    compression: str | None = None,
+    maximum_compressed: int | None = None,
 ) -> tuple[dict[str, Any], dict[BudgetKind, int]]:
     """Qualify the complete native header and all counters before any payment."""
     budget.consume("work", 96)
@@ -182,6 +184,8 @@ def read_completion(
             "selected",
             "checks",
             "bytes_read",
+            "compression",
+            "compressed_bytes_read",
             "sha256",
             "records",
             "parse_issues",
@@ -192,6 +196,19 @@ def read_completion(
     ):
         raise ResourceError("Invalid RDF stream terminal envelope")
     raw = data.get("consumed")
+    if data.get("compression") != compression:
+        raise ResourceError("Stream compression differs from its input contract")
+    compressed_count = data.get("compressed_bytes_read")
+    if compression is None:
+        if compressed_count is not None:
+            raise ResourceError("Plain stream reported compressed input")
+    elif (
+        compression != "gzip"
+        or maximum_compressed is None
+        or type(compressed_count) is not int
+        or not 0 <= compressed_count <= maximum_compressed + 1
+    ):
+        raise ResourceError("Invalid compressed stream completion count")
     if not isinstance(raw, dict) or set(raw) != set(BUDGET_KINDS):
         raise ResourceError("RDF stream worker omitted cumulative counters")
     consumed: dict[BudgetKind, int] = {}

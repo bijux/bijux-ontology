@@ -31,6 +31,7 @@ from bijux_ontology.rdf.terms import bound_node, oxigraph_term
 from bijux_ontology.vocabulary.membership import membership_issue, read_graph_kinds
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
+from .compression import GzipReader
 from .protocol import read_stored
 
 _LINES = re.compile(rb"[\r\n]")
@@ -125,6 +126,7 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
     statements = selected = checks = 0
     complete = False
     reader = None
+    compressed = None
     stopped = ""
     vocabulary = None
     declarations_reader = None
@@ -183,7 +185,15 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
                 vocabulary = load_vocabulary(graph, budget=budget)
                 vocabulary._kind_index(("local", "imports", "lookup"), budget)
             with Path(request["path"]).open("rb") as stream:
-                reader = _Reader(stream, budget, request["max_stream_bytes"])
+                incoming: BinaryIO | GzipReader = stream
+                if request.get("compression") == "gzip":
+                    compressed = GzipReader(
+                        stream, budget, request["max_compressed_bytes"]
+                    )
+                    incoming = compressed
+                reader = _Reader(
+                    cast(BinaryIO, incoming), budget, request["max_stream_bytes"]
+                )
                 parser = ox.parse(
                     input=cast(IO[bytes], reader),
                     format=ox.RdfFormat.N_TRIPLES
@@ -320,7 +330,11 @@ def evaluate(request: dict[str, Any]) -> dict[str, object]:
         "selected": selected,
         "checks": checks,
         "bytes_read": reader.count if reader is not None else 0,
-        "sha256": reader.digest.hexdigest()
+        "compression": request.get("compression"),
+        "compressed_bytes_read": compressed.count if compressed is not None else None,
+        "sha256": (
+            compressed.digest if compressed is not None else reader.digest
+        ).hexdigest()
         if reader is not None and reader.eof
         else None,
         "records": records,
