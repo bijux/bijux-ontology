@@ -158,5 +158,10 @@ def _load_vocabulary(
             _charge_graph(graph, budget, selected.max_bytes)
         lookups.append(OwnedSource(resource, graph))
     return Vocabulary._from_owned(
-        local, imported, tuple(lookups), selected, required_imports_qualified=True
+        local,
+        imported,
+        tuple(lookups),
+        selected,
+        required_imports_qualified=True,
+        admitted_budget=budget,
     )

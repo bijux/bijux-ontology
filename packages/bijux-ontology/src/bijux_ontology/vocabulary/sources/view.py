@@ -248,7 +248,11 @@ class Vocabulary:
             return OwnedSource(prepared, prepared._read())
 
         self._initialize(
-            own(local), tuple(map(own, imports)), tuple(map(own, lookup)), selected
+            own(local),
+            tuple(map(own, imports)),
+            tuple(map(own, lookup)),
+            selected,
+            admitted_budget=budget,
         )
 
     def _initialize(
@@ -259,6 +263,7 @@ class Vocabulary:
         limits: Limits,
         *,
         required_imports_qualified: bool = False,
+        admitted_budget: Budget | None = None,
     ) -> None:
         """Retain only owned immutable graph handles before publishing readers."""
         self._limits = limits
@@ -279,6 +284,24 @@ class Vocabulary:
         self._term_pages: dict[tuple[str, ...], tuple[TermInfo, ...]] = {}
         self._lexical_pages: dict[tuple[str, ...], tuple[_LexicalCandidate, ...]] = {}
         self._read_lock = Lock()
+        if admitted_budget is not None:
+            self._seed_admissions(admitted_budget)
+
+    def _seed_admissions(self, budget: Budget) -> None:
+        """Remember sources already fully charged by their trusted construction path."""
+        owner = budget
+        while isinstance(owner, Operation):
+            owner = owner.shared
+        if (
+            type(owner).__eq__ is not object.__eq__
+            or type(owner).__hash__ is not object.__hash__
+        ):
+            return
+        budget.consume("states", len(self._sources) + 1)
+        budget.reserve_storage(128 + 64 * len(self._sources))
+        for scope, _ in self._sources:
+            budget.consume("work", len(scope) + 1)
+        self._admissions[owner] = {scope for scope, _ in self._sources}
 
     @classmethod
     def _from_owned(
@@ -289,8 +312,13 @@ class Vocabulary:
         limits: Limits,
         *,
         required_imports_qualified: bool = False,
+        admitted_budget: Budget | None = None,
     ) -> "Vocabulary":
-        """Adopt internal readers prepared within the caller's shared budget."""
+        """Adopt internal readers prepared within the caller's shared budget.
+
+        Supply admitted_budget only after resources and selected triples were
+        fully charged by the caller's trusted preparation or capture boundary.
+        """
         result = cls.__new__(cls)
         result._initialize(
             local,
@@ -298,6 +326,7 @@ class Vocabulary:
             lookup,
             limits,
             required_imports_qualified=required_imports_qualified,
+            admitted_budget=admitted_budget,
         )
         return result
 
@@ -386,6 +415,7 @@ class Vocabulary:
             tuple(lookup),
             budget.limits,
             required_imports_qualified=preparation.required_imports_qualified,
+            admitted_budget=budget,
         )
         for key, index in preparation.inspections:
             budget.consume("work")

@@ -190,6 +190,7 @@ class _Transaction:
                 (),
                 (),
                 self.operation.limits,
+                admitted_budget=self.operation,
             )
             self._view = inspect_vocabulary(
                 vocabulary, scopes=("local",), budget=self.operation

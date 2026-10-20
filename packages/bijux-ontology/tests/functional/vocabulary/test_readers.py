@@ -176,3 +176,10 @@ def test_source_footprint_is_admitted_once_per_actual_operation_owner() -> None:
     for custom in (EqualBudget(limits), EqualBudget(limits)):
         assert len(vocabulary._read(budget=custom).graph) == 4
         assert custom.remaining("resources") == 0
+
+    paid = Budget(Limits(max_resources=1, max_triples=2))
+    loaded = load_vocabulary(local, budget=paid)
+    assert len(loaded._read(budget=paid).graph) == 2
+    assert paid.remaining("resources") == 0 and paid.remaining("triples") == 0
+    with pytest.raises(LimitExceeded):
+        loaded._read(budget=Budget(Limits(max_triples=1)))
