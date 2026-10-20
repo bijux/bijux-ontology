@@ -96,18 +96,43 @@ def project(
     )
 
 
-def test_actual_checks_overlap_and_keep_sequential_order(tmp_path: Path) -> None:
+def test_actual_checks_overlap_and_keep_sequential_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     pytest.importorskip("pyld")
     pytest.importorskip("pyshacl")
     config = project(tmp_path / "inputs")
     ordinary = check_project(config)
     delivered: list[str] = []
-    result = check_project_parallel(
-        config,
-        workers=3,
-        artifacts=tmp_path / "runs",
-        completed=lambda job: delivered.append(job.name),
-    )
+    rendezvous = threading.Barrier(3)
+
+    def concurrent_workers(
+        module: str,
+        payload: bytes,
+        *,
+        cap: int,
+        timeout: float | None,
+        cancel: threading.Event | None = None,
+        completed: Callable[[bytes], None] | None = None,
+    ) -> bytes:
+        rendezvous.wait(timeout=5)
+        return execute_worker(
+            module,
+            payload,
+            cap=cap,
+            timeout=timeout,
+            cancel=cancel,
+            completed=completed,
+        )
+
+    with monkeypatch.context() as scheduled:
+        scheduled.setattr(parallel_checks, "execute_worker", concurrent_workers)
+        result = check_project_parallel(
+            config,
+            workers=3,
+            artifacts=tmp_path / "runs",
+            completed=lambda job: delivered.append(job.name),
+        )
     assert result.report.verified, result.report.to_dict()
     assert delivered == ["terms", "context", "shapes"]
     assert [job.report.scope for job in result.jobs] == delivered
@@ -115,16 +140,8 @@ def test_actual_checks_overlap_and_keep_sequential_order(tmp_path: Path) -> None
         child.outcome for child in ordinary.children
     ]
     intervals = [(job.started_ns, job.finished_ns) for job in result.jobs]
-    assert all(a is not None and b is not None for a, b in intervals)
-    assert any(
-        a is not None
-        and b is not None
-        and c is not None
-        and d is not None
-        and max(a, c) < min(b, d)
-        for index, (a, b) in enumerate(intervals)
-        for c, d in intervals[index + 1 :]
-    )
+    assert all(a is not None and b is not None and a <= b for a, b in intervals)
+    assert not rendezvous.broken and rendezvous.n_waiting == 0
     assert all(dict(job.consumed)["work"] > 0 for job in result.jobs)
     assert not list((tmp_path / "runs").iterdir())
 
