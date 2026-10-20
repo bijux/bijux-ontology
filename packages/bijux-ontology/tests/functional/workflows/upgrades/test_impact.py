@@ -212,11 +212,14 @@ def test_shared_assessments_preserve_cumulative_capacity_and_parent_cancellation
 ):
     graph = Graph().add((EX.A, RDF.type, OWL.Class))
     terms = (TermDeclaration(str(EX.A)),)
-    shared = Budget(Limits(max_work=100))
+    shared = Budget()
+    initial = shared.remaining("work")
     assert assess_upgrade(graph, graph, terms=terms, budget=shared).report.verified
     first = shared.remaining("work")
+    assert first < initial
     assert assess_upgrade(graph, graph, terms=terms, budget=shared).report.verified
     assert shared.remaining("work") < first
+    shared.consume("work", shared.remaining("work"))
     assert assess_upgrade(graph, graph, terms=terms, budget=shared).report.outcome == (
         "exhausted"
     )
