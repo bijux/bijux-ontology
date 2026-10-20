@@ -307,3 +307,55 @@ def test_sparse_identity_witnesses_exclude_unrelated_assertion_products(
         in w.premises
         for w in conflict.witnesses
     )
+
+
+def test_identity_merge_queue_revisits_only_affected_functional_buckets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Late identity enables the next obligation; cancellation retains paid proofs."""
+    from typing import Any
+
+    from bijux_ontology.owl.assertions.consequences import functional_pair
+
+    graph = Graph().add((E["left-0"], OWL.sameAs, E["right-0"]))
+    for index in range(32):
+        predicate = E[f"property-{index}"]
+        inverse = index % 2 == 1
+        marker = OWL.InverseFunctionalProperty if inverse else OWL.FunctionalProperty
+        _object(graph, predicate).add((predicate, RDF.type, marker))
+        for side in ("left", "right"):
+            subject, value = E[f"{side}-{index}"], E[f"{side}-{index + 1}"]
+            graph.add(
+                (value, predicate, subject) if inverse else (subject, predicate, value)
+            )
+    selected = prepare_rdf(graph)
+    calls = 0
+    cancel = threading.Event()
+    stopping = False
+
+    def pair(*args: Any, **kwargs: Any) -> None:
+        nonlocal calls
+        calls += 1
+        functional_pair(*args, **kwargs)
+        if stopping and calls == 16:
+            cancel.set()
+
+    monkeypatch.setattr(
+        "bijux_ontology.owl.assertions.propagation.functional_pair", pair
+    )
+    complete = check_assertion_witnesses(selected)
+    assert complete.report.verified, complete.report.to_dict()
+    assert calls == 32 and len(complete.equalities) == 33
+    assert any(
+        {item.left, item.right} == {term_key(E["left-32"]), term_key(E["right-32"])}
+        for item in complete.equalities
+    )
+    calls = 0
+    stopping = True
+    interrupted = check_assertion_witnesses(selected, cancel=cancel)
+    assert (
+        interrupted.status == "incomplete" and interrupted.report.outcome == "exhausted"
+    )
+    assert calls == 16 and len(interrupted.equalities) == 17
+    original = {tuple(term_key(term) for term in triple) for triple in selected.graph()}
+    assert all(set(item.premises) <= original for item in interrupted.equalities)

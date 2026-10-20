@@ -38,6 +38,7 @@ class Identity:
         self.ranks: dict[TermKey, int] = {}
         self.edges: dict[TermKey, list[tuple[TermKey, tuple[Statement, ...]]]] = {}
         self.consequences: list[EqualityConsequence] = []
+        self.merges: list[tuple[TermKey, TermKey]] = []
 
     def find(self, value: TermKey) -> TermKey:
         """Find an established class, retaining no correspondence across sources."""
@@ -76,6 +77,9 @@ class Identity:
         self.budget.consume("bytes", 192)
         if self.ranks[a] < self.ranks[b]:
             a, b = b, a
+        self.budget.consume("states")
+        self.budget.reserve_storage(64)
+        self.merges.append((a, b))
         self.parents[b] = a
         if self.ranks[a] == self.ranks[b]:
             self.ranks[a] += 1

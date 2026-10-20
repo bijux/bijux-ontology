@@ -2,71 +2,52 @@
 
 from __future__ import annotations
 
-from itertools import chain, combinations
+from itertools import combinations
 
 from rdflib import BNode, Literal, URIRef
 from rdflib.namespace import OWL, RDF
 
-from .context import AssertionContext
+from .context import AssertionContext, _Row
 from .patterns import KeyPattern, Resource
 from .types import Statement
 
 
-def functionality(
-    state: AssertionContext, functional: tuple[URIRef, ...], inverse: tuple[URIRef, ...]
-) -> bool:
-    """Establish identity only; two resource IRIs alone never supply inequality."""
-    changed = False
-    for predicate, inverse_ in chain(
-        ((p, False) for p in functional), ((p, True) for p in inverse)
-    ):
-        state.operation.consume("work")
-        kind, declaration = state.kind(predicate)
-        if kind is None or inverse_ and kind != "object":
-            state.unknown("Property functionality lacks a supported logical category")
-            continue
-        marker = OWL.InverseFunctionalProperty if inverse_ else OWL.FunctionalProperty
-        characteristic = state.patterns.statement(predicate, RDF.type, marker)
-        for left, right in combinations(state.rows(predicate), 2):
-            state.operation.consume("work")
-            if inverse_:
-                assert isinstance(left.value, URIRef | BNode) and isinstance(
-                    right.value, URIRef | BNode
-                )
-                proof = state.equal(left.value, right.value)
-            else:
-                proof = state.equal(left.subject, right.subject)
-            if proof is None:
-                continue
-            premises = (
-                characteristic,
-                *declaration,
-                left.premise,
-                right.premise,
-                *proof,
-            )
-            if inverse_:
-                changed |= state.identity.merge(
-                    state.key(left.subject),
-                    state.key(right.subject),
-                    "inverse_functional",
-                    premises,
-                )
-            elif kind == "object":
-                changed |= state.identity.merge(
-                    state.key(left.value),
-                    state.key(right.value),
-                    "functional",
-                    premises,
-                )
-            else:
-                assert isinstance(left.value, Literal) and isinstance(
-                    right.value, Literal
-                )
-                relation = state.literal_equal(left.value, right.value)
-                if relation == "different":
-                    state.witness("functional_data", premises)
-    return changed
+def functional_pair(
+    state: AssertionContext,
+    predicate: URIRef,
+    inverse: bool,
+    left: _Row,
+    right: _Row,
+) -> None:
+    """Apply one affected pair, retaining only complete original-premise evidence."""
+    state.operation.consume("work")
+    kind, declaration = state.kind(predicate)
+    marker = OWL.InverseFunctionalProperty if inverse else OWL.FunctionalProperty
+    characteristic = state.patterns.statement(predicate, RDF.type, marker)
+    if inverse:
+        assert isinstance(left.value, URIRef | BNode) and isinstance(
+            right.value, URIRef | BNode
+        )
+        proof = state.equal(left.value, right.value)
+    else:
+        proof = state.equal(left.subject, right.subject)
+    assert proof is not None
+    premises = (characteristic, *declaration, left.premise, right.premise, *proof)
+    if inverse:
+        state.identity.merge(
+            state.key(left.subject),
+            state.key(right.subject),
+            "inverse_functional",
+            premises,
+        )
+    elif kind == "object":
+        state.identity.merge(
+            state.key(left.value), state.key(right.value), "functional", premises
+        )
+    else:
+        assert isinstance(left.value, Literal) and isinstance(right.value, Literal)
+        if state.literal_equal(left.value, right.value) == "different":
+            state.witness("functional_data", premises)
 
 
 def key_identities(state: AssertionContext, keys: tuple[KeyPattern, ...]) -> bool:
