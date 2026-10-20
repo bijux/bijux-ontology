@@ -3,6 +3,7 @@
 import importlib.util
 from dataclasses import replace
 from threading import Event
+from typing import Literal as TypingLiteral
 from typing import cast
 
 import pytest
@@ -284,7 +285,11 @@ def test_resumable_many_to_many_pages_keep_owned_review_scope() -> None:
     assert partial.items == first.items[: len(partial.items)]
     resumed = propose_lexical_mappings_page(source, target, cursor=partial.next_cursor)
     assert partial.items + resumed.items == occurrences
-    for changed_source, language in ((_index(source_graph), "same"), (source, "any")):
+    changed_inputs: tuple[tuple[LexicalIndex, TypingLiteral["same", "any"]], ...] = (
+        (_index(source_graph), "same"),
+        (source, "any"),
+    )
+    for changed_source, language in changed_inputs:
         with pytest.raises(InputError, match="cursor"):
             propose_lexical_mappings_page(
                 changed_source, target, cursor=first.next_cursor, language=language

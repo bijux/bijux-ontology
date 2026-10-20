@@ -165,12 +165,12 @@ def test_targeted_inspection_avoids_full_index_and_agrees_with_bulk_roles() -> N
     assert selected.scopes == ("import[0]", "local") and not source._indexes
     adjacent = view.relationships(str(EX.Item0))
     assert len(adjacent.items) == 3 and not source._indexes
-    index = view._prepare_index(Budget(Limits(max_work=20_000_000)))
+    prepared_index = view._prepare_index(Budget(Limits(max_work=20_000_000)))
     for iri in (EX.Item0, EX.predicate, EX.Datatype, EX.Lookup, EX.Absent):
-        assert view.lookup(str(iri)) == index.terms.get(
+        assert view.lookup(str(iri)) == prepared_index.terms.get(
             str(iri), type(selected)(str(iri), "absent", (), ())
         )
-    assert adjacent.items == index.outgoing[EX.Item0]
+    assert adjacent.items == prepared_index.outgoing[EX.Item0]
 
 
 def test_lookup_and_deferred_union_retain_the_callers_allowance() -> None:
