@@ -1,6 +1,5 @@
 """Explicit foreign-key policy, owned lookup state and correlated actual records."""
 
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -72,8 +71,6 @@ class ForeignTargetIndex:
     complete: bool
     duplicates: tuple[tuple[KeyRecord, KeyRecord], ...]
     _keys: tuple[_Key, ...]
-    _buckets: Mapping[tuple[tuple[str | None, ...], ...], tuple[_Key, ...]]
-    _uncertain: tuple[_Key, ...]
 
     def __new__(cls) -> "ForeignTargetIndex":
         """Require qualified preparation instead of uninitialized public indexes."""

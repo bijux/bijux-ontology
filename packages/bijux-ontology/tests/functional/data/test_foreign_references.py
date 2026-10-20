@@ -580,3 +580,85 @@ def test_mixed_repeated_operands_share_native_setup_without_skipping_pairs() -> 
     assert check_foreign_references(
         sources, index, source_complete=True
     ).report.verified
+
+
+def test_target_admission_and_compound_lookup_are_operation_local(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated source lookups retain each original target once and stay selective."""
+    from bijux_ontology.data.foreign_references.resolution import _retain
+    from bijux_ontology.data.keys.evidence import compare_keys
+
+    contract = ForeignReferenceContract(
+        "tenant-instrument",
+        KeyContract(
+            "source",
+            (KeyComponent(EX.tenant), KeyComponent(EX.number, equality="sparql-1.1")),
+        ),
+        KeyContract(
+            "target",
+            (KeyComponent(EX.tenant), KeyComponent(EX.number, equality="sparql-1.1")),
+        ),
+        target_model="instrument",
+    )
+    target_graph = Graph()
+    source_graph = Graph()
+    for index in range(64):
+        subject = EX[f"target-{index}"]
+        target_graph.add((subject, EX.tenant, Literal(str(index))))
+        target_graph.add((subject, EX.number, Literal("1", datatype=XSD.integer)))
+        target_graph.add((subject, RDF.type, EX.Instrument))
+        for repeat in range(2):
+            source = EX[f"source-{index}-{repeat}"]
+            source_graph.add((source, EX.tenant, Literal(str(index))))
+            source_graph.add((source, EX.number, Literal("1.0", datatype=XSD.decimal)))
+    target_source = prepare_rdf(target_graph)
+    source_source = prepare_rdf(source_graph)
+    targets = tuple(
+        KeyRecord(f"target-{i}", target_source, EX[f"target-{i}"]) for i in range(64)
+    )
+    sources = tuple(
+        KeyRecord(f"source-{i}-{r}", source_source, EX[f"source-{i}-{r}"])
+        for i in range(64)
+        for r in range(2)
+    )
+    compared = 0
+    retained: list[str] = []
+
+    def compare(*args: Any, **kwargs: Any) -> Any:
+        nonlocal compared
+        compared += 1
+        return compare_keys(*args, **kwargs)
+
+    def retain(*args: Any, **kwargs: Any) -> None:
+        retained.append(args[0].record.identifier)
+        _retain(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "bijux_ontology.data.foreign_references.preparation.compare_keys", compare
+    )
+    target_index = prepare_foreign_targets(targets, contract, complete=True)
+    assert target_index.complete and compared == 0
+    monkeypatch.setattr(
+        "bijux_ontology.data.foreign_references.resolution.compare_keys", compare
+    )
+    monkeypatch.setattr(
+        "bijux_ontology.data.foreign_references.resolution._retain", retain
+    )
+    models = (ModelDeclaration("instrument", (str(EX.Instrument),)),)
+    result = check_foreign_references(
+        sources, target_index, source_complete=True, models=models
+    )
+    assert result.report.verified, result.report.to_dict()
+    assert compared == 128  # Previously 8,192 source-target comparisons.
+    assert retained == [r.identifier for r in targets] + [r.identifier for r in sources]
+    assert all(
+        row.targets == (targets[i // 2],) for i, row in enumerate(result.resolutions)
+    )
+    assert len({id(child) for child in result.report.children[1:]}) == 64
+    # A later operation must re-admit current metadata, even for the same query.
+    target_source.document_iri = "urn:changed"
+    with pytest.raises(InputError, match="changed"):
+        check_foreign_references(
+            sources[:1], target_index, source_complete=True, models=models
+        )
