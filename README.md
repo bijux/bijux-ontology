@@ -42,7 +42,7 @@ report = check_vocabulary(vocabulary, [TermDeclaration(term.iri)])
 report.raise_for_findings()
 ```
 
-Runnable core-only examples cover [inspection and declarations](examples/check_declarations.py), [multilingual SKOS](examples/multilingual_vocabulary.py), [catalogue upgrades](examples/catalogue_upgrade.py), [controlled resources](examples/controlled_resources.py), [custom annotations](examples/annotation_conventions.py) and [dataclasses](examples/dataclass_declarations.py). Framework adapters use explicit RDF metadata; required Python fields do not imply guaranteed RDF emission.
+Runnable examples cover [inspection and declarations](examples/check_declarations.py), [multilingual SKOS](examples/multilingual_vocabulary.py), [catalogue upgrades](examples/catalogue_upgrade.py), [controlled resources](examples/controlled_resources.py), [custom annotations](examples/annotation_conventions.py) and [dataclasses](examples/dataclass_declarations.py). The [recipe guide](docs/integration.md) identifies their optional dependencies. Framework adapters use explicit RDF metadata; required Python fields do not imply guaranteed RDF emission.
 
 | Operation | Supported scope | Incomplete behaviour |
 | --- | --- | --- |

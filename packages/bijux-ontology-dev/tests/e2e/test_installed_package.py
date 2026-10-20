@@ -26,6 +26,7 @@ def test_documented_optional_recipe_uses_the_installed_wheel(
 
 def test_installed_api_and_independent_example(
     installed_jsonld: tuple[Path, Path, dict[str, str]],
+    installed: tuple[Path, Path, dict[str, str]],
     distribution: tuple[Path, Path, dict[str, str]],
 ) -> None:
     python, work, env = installed_jsonld
@@ -84,6 +85,20 @@ def test_installed_api_and_independent_example(
             [str(python), "-I", str(example)],
             cwd=work,
             env=env,
+            check=True,
+            capture_output=True,
+        )
+    core_python, core_work, core_env = installed
+    for name in (
+        "check_declarations.py",
+        "dataclass_declarations.py",
+        "multilingual_vocabulary.py",
+        "annotation_conventions.py",
+    ):
+        subprocess.run(
+            [str(core_python), "-I", str(source / "examples" / name)],
+            cwd=core_work,
+            env=core_env,
             check=True,
             capture_output=True,
         )

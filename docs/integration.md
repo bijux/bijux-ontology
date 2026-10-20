@@ -9,11 +9,13 @@ These scripts contain their inputs, positive checks and meaningful negative cont
 | Work | Runnable recipe | Dependencies |
 | --- | --- | --- |
 | Prepare, inspect and check a vocabulary inventory | [check_declarations.py](../examples/check_declarations.py) | Core |
+| Apply explicit annotation conventions | [annotation_conventions.py](../examples/annotation_conventions.py) | Core |
 | Declare model intent independently of output | [dataclass_declarations.py](../examples/dataclass_declarations.py) | Core |
 | Check JSON-LD mappings and actual JSON-LD/native RDF output | [check_output.py](../examples/check_output.py) | `[jsonld]` |
+| Supply contexts without implicit retrieval | [controlled_resources.py](../examples/controlled_resources.py) | `[jsonld]` |
 | Validate supplied shapes and reuse fixed preparation | [validate_records.py](../examples/shacl/validate_records.py) | `[shacl]` |
 | Check multilingual SKOS labels | [multilingual_vocabulary.py](../examples/multilingual_vocabulary.py) | Core |
-| Assess an ontology upgrade against consumer usage | [catalogue_upgrade.py](../examples/catalogue_upgrade.py) | Core |
+| Assess an ontology upgrade against consumer usage | [catalogue_upgrade.py](../examples/catalogue_upgrade.py) | `[jsonld]` |
 
 For example, after installing the wheel with `[jsonld,shacl]`:
 
