@@ -71,17 +71,17 @@ def check_models(
     if budget is not None and limits is not None and budget.limits != limits:
         raise InputError("Explicit limits conflict with the shared operation budget")
     budget = budget if budget is not None else Budget(limits)
-    sources = (
-        vocabulary
-        if isinstance(vocabulary, Vocabulary)
-        else load_vocabulary(vocabulary, budget=budget)
-    )
     registry: dict[str, ModelDeclaration] = {}
     issues = IssueCollector(budget)
     enumeration_reports: dict[tuple[int, bool], Report] = {}
     checked = 0
     complete = True
     try:
+        sources = (
+            vocabulary
+            if isinstance(vocabulary, Vocabulary)
+            else load_vocabulary(vocabulary, budget=budget)
+        )
         graph = sources._read(budget=budget).graph
         contracts = ModelContracts(
             graph, regime, budget, datatype_registry=datatype_registry

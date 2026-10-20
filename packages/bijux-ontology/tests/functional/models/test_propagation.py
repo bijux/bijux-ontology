@@ -106,15 +106,29 @@ def test_alternative_branch_types_are_not_combined_as_simultaneous() -> None:
     assert check_models((Model("root", (str(EX.Root),), (field,)),), graph).verified
 
 
-def test_work_exhaustion_preserves_completed_input_findings() -> None:
-    from bijux_ontology.execution.limits import Limits
+def test_work_exhaustion_preserves_completed_input_findings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from collections.abc import Sequence
+
+    from bijux_ontology.owl.relations.classes import ClassContracts
+
+    ancestors = ClassContracts.ancestors
+
+    def exhaust_before_ancestry(
+        contracts: ClassContracts, types: Sequence[str]
+    ) -> tuple[frozenset[str], bool]:
+        contracts.budget.consume("work", contracts.budget.remaining("work"))
+        return ancestors(contracts, types)
+
+    monkeypatch.setattr(ClassContracts, "ancestors", exhaust_before_ancestry)
 
     root = Model(
         "root",
         (str(EX.Root),),
         (Field("child", str(EX.good), (Value("object", model="missing"),)),),
     )
-    report = check_models((root,), graph_contracts(), limits=Limits(max_work=100))
+    report = check_models((root,), graph_contracts())
     assert report.complete is False
     assert report.exit_code() == 2
     assert any(issue.code == "input.model_reference_missing" for issue in report.issues)
