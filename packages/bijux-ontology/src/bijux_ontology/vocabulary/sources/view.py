@@ -6,12 +6,14 @@ from functools import cmp_to_key, partial
 from threading import Lock
 from types import MappingProxyType
 from typing import cast
+from weakref import WeakKeyDictionary
 
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import RDF
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
@@ -270,6 +272,7 @@ class Vocabulary:
             (scope, source.selected) for scope, source in self._source_handles
         )
         self._reads: dict[tuple[str, ...], _VocabularyRead] = {}
+        self._admissions: WeakKeyDictionary[Budget, set[str]] = WeakKeyDictionary()
         self._indexes: dict[tuple[str, ...], _VocabularyIndex] = {}
         self._inspection_footprints: dict[tuple[str, ...], tuple[int, int]] = {}
         self._kinds: dict[tuple[str, ...], Mapping[str, frozenset[str]]] = {}
@@ -478,9 +481,33 @@ class Vocabulary:
             in key
         )
         key = tuple(scope for scope, _ in selected)
-        operation.consume("resources", len(selected))
-        operation.consume("triples", sum(len(graph) for _, graph in selected))
+        operation.consume("work", max(0, len(selected) - 1))
+        owner = operation
+        while isinstance(owner, Operation):
+            owner = owner.shared
+        # Cache only object-identity owners. Custom equality must never combine
+        # allowances from distinct operations or require hashable subclasses.
+        cacheable = (
+            type(owner).__eq__ is object.__eq__
+            and type(owner).__hash__ is object.__hash__
+        )
         with self._read_lock:
+            admitted = self._admissions.get(owner) if cacheable else None
+            unseen = tuple(
+                (scope, graph)
+                for scope, graph in selected
+                if admitted is None or scope not in admitted
+            )
+            if unseen:
+                operation.consume("resources", len(unseen))
+                operation.consume("triples", sum(len(graph) for _, graph in unseen))
+                operation.consume("states", len(unseen))
+                operation.reserve_storage(128 + 64 * len(unseen))
+                if cacheable:
+                    if admitted is None:
+                        admitted = set()
+                        self._admissions[owner] = admitted
+                    admitted.update(scope for scope, _ in unseen)
             if not prepare_union:
                 return _VocabularyRead(
                     selected,

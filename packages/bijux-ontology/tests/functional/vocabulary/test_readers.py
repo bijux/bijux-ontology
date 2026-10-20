@@ -9,7 +9,7 @@ from rdflib.namespace import OWL, RDF, SKOS
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.execution.limits import Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
@@ -144,3 +144,35 @@ def test_public_prepared_source_still_owns_dataset_and_preserves_blank_relations
     assert len(native.graph(str(EX.named))) == 1
     with pytest.raises(InputError, match="mutation"):
         native._read(str(EX.named)).remove((None, None, None))
+
+
+def test_source_footprint_is_admitted_once_per_actual_operation_owner() -> None:
+    """Repeated and overlapping reads never invent new resource acquisitions."""
+    from bijux_ontology.execution.budgets import Operation
+
+    local = Graph().add((EX.A, RDF.type, OWL.Class)).add((EX.B, RDF.type, OWL.Class))
+    imported = Graph().add((EX.C, RDF.type, OWL.Class))
+    lookup = Graph().add((EX.D, RDF.type, OWL.Class))
+    vocabulary = Vocabulary(local, (imported,), (lookup,))
+    limits = Limits(max_resources=3, max_triples=4)
+    budget = Budget(limits)
+    vocabulary._read(("local",), budget=budget)
+    vocabulary._read(budget=budget)
+    vocabulary._read(("imports", "lookup"), budget=budget)
+    nested = Operation(None, budget, 30, None)
+    assert len(vocabulary._read(budget=nested).graph) == 4
+    assert budget.remaining("resources") == 0 and budget.remaining("triples") == 0
+    for fresh in (Budget(Limits(max_resources=2)), Budget(Limits(max_triples=3))):
+        with pytest.raises(LimitExceeded):
+            vocabulary._read(budget=fresh)
+    assert len(vocabulary._read(budget=Budget(limits)).graph) == 4
+
+    class EqualBudget(Budget):
+        """A custom unhashable caller must not alias another operation's receipt."""
+
+        def __eq__(self, other: object) -> bool:
+            return isinstance(other, Budget)
+
+    for custom in (EqualBudget(limits), EqualBudget(limits)):
+        assert len(vocabulary._read(budget=custom).graph) == 4
+        assert custom.remaining("resources") == 0
