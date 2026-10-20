@@ -109,7 +109,7 @@ def _run(
     complete = False
     found = False
     checked = 0
-    matches: dict[URIRef, tuple[RelationWitness, ...]] = {}
+    matches: dict[URIRef, RelationPathResult] = {}
     try:
         start = named(source, budget)
         depth_limit = budget.limits.max_depth if maximum is None else maximum
@@ -149,7 +149,27 @@ def _run(
                 if state == automaton.end:
                     if remaining is not None:
                         if node in remaining:
-                            matches[node] = current
+                            budget.consume("work", len(issues) + len(children) + 1)
+                            budget.consume("states", len(issues) + len(children) + 1)
+                            budget.consume(
+                                "bytes", 128 + 64 * (len(issues) + len(children))
+                            )
+                            proof = Report(
+                                "terms.relation_path",
+                                1,
+                                tuple(issues),
+                                requested=1,
+                                complete=inventory.complete,
+                                children=tuple(children),
+                                regime="asserted-typed-relation-path",
+                            )
+                            matches[node] = RelationPathResult(
+                                "found" if inventory.complete else "incomplete",
+                                start,
+                                node,
+                                current,
+                                proof,
+                            )
                             remaining.remove(node)
                         found = not remaining
                         if found:
@@ -226,15 +246,13 @@ def _run(
     )
     if roots is not None:
         return tuple(
-            RelationPathResult(
-                "found"
-                if complete and root in matches
-                else "nonmatch"
-                if complete
-                else "incomplete",
+            matches[root]
+            if root in matches
+            else RelationPathResult(
+                "nonmatch" if complete else "incomplete",
                 start,
-                root if root in matches else None,
-                matches.get(root, ()),
+                None,
+                (),
                 report,
             )
             for root in roots
@@ -261,6 +279,8 @@ def find_relation_endpoints(
     budget: Budget,
 ) -> tuple[RelationPathResult, ...]:
     """Search once for all prepaid named roots, retaining required coverage."""
+    if type(roots) is not tuple or not roots:
+        raise InputError("Select a nonempty named endpoint inventory")
     return _run(
         view,
         source,

@@ -309,3 +309,29 @@ def test_capture_limits_paid_prefix_and_fresh_recovery() -> None:
     assert assign_slim(view, dynamic, roots=roots, policy="all").report.verified
     assert dynamic.reads == 1
     assert assign_slim(view, annotations[1:], roots=roots, policy="all").report.verified
+
+
+def test_shared_root_search_keeps_proved_matches_when_another_root_truncates() -> None:
+    """A partial root inventory withholds selection without erasing paid proofs."""
+    graph = Graph()
+    for child, parent in (
+        (EX.Fine, EX.Left),
+        (EX.Left, EX.Middle),
+        (EX.Middle, EX.Right),
+    ):
+        graph.add((child, RDFS.subClassOf, parent))
+    result = assign_slim(
+        inspect_vocabulary(graph),
+        [SlimAnnotation("record", str(EX.Fine))],
+        roots=[str(EX.Left), str(EX.Right)],
+        policy="nearest",
+        max_depth=1,
+    )
+    classification = result.assignments[0].classification
+    assert classification.status == "unknown" and not classification.selected
+    assert [item.root for item in classification.applicable] == [EX.Left]
+    assert [item.status for item in classification.comparisons] == [
+        "found",
+        "incomplete",
+    ]
+    assert classification.comparisons[0].report.verified

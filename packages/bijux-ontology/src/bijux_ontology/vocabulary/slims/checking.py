@@ -241,8 +241,12 @@ def assign_slim(
                 )
                 for index, result in enumerate(comparisons):
                     progress.comparisons[index] = result
-                children.append(comparisons[0].report)
-                retain_report(comparisons[0].report, operation, issues)
+                reports_seen: set[int] = set()
+                for result in comparisons:
+                    if id(result.report) not in reports_seen:
+                        reports_seen.add(id(result.report))
+                        children.append(result.report)
+                        retain_report(result.report, operation, issues)
                 progress.complete = root_complete and all(
                     result is not None
                     and result.report.verified
