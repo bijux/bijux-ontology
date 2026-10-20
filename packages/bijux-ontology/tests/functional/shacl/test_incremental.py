@@ -23,6 +23,7 @@ from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.evidence.results import ShaclResult
+from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.incremental.checking import revalidate
 from bijux_ontology.shacl.incremental.preparation import prepare_incremental
 
@@ -80,6 +81,52 @@ def _keys(results: tuple[ShaclResult, ...]) -> set[tuple[str, ...]]:
         for result in results
         for item in result.findings
     }
+
+
+@BACKEND
+def test_multiroot_delta_reuses_one_worker_without_crossing_focus_groups(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    shapes, graph = _shapes(), _data()
+    shapes.add((E.Other, RDF.type, SH.NodeShape))
+    shapes.add((E.Other, SH.targetClass, E.D))
+    shapes.add((E.Other, SH.property, E.Q))
+    shapes.add((E.Q, SH.path, E.q))
+    shapes.add((E.Q, SH.minCount, Literal(1)))
+    graph.add((E.c, RDF.type, E.D))
+    graph.add((E.c, E.q, Literal("c")))
+    before = prepare_rdf(graph, limits=LIMITS)
+    baseline = prepare_incremental(
+        before,
+        shapes,
+        use_shapes=(str(E.S), str(E.Other)),
+        limits=LIMITS,
+    )
+    assert baseline.report.verified and baseline.state is not None
+    sessions: list[ShaclSession] = []
+
+    class ObservedSession(ShaclSession):
+        def __enter__(self) -> ShaclSession:
+            sessions.append(self)
+            return super().__enter__()
+
+    monkeypatch.setattr(
+        "bijux_ontology.shacl.incremental.preparation.ShaclSession",
+        ObservedSession,
+    )
+    graph.remove((E.a, E.p, None))
+    graph.remove((E.c, E.q, None))
+    after = prepare_rdf(graph, limits=LIMITS)
+    result = revalidate(baseline.state, _patch(before, after), limits=LIMITS)
+    assert result.strategy == "local"
+    assert result.checked_pairs == 2 and result.reused_pairs == 1
+    assert len(sessions) == 1 and sessions[0].worker_launches == 1
+    assert result.report.outcome == "disagreement" and result.state is not None
+    assert {
+        (finding.source_shape, finding.focus_node)
+        for raw in result.results
+        for finding in raw.findings
+    } == {(E.P, E.a), (E.Q, E.c)}
 
 
 @BACKEND

@@ -1,6 +1,7 @@
 """Exact patch preconditions and conservative selected-obligation invalidation."""
 
 from collections.abc import Sequence
+from contextlib import nullcontext
 from threading import Event
 from typing import Literal
 
@@ -25,7 +26,7 @@ from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.profiles.execution import remaining_deadline
 from bijux_ontology.shacl.targets.coverage import ShaclTarget
 
-from .preparation import _run, _targets, _unknown
+from .preparation import _run, _session, _targets, _unknown
 from .types import IncrementalResult, IncrementalState
 
 _SCHEMA = frozenset(
@@ -180,28 +181,42 @@ def revalidate(
                     else:
                         reused += 1
                 complete = True
-                for root, focus in grouped.items():
-                    raw = _run(
+                owner = (
+                    _session(
                         state.shapes,
                         state.ontology,
-                        (root,),
-                        application.source,
+                        state.roots,
                         operation,
                         trusted_sparql=state.trusted_sparql,
-                        focus=tuple(focus),
                         pairs=True,
                     )
-                    results.append(raw)
-                    retain_report(raw.report, operation, issues)
-                    actual = _targets(raw, (root,), operation)
-                    if actual is None:
-                        complete = False
-                    else:
-                        expected = {(URIRef(root), node) for node in focus}
-                        operation.consume("states", len(expected))
-                        if {(t.shape, t.focus_node) for t in actual} != expected:
+                    if grouped
+                    else nullcontext(None)
+                )
+                with owner as session:
+                    for root, focus in grouped.items():
+                        raw = _run(
+                            state.shapes,
+                            state.ontology,
+                            (root,),
+                            application.source,
+                            operation,
+                            trusted_sparql=state.trusted_sparql,
+                            focus=tuple(focus),
+                            pairs=True,
+                            session=session,
+                        )
+                        results.append(raw)
+                        retain_report(raw.report, operation, issues)
+                        actual = _targets(raw, (root,), operation)
+                        if actual is None:
                             complete = False
-                        checked += len(actual)
+                        else:
+                            expected = {(URIRef(root), node) for node in focus}
+                            operation.consume("states", len(expected))
+                            if {(t.shape, t.focus_node) for t in actual} != expected:
+                                complete = False
+                            checked += len(actual)
                 if complete and checked + reused == total:
                     targets = state.targets
             if targets is None:
