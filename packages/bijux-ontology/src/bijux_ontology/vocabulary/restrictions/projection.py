@@ -12,7 +12,9 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector
-from bijux_ontology.owl.constructs import _UNSUPPORTED as _EXPRESSION_PREDICATES
+from bijux_ontology.owl.encoding.constructs import (
+    _UNSUPPORTED as _EXPRESSION_PREDICATES,
+)
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.structure import iter_rdf_list
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView

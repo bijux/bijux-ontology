@@ -31,12 +31,12 @@ from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.application import retain_enumeration_report
 from bijux_ontology.models.emission.direction import project_direction
 from bijux_ontology.models.emission.matching import trait_matches
-from bijux_ontology.owl.classes import ClassContracts
 from bijux_ontology.owl.obligations import (
     ObligationResult,
     OntologyObligation,
     prove_obligations,
 )
+from bijux_ontology.owl.relations.classes import ClassContracts
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals.checking import Regime, check_literal
 from bijux_ontology.vocabulary.checking import check_vocabulary

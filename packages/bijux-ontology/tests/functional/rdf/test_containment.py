@@ -1,12 +1,20 @@
 """Actual finite simple entailment, exact physical scope and coherent witnesses."""
 
+import os
+import subprocess
+import sys
 import threading
+from types import FrameType
+from typing import Literal, cast
 
+import pytest
 from rdflib import BNode, Dataset, Graph, Namespace
 from rdflib.namespace import RDF, RDFS, XSD
 
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
 from bijux_ontology.rdf.containment import check_simple_entailment
+from bijux_ontology.rdf.containment import checking as containment_runtime
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import literal_term
@@ -96,3 +104,60 @@ def test_exhaustion_and_cancel_do_not_establish_absence() -> None:
     result = check_simple_entailment(data, data, cancel=cancel)
     assert result.entailed is None and result.report.outcome == "exhausted"
     assert check_simple_entailment(data, data).report.verified
+
+
+def test_interrupted_native_receipt_forfeits_each_inherited_allowance_once() -> None:
+    data = prepare_rdf(Graph().add((E.s, E.p, E.value)))
+    limits = Limits(max_work=3_000_000, max_states=500_000, max_total_bytes=150_000_000)
+    ledger = Budget(limits)
+    cancellation = threading.Event()
+    parent = Operation(limits, ledger, 30, cancellation)
+    before: dict[BudgetKind, int] = {}
+    delegated: dict[BudgetKind, int] = {}
+    owned: list[subprocess.Popen[bytes]] = []
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: Literal["call", "return", "c_call", "c_return", "c_exception"],
+        returned: object,
+    ) -> None:
+        if previous is not None:
+            previous(frame, event, returned)
+        if event != "return":
+            return
+        if frame.f_code is containment_runtime._run.__code__:
+            delegated.update(cast(dict[BudgetKind, int], frame.f_locals["allowances"]))
+        if (
+            frame.f_code.co_name != "__init__"
+            or frame.f_globals.get("__name__") != "subprocess"
+        ):
+            return
+        process = frame.f_locals.get("self")
+        if (
+            isinstance(process, subprocess.Popen)
+            and isinstance(process.args, list)
+            and "bijux_ontology.rdf.containment.worker" in process.args
+        ):
+            owned.append(cast(subprocess.Popen[bytes], process))
+            before.update((kind, ledger.remaining(kind)) for kind in BUDGET_KINDS)
+            cancellation.set()
+
+    sys.setprofile(observe)
+    try:
+        stopped = check_simple_entailment(data, data, budget=parent)
+    finally:
+        sys.setprofile(previous)
+    assert stopped.entailed is None and stopped.report.outcome == "exhausted"
+    assert len(owned) == 1 and set(delegated) == set(BUDGET_KINDS)
+    assert all(
+        ledger.remaining(kind) == before[kind] - delegated[kind]
+        for kind in BUDGET_KINDS
+    )
+    assert owned[0].returncode is not None
+    if os.name == "posix":
+        with pytest.raises(ProcessLookupError):
+            os.kill(owned[0].pid, 0)
+    cancellation.clear()
+    recovered = check_simple_entailment(data, data, budget=parent)
+    assert recovered.entailed is True and recovered.report.verified

@@ -18,17 +18,12 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
-from bijux_ontology.shacl.capabilities import (
-    constraint_execution,
-)
-from bijux_ontology.shacl.coverage import (
-    ShaclCoverageContract,
-    read_coverage,
-)
-from bijux_ontology.shacl.findings import ShaclSource, project_findings
+from bijux_ontology.shacl.evidence.findings import ShaclSource, project_findings
+from bijux_ontology.shacl.evidence.results import ShaclResult
+from bijux_ontology.shacl.execution.capabilities import constraint_execution
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract, read_coverage
 
 from .planning import _metadata, _ShapePlan
-from .results import ShaclResult
 
 
 def _retained_result(result: ShaclResult, budget: Budget | None) -> ShaclResult:

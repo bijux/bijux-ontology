@@ -9,12 +9,12 @@ from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
-from bijux_ontology.shacl.bindings import TermSelection, resolve_terms
-from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.execution.bindings import TermSelection, resolve_terms
+from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.execution.planning import _role, _ShapePlan
 from bijux_ontology.shacl.execution.session import _contract_metadata, _prepay_graph
-from bijux_ontology.shacl.functions import FunctionPlan
+from bijux_ontology.shacl.sparql.functions import FunctionPlan
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 
 def prepare_plan(

@@ -19,7 +19,7 @@ from bijux_ontology.rdf.patches.types import DatasetPatch
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.shacl.rules import RuleMaterialization
+from bijux_ontology.shacl.rules.types import RuleMaterialization
 from bijux_ontology.workflows.ontology.materialization import (
     EntailmentPlan,
     MaterializationRevision,

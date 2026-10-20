@@ -15,7 +15,7 @@ from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.patches.types import SnapshotWitness
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.terms import bound_node, term_key
-from bijux_ontology.shacl.functions import register_functions
+from bijux_ontology.shacl.sparql.functions import register_functions
 
 from .preparation import (
     RuleUnavailable,

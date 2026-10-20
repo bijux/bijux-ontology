@@ -14,8 +14,8 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.snapshots import copy_graph
 from bijux_ontology.rdf.structure import read_rdf_list
-from bijux_ontology.shacl.coverage import ShaclCoverage
-from bijux_ontology.shacl.queries import check_function_dependencies
+from bijux_ontology.shacl.sparql.queries import check_function_dependencies
+from bijux_ontology.shacl.targets.coverage import ShaclCoverage
 
 if TYPE_CHECKING:
     from pyshacl.shape import Shape

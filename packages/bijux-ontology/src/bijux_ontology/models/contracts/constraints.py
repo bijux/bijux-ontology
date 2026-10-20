@@ -29,8 +29,8 @@ from bijux_ontology.models.contracts.propagation import ModelContracts
 from bijux_ontology.models.emission.application import application_matches
 from bijux_ontology.models.emission.groups import declaration_states, group_limitation
 from bijux_ontology.models.emission.matching import matches_value
-from bijux_ontology.owl.classes import ClassContracts
-from bijux_ontology.owl.properties import PropertyContract
+from bijux_ontology.owl.relations.classes import ClassContracts
+from bijux_ontology.owl.relations.properties import PropertyContract
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals.checking import (
     Regime,

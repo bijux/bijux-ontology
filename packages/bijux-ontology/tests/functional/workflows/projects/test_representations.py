@@ -2,17 +2,28 @@
 
 import hashlib
 import json
+import subprocess
+import sys
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from types import FrameType
+from typing import Literal as EventKind
 
-from bijux_ontology.execution.limits import Budget, Limits
+import pytest
+
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.workflows.projects.acquisition import AcquisitionPolicy
 from bijux_ontology.workflows.projects.representations import (
     PublishedResource,
     RepresentationVariant,
     check_representations,
+)
+from bijux_ontology.workflows.projects.representations import (
+    checking as publication_execution,
 )
 
 Response = tuple[int, dict[str, str], bytes]
@@ -639,3 +650,98 @@ def test_protocol_evidence_capacity_precedes_paid_metadata_and_raw_children() ->
                         for issue in child.issues
                         if issue.kind != "exhausted"
                     )
+
+
+@pytest.mark.parametrize("receipt", (True, False))
+def test_native_receipts_survive_cancellation_and_missing_receipts_forfeit(
+    receipt: bool,
+) -> None:
+    """Preserve completed disagreements and conserve actually delegated work."""
+
+    def changed(path: str, accept: str, base: str) -> Response:
+        if accept == "text/turtle":
+            return _simple(path, accept, base)
+        return (
+            200,
+            {"Content-Type": "application/ld+json"},
+            b'{"@id":"urn:s","urn:p":{"@id":"urn:different"}}',
+        )
+
+    limits = Limits(max_work=3_000_000, max_states=500_000, max_total_bytes=150_000_000)
+    cancellation = threading.Event()
+    ledger = Budget(limits)
+    parent = Operation(limits, ledger, 30, cancellation)
+    native: list[bytes] = []
+    processes: list[subprocess.Popen[bytes]] = []
+    before: dict[BudgetKind, int] = {}
+    grants: dict[BudgetKind, int] = {}
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        returned: object,
+    ) -> None:
+        if previous is not None:
+            previous(frame, event, returned)
+        if event != "return":
+            return
+        if frame.f_code is publication_execution._execute.__code__:
+            grants.update(frame.f_locals["grants"])
+        if (
+            receipt
+            and frame.f_code is execute_worker.__code__
+            and frame.f_locals.get("module")
+            == "bijux_ontology.workflows.projects.representations.worker"
+            and isinstance(returned, bytes)
+        ):
+            native.append(returned)
+            before.update((kind, ledger.remaining(kind)) for kind in BUDGET_KINDS)
+            cancellation.set()
+        process = frame.f_locals.get("self")
+        if (
+            not receipt
+            and frame.f_code is subprocess.Popen.__init__.__code__
+            and isinstance(process, subprocess.Popen)
+            and isinstance(process.args, list)
+            and "bijux_ontology.workflows.projects.representations.worker"
+            in process.args
+        ):
+            processes.append(process)
+            cancellation.set()
+
+    with _server(changed) as (base, contacts):
+        resource = PublishedResource("urn:publication", base + "/root", _variants())
+        policy = AcquisitionPolicy((base,))
+        baseline = check_representations(resource, policy=policy, limits=limits)
+        assert baseline.report.complete and baseline.report.outcome == "disagreement"
+        sys.setprofile(observe)
+        try:
+            stopped = check_representations(resource, policy=policy, budget=parent)
+        finally:
+            sys.setprofile(previous)
+        assert cancellation.is_set() and stopped.report.outcome == "exhausted"
+        assert not stopped.report.complete
+        if receipt:
+            assert len(native) == 1
+            consumed = json.loads(native[0])["consumed"]
+            assert stopped.report.children[0].complete
+            assert stopped.report.children[0].issues == baseline.report.issues
+            assert all(
+                ledger.remaining(kind) == before[kind] - consumed[kind]
+                for kind in BUDGET_KINDS
+            )
+        else:
+            assert len(processes) == 1 and processes[0].returncode is not None
+            assert grants and all(ledger.remaining(kind) == 0 for kind in BUDGET_KINDS)
+        cancellation.clear()
+        recovered = check_representations(resource, policy=policy, budget=parent)
+        if receipt:
+            assert recovered.report.complete
+            assert recovered.report.issues == baseline.report.issues
+        else:
+            assert recovered.report.outcome == "exhausted"
+            fresh = check_representations(resource, policy=policy, limits=limits)
+            assert (
+                fresh.report.complete and fresh.report.issues == baseline.report.issues
+            )

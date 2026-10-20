@@ -16,7 +16,6 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.evidence.entities import EntityKey
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
@@ -27,6 +26,7 @@ from bijux_ontology.jsonld.processing.resources import (
 )
 from bijux_ontology.jsonld.selectors.checking import resolve_selection
 from bijux_ontology.jsonld.selectors.types import EntitySelector
+from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node

@@ -2,16 +2,21 @@
 
 import importlib.util
 import json
+import sys
 from dataclasses import replace
 from threading import Event
+from types import FrameType
+from typing import Literal as EventKind
 
 import pytest
 from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import RDF, SH, SKOS
 
-from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.checking import check_context
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, BudgetKind, Limits
+from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
+from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.rdf.patches.types import PatchBlank
 from bijux_ontology.workflows.reproductions import (
     ContextRequest,
@@ -346,3 +351,56 @@ def test_optional_native_backends_cannot_be_manufactured_into_signatures() -> No
     assert not result.report.complete and result.report.issues
     with pytest.raises(ReproductionUnavailable):
         failure_signature(request, result, result.report.issues[0])
+
+
+def test_completed_native_failure_survives_inherited_receipt_cancellation() -> None:
+    """Keep actual completed context findings while settling their native costs."""
+    pytest.importorskip("pyld")
+    request = _request()
+    baseline = run_reproduction(request, limits=CONTROL_LIMITS)
+    assert baseline.report.complete and baseline.report.outcome == "disagreement"
+    cancellation = Event()
+    ledger = Budget(CONTROL_LIMITS)
+    parent = Operation(CONTROL_LIMITS, ledger, 30, cancellation)
+    native: list[bytes] = []
+    before: dict[BudgetKind, int] = {}
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        returned: object,
+    ) -> None:
+        if previous is not None:
+            previous(frame, event, returned)
+        if (
+            event == "return"
+            and frame.f_code is execute_worker.__code__
+            and frame.f_locals.get("module")
+            == "bijux_ontology.workflows.reproductions.worker"
+            and isinstance(returned, bytes)
+        ):
+            native.append(returned)
+            before.update((kind, ledger.remaining(kind)) for kind in BUDGET_KINDS)
+            cancellation.set()
+
+    sys.setprofile(observe)
+    try:
+        completed = run_reproduction(request, budget=parent)
+    finally:
+        sys.setprofile(previous)
+    assert (
+        len(native) == 1
+        and json.loads(native[0])["report"]["outcome"] == "disagreement"
+    )
+    assert completed.report.complete
+    assert completed.report.issues == baseline.report.issues
+    consumed = json.loads(native[0])["consumed"]
+    assert all(
+        ledger.remaining(kind) == before[kind] - consumed[kind] for kind in BUDGET_KINDS
+    )
+    cancellation.clear()
+    recovered = run_reproduction(request, budget=parent)
+    assert (
+        recovered.report.complete and recovered.report.issues == baseline.report.issues
+    )

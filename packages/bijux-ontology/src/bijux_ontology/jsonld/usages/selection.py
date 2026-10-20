@@ -16,8 +16,7 @@ from bijux_ontology.jsonld.evidence.occurrences import (
     occurrences,
 )
 from bijux_ontology.jsonld.processing.resources import context_is_unscoped
-
-from .projections import NamedProjections
+from bijux_ontology.jsonld.usages.projections import NamedProjections
 
 Expansion = Callable[[object], list[dict[str, object]]]
 
@@ -246,6 +245,9 @@ class UsageIndex:
                 contributions = {
                     (
                         item.value_json,
+                        item.subject_identity,
+                        item.graph_identity,
+                        item.identifier_identity,
                         item.list_position,
                         self._lists.get(item.list_id)
                         if item.list_id is not None

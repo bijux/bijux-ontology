@@ -12,8 +12,8 @@ from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.shacl.execution.results import ShaclResult
-from bijux_ontology.shacl.findings import ShaclFinding
+from bijux_ontology.shacl.evidence.findings import ShaclFinding
+from bijux_ontology.shacl.evidence.results import ShaclResult
 
 
 @dataclass(frozen=True)

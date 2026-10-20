@@ -416,3 +416,22 @@ def test_existing_worker_matches_inspection_scopes_and_resource_versions(
     compared = worker.run("context_definitions", inputs)
     assert compared.report.outcome == "disagreement"
     assert isinstance(compared.data, dict) and compared.data["changes"]
+
+
+def test_explicit_context_base_changes_are_effective_without_document_base() -> None:
+    first = {"@base": "https://example.org/first/", "p": "urn:p"}
+    same = compare_context_definitions(first, first)
+    assert same.report.verified, same.report.to_dict()
+    assert same.before.view is not None
+    assert same.before.view.defaults.document_base is None
+    assert same.before.view.defaults.effective_base == "https://example.org/first/"
+    different = compare_context_definitions(
+        first, {**first, "@base": "https://example.org/second/"}
+    )
+    assert different.report.outcome == "disagreement"
+    assert any(item.facet == "effective_base" for item in different.changes)
+    disabled = inspect_context({"@base": None})
+    assert disabled.report.verified and disabled.view is not None
+    assert disabled.view.defaults.effective_base is None
+    unanchored = inspect_context({"@base": "../"})
+    assert unanchored.view is None and unanchored.report.outcome == "unverified"

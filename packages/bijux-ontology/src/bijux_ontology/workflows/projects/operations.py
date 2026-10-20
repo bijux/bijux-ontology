@@ -11,9 +11,9 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget
 from bijux_ontology.json.values import optional_string_value, text_value
-from bijux_ontology.jsonld.checking import check_context
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
+from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.rdf.literals.checking import Regime as ModelRegime
 from bijux_ontology.vocabulary.builtins import Regime
@@ -82,7 +82,7 @@ def run_check(
         from rdflib import URIRef
 
         from bijux_ontology.shacl.checking import validate_shapes
-        from bijux_ontology.shacl.coverage import ShaclCoverageContract
+        from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
         coverage = None
         if shacl_input is not None:

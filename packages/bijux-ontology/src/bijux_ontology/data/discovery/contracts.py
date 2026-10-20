@@ -35,7 +35,7 @@ from bijux_ontology.shacl.authoring.types import (
     ShaclValue,
 )
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 from .observation import capture, observe, reserve
 from .types import (

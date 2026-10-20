@@ -18,13 +18,13 @@ from bijux_ontology.rdf.patches.types import (
 )
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, literal_term
-from bijux_ontology.shacl.functions import (
+from bijux_ontology.shacl.profiles.extraction import extract_profile
+from bijux_ontology.shacl.sparql.functions import (
     FunctionPlan,
     ShaclFunctionCatalog,
     prepare_functions,
 )
-from bijux_ontology.shacl.profiles.extraction import extract_profile
-from bijux_ontology.shacl.queries import _CASTS, analyze_query
+from bijux_ontology.shacl.sparql.queries import _CASTS, analyze_query
 
 
 class RuleUnavailable(InputError):

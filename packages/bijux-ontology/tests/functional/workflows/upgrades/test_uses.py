@@ -2,15 +2,15 @@
 
 from rdflib.namespace import XSD
 
-from bijux_ontology.declarations import (
+from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     TermDeclaration,
     ValueDeclaration,
 )
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.jsonld.checking import prepare_usages
 from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
+from bijux_ontology.jsonld.usages.checking import prepare_usages
 from bijux_ontology.workflows.upgrades.uses import index_uses
 
 EX = "https://example.org/"

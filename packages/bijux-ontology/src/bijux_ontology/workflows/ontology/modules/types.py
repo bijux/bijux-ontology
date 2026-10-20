@@ -6,7 +6,7 @@ from typing import Literal
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.owl.obligations import ObligationResult, OntologyObligation
-from bijux_ontology.owl.properties import PropertyContract
+from bijux_ontology.owl.relations.properties import PropertyContract
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 
 

@@ -308,9 +308,9 @@ def test_actual_shacl_nested_results_and_deadline_keep_original_report_graph(
     """Maintained execution retains nested RDF results and actual source pointers."""
     pytest.importorskip("pyshacl")
     pytest.importorskip("pyld")
-    from bijux_ontology.jsonld.checking import prepare_usages
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
     from bijux_ontology.shacl.checking import validate_shapes
-    from bijux_ontology.shacl.findings import ShaclSource
+    from bijux_ontology.shacl.evidence.findings import ShaclSource
 
     data = (
         Graph()

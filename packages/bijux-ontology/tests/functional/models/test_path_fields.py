@@ -228,7 +228,7 @@ def test_typed_shacl_projection_agrees_on_supported_path_and_record_constraints(
     """Actual Core validation checks endpoint, prefix and ownership obligations."""
     pytest.importorskip("pyshacl")
     from bijux_ontology.shacl.checking import validate_shapes
-    from bijux_ontology.shacl.path_fields import project_path_field
+    from bijux_ontology.shacl.path_fields.projection import project_path_field
 
     # A finite exact enum qualifies native numeric lexical semantics as well as
     # the backend's broader datatype validation.

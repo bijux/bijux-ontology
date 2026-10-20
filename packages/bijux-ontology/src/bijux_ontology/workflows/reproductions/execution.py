@@ -113,7 +113,7 @@ def _response(
         amount = receipt[kind]
         if type(amount) is not int or not 0 <= amount <= allowances[kind]:
             raise ResourceError("Reproduction worker exceeded its shared allowance")
-        budget.consume(kind, amount)
+        budget.consume_completed(kind, amount)
     report = report_from_data(response["report"])
     budget.shared._register_transferred_report(
         report,
@@ -209,7 +209,7 @@ def _run(request: ReproductionRequest, operation: Operation) -> OperationResult:
         # recovered. This is conservative forfeiture, never a native work count.
         # Terminal accounting bypasses the expired/cancelled operation checkpoint.
         for kind in _KINDS:
-            operation.shared.consume(kind, operation.shared.remaining(kind))
+            operation.consume_completed(kind, operation.remaining(kind))
         raise LimitExceeded(
             "Reproduction stopped without a qualified worker control receipt; "
             "the remaining delegated allowance was forfeited: " + str(error)

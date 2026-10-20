@@ -17,8 +17,8 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.pydantic import model_declarations
-from bijux_ontology.jsonld.checking import prepare_usages
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
+from bijux_ontology.jsonld.usages.checking import prepare_usages
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.models.emission.checking import check_emission

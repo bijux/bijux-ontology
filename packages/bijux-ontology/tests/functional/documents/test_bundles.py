@@ -12,7 +12,7 @@ from zipfile import ZipFile, ZipInfo
 import pytest
 from rdflib import Namespace
 
-from bijux_ontology.declarations import TermDeclaration
+from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.jsonld.processing.expansion import expand_document

@@ -3,7 +3,7 @@
 from rdflib import BNode, Graph, Namespace
 from rdflib.namespace import OWL
 
-from bijux_ontology.owl.constructs import unsupported_constructs
+from bijux_ontology.owl.encoding.constructs import unsupported_constructs
 
 EX = Namespace("https://example.org/")
 

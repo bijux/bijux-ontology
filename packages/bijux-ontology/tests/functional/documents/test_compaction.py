@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import RDF, XSD
 
@@ -110,3 +111,23 @@ def test_context_cannot_hide_required_rdf_meaning_with_null_or_aliases() -> None
     dropped = export_jsonld(source, context={}, frame={"@id": EX + "absent"})
     assert dropped.content is None
     assert "rdf.structure_changed" in {issue.code for issue in dropped.report.issues}
+
+
+def test_compaction_respects_local_context_base_without_application_base() -> None:
+    context = {"@base": EX, "p": {"@id": str(P), "@type": "@id"}}
+    source = prepare_source(Graph().add((S, P, URIRef(EX + "target"))))
+    exported = export_jsonld(source, context=context)
+    assert exported.content is not None, exported.report.to_dict()
+    assert exported.report.verified
+    output = json.loads(exported.content)
+    assert output["@id"] == "subject" and output["p"] == "target"
+    unanchored = export_jsonld(source, context={**context, "@base": "../"})
+    assert unanchored.content is None and unanchored.report.outcome == "unverified"
+    callback_error = ValueError("consumer loader failure")
+
+    def fail(url: str, options: dict[str, object]) -> dict[str, object]:
+        raise callback_error
+
+    with pytest.raises(ValueError) as captured:
+        export_jsonld(source, context=EX + "context", document_loader=fail)
+    assert captured.value is callback_error

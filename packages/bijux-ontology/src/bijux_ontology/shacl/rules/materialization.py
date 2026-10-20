@@ -25,7 +25,7 @@ from bijux_ontology.rdf.patches.types import SnapshotWitness
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.transforms import Transformation
-from bijux_ontology.shacl.functions import ShaclFunctionCatalog
+from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
 
 from .preparation import RuleUnavailable, namespaces, selected_names, single_scope
 from .protocol import run_rules

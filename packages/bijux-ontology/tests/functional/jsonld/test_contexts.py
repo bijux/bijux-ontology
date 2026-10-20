@@ -6,14 +6,14 @@ from pathlib import Path
 import pytest
 from pyld import jsonld  # type: ignore[import-untyped]
 
-from bijux_ontology.jsonld.checking import check_context
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.expansion import expand_document
 from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
     OfflineDocumentLoader,
     context_document_loader,
 )
+from bijux_ontology.jsonld.usages.checking import check_context
 
 EX = "https://example.org/"
 
@@ -320,8 +320,8 @@ def test_logical_resource_aliases_are_equal_or_explicitly_rejected(
 def test_drop_policy_is_exact_retains_observations_and_never_hides_unknown_terms() -> (
     None
 ):
-    from bijux_ontology.jsonld.checking import prepare_usages
     from bijux_ontology.jsonld.processing.conversion import convert_to_rdf
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
 
     document = {"@context": {"p": EX + "p"}, "p": "kept", "ignored": "omitted"}
     prepared = prepare_usages(document, allowed_drops=frozenset({"ignored"}))

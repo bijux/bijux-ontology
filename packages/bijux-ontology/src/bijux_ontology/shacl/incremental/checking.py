@@ -21,9 +21,9 @@ from bijux_ontology.rdf.patches.applying import apply_rdf_patch
 from bijux_ontology.rdf.patches.types import DatasetPatch, PatchBlankBinding
 from bijux_ontology.rdf.sources.loading import _charge_graph
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.shacl.coverage import ShaclTarget
-from bijux_ontology.shacl.execution.results import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.profiles.execution import remaining_deadline
+from bijux_ontology.shacl.targets.coverage import ShaclTarget
 
 from .preparation import _run, _targets, _unknown
 from .types import IncrementalResult, IncrementalState

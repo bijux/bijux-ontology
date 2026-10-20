@@ -12,9 +12,10 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.components import check_components
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
-from bijux_ontology.shacl.skos_profiles import SkosProfile, compile_skos_profile
+from bijux_ontology.shacl.components.checking import check_components
+from bijux_ontology.shacl.skos_profiles.compilation import compile_skos_profile
+from bijux_ontology.shacl.skos_profiles.types import SkosProfile
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 from bijux_ontology.skos.checking import check_skos
 from bijux_ontology.skos.xl import XL
 

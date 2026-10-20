@@ -161,7 +161,7 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
             if type(amount) is not int or not 0 <= amount <= allowances[kind]:
                 raise ResourceError("Invalid reifier control counter")
         for kind in BUDGET_KINDS:
-            operation.shared.consume(kind, cast(int, controls[kind]))
+            operation.consume_completed(kind, cast(int, controls[kind]))
         received = True
         operation.consume("work", 0)
         message = response["message"]
@@ -185,7 +185,7 @@ def _prove(quads: tuple[ox.Quad, ...], contract: str, operation: Operation) -> b
     finally:
         if dispatched and not received:
             for kind in BUDGET_KINDS:
-                operation.shared.consume(kind, allowances[kind])
+                operation.consume_completed(kind, allowances[kind])
 
 
 def _restore_witness(snapshot: ReifierDataset, operation: Budget) -> SnapshotWitness:

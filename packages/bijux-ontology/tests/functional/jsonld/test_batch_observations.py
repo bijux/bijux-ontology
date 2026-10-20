@@ -8,10 +8,10 @@ import pytest
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.json.paths import SourcePath
-from bijux_ontology.jsonld import checking
-from bijux_ontology.jsonld.checking import prepare_usages
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.expansion import expand_document
+from bijux_ontology.jsonld.usages import checking
+from bijux_ontology.jsonld.usages.checking import prepare_usages
 
 EX = "https://example.org/"
 

@@ -16,10 +16,10 @@ from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.execution.projection import _retained_result
-from bijux_ontology.shacl.execution.results import ShaclResult
 from bijux_ontology.shacl.execution.session import ShaclSession
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 from .construction import Candidates, State
 from .profile import PreparedExamples, UnsupportedExample, prepare, reserve
@@ -28,23 +28,6 @@ from .types import ExampleGeneration, MissingValueExample, ShapeExample
 
 class _SearchCap(ResourceError):
     """The caller's finite native-trial window ended, not a satisfiability proof."""
-
-
-class _Cancellation(threading.Event):
-    """Combine original deadline/cancellation without mutating the caller's event."""
-
-    def __init__(self, operation: Operation) -> None:
-        """Retain the original deadline and cancellation owner without resetting it."""
-        super().__init__()
-        self.operation = operation
-
-    def is_set(self) -> bool:
-        """Let the existing native-session supervisor enforce the original deadline."""
-        return (
-            time.monotonic() >= self.operation.deadline
-            or self.operation.cancel is not None
-            and self.operation.cancel.is_set()
-        )
 
 
 def _candidate(
@@ -150,7 +133,6 @@ def generate_examples(
         selected_reports.extend(
             (prepared.inspection.profile.structural_report, prepared.analysis.report)
         )
-        guard = _Cancellation(current)
         with ExitStack() as stack:
             sessions: dict[URIRef | BNode, ShaclSession] = {}
 
@@ -187,7 +169,7 @@ def generate_examples(
                 reserve(current)
                 current.consume("resources")
                 actual = session(selected).validate(
-                    data, focus_nodes=(focus,), cancel=guard
+                    data, focus_nodes=(focus,), cancel=current.cancel
                 )
                 actual = _retained_result(actual, current)
                 trials.append(actual)

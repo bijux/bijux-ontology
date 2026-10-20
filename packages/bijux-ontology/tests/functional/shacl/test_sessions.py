@@ -17,8 +17,8 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
 from bijux_ontology.shacl.execution.session import ShaclSession
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 EX = Namespace("https://session.example/")
 
@@ -416,8 +416,8 @@ def test_batch_budgets_preserve_completed_results_and_pending_required_scope() -
 
 
 def test_prepared_functions_are_registered_and_cleaned_independently_per_job() -> None:
-    from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
-    from bijux_ontology.shacl.functions import (
+    from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
+    from bijux_ontology.shacl.sparql.functions import (
         ShaclFunctionCatalog,
         ShaclFunctionParameter,
         ShaclSparqlFunction,

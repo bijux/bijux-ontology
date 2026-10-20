@@ -25,11 +25,11 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
 from bijux_ontology.json.paths import SourcePath, at_path, location
 from bijux_ontology.json.values import own_json
-from bijux_ontology.jsonld.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.evidence.entities import object_key
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_resources
+from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages
 from bijux_ontology.models.emission.bindings import (
     candidate_paths,
     source_entity,

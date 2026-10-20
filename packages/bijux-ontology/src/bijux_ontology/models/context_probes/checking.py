@@ -15,10 +15,13 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.paths import location
 from bijux_ontology.json.values import own_json
-from bijux_ontology.jsonld.checking import check_context, prepare_usages
+from bijux_ontology.jsonld.contracts.expectations import (
+    ContainerKind,
+    ContextExpectation,
+)
 from bijux_ontology.jsonld.evidence.values import ValueKind
-from bijux_ontology.jsonld.expectations import ContainerKind, ContextExpectation
 from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_resources
+from bijux_ontology.jsonld.usages.checking import check_context, prepare_usages
 
 from .types import ContextProbe, ProbeSample
 

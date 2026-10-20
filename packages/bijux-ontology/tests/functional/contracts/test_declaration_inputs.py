@@ -5,18 +5,18 @@ from collections.abc import Callable
 import pytest
 from rdflib import XSD, Literal
 
+from bijux_ontology.absence import ABSENT
 from bijux_ontology.absence import ABSENT as SHARED_ABSENT
-from bijux_ontology.declarations import ABSENT, TermDeclaration
 from bijux_ontology.declarations.codecs import (
     models_from_data,
     terms_from_data,
 )
-from bijux_ontology.declarations.types import EmissionCoverage
+from bijux_ontology.declarations.types import EmissionCoverage, TermDeclaration
 from bijux_ontology.declarations.types import FieldDeclaration as Field
 from bijux_ontology.declarations.types import ModelDeclaration as Model
 from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 
 EX = "https://example.org/"
 

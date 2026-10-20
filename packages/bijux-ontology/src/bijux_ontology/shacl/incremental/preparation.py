@@ -22,12 +22,12 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.planning import capture_source
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.shacl.coverage import ShaclCoverageContract, ShaclTarget
-from bijux_ontology.shacl.execution.results import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.execution.session import ShaclSession
 from bijux_ontology.shacl.profiles.execution import portable_roles, remaining_deadline
 from bijux_ontology.shacl.profiles.extraction import extract_profile
 from bijux_ontology.shacl.profiles.resources import _owned
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract, ShaclTarget
 
 from .types import IncrementalPreparation, IncrementalState
 

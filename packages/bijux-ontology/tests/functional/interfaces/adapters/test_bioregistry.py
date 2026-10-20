@@ -11,7 +11,7 @@ from zipfile import ZipFile
 import pytest
 from rdflib import BNode, Graph, Literal, URIRef
 
-from bijux_ontology.declarations import TermDeclaration
+from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Location
 from bijux_ontology.execution.limits import Budget, Limits

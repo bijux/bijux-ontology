@@ -18,7 +18,7 @@ from bijux_ontology.owl.obligations import (
     OntologyObligation,
     _NativeProofs,
 )
-from bijux_ontology.owl.properties import PropertyContract, property_contract
+from bijux_ontology.owl.relations.properties import PropertyContract, property_contract
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node

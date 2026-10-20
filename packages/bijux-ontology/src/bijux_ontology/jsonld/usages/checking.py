@@ -8,6 +8,10 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.paths import SourcePath, bound_path, bounded_location, location
 from bijux_ontology.json.values import own_json
+from bijux_ontology.jsonld.contracts.expectations import (
+    ContextExpectation,
+    compare_usage,
+)
 from bijux_ontology.jsonld.evidence.entities import EntityInventory
 from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence, ObservedUsage
 from bijux_ontology.jsonld.evidence.values import ValueTraits, value_traits
@@ -27,10 +31,8 @@ from bijux_ontology.jsonld.selectors.types import (
     Selection,
     SourceSelector,
 )
-
-from .expectations import ContextExpectation, compare_usage
-from .omissions import project_omissions
-from .selection import UsageIndex
+from bijux_ontology.jsonld.usages.omissions import project_omissions
+from bijux_ontology.jsonld.usages.selection import UsageIndex
 
 
 class PreparedUsages:

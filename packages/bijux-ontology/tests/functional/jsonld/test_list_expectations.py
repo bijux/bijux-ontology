@@ -9,10 +9,10 @@ import pytest
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.jsonld.checking import check_context, prepare_usages
-from bijux_ontology.jsonld.codecs import expectations_from_data
-from bijux_ontology.jsonld.expectations import ContextExpectation
-from bijux_ontology.jsonld.lists import ExpectedList
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.lists import ExpectedList
+from bijux_ontology.jsonld.usages.checking import check_context, prepare_usages
 
 P = "https://lists.example/items"
 XSD = "http://www.w3.org/2001/XMLSchema#"

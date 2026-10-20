@@ -574,6 +574,10 @@ def _report_from_data(value: object, retained: dict[Issue, Issue]) -> Report:
     data = _report_object(value, location="worker report")
     if type(data.get("schema_version")) is not int or data["schema_version"] != 1:
         raise InputError("Unsupported worker report schema")
+    if type(data.get("requested")) is not int:
+        raise InputError(
+            "Worker reports require an explicit requested comparison count"
+        )
     raw_issues = data.get("issues")
     raw_children = data.get("scopes")
     if not isinstance(raw_issues, list) or not isinstance(raw_children, list):

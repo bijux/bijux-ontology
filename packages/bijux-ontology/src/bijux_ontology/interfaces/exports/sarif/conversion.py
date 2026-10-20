@@ -14,8 +14,8 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.json.values import decode_json, own_json
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.shacl.execution.results import ShaclResult
-from bijux_ontology.shacl.findings import ShaclFinding, term_data
+from bijux_ontology.shacl.evidence.findings import ShaclFinding, term_data
+from bijux_ontology.shacl.evidence.results import ShaclResult
 
 from .locations import artifact_root as qualify_root
 from .locations import location_data, root_uri

@@ -10,13 +10,9 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
-from bijux_ontology.shacl.bindings import TermSelection, transport_roles
-from bijux_ontology.shacl.capabilities import (
-    ShaclConstraintRequirement,
-)
-from bijux_ontology.shacl.coverage import (
-    ShaclCoverageContract,
-)
+from bijux_ontology.shacl.evidence import findings, results
+from bijux_ontology.shacl.execution.bindings import TermSelection, transport_roles
+from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.execution.planning import (
     _metadata,
     _options,
@@ -29,13 +25,9 @@ from bijux_ontology.shacl.execution.projection import (
     _project_result,
     _retained_result,
 )
-from bijux_ontology.shacl.execution.results import ShaclResult as ShaclResult
 from bijux_ontology.shacl.execution.transport import execute_backend
-from bijux_ontology.shacl.findings import ShaclFinding as ShaclFinding
-from bijux_ontology.shacl.findings import ShaclSource
-from bijux_ontology.shacl.functions import (
-    ShaclFunctionCatalog,
-)
+from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 
 def validate_shapes(
@@ -56,12 +48,12 @@ def validate_shapes(
     coverage: ShaclCoverageContract | None = None,
     required_constraints: Sequence[ShaclConstraintRequirement] = (),
     functions: ShaclFunctionCatalog | None = None,
-    source_usages: Sequence[ShaclSource] = (),
+    source_usages: Sequence[findings.ShaclSource] = (),
     limits: Limits | None = None,
     timeout: float | None = 30.0,
     budget: Budget | None = None,
     _owned_worker: bool = False,
-) -> ShaclResult:
+) -> results.ShaclResult:
     """Validate supplied graphs with inference, JS, rules and implicit retrieval off.
 
     ``mode='targets'`` retains normal targets, optionally filtering focus nodes
@@ -135,7 +127,7 @@ def validate_shapes(
         data, plan, focus_nodes, graph_name=graph_name, union=union
     )
     if plan.features:
-        result = ShaclResult(
+        result = results.ShaclResult(
             Report(
                 "shacl",
                 0,

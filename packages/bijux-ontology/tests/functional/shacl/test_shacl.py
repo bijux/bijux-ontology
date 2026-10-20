@@ -16,9 +16,9 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.shacl.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 EX = Namespace("https://example.org/")
 
@@ -677,8 +677,8 @@ ex:Shape a sh:NodeShape; sh:targetNode ex:record;
 
 
 def test_nested_findings_and_complex_paths_preserve_raw_evidence() -> None:
-    from bijux_ontology.jsonld.checking import prepare_usages
-    from bijux_ontology.shacl.findings import ShaclSource
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
+    from bijux_ontology.shacl.evidence.findings import ShaclSource
 
     shapes = Graph().parse(
         data="""
@@ -726,8 +726,8 @@ ex:Integer a sh:NodeShape; sh:datatype xsd:integer.
 
 
 def test_actual_source_correspondence_keeps_multiple_and_unknown_locations() -> None:
-    from bijux_ontology.jsonld.checking import prepare_usages
-    from bijux_ontology.shacl.findings import ShaclSource
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
+    from bijux_ontology.shacl.evidence.findings import ShaclSource
 
     document = {
         "@context": {"name": str(EX.name), "alias": str(EX.name)},
@@ -771,8 +771,8 @@ ex:Shape a sh:NodeShape; sh:targetNode ex:record;
 
 
 def test_sequence_source_join_uses_actual_terminal_subject_and_selected_graph() -> None:
-    from bijux_ontology.jsonld.checking import prepare_usages
-    from bijux_ontology.shacl.findings import ShaclSource
+    from bijux_ontology.jsonld.usages.checking import prepare_usages
+    from bijux_ontology.shacl.evidence.findings import ShaclSource
 
     document = {
         "@context": {"link": str(EX.link), "name": str(EX.name)},
@@ -833,7 +833,7 @@ ex:Shape a sh:NodeShape; sh:targetNode ex:record;
 
 
 def test_cyclic_paths_and_result_details_are_finite_and_truthful() -> None:
-    from bijux_ontology.shacl.findings import project_findings
+    from bijux_ontology.shacl.evidence.findings import project_findings
     from bijux_ontology.shacl.paths import decode_path
 
     shapes = shapes_graph()

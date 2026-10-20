@@ -6,9 +6,9 @@ from typing import cast
 import pytest
 
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.jsonld.checking import check_context, prepare_usages
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.selectors.types import ArrayItems, Property, SourceSelector
+from bijux_ontology.jsonld.usages.checking import check_context, prepare_usages
 
 EX = "https://example.org/"
 

@@ -393,7 +393,16 @@ class _Bridge:
         base_mapping = _text(
             state.get("@base", ABSENT), self.budget, nullable=True, absent=True
         )
-        effective_base = self.processor._expand_iri(active, "", base=self.base)
+        try:
+            effective_base = (
+                self.processor._expand_iri(
+                    active, "", base=self.base if self.base is not None else ""
+                )
+                if base_mapping is not ABSENT
+                else self.base
+            )
+        except ValueError as error:
+            raise _Unsupported("Native base resolution is not qualified") from error
         _text(effective_base, self.budget, nullable=True)
         self.budget.consume("bytes", 256)
         defaults = ContextDefaults(

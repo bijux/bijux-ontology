@@ -27,7 +27,7 @@ from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
 DCT = Namespace("http://purl.org/dc/terms/")

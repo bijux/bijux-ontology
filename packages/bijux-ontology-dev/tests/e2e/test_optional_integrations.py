@@ -36,7 +36,7 @@ import pytest
         from rdflib.namespace import XSD
         from bijux_ontology.interfaces.adapters.contracts import RdfField
         from bijux_ontology.interfaces.adapters.pydantic import model_declarations
-        from bijux_ontology.declarations import ValueDeclaration
+        from bijux_ontology.declarations.types import ValueDeclaration
         from bijux_ontology.models.emission.types import ModelUsage
         from bijux_ontology.models.emission.checking import check_emission
         class Record(BaseModel):
@@ -66,7 +66,7 @@ import pytest
         from rdflib.namespace import XSD
         from bijux_ontology.interfaces.adapters.contracts import RdfField
         from bijux_ontology.interfaces.adapters.linkml import model_declarations
-        from bijux_ontology.declarations import ValueDeclaration
+        from bijux_ontology.declarations.types import ValueDeclaration
         view = SchemaView(SchemaDefinition(**{
             "id": "https://example.org/schema", "name": "catalogue",
             "prefixes": {"ex": "https://example.org/"},
@@ -258,7 +258,7 @@ def test_external_consumer_uses_installed_public_types(
             ModelExtraction, RdfField,
         )
         from bijux_ontology.interfaces.adapters.pydantic import model_declarations
-        from bijux_ontology.declarations import ModelDeclaration, ValueDeclaration
+        from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
         from bijux_ontology.diagnostics.reports import Report
         class Image(BaseModel):
             name: Annotated[str, RdfField(

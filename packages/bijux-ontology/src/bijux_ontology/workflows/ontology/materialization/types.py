@@ -10,8 +10,8 @@ from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.entailment.types import EntailmentRegime, EntailmentResult
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
-from bijux_ontology.shacl.functions import ShaclFunctionCatalog
 from bijux_ontology.shacl.rules.types import RuleMaterialization
+from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
 
 
 @dataclass(frozen=True)

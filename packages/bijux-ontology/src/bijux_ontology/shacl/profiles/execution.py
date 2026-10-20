@@ -11,9 +11,9 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, retain_report
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, independent_blank_scopes
-from bijux_ontology.shacl.checking import ShaclResult
-from bijux_ontology.shacl.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.evidence.results import ShaclResult
 from bijux_ontology.shacl.execution.session import ShaclSession
+from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 from .resources import _owned
 from .types import ShapeProfile, Triple

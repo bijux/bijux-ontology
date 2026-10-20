@@ -6,14 +6,15 @@ import pytest
 from rdflib import Dataset, Literal, URIRef
 from rdflib.collection import Collection
 
-from bijux_ontology.jsonld.checking import check_context
-from bijux_ontology.jsonld.expectations import ContextExpectation
+from bijux_ontology.diagnostics.errors import ResourceError
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import convert_to_rdf
 from bijux_ontology.jsonld.processing.expansion import expand_document
 from bijux_ontology.jsonld.processing.resources import (
     DocumentLoader,
     context_document_loader,
 )
+from bijux_ontology.jsonld.usages.checking import check_context
 
 EX = "https://example.org/"
 
@@ -158,3 +159,57 @@ def test_explicit_literal_lexical_loss_retains_other_values() -> None:
     assert '"01"^^' in preserved.nquads
     assert '"1"^^' in preserved.nquads
     assert '" a\\n  b "^^' in preserved.nquads
+
+
+def test_inline_context_base_resolves_without_an_application_base() -> None:
+    context = {
+        "@base": EX + "local/",
+        "p": {"@id": EX + "p", "@type": "@id"},
+    }
+    document = {"@context": context, "@id": "subject", "p": "target"}
+    expected = [{"@id": EX + "local/subject", EX + "p": [{"@id": EX + "local/target"}]}]
+    assert expand_document(document) == expected
+    assert expand_document(document, base=EX + "application/") == expected
+    converted = convert_to_rdf(document)
+    assert converted.report.verified, converted.report.to_dict()
+    assert "<" + EX + "local/subject>" in converted.nquads
+    assert "<" + EX + "local/target>" in converted.nquads
+    disabled = {**document, "@context": {**context, "@base": None}}
+    assert expand_document(disabled)[0]["@id"] == "subject"
+    rejected = convert_to_rdf(disabled)
+    assert not rejected.report.verified
+    assert any(
+        issue.code == "context.rdf_identifier_loss" for issue in rejected.report.issues
+    )
+
+
+def test_absent_document_base_survives_context_resets() -> None:
+    document = {
+        "@context": {
+            "@base": EX + "outer/",
+            "child": EX + "child",
+        },
+        "child": {"@context": None, EX + "p": {"@id": "relative"}},
+    }
+    expected = [{EX + "child": [{EX + "p": [{"@id": "relative"}]}]}]
+    assert expand_document(document) == expected
+    reset = {
+        "@context": [None, {"p": {"@id": EX + "p", "@type": "@id"}}],
+        "p": "relative",
+    }
+    assert expand_document(reset) == [{EX + "p": [{"@id": "relative"}]}]
+    assert not convert_to_rdf(document).report.verified
+    unanchored = {
+        "@context": {"@base": "../", "p": {"@id": EX + "p", "@type": "@id"}},
+        "p": "target",
+    }
+    with pytest.raises(ResourceError, match="without a semantic input diagnostic"):
+        expand_document(unanchored)
+    callback_error = ValueError("consumer callback failure")
+
+    def fail(term: str | None) -> None:
+        raise callback_error
+
+    with pytest.raises(ValueError) as captured:
+        expand_document({"ignored": "value"}, on_property_dropped=fail)
+    assert captured.value is callback_error

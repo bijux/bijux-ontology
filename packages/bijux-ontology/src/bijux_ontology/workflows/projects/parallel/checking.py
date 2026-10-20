@@ -290,7 +290,7 @@ def check_project_parallel(
             ) as pool:
                 while len(results) < count:
                     try:
-                        checkpoint(operation.deadline, cancel)
+                        checkpoint(operation.deadline, operation.cancel)
                     except LimitExceeded:
                         stop.set()
                         failure = (
@@ -370,7 +370,7 @@ def check_project_parallel(
                         # Adoption still runs after cancellation: already bounded
                         # receipts must remain paid and completed reports survive.
                         for kind, amount in result.consumed:
-                            operation.shared.consume(kind, amount)
+                            operation.consume_completed(kind, amount)
                         try:
                             operation.shared._register_transferred_report(
                                 result.report,
@@ -380,7 +380,7 @@ def check_project_parallel(
                         except (InputError, LimitExceeded):
                             consumed = dict(result.consumed)
                             for kind, allowance in grants[index].items():
-                                operation.shared.consume(
+                                operation.consume_completed(
                                     kind, allowance - consumed[kind]
                                 )
                             result = ParallelJobResult(

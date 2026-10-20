@@ -16,6 +16,7 @@ from bijux_ontology.declarations.types import (
     ModelDeclaration,
     ValueDeclaration,
 )
+from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.interfaces.execution import WorkerExecutor
 from bijux_ontology.json.paths import at_path
@@ -437,3 +438,24 @@ def test_framing_input_capture_stops_before_allocating_depleted_payload() -> Non
         tracemalloc.stop()
     assert result.report.outcome == "exhausted" and not result.report.verified
     assert peak < 100000
+
+
+def test_inline_frame_and_document_keep_their_explicit_local_base() -> None:
+    base = "https://example.org/framing/"
+    context = {"@base": base, "label": base + "label"}
+    document = {"@context": context, "@id": "subject", "label": "Label"}
+    framed = frame_document(
+        document,
+        {"@context": context, "@id": "subject", "label": {}},
+        retained=EntitySelector(identifiers=(base + "subject",), graph=None),
+        predicates=(base + "label",),
+    )
+    assert framed.report.verified, framed.report.to_dict()
+    assert framed.document is not None
+    with pytest.raises(ResourceError, match="without a semantic input diagnostic"):
+        frame_document(
+            document,
+            {"@context": {**context, "@base": "../"}, "@id": "subject", "label": {}},
+            retained=EntitySelector(identifiers=(base + "subject",), graph=None),
+            predicates=(base + "label",),
+        )

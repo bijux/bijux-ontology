@@ -12,7 +12,7 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
-from bijux_ontology.shacl.execution.results import ShaclResult
+from bijux_ontology.shacl.evidence.results import ShaclResult
 
 from .types import ExternalShaclReport, ShaclReportAggregate
 

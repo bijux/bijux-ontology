@@ -21,7 +21,7 @@ from bijux_ontology.json.values import (
     own_json,
     text_value,
 )
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.emission.checking import check_emission

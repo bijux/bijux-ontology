@@ -10,7 +10,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.documents.patches.operations import snapshot
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
-from bijux_ontology.jsonld.codecs import expectations_from_data
+from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.models.emission.codecs import usages_from_data
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.patches.planning import Captured, capture_source

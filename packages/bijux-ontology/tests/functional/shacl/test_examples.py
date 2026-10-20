@@ -11,7 +11,8 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.shacl.examples import MissingValueExample, generate_examples
+from bijux_ontology.shacl.examples.checking import generate_examples
+from bijux_ontology.shacl.examples.types import MissingValueExample
 
 EX = Namespace("https://example.invalid/examples/")
 _PREFIX = f"@prefix ex:<{EX}>. @prefix sh:<{SH}>. @prefix xsd:<{XSD}>. "
@@ -227,6 +228,17 @@ def test_shared_limits_cancel_and_missing_optional_backend_preserve_truth() -> N
         _status(), EX.R, EX.focus, seed=_seed(), values=(), cancel=cancel
     )
     assert stopped.status == "exhausted" and stopped.positive is None
+    cancel.clear()
+    available = generate_examples(
+        _status(),
+        EX.R,
+        EX.focus,
+        seed=_seed(),
+        values=(EX.ready, Literal("label")),
+        cancel=cancel,
+    )
+    assert available.status == "found" and available.positive is not None
+    assert available.positive.validation.report.verified
     if importlib.util.find_spec("pyshacl") is None:
         absent = generate_examples(
             _status(), EX.R, EX.focus, seed=_seed(), values=(EX.ready, Literal("label"))

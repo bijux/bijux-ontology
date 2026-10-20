@@ -28,7 +28,8 @@ from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.terms import literal_term
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.model_shapes import ModelShapeBinding, compile_model_shapes
+from bijux_ontology.shacl.model_shapes.translation import compile_model_shapes
+from bijux_ontology.shacl.model_shapes.types import ModelShapeBinding
 
 EX = Namespace("https://example.invalid/output/")
 

@@ -16,14 +16,14 @@ from bijux_ontology.interfaces.adapters.shape_interchange import (
 )
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.shacl.authoring import (
+from bijux_ontology.shacl.authoring.compiling import compile_shapes
+from bijux_ontology.shacl.authoring.types import (
     ShaclClosed,
     ShaclCount,
     ShaclNodeShape,
     ShaclPropertyShape,
     ShaclShapeRef,
     ShaclValue,
-    compile_shapes,
 )
 from bijux_ontology.shex import ShexBinding, ShexSchema
 

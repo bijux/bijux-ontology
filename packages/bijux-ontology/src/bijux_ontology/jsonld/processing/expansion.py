@@ -14,7 +14,7 @@ from bijux_ontology.jsonld.processing.resources import (
     _json_size,
     context_resources,
 )
-from bijux_ontology.jsonld.processing.runtime import processor
+from bijux_ontology.jsonld.processing.runtime import document_processor, processor
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 
@@ -68,22 +68,23 @@ def expand_document(
     options: dict[str, object] = {
         "documentLoader": load,
         "processingMode": "json-ld-1.1",
-        "base": base,
         "contextResolver": jsonld.ContextResolver(
             {}, load, max_context_urls=operation.limits.max_resources
         ),
     }
-    if isinstance(document, str) and base is None:
-        # URL inputs inherit the loader's effective document URL; inline inputs
-        # have no implicit application base.
-        del options["base"]
+    if base is not None:
+        options["base"] = base
     try:
-        expanded: object = jsonld.expand(
-            document,
-            options,
-            on_property_dropped=dropped,
+        expanded: object = document_processor(on_property_dropped=dropped).expand(
+            document, options
         )
-    except (jsonld.JsonLdError, RecursionError, OverflowError, TypeError) as error:
+    except (
+        jsonld.JsonLdError,
+        RecursionError,
+        OverflowError,
+        TypeError,
+        ValueError,
+    ) as error:
         if callback_failure:
             if callback_failure[0] is error:
                 raise
@@ -96,7 +97,7 @@ def expand_document(
                 if failure is error:
                     raise
                 raise failure from error
-        if isinstance(error, TypeError):
+        if isinstance(error, (TypeError, ValueError)):
             raise ResourceError(
                 "Maintained JSON-LD expansion failed without a semantic input "
                 "diagnostic: " + str(error)
