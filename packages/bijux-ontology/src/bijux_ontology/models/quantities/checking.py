@@ -1,6 +1,7 @@
 """Exact selected-record quantity checks using one prepared native unit engine."""
 
 import json
+from collections.abc import Mapping
 from decimal import Decimal
 from sys import getsizeof
 from threading import RLock
@@ -31,7 +32,7 @@ from bijux_ontology.models.value_constraints.checking import application_matches
 from bijux_ontology.rdf.literals.checking import check_literal
 
 from .conversion import _DimensionMismatch, _Unavailable, convert_scalar
-from .types import QuantityCheck, QuantityContract, UnitBinding
+from .types import QuantityCheck, QuantityChecks, QuantityContract, UnitBinding
 
 
 class PreparedQuantities:
@@ -93,6 +94,22 @@ class PreparedQuantities:
         """Check actual selected fields with the caller's cumulative allowance."""
         return check_quantity(
             self, record, contract, convert=convert, limits=limits, budget=budget
+        )
+
+    def check_many(
+        self,
+        record: object,
+        contracts: Mapping[str, QuantityContract],
+        *,
+        convert: bool = False,
+        limits: Limits | None = None,
+        budget: Budget | None = None,
+    ) -> QuantityChecks:
+        """Check named fields once and optionally publish a joint candidate."""
+        from .records import check_quantities
+
+        return check_quantities(
+            self, record, contracts, convert=convert, limits=limits, budget=budget
         )
 
 

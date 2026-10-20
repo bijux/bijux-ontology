@@ -1,6 +1,7 @@
 """Explicit unit bindings, selected quantity contracts and owned results."""
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -58,6 +59,30 @@ class QuantityCheck:
     @property
     def converted(self) -> object:
         """Return only a complete, intrinsically checked conversion candidate."""
+        return (
+            json.loads(self.converted_json)
+            if self.converted_json is not None and self.report.verified
+            else None
+        )
+
+
+@dataclass(frozen=True)
+class QuantityChecks:
+    """Independent named outcomes beside one all-or-nothing converted record."""
+
+    source_json: str | None
+    checks: Mapping[str, QuantityCheck]
+    converted_json: str | None
+    report: Report
+
+    @property
+    def source(self) -> object:
+        """Return a fresh captured original without exposing a mutable alias."""
+        return json.loads(self.source_json) if self.source_json is not None else None
+
+    @property
+    def converted(self) -> object:
+        """Expose only a jointly rechecked complete conversion candidate."""
         return (
             json.loads(self.converted_json)
             if self.converted_json is not None and self.report.verified
