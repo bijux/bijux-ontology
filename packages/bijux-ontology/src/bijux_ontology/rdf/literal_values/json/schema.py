@@ -8,7 +8,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
-from bijux_ontology.json.schema import DIALECT, backend, validator
+from bijux_ontology.json.schema import DIALECT, InvalidSchema, backend, validator
 from bijux_ontology.json.values import owned_json
 
 from .decoding import decimal_bound, integral
@@ -139,6 +139,15 @@ def check_schema(
         checked, complete = 1, True
     except (LimitExceeded, MemoryError, RecursionError):
         issues.exhausted("RDF JSON schema checking exceeded its operation limits")
+    except InvalidSchema:
+        issues.append(
+            Issue(
+                "literal.json_schema_invalid",
+                "JSON schema is invalid in its selected dialect",
+                anchor,
+                kind="input_error",
+            )
+        )
     except (InputError, ResourceError, ValueError, TypeError, LookupError):
         try:
             issues.append(
@@ -146,6 +155,7 @@ def check_schema(
                     "literal.json_schema_unverified",
                     "Requested schema needs bijux-ontology[jsonschema] and the "
                     "finite exact-number 2020-12 profile",
+                    anchor,
                     kind="unverified",
                 )
             )
