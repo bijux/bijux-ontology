@@ -8,6 +8,7 @@ from rdflib import URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology.absence import ABSENT, Absent
+from bijux_ontology.declarations.literal_contracts import MarkupLiteralContract
 from bijux_ontology.declarations.resource_roles import (
     ResourceKind,
     ResourceRole,
@@ -42,6 +43,11 @@ from bijux_ontology.json.values import (
     string_value,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
+from bijux_ontology.rdf.literal_values.json.types import (
+    JsonLiteralContract,
+    JsonRequirement,
+)
+from bijux_ontology.rdf.literal_values.markup.types import MarkupCanonicalization
 from bijux_ontology.rdf.literals.checking import check_literal
 
 
@@ -362,6 +368,7 @@ class _Decoder:
                                 "reverse",
                                 "emission",
                                 "output",
+                                "literal_contract",
                             },
                             location="",
                             message="Unknown declaration keys",
@@ -389,6 +396,10 @@ class _Decoder:
                                 key=self._optional(field.get("key")),
                                 optional=boolean_value(field.get("optional", False)),
                                 output=self._output(field.get("output")),
+                                literal_contract=self._literal_contract(
+                                    field.get("literal_contract")
+                                ),
+                                budget=self.budget,
                                 location=self._string(
                                     field.get(
                                         "location",
@@ -570,4 +581,84 @@ class _Decoder:
             maximum=maximum,
             scenarios=tuple(scenarios),
             closed=boolean_value(data.get("closed", False)),
+        )
+
+    def _literal_contract(
+        self, value: object
+    ) -> JsonLiteralContract | MarkupLiteralContract | None:
+        """Decode selected opaque obligations without deriving them from datatype."""
+        if value is None:
+            return None
+        data = self._object(value, location="literal_contract")
+        kind = self._string(data.get("kind"))
+        if kind == "markup":
+            known_keys(
+                data,
+                {"kind", "canonicalization", "expected"},
+                location="literal_contract",
+            )
+            return MarkupLiteralContract(
+                cast(
+                    MarkupCanonicalization | None,
+                    self._optional(data.get("canonicalization")),
+                ),
+                self._sample(data["expected"])
+                if data.get("expected") is not None
+                else None,
+                budget=self.budget,
+            )
+        if kind != "json":
+            raise InputError("Select a JSON or markup literal contract")
+        known_keys(
+            data,
+            {"kind", "requirements", "schema", "dialect"},
+            location="literal_contract",
+        )
+        requirements = []
+        for item in self._array(data.get("requirements", [])):
+            requirement = self._object(item, location="literal_contract.requirements")
+            known_keys(
+                requirement,
+                {
+                    "path",
+                    "kind",
+                    "expected_json",
+                    "minimum",
+                    "maximum",
+                    "min_items",
+                    "max_items",
+                },
+                location="literal_contract.requirements",
+            )
+            bounds = self._constraints(
+                {key: requirement.get(key) for key in ("minimum", "maximum")}
+            )
+            assert bounds is not None
+            requirements.append(
+                JsonRequirement(
+                    cast(
+                        tuple[str | int, ...], self._array(requirement.get("path", []))
+                    ),
+                    kind=cast(
+                        Literal[
+                            "object",
+                            "array",
+                            "string",
+                            "integer",
+                            "number",
+                            "boolean",
+                            "null",
+                        ]
+                        | None,
+                        self._optional(requirement.get("kind")),
+                    ),
+                    expected_json=self._optional(requirement.get("expected_json")),
+                    minimum=bounds.minimum,
+                    maximum=bounds.maximum,
+                    min_items=cast(int | None, requirement.get("min_items")),
+                    max_items=cast(int | None, requirement.get("max_items")),
+                )
+            )
+        return JsonLiteralContract(
+            tuple(requirements), data.get("schema"), self._optional(data.get("dialect"))
         )

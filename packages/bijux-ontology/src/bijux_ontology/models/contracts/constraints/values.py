@@ -262,6 +262,8 @@ def branch_issues(
                 budget,
                 encoded=encoded and declared_datatype is None,
                 datatype_registry=datatype_registry,
+                opaque_profile=field.literal_contract is not None
+                and regime == "application",
             )
         )
     else:

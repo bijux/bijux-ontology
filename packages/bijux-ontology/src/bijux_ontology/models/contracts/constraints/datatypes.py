@@ -29,6 +29,7 @@ def datatype_issues(
     *,
     encoded: bool = False,
     datatype_registry: DatatypeRegistry | None = None,
+    opaque_profile: bool = False,
 ) -> list[Issue]:
     """Compare declared literal ranges under the original datatype regime."""
     datatype = (
@@ -37,6 +38,7 @@ def datatype_issues(
     issues: list[Issue] = []
     if (
         not encoded
+        and not opaque_profile
         and datatype
         and datatype_relation(
             datatype,
@@ -59,6 +61,10 @@ def datatype_issues(
     for required in ranges:
         budget.consume("work")
         if required in (RDFS.Literal, RDFS.Resource):
+            continue
+        # A selected application content profile checks the same physical
+        # datatype; it supplies no cross-datatype or general OWL relation.
+        if opaque_profile and datatype == str(required):
             continue
         expected = (
             str(required) if isinstance(required, URIRef) else "anonymous expression"

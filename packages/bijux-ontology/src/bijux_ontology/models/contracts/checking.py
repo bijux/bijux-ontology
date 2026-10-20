@@ -29,6 +29,7 @@ from bijux_ontology.models.contracts.propagation import ModelContracts
 from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.direction import project_direction
 from bijux_ontology.models.value_constraints.checking import retain_enumeration_report
+from bijux_ontology.models.value_constraints.literals import check_field_literal
 from bijux_ontology.owl.obligations import (
     ObligationResult,
     OntologyObligation,
@@ -36,7 +37,7 @@ from bijux_ontology.owl.obligations import (
 )
 from bijux_ontology.owl.relations.classes import ClassContracts
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.literals.checking import Regime, check_literal
+from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
@@ -144,9 +145,10 @@ def check_models(
                                 )
                             continue
                         issues.extend(
-                            check_literal(
+                            check_field_literal(
                                 sample,
-                                location=sample_location,
+                                field.literal_contract,
+                                where=sample_location,
                                 datatype_registry=datatype_registry,
                                 budget=budget,
                             ).issues

@@ -98,6 +98,7 @@ def check_entity(
                     state.native_literals,
                     state.direction_check,
                     state.datatype_registry,
+                    field.literal_contract,
                 )
                 state.checked += result.checked
                 state.issues.extend(result.issues)
