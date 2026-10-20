@@ -3,6 +3,11 @@
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 
+from bijux_ontology.declarations.bindings import (
+    BindingIdentity,
+    BindingObservation,
+    ContractEvidence,
+)
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import (
     AcceptancePolicy,
@@ -23,11 +28,12 @@ class ContractObligation:
     """
 
     name: str
-    check: Callable[[], Report] | None
+    check: Callable[[], Report | ContractEvidence] | None
     required: bool = True
     minimum_checked: int = 1
     bindings: int | None = None
     minimum_bindings: int = 0
+    required_bindings: tuple[BindingIdentity, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name.strip():
@@ -36,6 +42,12 @@ class ContractObligation:
             raise InputError("An obligation check must be callable or absent")
         if type(self.required) is not bool:
             raise InputError("required must be a boolean")
+        if type(self.required_bindings) is not tuple or any(
+            not isinstance(item, BindingIdentity) for item in self.required_bindings
+        ):
+            raise InputError("Required bindings must be immutable explicit identities")
+        if len(set(self.required_bindings)) != len(self.required_bindings):
+            raise InputError("Required binding identities must be unique")
         for count in (
             self.minimum_checked,
             self.minimum_bindings,
@@ -54,6 +66,7 @@ class ContractResult:
     report: Report
     raw_reports: tuple[tuple[str, Report], ...]
     policy: AcceptancePolicy
+    observed_bindings: tuple[tuple[str, tuple[BindingObservation, ...]], ...] = ()
 
     @property
     def accepted(self) -> bool:
@@ -85,12 +98,18 @@ def _named_report(report: Report, name: str) -> Report:
     )
 
 
-def _run_obligation(obligation: ContractObligation) -> tuple[Report, Report]:
+def _run_obligation(
+    obligation: ContractObligation,
+) -> tuple[Report, Report, tuple[BindingObservation, ...]]:
     if obligation.check is None:
         absent = Report(obligation.name, allow_empty=not obligation.required)
-        return absent, absent
+        return absent, absent, ()
     try:
-        report = obligation.check()
+        evidence = obligation.check()
+        observations = (
+            evidence.bindings if isinstance(evidence, ContractEvidence) else ()
+        )
+        report = evidence.report if isinstance(evidence, ContractEvidence) else evidence
         if not isinstance(report, Report):
             raise InputError("An obligation must return a Report")
     except (InputError, OSError, UnicodeError) as error:
@@ -108,8 +127,20 @@ def _run_obligation(obligation: ContractObligation) -> tuple[Report, Report]:
                 ),
             ),
         )
-        return unavailable, unavailable
+        return unavailable, unavailable, ()
     coverage = []
+    completed = {item.identity for item in observations if item.completed}
+    for identity in obligation.required_bindings:
+        if identity not in completed:
+            coverage.append(
+                Issue(
+                    "contract.binding_missing",
+                    "Required application binding was not completely checked",
+                    obligation.name,
+                    kind="unverified",
+                    expected=repr((identity.owner, identity.path)),
+                )
+            )
     for label, actual, minimum in (
         ("comparisons", report.checked, obligation.minimum_checked),
         ("bindings", obligation.bindings, obligation.minimum_bindings),
@@ -125,15 +156,22 @@ def _run_obligation(obligation: ContractObligation) -> tuple[Report, Report]:
                     actual=str(actual),
                 )
             )
-    return report, Report(
-        obligation.name,
-        report.checked,
-        tuple(coverage),
-        allow_empty=not obligation.required,
-        requested=report.requested,
-        complete=report.complete and not coverage,
-        regime="required-contract",
-        children=(_named_report(report, obligation.name),),
+    return (
+        report,
+        Report(
+            obligation.name,
+            report.checked,
+            tuple(coverage),
+            allow_empty=not obligation.required,
+            requested=report.requested,
+            complete=report.complete and not coverage,
+            regime="required-contract",
+            children=(
+                _named_report(report, obligation.name),
+                *(_named_report(item.report, obligation.name) for item in observations),
+            ),
+        ),
+        observations,
     )
 
 
@@ -158,7 +196,8 @@ def check_contract(
         raise InputError("Required contract exceptions must identify exact issues")
     reports = tuple((item.name, *_run_obligation(item)) for item in selected)
     return ContractResult(
-        combine_reports("contract", *(report for _, _, report in reports)),
-        tuple((name, raw) for name, raw, _ in reports),
+        combine_reports("contract", *(report for _, _, report, _ in reports)),
+        tuple((name, raw) for name, raw, _, _ in reports),
         acceptance,
+        tuple((name, observed) for name, _, _, observed in reports),
     )
