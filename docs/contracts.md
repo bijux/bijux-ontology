@@ -1893,6 +1893,11 @@ profile. Use a separate environment from `[oak]`: their native dependencies
 require incompatible chardet versions. The workspace lock declares that conflict
 and installed-package checks exercise both profiles with their real dependencies.
 Workspace development requires uv 0.13.1 or later to resolve those profiles correctly.
+An OAK host can explicitly call `prepare_frictionless_backend(python,
+work_directory=...)`, then pass that admitted `backend` to `extract_package`.
+Install the same core wheel and `[frictionless]` in that selected interpreter;
+admission checks native version and exact shipped worker identity without installing
+or discovering anything. Omitting `backend` retains the host-interpreter path.
 `interfaces.adapters.frictionless.extract_package` consumes an unchanged inline
 descriptor, exactly supplied package-relative bytes, explicit column bindings and
 an existing work directory. The owned worker runs actual native typing, missing

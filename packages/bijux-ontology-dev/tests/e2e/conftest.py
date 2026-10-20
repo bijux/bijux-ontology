@@ -240,3 +240,16 @@ def installed_reasoning(
     )
     run(["uv", "pip", "check", "--python", str(python)], work)
     return python, work, env
+
+
+@pytest.fixture(scope="session")
+def installed_oak(
+    distribution: tuple[Path, Path, dict[str, str]],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[Path, Path, dict[str, str]]:
+    """Expose the OAK integration without its incompatible native package extra."""
+    return _install_distribution(
+        distribution,
+        tmp_path_factory.mktemp("installed-oak"),
+        extras=("oak",),
+    )

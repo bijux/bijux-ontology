@@ -6,7 +6,7 @@ import platform
 import sys
 from decimal import Decimal
 from importlib.metadata import version
-from typing import cast
+from typing import Any, cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget
@@ -14,6 +14,7 @@ from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json
 
+from .identity import worker_identity
 from .profile import array, object_value, text
 
 
@@ -54,10 +55,8 @@ def _append(
     target.append(value)
 
 
-def _run(
-    request: dict[str, object], reply: dict[str, object], budget: Budget, cap: int
-) -> None:
-    """Validate the unchanged original descriptor, then stream actual typed rows."""
+def _native(reply: dict[str, object]) -> tuple[Any, Any]:
+    """Qualify the actual installed native framework before capability or reading."""
     try:
         importlib.import_module("frictionless")
         importlib.import_module("frictionless.resources")
@@ -77,6 +76,14 @@ def _run(
         "python": platform.python_version(),
         "standard": "v1",
     }
+    return Package, TableResource
+
+
+def _run(
+    request: dict[str, object], reply: dict[str, object], budget: Budget, cap: int
+) -> None:
+    """Validate the unchanged original descriptor, then stream actual typed rows."""
+    Package, TableResource = _native(reply)
     descriptor = object_value(request["descriptor"])
     package = Package(descriptor, basepath=text(request["directory"]))
     if Package.effective_datapackage_version(descriptor, None) != "v1":
@@ -172,6 +179,9 @@ def process_request(payload: bytes, cap: int) -> bytes:
     }
     try:
         request = object_value(decode_json(payload, max_bytes=cap))
+        qualified = "worker" in request or request.get("action") == "capability"
+        if qualified:
+            reply["worker"] = None
         budget = ControlBudget(
             Limits(**cast(dict[str, int], object_value(request["limits"]))),
             request["allowances"],
@@ -183,7 +193,21 @@ def process_request(payload: bytes, cap: int) -> bytes:
         maximum = request["max_errors"]
         if type(maximum) is not int or maximum <= 0:
             raise InputError("Invalid package diagnostic cap")
-        _run(request, reply, budget, output_cap)
+        if qualified:
+            identity = worker_identity(budget)
+            reply["worker"] = identity
+            if "worker" in request and request["worker"] != identity:
+                raise ResourceError(
+                    "Native package worker identity differs from its admission"
+                )
+        action = request.get("action", "extract")
+        if action == "capability":
+            _native(reply)
+            reply.update(status="completed", valid=True, complete=True)
+        elif action == "extract":
+            _run(request, reply, budget, output_cap)
+        else:
+            raise InputError("Unsupported native package action")
         size = json_bound(reply, budget) + 1024
         budget.consume("bytes", 4 * size)
         budget.consume("work", size)

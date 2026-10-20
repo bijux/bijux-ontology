@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
+from pathlib import Path
 from typing import Literal
 
 from rdflib import Literal as RdfLiteral
@@ -111,3 +112,28 @@ class PackageExtraction:
     native_report: Report
     check_reports: tuple[Report, ...]
     report: Report
+
+
+@dataclass(frozen=True, init=False)
+class FrictionlessBackend:
+    """An explicitly qualified interpreter and the exact installed worker identity."""
+
+    python: Path
+    python_version: str
+    worker_sha256: str
+
+    def __init__(self) -> None:
+        """Require native admission through prepare_frictionless_backend."""
+        raise InputError(
+            "Use prepare_frictionless_backend with an explicit interpreter"
+        )
+
+    @classmethod
+    def _admitted(
+        cls, python: Path, python_version: str, digest: str
+    ) -> "FrictionlessBackend":
+        instance = object.__new__(cls)
+        object.__setattr__(instance, "python", python)
+        object.__setattr__(instance, "python_version", python_version)
+        object.__setattr__(instance, "worker_sha256", digest)
+        return instance
