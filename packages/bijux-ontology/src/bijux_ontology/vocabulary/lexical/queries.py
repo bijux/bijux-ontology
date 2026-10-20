@@ -142,6 +142,8 @@ def _query(
         operation.consume("bytes", 128 + 32 * limit)
         keys: list[str] = []
         if typo:
+            if index._deletions is None:
+                raise InputError("One-edit suggestions require prepare_typo_index")
             found: set[str] = set()
             for variant in _variants(compared, operation):
                 operation.consume("work", len(variant) + 1)

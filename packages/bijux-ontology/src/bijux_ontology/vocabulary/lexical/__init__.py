@@ -1,7 +1,7 @@
 """Owned lexical autocomplete and explicitly bounded advisory alternatives."""
 
 from .annotation import TextAnnotation, TextMention, annotate_text
-from .preparation import prepare_lexical_index
+from .preparation import prepare_lexical_index, prepare_typo_index
 from .queries import autocomplete, suggest
 from .types import LexicalIndex, LexicalPreparation, LexicalResults, LexicalSuggestion
 
@@ -15,5 +15,6 @@ __all__ = [
     "annotate_text",
     "autocomplete",
     "prepare_lexical_index",
+    "prepare_typo_index",
     "suggest",
 ]
