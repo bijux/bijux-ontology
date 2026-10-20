@@ -1,10 +1,8 @@
 """Actual serialisation is checked separately from hypothetical field types."""
 
 from copy import deepcopy
-from typing import Annotated
 
 import pytest
-from pydantic import BaseModel, field_serializer
 from rdflib.namespace import XSD
 
 from bijux_ontology.declarations.types import FieldDeclaration as Field
@@ -12,51 +10,11 @@ from bijux_ontology.declarations.types import ModelDeclaration as Model
 from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Limits
-from bijux_ontology.interfaces.adapters.contracts import RdfField
-from bijux_ontology.interfaces.adapters.pydantic import model_declarations
 from bijux_ontology.json.paths import SourcePath, at_path
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.types import ModelUsage
 
 EX = "https://example.org/"
-
-
-def test_real_serializer_output_is_compared_with_its_explicit_contract() -> None:
-    class Study(BaseModel):
-        title: Annotated[
-            str,
-            RdfField(
-                EX + "title",
-                (Value("literal", str(XSD.string)),),
-                emission="guaranteed",
-                output_contract=True,
-            ),
-        ]
-
-        @field_serializer("title")
-        def title_length(self, value: str) -> int:
-            return len(value)
-
-    extracted = model_declarations({Study: (EX + "Study",)})
-    document = {
-        "@context": {"@vocab": EX},
-        "@type": "Study",
-        **Study(title="Example").model_dump(),
-    }
-    before = document.copy()
-    report = check_emission(
-        document,
-        extracted.declarations,
-        [ModelUsage(extracted.declarations[0].identifier)],
-    )
-    assert [issue.code for issue in report.issues] == ["emission.value_mismatch"]
-    assert document == before
-    document["title"] = "Example"
-    assert check_emission(
-        document,
-        extracted.declarations,
-        [ModelUsage(extracted.declarations[0].identifier)],
-    ).verified
 
 
 def test_each_mixed_alternative_value_and_list_item_is_checked() -> None:

@@ -13,8 +13,8 @@ import pytest
 
 @pytest.mark.timeout(900)
 def test_installed_builders_qualify_shipped_java_outside_the_checkout(
-    distribution: tuple[Path, Path, dict[str, str]],
-    installed: tuple[Path, Path, dict[str, str]],
+    adapters_distribution: tuple[Path, Path, dict[str, str]],
+    installed_adapters: tuple[Path, Path, dict[str, str]],
 ) -> None:
     """Qualify both builders through actual positive and negative native checks."""
     maven, java = (
@@ -23,7 +23,8 @@ def test_installed_builders_qualify_shipped_java_outside_the_checkout(
     )
     if not maven or not java:
         pytest.skip("Native source builds require explicit Maven and JDK executables")
-    python, work, environment = installed
+    distribution = adapters_distribution
+    python, work, environment = installed_adapters
     root = Path(__file__).resolve().parents[4]
     output = work / "reasoning-distribution"
 
@@ -81,7 +82,7 @@ def test_installed_builders_qualify_shipped_java_outside_the_checkout(
     run(["uv", "pip", "check", "--python", str(python)])
     dependencies = Path(os.environ.get("BIJUX_BUILD_DEPENDENCIES", str(work / "maven")))
     for package, source_java in (
-        ("bijux_ontology.interfaces.adapters.jena.build", distribution[1] / "java"),
+        ("bijux_ontology_adapters.jena.build", distribution[1] / "java"),
         ("bijux_ontology_reasoning.backend.owlapi.build", source / "java"),
     ):
         name = "jena" if "jena" in package else "owlapi"

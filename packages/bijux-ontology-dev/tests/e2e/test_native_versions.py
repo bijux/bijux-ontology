@@ -10,19 +10,45 @@ import pytest
 def test_supported_native_releases_execute_original_feature_contracts(
     installed_native_versions: tuple[Path, Path, dict[str, str]],
     distribution: tuple[Path, Path, dict[str, str]],
+    adapters_distribution: tuple[Path, Path, dict[str, str]],
 ) -> None:
     python, work, environment = installed_native_versions
     _, source, _ = distribution
     tests = source / "tests/functional"
+    adapter_tests = adapters_distribution[1] / "tests/functional"
     cases = (
-        "data/test_analysis.py::test_enrichment_matches_direct_native_fixed_family_and_changed_background",
-        "interfaces/adapters/test_arrow_records.py::test_real_two_batches_match_rdf_oracle_and_locate_second_batch_bad_term",
-        "interfaces/adapters/test_arrow_records.py::test_declared_null_nan_and_no_guessed_output_types",
-        "adapters/test_biolink.py::test_real_official_qualified_example_preserves_full_statement",
-        "adapters/test_biolink.py::test_qualifier_predicate_and_endpoint_mutations_are_not_hidden",
-        "adapters/test_biolink.py::test_actual_published_releases_change_the_same_qualifier_context",
-        "shex/test_validation.py::test_recursive_native_results_and_changed_descendant",
-        "shex/test_validation.py::test_repeated_exact_terms_native_datatypes_and_capacity",
+        (
+            tests / "data/test_analysis.py",
+            "test_enrichment_matches_direct_native_fixed_family_and_changed_background",
+        ),
+        (
+            adapter_tests / "arrow/test_records.py",
+            "test_real_two_batches_match_rdf_oracle_and_locate_second_batch_bad_term",
+        ),
+        (
+            adapter_tests / "arrow/test_records.py",
+            "test_declared_null_nan_and_no_guessed_output_types",
+        ),
+        (
+            adapter_tests / "biolink/test_checking.py",
+            "test_real_official_qualified_example_preserves_full_statement",
+        ),
+        (
+            adapter_tests / "biolink/test_checking.py",
+            "test_qualifier_predicate_and_endpoint_mutations_are_not_hidden",
+        ),
+        (
+            adapter_tests / "biolink/test_checking.py",
+            "test_actual_published_releases_change_the_same_qualifier_context",
+        ),
+        (
+            tests / "shex/test_validation.py",
+            "test_recursive_native_results_and_changed_descendant",
+        ),
+        (
+            tests / "shex/test_validation.py",
+            "test_repeated_exact_terms_native_datatypes_and_capacity",
+        ),
     )
     result = subprocess.run(
         [
@@ -39,7 +65,7 @@ def test_supported_native_releases_execute_original_feature_contracts(
             "--basetemp=" + str(work / "native-results"),
             "-o",
             "cache_dir=" + str(work / "pytest-cache"),
-            *(str(tests / case) for case in cases),
+            *(str(path) + "::" + selector for path, selector in cases),
         ],
         cwd=work,
         env=environment,

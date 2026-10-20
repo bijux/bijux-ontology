@@ -9,6 +9,12 @@ from types import FrameType
 from typing import cast
 
 import pytest
+from rdflib import Dataset, URIRef
+from rdflib.namespace import OWL, RDF, RDFS
+
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology_reasoning.axioms.types import (
     DataProperty,
     NamedEntity,
@@ -30,12 +36,6 @@ from bijux_ontology_reasoning.inference.sessions import (
     ReasoningSession,
     prepare_reasoning_theory,
 )
-from rdflib import Dataset, URIRef
-from rdflib.namespace import OWL, RDF, RDFS
-
-from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.sources.loading import prepare_rdf
-from bijux_ontology.rdf.sources.types import RdfSource
 
 _SOURCE = """Ontology(<urn:relationships>
  Declaration(Class(<urn:A>)) Declaration(Class(<urn:B>))

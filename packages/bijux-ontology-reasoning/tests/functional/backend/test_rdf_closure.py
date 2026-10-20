@@ -7,11 +7,6 @@ import os
 from pathlib import Path
 
 import pytest
-from bijux_ontology_reasoning.axioms import ClassAssertion, NamedEntity
-from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.documents.sources.rdf import capture_rdf_closure
-from bijux_ontology_reasoning.inference.consistency import check_consistency
-from bijux_ontology_reasoning.inference.entailment import check_entailments
 from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
@@ -22,6 +17,11 @@ from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology_reasoning.axioms import ClassAssertion, NamedEntity
+from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
+from bijux_ontology_reasoning.documents.sources.rdf import capture_rdf_closure
+from bijux_ontology_reasoning.inference.consistency import check_consistency
+from bijux_ontology_reasoning.inference.entailment import check_entailments
 
 
 def _root() -> Graph:

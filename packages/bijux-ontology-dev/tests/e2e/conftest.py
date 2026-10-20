@@ -13,23 +13,16 @@ from pathlib import Path
 import pytest
 
 
-@pytest.fixture(scope="session")
-def distribution(
-    tmp_path_factory: pytest.TempPathFactory,
+def _build_distribution(
+    package: str, work: Path, env: dict[str, str]
 ) -> tuple[Path, Path, dict[str, str]]:
+    """Build the installed wheel from that owner's unpacked source archive."""
     root = Path(__file__).resolve().parents[4]
-    assert (root / "packages/bijux-ontology/LICENSE").read_bytes() == (
+    assert (root / "packages" / package / "LICENSE").read_bytes() == (
         root / "LICENSE"
     ).read_bytes()
-    work = tmp_path_factory.mktemp("installed-package")
-    env = dict(os.environ)
-    env.pop("PYTHONPATH", None)
-    env.pop("MYPYPATH", None)
-    env["UV_CACHE_DIR"] = str(root / "artifacts/cache/uv")
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
-    env["PYTHONNOUSERSITE"] = "1"
 
-    def run(arguments: list[str], cwd: Path = root) -> None:
+    def run(arguments: list[str], cwd: Path) -> None:
         subprocess.run(arguments, cwd=cwd, env=env, check=True, capture_output=True)
 
     run(
@@ -42,7 +35,7 @@ def distribution(
             "--outdir",
             str(work / "dist"),
         ],
-        cwd=root / "packages/bijux-ontology",
+        root / "packages" / package,
     )
     archive = next((work / "dist").glob("*.tar.gz"))
     source = work / "source"
@@ -66,10 +59,47 @@ def distribution(
             "--outdir",
             str(work / "dist"),
         ],
-        cwd=unpacked,
+        unpacked,
     )
-    wheel = next((work / "dist").glob("*.whl"))
-    return wheel, unpacked, env
+    return next((work / "dist").glob("*.whl")), unpacked, env
+
+
+@pytest.fixture(scope="session")
+def distribution(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[Path, Path, dict[str, str]]:
+    """Build the core independently of every adapter and reasoning distribution."""
+    root = Path(__file__).resolve().parents[4]
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+    env.pop("MYPYPATH", None)
+    env["UV_CACHE_DIR"] = str(root / "artifacts/cache/uv")
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONNOUSERSITE"] = "1"
+    return _build_distribution(
+        "bijux-ontology", tmp_path_factory.mktemp("installed-package"), env
+    )
+
+
+@pytest.fixture(scope="session")
+def adapters_distribution(
+    distribution: tuple[Path, Path, dict[str, str]],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[Path, Path, dict[str, str]]:
+    """Build the optional adapter wheel independently from its own sdist."""
+    result = _build_distribution(
+        "bijux-ontology-adapters",
+        tmp_path_factory.mktemp("installed-adapters-package"),
+        distribution[2],
+    )
+    with zipfile.ZipFile(result[0]) as wheel:
+        names = wheel.namelist()
+        assert "bijux_ontology_adapters/py.typed" in names
+        assert "bijux_ontology_adapters/obo_graphs/schema.json" in names
+        assert "bijux_ontology_adapters/rdfa/worker.cjs" in names
+        assert "bijux_ontology_adapters/rdfa/node/package-lock.json" in names
+        assert "bijux_ontology_adapters/java/pom.xml" in names
+    return result
 
 
 def _install_distribution(
@@ -77,24 +107,37 @@ def _install_distribution(
     work: Path,
     *,
     extras: tuple[str, ...] = (),
+    adapters: tuple[Path, Path, dict[str, str]] | None = None,
+    adapter_extras: tuple[str, ...] = (),
 ) -> tuple[Path, Path, dict[str, str]]:
-    """Install locked dependencies separately from the local project wheel."""
+    """Install each exact local wheel with its own frozen dependency selection."""
     wheel, root, env = distribution
 
     def run(arguments: list[str], cwd: Path = root) -> None:
         subprocess.run(arguments, cwd=cwd, env=env, check=True, capture_output=True)
 
+    selections = [("bijux-ontology", extras)]
+    wheels = [wheel]
+    if adapters is not None:
+        selections.append(("bijux-ontology-adapters", adapter_extras))
+        wheels.append(adapters[0])
+    else:
+        assert not adapter_extras
     constraints = work / "runtime-requirements.txt"
+    # Resolve the selected packages together so exclusive extras retain one
+    # consistent locked dependency graph across distribution boundaries.
+    selected_extras = dict.fromkeys(
+        extra for _, values in selections for extra in values
+    )
     run(
         [
             "uv",
             "export",
             "--frozen",
             "--no-dev",
-            "--package",
-            "bijux-ontology",
+            *(argument for name, _ in selections for argument in ("--package", name)),
             "--no-emit-workspace",
-            *(argument for extra in extras for argument in ("--extra", extra)),
+            *(argument for extra in selected_extras for argument in ("--extra", extra)),
             "--format",
             "requirements-txt",
             "--output-file",
@@ -105,7 +148,6 @@ def _install_distribution(
     run(["uv", "venv", "--python", sys.executable, str(work / "env")])
     scripts = work / "env" / ("Scripts" if os.name == "nt" else "bin")
     python = scripts / ("python.exe" if os.name == "nt" else "python")
-    target = str(wheel) + ("[" + ",".join(extras) + "]" if extras else "")
     run(
         [
             "uv",
@@ -123,9 +165,10 @@ def _install_distribution(
             "pip",
             "install",
             "--offline",
+            "--no-deps",
             "--python",
             str(python),
-            target,
+            *map(str, wheels),
         ]
     )
     run(["uv", "pip", "check", "--python", str(python)])
@@ -136,6 +179,20 @@ def _install_distribution(
         encoding="utf-8",
     )
     return python, work, env
+
+
+@pytest.fixture(scope="session")
+def installed_adapters(
+    distribution: tuple[Path, Path, dict[str, str]],
+    adapters_distribution: tuple[Path, Path, dict[str, str]],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[Path, Path, dict[str, str]]:
+    """Expose core and adapters without optional framework dependencies."""
+    return _install_distribution(
+        distribution,
+        tmp_path_factory.mktemp("installed-adapters"),
+        adapters=adapters_distribution,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -164,6 +221,7 @@ def installed_jsonld(
 
 @pytest.fixture(scope="session")
 def installed_integrations(
+    adapters_distribution: tuple[Path, Path, dict[str, str]],
     distribution: tuple[Path, Path, dict[str, str]],
     tmp_path_factory: pytest.TempPathFactory,
 ) -> tuple[Path, Path, dict[str, str]]:
@@ -175,12 +233,21 @@ def installed_integrations(
     return _install_distribution(
         distribution,
         tmp_path_factory.mktemp("installed-integrations"),
-        extras=tuple(extra for extra in optional if extra != "frictionless"),
+        extras=tuple(optional),
+        adapters=adapters_distribution,
+        adapter_extras=tuple(
+            extra
+            for extra in tomllib.loads(
+                (adapters_distribution[1] / "pyproject.toml").read_text()
+            )["project"]["optional-dependencies"]
+            if extra != "frictionless"
+        ),
     )
 
 
 @pytest.fixture(scope="session")
 def installed_frictionless(
+    adapters_distribution: tuple[Path, Path, dict[str, str]],
     distribution: tuple[Path, Path, dict[str, str]],
     tmp_path_factory: pytest.TempPathFactory,
 ) -> tuple[Path, Path, dict[str, str]]:
@@ -188,7 +255,8 @@ def installed_frictionless(
     return _install_distribution(
         distribution,
         tmp_path_factory.mktemp("installed-frictionless"),
-        extras=("frictionless",),
+        adapters=adapters_distribution,
+        adapter_extras=("frictionless",),
     )
 
 
@@ -245,6 +313,7 @@ def installed_reasoning(
 
 @pytest.fixture(scope="session")
 def installed_oak(
+    adapters_distribution: tuple[Path, Path, dict[str, str]],
     distribution: tuple[Path, Path, dict[str, str]],
     tmp_path_factory: pytest.TempPathFactory,
 ) -> tuple[Path, Path, dict[str, str]]:
@@ -252,12 +321,14 @@ def installed_oak(
     return _install_distribution(
         distribution,
         tmp_path_factory.mktemp("installed-oak"),
-        extras=("oak",),
+        adapters=adapters_distribution,
+        adapter_extras=("oak",),
     )
 
 
 @pytest.fixture(scope="session", params=("baseline", "alternative"))
 def installed_native_versions(
+    adapters_distribution: tuple[Path, Path, dict[str, str]],
     request: pytest.FixtureRequest,
     distribution: tuple[Path, Path, dict[str, str]],
     tmp_path_factory: pytest.TempPathFactory,
@@ -266,7 +337,9 @@ def installed_native_versions(
     result = _install_distribution(
         distribution,
         tmp_path_factory.mktemp("installed-native-" + request.param),
-        extras=("analysis", "arrow", "biolink", "shex"),
+        extras=("analysis", "shex"),
+        adapters=adapters_distribution,
+        adapter_extras=("arrow", "biolink"),
     )
     python, work, environment = result
     releases = (

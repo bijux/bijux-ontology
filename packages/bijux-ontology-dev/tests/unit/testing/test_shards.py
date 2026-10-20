@@ -22,6 +22,7 @@ def test_groups_cover_real_make_owners_and_remain_balanced() -> None:
     assert sorted(path for group in groups for path in group) == list(files)
     assert any("/bijux-ontology/tests/" in path for path in files)
     assert any("/bijux-ontology-dev/tests/" in path for path in files)
+    assert any("/bijux-ontology-adapters/tests/" in path for path in files)
     assert groups == partition(tuple(reversed(files)), weights, count)
     costs = [sum(weights.get(path, 1.0) for path in group) for group in groups]
     assert max(costs) - min(costs) <= max(weights.get(path, 1.0) for path in files)

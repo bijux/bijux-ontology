@@ -2,7 +2,7 @@ target-version = "py311"
 line-length = 88
 respect-gitignore = true
 cache-dir = "../artifacts/root/ruff-cache"
-src = ["../packages/bijux-ontology/src", "../packages/bijux-ontology-dev/src"]
+src = ["../packages/bijux-ontology/src", "../packages/bijux-ontology-adapters/src", "../packages/bijux-ontology-reasoning/src", "../packages/bijux-ontology-dev/src"]
 extend-exclude = ["artifacts", ".bijux"]
 
 [lint]
@@ -11,4 +11,4 @@ select = ["E", "F", "I", "B", "UP", "SIM", "C4", "PIE", "RET", "ISC"]
 ignore = ["SIM905", "ISC004"]
 
 [lint.isort]
-known-first-party = ["bijux_ontology", "bijux_ontology_dev"]
+known-first-party = ["bijux_ontology", "bijux_ontology_adapters", "bijux_ontology_reasoning", "bijux_ontology_dev"]

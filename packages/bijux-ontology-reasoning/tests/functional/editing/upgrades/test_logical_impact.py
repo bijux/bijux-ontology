@@ -6,6 +6,13 @@ from pathlib import Path
 from threading import Event
 
 import pytest
+
+from bijux_ontology.declarations.types import (
+    FieldDeclaration,
+    ModelDeclaration,
+    ValueDeclaration,
+)
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology_reasoning.axioms.types import (
     DataProperty,
     NamedEntity,
@@ -23,13 +30,6 @@ from bijux_ontology_reasoning.editing.upgrades import (
     SeparationContract,
     assess_logical_upgrade,
 )
-
-from bijux_ontology.declarations.types import (
-    FieldDeclaration,
-    ModelDeclaration,
-    ValueDeclaration,
-)
-from bijux_ontology.execution.limits import Budget, Limits
 
 A, B, C, D = (NamedEntity("class", "urn:" + name) for name in ("A", "B", "C", "D"))
 DECLARATIONS = """

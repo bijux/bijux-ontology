@@ -23,9 +23,9 @@ from rdflib.namespace import OWL, RDF, RDFS, XSD
 import bijux_ontology
 from bijux_ontology.declarations.bindings import BindingIdentity
 from bijux_ontology.declarations.types import ValueDeclaration
-from bijux_ontology.interfaces.adapters.contracts import RdfField
-from bijux_ontology.interfaces.adapters.namespaces import namespace_inventory
-from bijux_ontology.interfaces.adapters.pydantic import model_declarations
+from bijux_ontology_adapters.contracts import RdfField
+from bijux_ontology_adapters.namespaces import namespace_inventory
+from bijux_ontology_adapters.pydantic import model_declarations
 from bijux_ontology.interfaces.execution.executor import WorkerExecutor
 from bijux_ontology.models.contracts.checking import assess_models, check_models
 from bijux_ontology.owl.obligations import OntologyObligation

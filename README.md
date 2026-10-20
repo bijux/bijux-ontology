@@ -1,6 +1,6 @@
 # bijux-ontology
 
-Python tools for checking that application data, vocabulary declarations and ontology definitions agree. Use the typed library or CLI to inspect RDF terms, verify JSON-LD mappings, check model contracts and actual output, validate SKOS or supplied SHACL shapes, and assess ontology upgrades. Optional framework adapters extract explicit application contracts.
+Python tools for checking that application data, vocabulary declarations and ontology definitions agree. Use the typed library or CLI to inspect RDF terms, verify JSON-LD mappings, check model contracts and actual output, validate SKOS or supplied SHACL shapes, and assess ontology upgrades. The separate `bijux-ontology-adapters` distribution owns framework extraction and domain integrations.
 
 The separate `bijux-ontology-reasoning` distribution provides Java-backed OWL profile, consistency, satisfiability and supported entailment checks. The core library's finite structural checks do not replace a reasoner. Both preserve findings, incomplete work and policy acceptance as separate outcomes; neither establishes scientific truth or correctness of unseen application output.
 
@@ -18,8 +18,9 @@ Install the resulting wheel into a consumer environment:
 
 ```sh
 uv pip install artifacts/bijux-ontology/build/bijux_ontology-0.1.0-py3-none-any.whl
-# Optional real integrations:
-uv pip install 'artifacts/bijux-ontology/build/bijux_ontology-0.1.0-py3-none-any.whl[jsonld,shacl,pydantic,linkml]'
+# JSON-LD/SHACL capabilities and optional framework integrations:
+uv pip install 'artifacts/bijux-ontology/build/bijux_ontology-0.1.0-py3-none-any.whl[jsonld,shacl]' \
+  'artifacts/bijux-ontology-adapters/build/bijux_ontology_adapters-0.1.0-py3-none-any.whl[pydantic,linkml]'
 ```
 
 Canonical targets use the pinned `bijux-std` implementations. `make bijux-std-checks` verifies accepted shared components and verifier inputs; `make check-python-baseline` checks Python configuration. This repository is not registered in the upstream standards manifest. Its CI profile verifies alignment locally; formal registration will replace that profile with canonical workflow projection. Owner-authored PRs require the standard `owner-self-signoff` label. Generated files stay under `artifacts/`.
@@ -76,7 +77,7 @@ Supply contexts and imports explicitly. Default loaders never fetch missing reso
 
 See [migration notes](docs/migration.md) and [consumer integration](docs/integration.md).
 
-The uv workspace contains the core library, optional reasoning library and internal tooling in `packages/bijux-ontology`, `packages/bijux-ontology-reasoning` and `packages/bijux-ontology-dev`. Each package owns its tests.
+The uv workspace contains four independently built packages: `bijux-ontology` for generic checks, `bijux-ontology-adapters` for ecosystem integrations, `bijux-ontology-reasoning` for OWL reasoning, and `bijux-ontology-dev` for repository tooling. Each package owns its source, resources and tests.
 
 ## Supported Python entry points
 
@@ -96,10 +97,11 @@ Paths in this table are relative to `bijux_ontology`. JSON-LD and SHACL operatio
 
 ## Package ownership
 
-- Python APIs live in their owning domain modules; `interfaces/cli` owns commands, `interfaces/execution` owns isolated execution, and `interfaces/adapters` owns framework extraction.
+- Python APIs live in their owning domain modules; `interfaces/cli` owns commands, `interfaces/execution` owns isolated execution, while `bijux_ontology_adapters` owns domain integrations and framework extraction in its separate distribution.
 - `execution` owns shared operation budgets, deadlines and finite input capture; `processes` owns operating-system worker lifetimes.
 - `rdf` owns native graph primitives and transformations; `jsonld` owns context processing and conversion; `owl` owns finite construct interpretation. These engines do not depend on one another's higher-level checks.
 - `documents` composes RDF and JSON-LD preparation and verified export. `vocabulary`, `models`, `skos`, `data` and `shacl` own their respective checks; `declarations` owns application contracts.
+- `shacl.native` owns prepared native validation requests and result adoption; adapters own their external runtimes.
 - `workflows` composes project jobs, ontology checks and consumer upgrade assessments. Semantic engines do not import workflows or interfaces.
 
 Tests separate focused unit cases, functional capability contracts and installed-package E2E; generated environments and reports remain under `artifacts/`.

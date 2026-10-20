@@ -6,6 +6,12 @@ from threading import Event
 from typing import cast
 
 import pytest
+from rdflib import URIRef
+from rdflib.namespace import RDFS
+
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.rdf.sources.loading import prepare_rdf
+from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology_reasoning.axioms.types import (
     ClassComplement,
     ClassExpression,
@@ -21,12 +27,6 @@ from bijux_ontology_reasoning.inference.sessions import (
     ReasoningSession,
     prepare_reasoning_theory,
 )
-from rdflib import URIRef
-from rdflib.namespace import RDFS
-
-from bijux_ontology.execution.limits import Budget
-from bijux_ontology.rdf.sources.loading import prepare_rdf
-from bijux_ontology.rdf.sources.types import RdfSource
 
 _SOURCE = """@prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .

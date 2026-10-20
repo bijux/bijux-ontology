@@ -5,6 +5,16 @@ from pathlib import Path
 from threading import Event
 
 import pytest
+
+from bijux_ontology.declarations.types import (
+    FieldDeclaration,
+    ModelDeclaration,
+    ValueDeclaration,
+)
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.models.contracts.checking import check_models
+from bijux_ontology.rdf.sources.types import RdfSource
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology_reasoning.axioms.types import (
     NamedEntity,
     ObjectProperty,
@@ -20,16 +30,6 @@ from bijux_ontology_reasoning.extraction.mireot import (
     MireotRetention,
     extract_mireot,
 )
-
-from bijux_ontology.declarations.types import (
-    FieldDeclaration,
-    ModelDeclaration,
-    ValueDeclaration,
-)
-from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.models.contracts.checking import check_models
-from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
 EX = "https://example.org/"
 A, B, UPPER = (NamedEntity("class", EX + name) for name in ("A", "B", "Upper"))

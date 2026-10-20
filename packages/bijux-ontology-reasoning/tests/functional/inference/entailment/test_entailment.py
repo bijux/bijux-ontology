@@ -7,6 +7,11 @@ from pathlib import Path
 from threading import Event
 
 import pytest
+from rdflib import Graph, URIRef
+from rdflib.namespace import OWL, RDF, RDFS
+
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology_reasoning.axioms import (
     ClassAssertion,
     ClassComplement,
@@ -20,11 +25,6 @@ from bijux_ontology_reasoning.axioms import (
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
 from bijux_ontology_reasoning.inference.entailment import check_entailments
-from rdflib import Graph, URIRef
-from rdflib.namespace import OWL, RDF, RDFS
-
-from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.sources.loading import prepare_rdf
 
 A, B, C, D = (NamedEntity("class", "urn:" + name) for name in ("A", "B", "C", "D"))
 INDIVIDUAL, J = (NamedEntity("named_individual", "urn:" + name) for name in ("i", "j"))

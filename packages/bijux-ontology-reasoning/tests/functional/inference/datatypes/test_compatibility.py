@@ -9,6 +9,12 @@ from typing import Literal as TypingLiteral
 from typing import cast
 
 import pytest
+from rdflib import Literal
+from rdflib.namespace import XSD
+
+from bijux_ontology.declarations.types import FieldDeclaration, ValueDeclaration
+from bijux_ontology.declarations.value_constraints import ValueConstraints
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology_reasoning.axioms import (
     DatatypeFacet,
     DatatypeRestriction,
@@ -24,12 +30,6 @@ from bijux_ontology_reasoning.inference.datatypes import (
     check_datatype_fields,
     check_datatype_obligations,
 )
-from rdflib import Literal
-from rdflib.namespace import XSD
-
-from bijux_ontology.declarations.types import FieldDeclaration, ValueDeclaration
-from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.execution.limits import Budget, Limits
 
 SMALL, WIDE, FAR = (
     NamedEntity("datatype", "urn:" + name) for name in ("small", "wide", "far")

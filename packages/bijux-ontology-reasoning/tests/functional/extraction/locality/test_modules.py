@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 import pytest
+
 from bijux_ontology_reasoning.axioms.types import (
     NamedEntity,
     SubClassOf,

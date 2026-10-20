@@ -9,6 +9,9 @@ from threading import Event
 from typing import Literal, cast
 
 import pytest
+from rdflib import URIRef
+
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology_reasoning.axioms import NamedEntity, SubClassOf
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
@@ -19,9 +22,6 @@ from bijux_ontology_reasoning.inference.explanations import (
     ExplanationQuestion,
     explain_reasoning,
 )
-from rdflib import URIRef
-
-from bijux_ontology.execution.limits import Budget, Limits
 
 A, B, C = (NamedEntity("class", "urn:" + name) for name in ("A", "B", "C"))
 DECLARATIONS = """

@@ -28,7 +28,7 @@ export TMPDIR="$PWD/artifacts/tmp" PIP_CACHE_DIR="$PWD/artifacts/pip-cache"
 git clone https://github.com/BioImage-Archive/bia-ro-crate-validator.git artifacts/bia-source
 git -C artifacts/bia-source checkout --detach 17e0a80ac02ef1f4878aff54cd415c040129d0d5
 python3.13 -m venv artifacts/bia-host
-artifacts/bia-host/bin/python -m pip install './packages/bijux-ontology[pydantic]' artifacts/bia-source
+artifacts/bia-host/bin/python -m pip install './packages/bijux-ontology' './packages/bijux-ontology-adapters[pydantic]' artifacts/bia-source
 python3.13 -m venv artifacts/bia-worker
 artifacts/bia-worker/bin/python -m pip install './packages/bijux-ontology[jsonld]'
 artifacts/bia-host/bin/python examples/bia_integration/consumer.py --bia-source artifacts/bia-source --worker artifacts/bia-worker/bin/python --output artifacts/bia-integration

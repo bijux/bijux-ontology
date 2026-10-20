@@ -2,7 +2,7 @@
 
 The package is still unpublished. These changes replace the initial local implementation; they are not a claim that a public release has migrated.
 
-- CLI commands remain supported. Import Python symbols from their documented domain modules; root and `interfaces.api` convenience exports have been removed. SHACL symbols likewise live in their owning shape modules. Framework extraction lives under `interfaces.adapters`. Concrete owners are `rdf`, `jsonld`, `owl`, `documents`, `vocabulary`, `declarations`, `models`, `skos`, `data` and `shacl`. Composed checks live under `workflows`; former local module paths are not compatibility APIs.
+- CLI commands remain supported. Import Python symbols from their documented domain modules; root and `interfaces.api` convenience exports have been removed. SHACL symbols likewise live in their owning shape modules. Framework extraction lives under `bijux_ontology_adapters`. Concrete owners are `rdf`, `jsonld`, `owl`, `documents`, `vocabulary`, `declarations`, `models`, `skos`, `data` and `shacl`. Composed checks live under `workflows`; former local module paths are not compatibility APIs.
 - Owned local file inventories and revision verification live under `resources.files`, shared by disk stores and explicit native backends.
 - Shared input failures and reports live under `diagnostics`; limits and subprocess lifetimes live under `execution`. Strict JSON syntax, concrete JSON paths and offline schema validation live under `json`, independently of JSON-LD semantics. Import their concrete modules directly.
 - JSON-LD processing, immutable evidence, usage checks and expectations have distinct owners under `jsonld.processing`, `jsonld.evidence`, `jsonld.usages` and `jsonld.contracts`. Finite OWL encoding checks and asserted relations live under `owl.encoding` and `owl.relations`. Declaration classes are imported from their concrete modules; the eager declaration export inventory has been removed.
@@ -38,3 +38,13 @@ Common corrections:
 | `models.expression_unverified` | Relevant unsupported construct; retain the existing reasoning gate |
 
 `bijux-ontology explain CODE` gives installed corrective guidance. Upgrade reports retain original before/after issues: a persistent finding is distinct from an introduced one, and absent prior evidence cannot prove a new break. CLI `contract_verdict` covers selected application contracts; `usage_meaning` separately reports representative context differences.
+
+## Adapter installation and imports
+
+Install `bijux-ontology-adapters` alongside core for domain formats and framework
+extraction. Its optional extras include `pydantic`, `linkml`, `fhir`, `biolink`,
+`oak`, `biosamples`, `csvw`, `frictionless` and `arrow`; these extras moved from
+core. Replace `bijux_ontology.interfaces.adapters` imports with
+`bijux_ontology_adapters`, and `bijux_ontology.data.cube` with
+`bijux_ontology_adapters.data_cube`. Core declaration and result types retain
+their original identity. No adapter compatibility bridge is installed in core.

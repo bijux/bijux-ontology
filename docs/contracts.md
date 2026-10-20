@@ -1,5 +1,8 @@
 # Contract reference
 
+Domain and framework integrations below use `bijux-ontology-adapters`; install
+its named extras there. Generic engine extras remain on `bijux-ontology`.
+
 Applications supply their own vocabulary snapshots, declarations and representative output. Use `TermDeclaration`, `ModelDeclaration`, `FieldDeclaration` and `ValueDeclaration` directly, or extract them through the optional Pydantic/LinkML adapters. The library does not discover application source or infer biological meaning. Runnable examples include ordinary dataclasses and independent catalogue workflows.
 
 Select local, import and lookup scopes deliberately. Use coverage for owned namespaces and membership checks for external terms; lookup documents must not conceal missing local declarations. A required constructor field does not prove RDF emission: declare that guarantee explicitly and check representative serialised output with `check_emission`.
@@ -9,7 +12,7 @@ Opt into closed output coverage with `ModelDeclaration(..., coverage=EmissionCov
 ## Vocabulary identifiers
 
 For finite RDFLib namespace classes, `namespace_inventory({"app.BIA": BIA})`
-from `bijux_ontology.interfaces.adapters.namespaces` retains qualified declaration
+from `bijux_ontology_adapters.namespaces` retains qualified declaration
 names and exact IRIs. Call `inventory.check(vocabulary,
 owned_namespaces=("http://bia/",))` for local membership; add
 `require_coverage=True` and `coverage_terms=selected_owned_iris` for reverse coverage.
@@ -22,7 +25,7 @@ competing canonical spellings require an explicit `canonical_prefixes` choice.
 The immutable registry separates `.iri(value)` from `.expand_curie(value)` and
 uses the longest namespace in `.compact_iri(value)` without guessing intent.
 
-`interfaces.adapters.oak.as_oak(view, registry=registry, language="en")` exposes
+`bijux_ontology_adapters.oak.as_oak(view, registry=registry, language="en")` exposes
 an owned selected view through the maintained OAK `BasicOntologyInterface`.
 Install `[oak]` on Python <3.15 for OAK 0.7.4. Core imports need no OAK package.
 Labels, aliases, definitions, asserted relationships and obsolescence retain
@@ -32,7 +35,7 @@ selected source. Incomplete metadata, unsupported inference and mutation raise
 `OakOperationError` with the required report. One budget covers each whole batch;
 an explicitly supplied shared `Budget` also spans successive calls.
 
-`interfaces.adapters.obo_graphs` reads and writes a selected OBO Graphs ontology
+`bijux_ontology_adapters.obo_graphs` reads and writes a selected OBO Graphs ontology
 with `[jsonschema]` and the bundled upstream schema. Class edges retain subclass
 or authored existential meaning; supported logical definitions and qualified
 annotations round-trip. Supply an ontology `graph_id` and exact physical graph
@@ -58,7 +61,7 @@ Unknown namespaces may be explicitly excluded. Missing rules and unsupported
 alternate recognition remain unverified, and valid accessions imply no term
 existence.
 
-`interfaces.adapters.bioregistry.read_bioregistry` imports explicitly selected
+`bijux_ontology_adapters.bioregistry.read_bioregistry` imports explicitly selected
 records from supplied bytes with a required SHA256 and revision label. Original
 records remain available; supported namespace aliases feed the existing registry.
 Use `BioregistryOverride` for local namespaces, aliases and `AccessionRule`
@@ -393,10 +396,10 @@ External references remain external, and alternate spellings establish no IRI
 equivalence. Native OBO annotation records remain separate evidence; the required
 report covers xref capture, attachment, accession and selected resolution policy.
 
-Install `[fhir]` for `interfaces.adapters.fhir.code_system.read_code_system` and
+Install `[fhir]` for `bijux_ontology_adapters.fhir.code_system.read_code_system` and
 `write_code_system`, backed by the maintained R5 model. Supply explicit reversible
 `FhirCodeBinding(FhirCodeIdentity(system, version, code), iri)` values from
-`interfaces.adapters.fhir.identity`; neither versions nor RDF IRIs are inferred.
+`bijux_ontology_adapters.fhir.identity`; neither versions nor RDF IRIs are inferred.
 Supported concepts retain hierarchy, multilingual designation qualifiers and
 code/string/integer/boolean properties. The owned vocabulary supplies ordinary
 annotation checks; its RDF labels do not represent every FHIR qualifier.
@@ -572,7 +575,7 @@ are omitted; unresolved or dynamic dependencies remain unverified. Inspect
 through faithful RDF serialization. Agreement covers supplied cases only;
 independent role exports cannot preserve shared anonymous constants across roles.
 
-`interfaces.adapters.shacl.import_shape_contracts` imports selected property
+`bijux_ontology_adapters.shacl.import_shape_contracts` imports selected property
 constraints through explicit `ShapeFieldBinding` serializer keys. Use
 `check_imported_output` for actual serialized JSON-LD or `check_imported_rdf`
 for selected native RDF. Both retain untranslated original obligations and
@@ -943,7 +946,7 @@ mappings without duplicate primitive declarations:
 
 ```python
 from bijux_ontology.declarations.types import OutputRequirement
-from bijux_ontology.interfaces.adapters.pydantic import check_instance
+from bijux_ontology_adapters.pydantic import check_instance
 
 checked = check_instance(
     catalogue,
@@ -971,11 +974,11 @@ to check one actual serialization. Whole output subsets without explicit
 `EmissionCoverage` remain unverified; sidecars preserve their independent RDF
 intent when a serializer or context changes.
 
-For LinkML, `interfaces.adapters.linkml.model_declarations(view,
+For LinkML, `bijux_ontology_adapters.linkml.model_declarations(view,
 serializer="rdflib")` qualifies the maintained schema-driven RDFLib dumper.
 The view must be import-free or contain a fully resolved local import closure.
 Identifier slots define subjects and enum meanings can emit IRIs. Use
-`interfaces.adapters.linkml_rdf.check_instance(instance, view=view,
+`bijux_ontology_adapters.linkml_rdf.check_instance(instance, view=view,
 vocabulary=ontology, options={}, class_name="Catalogue")` to retain the exact
 checked `source` and combined `report`. `RdfSerializer(view, options={})` reuses
 owned schema preparation for repeated `.check(...)` calls. Unsupported serializer
@@ -1005,7 +1008,7 @@ exclusions; context definitions, keyword aliases and opaque value interiors
 remain protected. `allowed_drops` still applies to every matching term spelling.
 
 Dataclass and TypedDict integrations use the corresponding
-`bijux_ontology.interfaces.adapters` modules’ `model_declarations`. Supply a
+`bijux_ontology_adapters` modules’ `model_declarations`. Supply a
 finite registry and explicit `RdfField` metadata: dataclasses use the `rdf`
 field metadata key, while TypedDict fields use `Annotated`. Serializer sidecars
 can describe output aliases and contracts; conflicting metadata remains visible.
@@ -1137,7 +1140,7 @@ boundary. Trusted callbacks retain their ordinary Python execution lifetime.
 ## Model and schema projections
 
 Install `[jsonschema]` to import supported offline JSON Schema 2020-12 contracts.
-`bijux_ontology.interfaces.adapters.jsonschema` exposes `SchemaModel`,
+`bijux_ontology_adapters.jsonschema` exposes `SchemaModel`,
 `model_declarations` and `check_instance`. Supply explicit RDF classes and
 `RdfField` mappings for each referenced object variant. The checks invoke the
 real serializer once with its supplied options and return the exact checked output. Set
@@ -1163,7 +1166,7 @@ lists receive fresh cells; original cells, annotations and shared-tail siblings
 remain intact. Actual after-checks and explicit accepted export use the same
 migration gates as value and graph changes.
 
-`bijux_ontology.interfaces.adapters.vocabulary_bindings.generate_vocabulary_bindings`
+`bijux_ontology_adapters.vocabulary_bindings.generate_vocabulary_bindings`
 returns candidate Python source and a required report for explicitly selected
 vocabulary IRIs. Use `names` for IRI-to-name overrides, `aliases` for additional
 name-to-IRI bindings, and `invalid_names="normalize"` to request safe identifiers.
@@ -1181,7 +1184,7 @@ absence, while known excess matches still fail. An optional `target_model` runs
 ordinary native RDF model checks on each matched owned target. These are
 application reference obligations, independent of OWL identity assertions.
 
-`bijux_ontology.interfaces.adapters.jsonschema.generation.compile_output_schema`
+`bijux_ontology_adapters.jsonschema.generation.compile_output_schema`
 compiles explicit models and root names into JSON Schema 2020-12 plus linked RDF
 mappings and annotations. `JsonRepresentation` selects native scalars, arrays or
 explicit `@list` wrappers. Inspect `translations` and the required `report` for
@@ -1304,7 +1307,7 @@ and other publication obligations use ordinary `MigrationCheck` callbacks.
 Missing checks, shared ownership and anonymous identity correspondence that
 cannot be established prevent approval. Export requires explicit acceptance.
 
-`bijux_ontology.interfaces.adapters.sdrf` connects the maintained SDRF ontology
+`bijux_ontology_adapters.sdrf` connects the maintained SDRF ontology
 validator to prepared local RDF terminology. Declare `SdrfOntology` resources with
 explicit accession and label/synonym predicates, then use
 `prepare_sdrf_terminology` and `check_sdrf(parsed_table, effective_schema, terminology)`.
@@ -1487,7 +1490,7 @@ SHACL finding correspondence and composite paths remain unsupported.
 
 ## Structured data and analysis
 
-`bijux_ontology.data.cube.check_cube` checks supplied Data Cube structures,
+`bijux_ontology_adapters.data_cube.check_cube` checks supplied Data Cube structures,
 observations, slices and code lists in one physical graph. `complete=True`
 declares the supplied observation inventory; named code-list closure is separate.
 Its owned normalized view preserves the asserted input. Inspect all IC0–IC21
@@ -1691,7 +1694,7 @@ same actual named parent. Failed base/tests reject publication; unsupported
 operations or uncertain identity remain unverified. `export_document_patch`
 returns immutable checked JSON bytes for ordinary atomic `write_export`.
 
-Use `interfaces.adapters.csvw.extract_csvw` with optional `[csvw]`, inline
+Use `bijux_ontology_adapters.csvw.extract_csvw` with optional `[csvw]`, inline
 single-table metadata, exact URL-to-CSV-text resources and an explicit metadata
 base. Maintained CSVW tooling interprets explicit subject/predicate/value URI
 templates, scalar string/integer/decimal/boolean/anyURI cells, column null/default,
@@ -1719,7 +1722,7 @@ dates/dateTimes retain calendar months, exact chronology and explicit open ends;
 partial dates, absent timezones and excess precision remain unknown. Only relative
 rules use a supplied clock. Input spellings remain in the returned owned document.
 
-`bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled` composes
+`bijux_ontology_adapters.vocabulary_bindings.controlled` composes
 selected subsets and explicit enumerations with union, intersection and difference.
 Open-set absence cannot establish exclusion. `compile_bindings` prepares finite
 text-discriminator cases; `select_binding` captures an actual record without a
@@ -1795,7 +1798,7 @@ Explicit term/namespace exclusions remove support terms from the owned selection
 The result retains scoped records and selected subset witnesses. This finite
 opt-in convention does not certify every OBO Foundry recommendation.
 
-`interfaces.adapters.rdfa.extract_rdfa(content, document_url, runtime=...)`
+`bijux_ontology_adapters.rdfa.extract_rdfa(content, document_url, runtime=...)`
 extracts HTML5 RDFa through an explicitly selected optional Node runtime. Call
 `prepare_rdfa_runtime(directory)`, run ordinary `npm ci` there using the shipped
 lock, and supply `RdfaRuntime(node_executable, directory)`. The maintained parser
@@ -1865,7 +1868,7 @@ claim.
 
 ## Domain integration contracts
 
-`interfaces.adapters.dcat.prepare_catalog_profile(Dcat3Profile(...))` prepares
+`bijux_ontology_adapters.dcat.prepare_catalog_profile(Dcat3Profile(...))` prepares
 reusable DCAT 3 shapes for explicit application choices. `check_catalog` checks
 selected catalog, dataset, series, distribution, service, record and period roles
 against actual SHACL and supplied theme/license vocabularies. Linked records need
@@ -1875,7 +1878,7 @@ allowed when the selected access rule is satisfied. Select historical graphs
 explicitly; unsupported required extensions, incomplete vocabularies and missing
 related populations withhold complete profile qualification.
 
-`interfaces.adapters.ontolex.read_lexicon` reads explicitly selected OntoLex Core
+`bijux_ontology_adapters.ontolex.read_lexicon` reads explicitly selected OntoLex Core
 entries, forms, written literals and separate senses against a supplied vocabulary
 view. `lookup_written` ranks language and form roles while preserving ties and
 sense identities. `write_lexicon` reconstructs the typed Core assertions and retains
@@ -1884,7 +1887,7 @@ missing references, unsupported extensions and caller-selected arity violations
 remain visible. `project_labels` explicitly reports omitted form/sense structure
 and keeps the full lexicon available; labels never become unconditional synonyms.
 
-`interfaces.adapters.xkos.classifications.read_classification` projects ordered
+`bijux_ontology_adapters.xkos.classifications.read_classification` projects ordered
 levels, exact codes and distinct generic/partitive relationships from one selected
 physical graph. `check_classification` applies explicit level, code and tree
 policies. `PartitionContract` requires a supplied finite population and complete
@@ -1892,7 +1895,7 @@ assignments for coverage; authored exhaustive/disjoint claims alone prove no
 real-world partition. Blank level selectors must retain their owned witnesses.
 The finite profile follows [XKOS 1.2](https://docs.ddialliance.org/XKOS/1.2/).
 
-`interfaces.adapters.xkos.correspondences.read_correspondence` preserves complete
+`bijux_ontology_adapters.xkos.correspondences.read_correspondence` preserves complete
 association groups against two supplied `ClassificationRelease` inventories.
 `write_correspondence` retains annotations, backing graphs and the original
 physical selection without inventing pairwise exact matches. `assess_assignments`
@@ -1906,10 +1909,10 @@ and installed-package checks exercise both profiles with their real dependencies
 Workspace development requires uv 0.13.1 or later to resolve those profiles correctly.
 An OAK host can explicitly call `prepare_frictionless_backend(python,
 work_directory=...)`, then pass that admitted `backend` to `extract_package`.
-Install the same core wheel and `[frictionless]` in that selected interpreter;
+Install the same core wheel and `bijux-ontology-adapters[frictionless]` in that selected interpreter;
 admission checks native version and exact shipped worker identity without installing
 or discovering anything. Omitting `backend` retains the host-interpreter path.
-`interfaces.adapters.frictionless.extract_package` consumes an unchanged inline
+`bijux_ontology_adapters.frictionless.extract_package` consumes an unchanged inline
 descriptor, exactly supplied package-relative bytes, explicit column bindings and
 an existing work directory. The owned worker runs actual native typing, missing
 markers, scalar keys and foreign keys; semantic checks run on each selected row.
@@ -1917,7 +1920,7 @@ Cells retain original text, native values and record/column locations. Missing
 values emit nothing. Unsupported descriptor semantics and truncated validation
 remain unqualified; no remote resource or scientific identifier is inferred.
 
-`interfaces.adapters.biosamples.check_sample` is a read-only `[biosamples]`
+`bijux_ontology_adapters.biosamples.check_sample` is a read-only `[biosamples]`
 consumer. Supply `SchemaResource(uri, version, content)` for the
 [BioSamples core at `9e552cf`](https://github.com/EBIBioSamples/biosamples-v4/blob/9e552cf60451ad2b6dad20a1234bb07a111a4948/webapps/core/src/main/resources/schemas/core/sample.json),
 a versioned local draft-07 checklist and every referenced resource. Actual
@@ -1952,7 +1955,7 @@ reuse. Portable drafts need fresh checks when reimported; reconciliation exposes
 conflicts without renumbering or `sameAs`. Reopen with the same explicit policy.
 Separate RDF exports remain ordinary snapshots outside the SQLite transaction.
 
-`interfaces.adapters.shape_interchange.shacl_to_shex` and `shex_to_shacl` compile
+`bijux_ontology_adapters.shape_interchange.shacl_to_shex` and `shex_to_shacl` compile
 one nonrecursive record with distinct outgoing predicates, cardinalities and the
 supported native string/integer or node-kind constraints. Supply a nonempty
 `ShexBinding` map and an explicit open/closed rule. The default target policy
@@ -1964,7 +1967,7 @@ prevent a claimed translation. Install `[shacl,shex]` and call
 actual pySHACL and pyrudof. Agreement can mean both reject: raw negative results
 remain separate from correspondence and never certify the data as valid.
 
-`interfaces.adapters.go.taxon_constraints.check_go_taxa` checks explicit term/taxon
+`bijux_ontology_adapters.go.taxon_constraints.check_go_taxa` checks explicit term/taxon
 annotations against a `GoTaxonRelease` of separately pinned local ontology,
 computed constraints, union groupings and taxonomy bytes. A `GoTaxonPolicy`
 selects roots and declares complete selected ancestry. Constraints inherit through
@@ -1974,7 +1977,7 @@ Original resource receipts and path witnesses remain visible. Competing group
 definitions, missing ancestry or absent requested constraints remain unverified;
 this read-only finite profile claims no biological absence or general OWL truth.
 
-`interfaces.adapters.ols.prepare_ols_snapshot` consumes immutable `OlsPage`
+`bijux_ontology_adapters.ols.prepare_ols_snapshot` consumes immutable `OlsPage`
 responses for an explicit `OlsQuery` and `/api/v2` base. Ontology, exact IRI,
 entity roles and imported/defining/obsolete policies retain separate meanings.
 The selected lexical vocabulary is a service projection, with qualified JSON
@@ -1986,7 +1989,7 @@ performs no acquisition. Opt-in `acquire_ols_snapshot` uses an explicit bounded
 `AcquisitionPolicy` and fresh metadata before and after each page; it promises
 an observed query snapshot, not an atomic remote transaction.
 
-`bijux_ontology.interfaces.adapters.go.annotations` reads explicit GAF 2.2 or
+`bijux_ontology_adapters.go.annotations` reads explicit GAF 2.2 or
 GPAD 2.0 documents with supplied GPI 2.0 companions, retaining source locations,
 negation, evidence, separate taxa and comma/pipe expression groups. Use
 `read_go_annotations`, `check_go_annotations` with your registry and selected
@@ -1997,8 +2000,8 @@ it does not assert the quoted positive edge or an OWL negative assertion.
 The supported field grammar and selected vocabulary checks are separate from
 GO editorial quality control; permitted retirement retains its raw evidence.
 
-Install `bijux-ontology[biolink]` for the qualified BMT 1.5.0/LinkML 1.12.0–1.12.1
-profile. `interfaces.adapters.biolink.prepare_biolink` requires explicit local
+Install `bijux-ontology-adapters[biolink]` for the qualified BMT 1.5.0/LinkML 1.12.0–1.12.1
+profile. `bijux_ontology_adapters.biolink.prepare_biolink` requires explicit local
 `BiolinkResource` bytes, SHA256 pins, model version, predicate map and every
 schema import, including `linkml:types`. `check_biolink` takes oriented
 `BiolinkAssociation` records with ordered qualifiers and explicit
@@ -2010,7 +2013,7 @@ Preparation owns resource bytes; each checked batch builds its toolkit in an
 owned process. These application contracts do not prove external identifier
 membership or OWL contradictions and do not validate unrelated payload slots.
 
-`interfaces.adapters.r2rml` runs actual Morph-KGC against an owned, quiescent
+`bijux_ontology_adapters.r2rml` runs actual Morph-KGC against an owned, quiescent
 SQLite snapshot. Install its qualified runtime in a separate environment:
 
 ```sh
@@ -2033,8 +2036,8 @@ retains native, model and relationship reports separately. Its pinned RDF
 dependencies belong to that environment; the ordinary core installation stays
 independently usable.
 
-Install `bijux-ontology[arrow]` for the qualified PyArrow 25.0.1–26.0.0 profile.
-`interfaces.adapters.arrow.prepare_arrow_contract` binds a `PreparedModels` plan
+Install `bijux-ontology-adapters[arrow]` for the qualified PyArrow 25.0.1–26.0.0 profile.
+`bijux_ontology_adapters.arrow.prepare_arrow_contract` binds a `PreparedModels` plan
 to explicit subject, physical column, predicate, datatype, list and graph choices.
 Use `with open_arrow_records(reader, contract) as checked` and consume its batches;
 `emit_rdf=True` also retains owned RDF snapshots. Native scalars, dictionary

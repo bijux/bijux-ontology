@@ -1151,7 +1151,8 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
     ),
     "adapter.fhir_backend_unavailable": (
         "The maintained FHIR R5 model is unavailable.",
-        "Install bijux-ontology[fhir] and retain the original resource and bindings.",
+        "Install bijux-ontology-adapters[fhir] and retain "
+        "the original resource and bindings.",
         "read_code_system(content, bindings=bindings)",
     ),
     "rdf.literal_conversion_unverified": (
