@@ -242,6 +242,7 @@ def prepare_annotation_population(
         reserve(operation, len(selected) * 2)
         parents: dict[URIRef, set[URIRef]] = {term: set() for term in term_order}
         witnesses = []
+        inverse_coverage: set[str] = set()
         for term in term_order:
             for step, inverse in oriented:
                 for witness in inventory.neighbours(term, step, inverse):
@@ -259,9 +260,19 @@ def prepare_annotation_population(
                     else:
                         parents[term].add(witness.target)
                 if step.role == "existential":
-                    sources = inventory.all_owners() if inverse else (term,)
-                    for owner in sources:
-                        for record in inventory.projections(owner):
+                    coverage: tuple[Sequence[RestrictionProjection], ...]
+                    if inverse:
+                        if step.predicate in inverse_coverage:
+                            continue
+                        inventory.inverse_projections()
+                        inverse_coverage.add(step.predicate)
+                        coverage = (
+                            inventory.unsupported.get(URIRef(step.predicate), ()),
+                        )
+                    else:
+                        coverage = (inventory.projections(term),)
+                    for records in coverage:
+                        for record in records:
                             operation.consume("work")
                             if record.property == URIRef(step.predicate) and (
                                 record.status != "supported"

@@ -449,3 +449,27 @@ def test_enrichment_owned_deadline_cancel_budget_and_fresh_recovery() -> None:
         1 / 6,
         0.5,
     ]
+
+
+def test_inverse_population_retains_unsupported_projection_coverage() -> None:
+    """Indexed named neighbours cannot hide another required universal restriction."""
+    graph = Graph(identifier=EX.graph)
+    for term in (EX.A, EX.B, EX.C):
+        graph.add((term, RDF.type, OWL.Class))
+    for owner, quantifier in ((EX.A, OWL.someValuesFrom), (EX.C, OWL.allValuesFrom)):
+        node = BNode()
+        for triple in (
+            (owner, RDFS.subClassOf, node),
+            (node, RDF.type, OWL.Restriction),
+            (node, OWL.onProperty, EX.part),
+            (node, quantifier, EX.B),
+        ):
+            graph.add(triple)
+    result = _read(
+        graph,
+        terms=(EX.A, EX.B, EX.C),
+        annotations=(EntityAnnotation("e1", EX.B),),
+        propagation=(RelationInverse(RelationStep(str(EX.part), "existential")),),
+    )
+    assert result.population is None and not result.report.verified
+    assert any(issue.code == "analysis.projection_unknown" for issue in result.report)

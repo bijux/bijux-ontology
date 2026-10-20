@@ -3,6 +3,7 @@
 from dataclasses import replace
 from typing import Any, cast
 
+import pytest
 from rdflib import BNode, Dataset, Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
@@ -364,3 +365,42 @@ def test_finite_enumeration_native_application_and_operation_limits() -> None:
     assert check_relation_path(
         view, str(EX.Small), LANGUAGE, endpoint=RelationEndpoint((str(EX.Organism),))
     ).report.verified
+
+
+def test_inverse_existential_inventory_is_indexed_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated inverse hops retain original evidence without rescanning owners."""
+    from bijux_ontology.vocabulary.relation_paths.edges import _Inventory
+
+    graph = Graph()
+    terms = tuple(EX[f"Owner{index}"] for index in range(24))
+    for child, parent in zip(terms, terms[1:], strict=False):
+        _restriction(graph, child, parent)
+    _restriction(graph, EX.Universal, terms[-1], OWL.allValuesFrom)
+    actual = _Inventory.projections
+    visited = []
+
+    def counted(
+        self: _Inventory, owner: URIRef, inherited: bool = False
+    ) -> tuple[RestrictionProjection, ...]:
+        visited.append(owner)
+        return actual(self, owner, inherited)
+
+    monkeypatch.setattr(_Inventory, "projections", counted)
+    result = find_relation_path(
+        inspect_vocabulary(graph),
+        str(terms[-1]),
+        RelationRepeat(RelationInverse(PART)),
+        endpoint=RelationEndpoint((str(terms[0]),)),
+    )
+    assert result.report.verified and len(result.steps) == len(terms) - 1
+    assert len(visited) == len(set(visited)) == len(terms)
+    assert all(
+        isinstance(step.evidence, RestrictionProjection) for step in result.steps
+    )
+    assert all(
+        isinstance(step.evidence, RestrictionProjection)
+        and step.evidence.quantifier == OWL.someValuesFrom
+        for step in result.steps
+    )
