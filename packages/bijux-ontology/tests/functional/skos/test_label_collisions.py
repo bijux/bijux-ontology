@@ -168,11 +168,17 @@ def test_indexed_selections_and_exhaustion_retain_known_collisions() -> None:
     for index in range(2, 20):
         graph.add((EX[f"later{index:02}"], RDF.type, SKOS.Concept))
         graph.add((EX[f"later{index:02}"], SKOS.inScheme, EX.scheme))
-        graph.add((EX[f"later{index:02}"], SKOS.prefLabel, Literal(str(index))))
+        graph.add(
+            (
+                EX[f"later{index:02}"],
+                SKOS.prefLabel,
+                Literal("later collision" if index in (2, 3) else str(index)),
+            )
+        )
     view = inspect_vocabulary(graph)
     assert check_label_collisions(view, schemes=Indexed()).outcome == "disagreement"
     partial = check_label_collisions(
-        view, schemes=Indexed(), limits=Limits(max_work=600)
+        view, schemes=Indexed(), limits=Limits(max_issues=1)
     )
     assert not partial.complete
     assert any(issue.code == "skos.policy.label_collision" for issue in partial.issues)

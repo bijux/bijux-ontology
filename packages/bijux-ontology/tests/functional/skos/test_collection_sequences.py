@@ -1,15 +1,16 @@
 """Authored collection positions remain distinct from unordered membership."""
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 
 import pytest
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import RDF, SKOS
+from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.execution.limits import Limits
-from bijux_ontology.rdf.structure import read_rdf_list
+from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.rdf.structure import iter_rdf_list, read_rdf_list
 from bijux_ontology.skos.collections import check_collection_sequence
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.browsing.navigation import collection_members
@@ -149,12 +150,13 @@ def test_malformed_tails_retain_proved_prefix_and_failures(tail: str) -> None:
         read_rdf_list(graph, head)
 
 
-def test_exhausted_tail_preserves_prefix_failure() -> None:
+def test_exhausted_tail_preserves_prefix_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     graph, _ = _graph((EX.B, EX.A, EX.A, EX.A, EX.A))
     view = inspect_vocabulary(graph)
-    # The view already owns its input. Select a smaller navigation allowance,
-    # without changing the immutable graph or rebuilding it under that bound.
-    view.limits = Limits(max_work=150)
+    # Retain the first real mismatch, then exhaust on the next diagnostic.
+    view.limits = Limits(max_issues=1)
     report = check_collection_sequence(view, str(EX.Ordered), expected=(EX.A,))
     assert report.outcome == "exhausted" and not report.complete
     assert any(
@@ -162,9 +164,27 @@ def test_exhausted_tail_preserves_prefix_failure() -> None:
         for issue in report.issues
     )
     assert not any(issue.actual == "0" for issue in report.issues)
-    view.limits = Limits(max_work=5)
+
+    def bounded_members(
+        source: Graph,
+        head: Node,
+        *,
+        max_items: int,
+        budget: Budget | None = None,
+    ) -> Iterator[Node]:
+        assert budget is not None
+        for member in iter_rdf_list(source, head, max_items=max_items, budget=budget):
+            yield member
+            # Stop real traversal after its first proved public position,
+            # independently of the work needed to prepare the selected source.
+            budget.consume("work", budget.remaining("work"))
+
+    monkeypatch.setattr(
+        "bijux_ontology.vocabulary.browsing.navigation.iter_rdf_list", bounded_members
+    )
     selected = collection_members(view, str(EX.Ordered), ordered=True)
     assert selected.items and not selected.report.complete
+    assert [(item.member, item.position) for item in selected.items] == [(EX.B, 0)]
     assert [item.position for item in selected.items] == list(
         range(len(selected.items))
     )
@@ -188,9 +208,10 @@ def test_bounded_expected_capture_and_owned_view_do_not_guess_blank_identity() -
 
 
 def test_duplicate_and_maximum_findings_survive_exhaustion() -> None:
-    graph, _ = _graph((EX.A, EX.A, EX.B, EX.C, EX.D))
+    graph, _ = _graph((EX.A, EX.A, EX.B, EX.B, EX.D))
     view = inspect_vocabulary(graph)
-    view.limits = Limits(max_work=252)
+    # The duplicate and maximum-size findings are paid before a later duplicate.
+    view.limits = Limits(max_issues=2)
     report = check_collection_sequence(
         view,
         str(EX.Ordered),
