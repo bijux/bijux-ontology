@@ -38,6 +38,7 @@ from bijux_ontology.models.emission.counts import check_occurrences
 from bijux_ontology.models.emission.samples import SampledOutput, serialization_failure
 from bijux_ontology.models.emission.serialization import InstanceCheck
 from bijux_ontology.models.emission.types import ModelUsage
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
@@ -372,6 +373,7 @@ def check_instance(
     document_loader: DocumentLoader | None = None,
     rdf_direction: DirectionPolicy | None = None,
     limits: Limits | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> InstanceCheck:
     """Dump once, check one supported JSON sample, and return its owned output.
 
@@ -515,6 +517,7 @@ def check_instance(
             base=base,
             document_loader=loader,
             rdf_direction=rdf_direction,
+            datatype_registry=datatype_registry,
         )
         return InstanceCheck(
             output_sample.output_json, output_sample.document_json, report

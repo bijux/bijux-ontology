@@ -26,6 +26,7 @@ from bijux_ontology.json.values import (
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.contracts.preparation import PreparedModels
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
@@ -130,6 +131,7 @@ def compile_model_artifact(
     rdf_direction: DirectionPolicy | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> ModelPreparationArtifact:
     """Compile exact immutable inputs through existing vocabulary/model owners.
 
@@ -175,6 +177,7 @@ def compile_model_artifact(
             base=selected_base,
             regime=selected_regime,
             rdf_direction=direction,
+            datatype_registry=datatype_registry,
             budget=allowance,
         )
         retain_report(plan.declaration_report, allowance, issues)
@@ -247,12 +250,14 @@ def load_model_artifact(
     trusted_sha256: str,
     limits: Limits | None = None,
     budget: Budget | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> RestoredModels:
     """Load externally pinned typed preparation and recheck actual declarations.
 
     The trusted digest must come from a caller-controlled build/application
     manifest. An embedded self-hash cannot authenticate derived semantic indexes.
     Every output is still checked afresh by the ordinary PreparedModels API.
+    Custom datatype catalogues are explicit runtime bindings, never stored code.
     """
     allowance = operation(limits, budget)
     if not isinstance(expected, PreparationIdentity):
@@ -344,6 +349,7 @@ def load_model_artifact(
             base=selected_base,
             regime=regime,
             rdf_direction=direction,
+            datatype_registry=datatype_registry,
             budget=allowance,
         )
         retain_report(plan.declaration_report, allowance, issues)

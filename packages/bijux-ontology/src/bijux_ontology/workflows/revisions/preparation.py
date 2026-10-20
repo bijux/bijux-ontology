@@ -36,6 +36,7 @@ from bijux_ontology.models.persistence.loading import (
     load_model_artifact,
 )
 from bijux_ontology.models.persistence.types import PreparationIdentity
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.types import RdfSource
@@ -117,6 +118,7 @@ def prepare_revision(
     budget: Budget | None = None,
     timeout: float = 30,
     cancel: Event | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> RevisionPreparation:
     """Prepare one complete declared model/context/optional-shape revision.
 
@@ -194,6 +196,7 @@ def prepare_revision(
             base=selected_base,
             regime=selected_regime,
             rdf_direction=direction,
+            datatype_registry=datatype_registry,
             budget=operation,
         )
         reports.append(artifact.report)
@@ -208,6 +211,7 @@ def prepare_revision(
             artifact.content,
             expected=captured.identity,
             trusted_sha256=artifact.sha256,
+            datatype_registry=datatype_registry,
             budget=operation,
         )
         reports.append(restored.report)
