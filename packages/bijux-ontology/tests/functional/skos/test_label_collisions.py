@@ -256,3 +256,15 @@ def test_label_resources_and_untyped_members_are_not_invented_concepts() -> None
         EX.concept0.n3(),
         EX.untyped.n3(),
     }
+
+
+@pytest.mark.parametrize("warm", [False, True])
+def test_collision_preparation_respects_shared_source_admission(warm: bool) -> None:
+    view = inspect_vocabulary(_graph(Literal("distinct")))
+    if warm:
+        assert check_label_collisions(view, schemes=(EX.scheme,)).verified
+    result = check_label_collisions(
+        view, schemes=(EX.scheme,), limits=Limits(max_triples=1)
+    )
+    assert result.outcome == "exhausted" and not result.complete
+    assert not result.verified

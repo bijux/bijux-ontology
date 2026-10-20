@@ -251,3 +251,19 @@ def test_incomplete_head_selection_cannot_fabricate_unambiguous_positions() -> N
         ).outcome
         == "exhausted"
     )
+
+
+@pytest.mark.parametrize("warm", [False, True])
+def test_ordered_navigation_respects_shared_source_admission(warm: bool) -> None:
+    source, _ = _graph((EX.A,))
+    view = inspect_vocabulary(source)
+    if warm:
+        assert collection_members(view, str(EX.Ordered), ordered=True).report.verified
+    result = collection_members(
+        view,
+        str(EX.Ordered),
+        ordered=True,
+        budget=Budget(Limits(max_triples=1)),
+    )
+    assert result.report.outcome == "exhausted" and not result.report.complete
+    assert not result.items

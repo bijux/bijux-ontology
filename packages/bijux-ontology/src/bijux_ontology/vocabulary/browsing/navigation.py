@@ -401,7 +401,7 @@ def _ordered_collection_members(
         edge = selected.items[0]
         for position, member in enumerate(
             iter_rdf_list(
-                view._read(),
+                view._read(budget=budget),
                 edge.object,
                 max_items=budget.limits.max_work,
                 budget=budget,
