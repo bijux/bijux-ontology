@@ -16,14 +16,14 @@ from bijux_ontology.owl.encoding.checking import (
     check_headers,
 )
 from bijux_ontology.owl.encoding.expressions import check_expression_shapes
-from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
-from bijux_ontology.vocabulary.builtins import (
+from bijux_ontology.owl.encoding.roles import (
     Regime,
     builtin_kinds,
     kind_matches,
     validate_regime,
 )
+from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
+from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.checking import _lint_issues
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary

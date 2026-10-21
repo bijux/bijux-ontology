@@ -23,14 +23,9 @@ from bijux_ontology.json.values import (
 from bijux_ontology.jsonld.processing.resources import DocumentLocation
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.workflows.projects.jobs import (
-    APPLICATION_KINDS,
-    check_kind,
-    dependencies,
-)
-from bijux_ontology.workflows.projects.jobs import (
-    input_paths as job_input_paths,
-)
+from bijux_ontology.workflows.projects.jobs.decoding import check_kind, dependencies
+from bijux_ontology.workflows.projects.jobs.descriptors import APPLICATION_KINDS
+from bijux_ontology.workflows.projects.jobs.inputs import input_paths as job_input_paths
 
 
 class ProjectConfig:

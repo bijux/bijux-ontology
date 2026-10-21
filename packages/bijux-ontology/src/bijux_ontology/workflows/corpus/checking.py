@@ -23,8 +23,8 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.encoding import json_bytes
 from bijux_ontology.models.emission.types import RdfModelUsage
-from bijux_ontology.models.persistence.codecs import json_bytes
 from bijux_ontology.models.persistence.identity import _source
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.types import RdfSource

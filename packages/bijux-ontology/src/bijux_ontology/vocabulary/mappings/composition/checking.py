@@ -3,7 +3,6 @@
 import threading
 from collections.abc import Sequence
 
-from rdflib import Variable
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
@@ -17,12 +16,15 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.json.values import decode_json, object_value
+from bijux_ontology.vocabulary.mappings.admission import (
+    AdmittedMapping,
+    admit_mapping,
+    named_identifier,
+)
 from bijux_ontology.vocabulary.mappings.types import (
     MappingRead,
     MappingRow,
     MappingSet,
-    _iri,
 )
 
 from .types import (
@@ -44,76 +46,19 @@ _PREDICATE_TYPES = frozenset(
 )
 
 
-def _named(value: str, budget: Budget) -> str:
-    """Reuse the mapping identifier qualifier without erasing variable kinds."""
-    if isinstance(value, Variable):
-        raise InputError("Composition requires named identifiers")
-    return _iri(value, budget)
-
-
-def _input(
+def _admit_input(
     value: MappingSet | MappingRead,
     budget: Budget,
     issues: IssueCollector,
     children: list[Report],
-) -> tuple[MappingSet | None, bool]:
-    """Requalify every retained input field before indexing even unmatched rows."""
+) -> AdmittedMapping | None:
+    """Retain required composition producer truth before whole-table admission."""
     if isinstance(value, MappingRead):
         retain_report(value.report, budget, issues)
         children.append(value.report)
         if not value.report.verified or value.mapping_set is None:
-            return None, False
-        value = value.mapping_set
-    if not isinstance(value, MappingSet):
-        raise InputError("Composition requires owned mapping inputs")
-    for payload in (value.source, value._content):
-        if len(payload) > budget.limits.max_bytes:
-            raise LimitExceeded("Mapping source exceeds max_bytes")
-        budget.consume("bytes", len(payload))
-        budget.consume("work", len(payload))
-    for text in (
-        value.metadata_json,
-        value.backend_version,
-        value.schema_version,
-        value.supplied_id,
-        value.supplied_license,
-    ):
-        bound_text(text, budget)
-    for key, iri in value.prefixes:
-        budget.consume("states")
-        bound_text(key, budget)
-        _named(iri, budget)
-    budget.consume("states", len(value.columns) + len(value.uninterpreted))
-    for names in (value.columns, value.uninterpreted):
-        for text in names:
-            bound_text(text, budget)
-    budget.consume("states", len(value.rows))
-    budget.consume("bytes", 64 + 32 * len(value.rows))
-    for row in value.rows:
-        budget.consume("work")
-        for iri in (row.subject, row.predicate, row.object, row.justification):
-            _named(iri, budget)
-        for kind in (row.subject_type, row.object_type, row.predicate_type):
-            if kind:
-                _named(kind, budget)
-        budget.consume("states", len(row.cells))
-        for key, text in row.cells:
-            bound_text(key, budget)
-            bound_text(text, budget)
-    # Metadata interpretation uses the existing strict decoder. A conservative
-    # character-sized node reservation bounds its allocation before parsing.
-    budget.consume("states", len(value.metadata_json))
-    budget.consume("work", len(value.metadata_json))
-    budget.consume("bytes", 4 * len(value.metadata_json))
-    metadata = object_value(
-        decode_json(
-            value.metadata_json,
-            max_bytes=budget.limits.max_bytes,
-            max_depth=budget.limits.max_depth,
-        ),
-        location="mapping metadata",
-    )
-    return value, bool(metadata.get("predicate_modifier") or metadata.get("other"))
+            return None
+    return admit_mapping(value, budget)
 
 
 def _rule(value: MappingCompositionRule, budget: Budget) -> MappingCompositionRule:
@@ -121,10 +66,10 @@ def _rule(value: MappingCompositionRule, budget: Budget) -> MappingCompositionRu
     if not isinstance(value, MappingCompositionRule):
         raise InputError("Composition rules require typed records")
     left, right, result, identifier = (
-        _named(value.left, budget),
-        _named(value.right, budget),
-        _named(value.result, budget),
-        _named(value.identifier, budget),
+        named_identifier(value.left, budget),
+        named_identifier(value.right, budget),
+        named_identifier(value.result, budget),
+        named_identifier(value.identifier, budget),
     )
     bound_text(value.basis, budget)
     if value.basis not in ("skos", "application"):
@@ -196,7 +141,7 @@ def compose_mappings(
         operation.consume("states", len(raw_intermediates))
         seen = set()
         for value in raw_intermediates:
-            iri = _named(value, operation)
+            iri = named_identifier(value, operation)
             if iri not in seen:
                 seen.add(iri)
                 selected.append(iri)
@@ -205,8 +150,10 @@ def compose_mappings(
             raise InputError("Select a nonempty composition rule table")
         for value in raw_rules:
             approved.append(_rule(value, operation))
-        first, left_metadata_unknown = _input(left, operation, issues, children)
-        second, right_metadata_unknown = _input(right, operation, issues, children)
+        admitted_left = _admit_input(left, operation, issues, children)
+        first = admitted_left.mapping_set if admitted_left is not None else None
+        admitted_right = _admit_input(right, operation, issues, children)
+        second = admitted_right.mapping_set if admitted_right is not None else None
         if first is None or second is None:
             issues.append(
                 Issue(
@@ -216,6 +163,15 @@ def compose_mappings(
                 )
             )
         else:
+            assert admitted_left is not None and admitted_right is not None
+            left_metadata_unknown = bool(
+                admitted_left.metadata.get("predicate_modifier")
+                or admitted_left.metadata.get("other")
+            )
+            right_metadata_unknown = bool(
+                admitted_right.metadata.get("predicate_modifier")
+                or admitted_right.metadata.get("other")
+            )
             operation.consume("states", len(selected) * 4)
             operation.consume("bytes", len(selected) * 256)
             extension_left = frozenset(first.uninterpreted)

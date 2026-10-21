@@ -25,8 +25,10 @@ from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.answers.comparison import compare_answers
 from bijux_ontology.rdf.answers.reading import capture_answer
-from bijux_ontology.rdf.queries.access import QueryScope, _graphs, _result
+from bijux_ontology.rdf.queries.capture import selected_graphs
 from bijux_ontology.rdf.queries.protocol import term_data
+from bijux_ontology.rdf.queries.results import adopt_result
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node, validate_triple
@@ -61,7 +63,7 @@ def _plan(
     """Capture selected physical graphs once, preserving empty named inventory."""
     records = []
     namespaces: dict[str, str] = {}
-    for name, graph in _graphs(source, scope, operation):
+    for name, graph in selected_graphs(source, scope, operation):
         operation.consume("resources")
         operation.consume("states")
         operation.consume("bytes", 128)
@@ -219,7 +221,9 @@ def _engine(
             size = json_bound(native, operation)
             operation.consume("bytes", 3 * size)
             raw = json.dumps(native, ensure_ascii=True, separators=(",", ":")).encode()
-            result = _result(raw, scope, operation.limits, max_rows, budget=operation)
+            result = adopt_result(
+                raw, scope, operation.limits, max_rows, budget=operation
+            )
             answer = capture_answer(
                 result,
                 budget=operation,

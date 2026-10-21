@@ -26,7 +26,7 @@ from bijux_ontology_reasoning.inference.entailment import check_entailments
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget
-from bijux_ontology.workflows.ontology.modules.types import ModuleContract
+from bijux_ontology.owl.modules.contracts import ModuleContract
 
 _BASE = """Ontology(<urn:ontology>
  Annotation(<urn:note> <urn:C>)

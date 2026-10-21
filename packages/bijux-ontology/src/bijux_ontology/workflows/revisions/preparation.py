@@ -27,11 +27,11 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.json.encoding import json_bytes
 from bijux_ontology.json.values import measure_json
 from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
-from bijux_ontology.models.persistence.codecs import json_bytes
 from bijux_ontology.models.persistence.identity import _source, capture_inputs
 from bijux_ontology.models.persistence.loading import (
     _options,

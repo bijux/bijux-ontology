@@ -1,9 +1,14 @@
 """Normally installed native RDFa, exact host semantics and bounded ownership."""
 
+import json
 import os
+import subprocess
+import sys
 import threading
 import tracemalloc
 from pathlib import Path
+from types import FrameType
+from typing import Literal as EventKind
 from typing import cast
 
 import pytest
@@ -18,12 +23,15 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
+from bijux_ontology.execution.processes.transport import exchange_worker
 from bijux_ontology.interfaces.adapters.rdfa import (
     RdfaRuntime,
     extract_rdfa,
     prepare_rdfa_runtime,
 )
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.jsonld.html.extraction import extract_html_jsonld
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
@@ -292,3 +300,87 @@ def test_input_preflight_does_not_copy_large_content_with_spent_budget(
         issue.kind == "exhausted" for issue in result.report.issues
     )
     assert peak < 100_000
+
+
+@pytest.mark.parametrize("mode", ("completed", "missing", "ordinary", "deadline"))
+def test_owned_parent_controls_native_lifetime_and_terminal_receipts(
+    mode: str,
+    runtime: RdfaRuntime,
+) -> None:
+    """Observe real native receipts, inherited events and reaped process lifetimes."""
+    cancellation = threading.Event()
+    ledger = Budget()
+    parent = (
+        ledger
+        if mode == "ordinary"
+        else Operation(None, ledger, 0.1 if mode == "deadline" else 30, cancellation)
+    )
+    local = cancellation if mode == "ordinary" else None
+    processes: list[subprocess.Popen[bytes]] = []
+    native: dict[str, int] = {}
+    grants: dict[str, int] = {}
+    host: dict[str, int] = {}
+    before: dict[str, int] = {}
+    timeouts: list[float] = []
+    previous = sys.getprofile()
+
+    def native_command(command: object) -> bool:
+        """Recognize only this adapter's actual native command."""
+        return isinstance(command, (list, tuple)) and any(
+            str(part).endswith("/rdfa/worker.cjs") for part in command
+        )
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        value: object,
+    ) -> None:
+        """Interrupt actual lifecycle boundaries without replacing producer output."""
+        if previous is not None:
+            previous(frame, event, value)
+        actual = frame.f_code is exchange_worker.__code__ and native_command(
+            frame.f_locals.get("command")
+        )
+        if actual and event == "call":
+            grants.update(json.loads(frame.f_locals["payload"])["allowances"])
+            before.update((kind, ledger.remaining(kind)) for kind in BUDGET_KINDS)
+            timeouts.append(frame.f_locals["timeout"])
+            assert frame.f_locals["cancel"] is cancellation
+        if event != "return":
+            return
+        process = frame.f_locals.get("self")
+        if (
+            frame.f_code is subprocess.Popen.__init__.__code__
+            and isinstance(process, subprocess.Popen)
+            and native_command(process.args)
+        ):
+            processes.append(process)
+            if mode == "missing":
+                cancellation.set()
+        if actual and isinstance(value, bytes):
+            native.update(json.loads(value)["consumed"])
+            if mode in ("completed", "ordinary"):
+                cancellation.set()
+        if frame.f_code is TerminalResponse.close.__code__:
+            host.update(frame.f_locals["self"]._host.consumed())
+
+    sys.setprofile(observe)
+    try:
+        result = extract_rdfa(HTML, URL, runtime=runtime, budget=parent, cancel=local)
+    finally:
+        sys.setprofile(previous)
+    assert all(process.returncode is not None for process in processes)
+    if mode == "deadline":
+        # A fast native completion is valid; a child never gets a fresh ten seconds.
+        assert result.report.outcome in ("agreement", "exhausted")
+        assert all(0 < timeout <= 0.1 for timeout in timeouts)
+        if not timeouts:
+            assert result.report.outcome == "exhausted"
+    else:
+        assert result.report.outcome == "exhausted" and result.source is None
+        assert processes and bool(native) == (mode != "missing")
+        paid = native if native else grants
+        assert {
+            kind: before[kind] - ledger.remaining(kind) for kind in BUDGET_KINDS
+        } == {kind: paid[kind] + host[kind] for kind in BUDGET_KINDS}
+    assert extract_rdfa(HTML, URL, runtime=runtime).report.verified

@@ -15,17 +15,17 @@ from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.models.contracts.checking import check_models
+from bijux_ontology.owl.encoding.roles import Regime
 from bijux_ontology.rdf.literals.checking import Regime as ModelRegime
-from bijux_ontology.vocabulary.builtins import Regime
 from bijux_ontology.vocabulary.checking import check_vocabulary
 from bijux_ontology.workflows.projects.inputs import ShaclJobInput
-from bijux_ontology.workflows.projects.jobs import (
-    CheckKind,
+from bijux_ontology.workflows.projects.jobs.decoding import (
     GraphSelection,
     VocabularySelection,
     boolean,
     strings,
 )
+from bijux_ontology.workflows.projects.jobs.descriptors import CheckKind, describe
 from bijux_ontology.workflows.projects.resources import ProjectResources
 
 
@@ -40,11 +40,12 @@ def run_check(
 ) -> Report:
     """Execute one supported check using its operation-owned explicit inputs."""
     config = resources.configuration
-    if budget is not None and kind not in ("vocabulary", "context", "shacl"):
+    descriptor = describe(kind)
+    if budget is not None and descriptor.worker is None:
         raise InputError("Shared project budgets support vocabulary, context and SHACL")
     if shacl_input is not None and kind != "shacl":
         raise InputError("Runtime SHACL inputs require a SHACL job")
-    if kind in ("emission", "context-corpus", "upgrade"):
+    if descriptor.executor == "application":
         from bijux_ontology.workflows.projects.application_jobs import (
             run_application_job,
         )

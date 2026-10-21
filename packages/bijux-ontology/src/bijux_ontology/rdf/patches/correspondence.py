@@ -10,10 +10,12 @@ from rdflib.compare import isomorphic
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import ControlBudget, Operation
 from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.rdf.records.codecs import read_witness, term_data, witness_data
 from bijux_ontology.rdf.records.types import (
@@ -69,42 +71,46 @@ def compare_witnesses(
     if size > operation.limits.max_bytes:
         raise LimitExceeded("RDF patch protocol exceeds max_bytes")
     operation.consume("bytes", size)
-    allowances = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
-    request["allowances"] = allowances
+    terminal = TerminalResponse(operation, operation.limits.max_bytes)
+    allowances = {kind: terminal.available(kind) for kind in BUDGET_KINDS}
+    # The native evaluator returns data/counters; host adoption owns Issues.
+    allowances["issues"] = 0
+    delegated = DelegatedAllowance(operation, allowances)
+    request["allowances"] = delegated.to_data()
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode(
         "ascii"
     )
     remaining = operation.deadline - time.monotonic()
     if remaining <= 0:
+        terminal.close()
         raise LimitExceeded("RDF patch exceeded its wall-clock deadline")
-    raw = execute_worker(
-        "bijux_ontology.rdf.patches.correspondence",
-        payload,
-        cap=operation.limits.max_bytes,
-        timeout=remaining,
-        cancel=operation.cancel,
-    )
-    operation.consume("bytes", len(raw))
-    response = decode_json(raw, max_bytes=operation.limits.max_bytes)
-    if not isinstance(response, dict) or response.get("status") not in (
-        "result",
-        "exhausted",
-        "input_error",
-    ):
-        raise ResourceError("Invalid RDF patch worker response")
-    consumed = response.get("consumed")
-    if (
-        not isinstance(consumed, dict)
-        or set(consumed) != set(BUDGET_KINDS)
-        or any(
-            type(consumed[kind]) is not int
-            or not 0 <= consumed[kind] <= allowances[kind]
-            for kind in BUDGET_KINDS
+    dispatched = received = False
+    try:
+        terminal.admit(payload)
+        dispatched = True
+        raw = execute_worker(
+            "bijux_ontology.rdf.patches.correspondence",
+            payload,
+            cap=terminal.cap,
+            timeout=remaining,
+            cancel=operation.cancel,
         )
-    ):
-        raise ResourceError("Malformed RDF patch worker accounting completion")
-    for kind in BUDGET_KINDS:
-        operation.consume(kind, consumed[kind])
+        response = terminal.decode(raw)
+        if not isinstance(response, dict) or response.get("status") not in (
+            "result",
+            "exhausted",
+            "input_error",
+        ):
+            raise ResourceError("Invalid RDF patch worker response")
+        delegated.settle(response.get("consumed"))
+        received = True
+    finally:
+        try:
+            terminal.close()
+        finally:
+            if dispatched and not received:
+                delegated.forfeit()
+    operation.consume("work", 0)
     if response["status"] == "exhausted":
         raise LimitExceeded("RDF patch comparison exhausted its allowance")
     if response["status"] == "input_error":

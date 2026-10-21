@@ -11,8 +11,8 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import object_value
-from bijux_ontology.rdf.queries.access import QueryScope
 from bijux_ontology.rdf.queries.protocol import read_term, term_data
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.stores.preparation import _adopt
 from bijux_ontology.rdf.stores.protocol import scope_data
 from bijux_ontology.rdf.stores.types import StoredRdf

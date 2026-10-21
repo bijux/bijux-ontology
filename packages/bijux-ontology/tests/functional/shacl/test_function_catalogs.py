@@ -169,7 +169,7 @@ def test_optional_omission_zero_arguments_and_unbound_are_sparql_values_or_error
         functions=catalog(zero),
     ).report.verified
     for body in (
-        "SELECT ?result WHERE { FILTER(false) }",
+        "SELECT ?result WHERE { FILTER(1 = 0) }",
         "SELECT (?missing AS ?result) WHERE {}",
     ):
         unbound = catalog(function(body))
@@ -180,6 +180,7 @@ def test_optional_omission_zero_arguments_and_unbound_are_sparql_values_or_error
             functions=unbound,
         )
         assert checked.conforms is False
+        assert dict(checked.function_calls) == {str(EX.double): 1}
         filtered = validate_shapes(
             Graph(),
             shapes(f"BIND(<{EX.double}>(1) AS ?actual) FILTER(BOUND(?actual))"),
@@ -187,6 +188,7 @@ def test_optional_omission_zero_arguments_and_unbound_are_sparql_values_or_error
             functions=unbound,
         )
         assert filtered.conforms is True and filtered.report.verified
+        assert dict(filtered.function_calls) == {str(EX.double): 1}
 
 
 def test_rdf_terms_and_false_ask_results_are_not_coerced_by_return_metadata() -> None:

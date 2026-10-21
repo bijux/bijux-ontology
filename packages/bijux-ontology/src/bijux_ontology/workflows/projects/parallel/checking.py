@@ -30,7 +30,7 @@ from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
-from bijux_ontology.workflows.projects.jobs import dependencies
+from bijux_ontology.workflows.projects.jobs.decoding import dependencies
 
 from .preparation import KINDS, _metadata_bound, capture, supported
 from .types import ParallelJobResult, ParallelProjectResult

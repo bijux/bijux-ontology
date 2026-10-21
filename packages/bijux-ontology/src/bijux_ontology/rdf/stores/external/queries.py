@@ -9,9 +9,10 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.rdf.queries.access import QueryResult, QueryScope, _result
 from bijux_ontology.rdf.queries.literals import LiteralScopeUnsupported
 from bijux_ontology.rdf.queries.protocol import term_data
+from bijux_ontology.rdf.queries.results import adopt_result
+from bijux_ontology.rdf.queries.types import QueryResult, QueryScope
 from bijux_ontology.rdf.stores.protocol import failure
 from bijux_ontology.rdf.stores.queries import query_native
 
@@ -82,7 +83,7 @@ def query_external(
         )
         operation.consume("bytes", json_bound(response, operation))
         raw = json.dumps(response, ensure_ascii=True, separators=(",", ":")).encode()
-        result = _result(raw, scope, operation.limits, max_rows, budget=operation)
+        result = adopt_result(raw, scope, operation.limits, max_rows, budget=operation)
         return replace(
             result, report=replace(result.report, regime="native-single-read")
         )

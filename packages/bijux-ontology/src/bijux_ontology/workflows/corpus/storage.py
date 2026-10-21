@@ -7,11 +7,10 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+from bijux_ontology.diagnostics import encoding
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
-from bijux_ontology.diagnostics.reports import Report, report_from_data
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, bound_text
-from bijux_ontology.json.values import decode_json
-from bijux_ontology.models.persistence.codecs import json_bytes
 
 _SCHEMA = (
     "CREATE TABLE completed (identifier TEXT PRIMARY KEY, "
@@ -28,56 +27,19 @@ def eligible(report: Report) -> bool:
     )
 
 
-def encode_report(report: Report, budget: Budget) -> bytes:
-    """Pay report-to-dict ownership before using the maintained inert codec."""
-    pending = [(report, 0)]
-    while pending:
-        current, depth = pending.pop()
-        if depth > budget.limits.max_depth:
-            raise LimitExceeded("Checkpoint report exceeds max_depth")
-        budget.consume("work", 1 + len(current.issues) + len(current.children))
-        budget.consume("states", 32 + 16 * len(current.issues))
-        budget.consume("bytes", 2048 + 1024 * len(current.issues))
-        texts = [current.scope, current.regime, *current.families, *current.exclusions]
-        for issue in current.issues:
-            texts.extend(
-                text
-                for text in (
-                    issue.code,
-                    issue.message,
-                    issue.location,
-                    issue.expected,
-                    issue.actual,
-                    issue.evidence_json,
-                )
-                if text is not None
-            )
-            if issue.details is not None:
-                # Typed nested location/failure records are already bounded by
-                # report admission; reserve their duplicate JSON ownership too.
-                budget.consume("bytes", 4096)
-                texts.extend(str(part) for part in issue.details.path)
-                texts.extend(
-                    text
-                    for text in (
-                        issue.details.source,
-                        issue.details.term,
-                        issue.details.graph,
-                        issue.details.model,
-                    )
-                    if text is not None
-                )
-                if issue.details.failure is not None:
-                    raise ResourceError(
-                        "Parser-failure reports are outside completed checkpoint scope"
-                    )
-        for text in texts:
-            bound_text(text, budget)
-            budget.consume("bytes", 16 * len(text) + 128)
-        budget.consume("states", len(current.children))
-        budget.consume("bytes", 64 + 32 * len(current.children))
-        pending.extend((child, depth + 1) for child in current.children)
-    return json_bytes(report.to_dict(), budget)
+def _exclude_parser_failures(report: Report) -> None:
+    """Keep parser-bearing outcomes outside the corpus checkpoint profile.
+
+    Reports retain descendant issues at their root. Diagnostic encoding/adoption
+    has already paid ownership of this finite tuple before this policy is used.
+    """
+    if any(
+        issue.details is not None and issue.details.failure is not None
+        for issue in report.issues
+    ):
+        raise ResourceError(
+            "Parser-failure reports are outside completed checkpoint scope"
+        )
 
 
 class Checkpoint:
@@ -212,9 +174,7 @@ class Checkpoint:
                 raise ResourceError("Checkpoint report is not a bounded complete blob")
             if header[2] != 64:
                 raise ResourceError("Checkpoint integrity receipt is malformed")
-            budget.consume("states", size)
-            budget.consume("work", size)
-            budget.consume("bytes", (128 + 4 * budget.limits.max_depth) * size)
+            budget.consume("bytes", size)
             row = connection.execute(
                 "SELECT report,sha256 FROM completed WHERE identifier=? AND identity=?",
                 (identifier, identity),
@@ -225,15 +185,10 @@ class Checkpoint:
             if hashlib.sha256(raw).hexdigest() != digest:
                 raise ResourceError("Checkpoint report integrity does not match")
             try:
-                report = report_from_data(
-                    decode_json(
-                        raw,
-                        max_bytes=budget.limits.max_bytes,
-                        max_depth=budget.limits.max_depth,
-                    )
-                )
-                if encode_report(report, budget) != raw or not eligible(report):
-                    raise InputError("Noncanonical or incomplete saved report")
+                report = encoding.decode_report(raw, budget)
+                _exclude_parser_failures(report)
+                if not eligible(report):
+                    raise InputError("Incomplete saved report")
             except LimitExceeded:
                 raise
             except InputError as error:
@@ -250,7 +205,8 @@ class Checkpoint:
             )
         bound_text(identifier, budget)
         budget.consume("bytes", 8 * len(identifier) + 512)
-        raw = encode_report(report, budget)
+        raw = encoding.encode_report(report, budget)
+        _exclude_parser_failures(report)
         if len(raw) > budget.limits.max_bytes:
             raise LimitExceeded("Checkpoint report exceeds max_bytes")
         budget.consume("bytes", len(raw) + 256)

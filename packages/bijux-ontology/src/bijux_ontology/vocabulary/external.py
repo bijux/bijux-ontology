@@ -13,7 +13,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
-from bijux_ontology.rdf.queries.access import QueryScope
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.stores.external.checking import read_external_declarations
 from bijux_ontology.rdf.stores.external.types import ExternalStore
 

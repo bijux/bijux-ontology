@@ -10,6 +10,7 @@ from rdflib import BNode, Dataset, Graph, Literal, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import (
     BUDGET_KINDS,
@@ -21,7 +22,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.json.values import decode_json
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.queries.protocol import QueryTerm
 from bijux_ontology.rdf.sources.loading import prepare_rdf
@@ -182,34 +183,38 @@ def prepare_entailment(
             "allowances": {kind: operation.remaining(kind) for kind in BUDGET_KINDS},
         }
         operation.consume("bytes", json_bound(request, operation))
-        allowances = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
-        request["allowances"] = allowances
+        terminal = TerminalResponse(operation, operation.limits.max_total_bytes)
+        allowances = {kind: terminal.available(kind) for kind in BUDGET_KINDS}
+        # The native evaluator returns data/counters; host adoption owns Issues.
+        allowances["issues"] = 0
+        delegated = DelegatedAllowance(operation, allowances)
+        request["allowances"] = delegated.to_data()
         payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
-        raw = execute_worker(
-            "bijux_ontology.rdf.entailment.worker",
-            payload,
-            cap=operation.limits.max_total_bytes,
-            timeout=max(0.000001, operation.deadline - time.monotonic()),
-            cancel=cancel,
-        )
-        response = decode_json(
-            raw,
-            max_bytes=operation.limits.max_total_bytes,
-            max_depth=operation.limits.max_depth,
-        )
-        if not isinstance(response, dict) or not isinstance(
-            response.get("status"), str
-        ):
-            raise ResourceError("Invalid entailment worker response")
-        if response["status"] != "unavailable":
-            consumed = response.get("consumed")
-            if not isinstance(consumed, dict) or set(consumed) != set(BUDGET_KINDS):
-                raise ResourceError("Entailment worker omitted cumulative counters")
-            for kind in BUDGET_KINDS:
-                amount = consumed[kind]
-                if type(amount) is not int or not 0 <= amount <= allowances[kind]:
-                    raise ResourceError("Invalid entailment worker counter")
-                operation.consume(kind, amount)
+        dispatched = received = False
+        try:
+            terminal.admit(payload)
+            dispatched = True
+            raw = execute_worker(
+                "bijux_ontology.rdf.entailment.worker",
+                payload,
+                cap=terminal.cap,
+                timeout=max(0.000001, operation.deadline - time.monotonic()),
+                cancel=operation.cancel,
+            )
+            response = terminal.decode(raw)
+            if not isinstance(response, dict) or not isinstance(
+                response.get("status"), str
+            ):
+                raise ResourceError("Invalid entailment worker response")
+            delegated.settle(response.get("consumed"))
+            received = True
+        finally:
+            try:
+                terminal.close()
+            finally:
+                if dispatched and not received:
+                    delegated.forfeit()
+        operation.consume("work", 0)
         backend_value = response.get("backend", "")
         if not isinstance(backend_value, str):
             raise ResourceError("Invalid entailment backend identity")

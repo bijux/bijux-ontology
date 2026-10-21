@@ -18,7 +18,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.queries import QueryScope
-from bijux_ontology.rdf.queries.access import _graphs
+from bijux_ontology.rdf.queries.capture import selected_graphs
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource, copy_graph
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
@@ -69,7 +69,7 @@ def _closure(
         raise ResourceError(
             "DOSDP queries require default, named or explicit union scope"
         )
-    graphs = tuple(_graphs(source, scope, operation))
+    graphs = tuple(selected_graphs(source, scope, operation))
     if len(graphs) != 1:
         raise ResourceError(
             "DOSDP root scope does not identify one complete projection"

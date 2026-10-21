@@ -98,6 +98,9 @@ QName, document-dependent types and non-ASCII names remain unverified. Core
 `xsd:anyURI` checks XML character validity, including relative strings and spaces;
 it does not validate or resolve an RDF IRI. Custom datatype relations stay unknown.
 
+Concrete `QueryScope` and `QueryResult` types live in
+`bijux_ontology.rdf.queries.types`; `rdf.queries` remains the public query entry.
+
 Use `query_rdf(source, sparql, scope=QueryScope("dataset"))` for local ASK/SELECT. Choose `default`, `named` or `union` to project a graph instead. Results retain typed terms and unbound cells; a false ASK is a completed answer, while capped SELECT results stay incomplete. SERVICE and FROM retrieval are prohibited. Capture, worker execution and reply validation have separate finite work budgets and one deadline; opaque engine search is bounded by the owned worker deadline.
 
 Use `check_rdf_stream(path, vocabulary)` from `bijux_ontology.data.streams` for
@@ -563,6 +566,9 @@ incompatibilities before loading data. Local conflicts remain conditional on
 invocation; only justified necessary conflicts propagate to selected roots.
 Inspect signed dependencies and components for recursion boundaries. The analyzer
 checks dependency metadata against actual RDF and preserves valid alternatives.
+Both inspection and analysis require exact boolean literals and nonnegative
+integer counts bounded to the smaller of 4096 characters and `max_bytes`.
+Scalar qualification that runs out of its allowance remains exhausted.
 `not_determined` never certifies arbitrary satisfiability; recursive semantics,
 qualified sibling exclusions and unsupported metadata remain explicit unknowns.
 
@@ -1459,6 +1465,10 @@ reference-only. Graph selection remains physical, sharing survives in the owned
 output, and receipts retain input ownership. `record_plan_from_shape` supports
 finite property/node path plans; recursive and other unsupported obligations
 withhold a complete plan. Extraction does not establish SHACL conformance.
+
+Authored `ModuleContract`, `ModuleRequirement` and `ModulePropertyRequirement`
+come from `bijux_ontology.owl.modules.contracts`; their bounded qualification is
+shared by asserted wiring and the optional logical checker.
 
 `workflows.ontology.modules.check_module_wiring` checks named public exports and
 selected class/property/datatype obligations against explicitly bound provider

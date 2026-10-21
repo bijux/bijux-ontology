@@ -1,5 +1,6 @@
 """Actual RDF corpus restart, negative reuse and fresh cross-record obligations."""
 
+import hashlib
 import json
 import sqlite3
 import subprocess
@@ -182,8 +183,10 @@ def test_global_keys_rebuild_even_with_every_record_cached(tmp_path: Path) -> No
     owned.close()
 
 
+@pytest.mark.parametrize("corruption", ["bytes", "semantics"])
 def test_corrupt_checkpoint_is_not_truth_and_durability_is_separate(
     tmp_path: Path,
+    corruption: str,
 ) -> None:
     """A fresh recheck cannot conceal required checkpoint uncertainty."""
     path = tmp_path / "corrupt.sqlite"
@@ -192,7 +195,17 @@ def test_corrupt_checkpoint_is_not_truth_and_durability_is_separate(
         store = ResumeCorpus(path)
         assert store.run(lease, (record("one"),)).report.verified
         with sqlite3.connect(path) as connection:
-            connection.execute("UPDATE completed SET report=?", (b'{"partial":',))
+            if corruption == "bytes":
+                connection.execute("UPDATE completed SET report=?", (b'{"partial":',))
+            else:
+                raw = connection.execute("SELECT report FROM completed").fetchone()[0]
+                data = json.loads(raw)
+                data["families"] = 42
+                raw = json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
+                connection.execute(
+                    "UPDATE completed SET report=?,sha256=?",
+                    (raw, hashlib.sha256(raw).hexdigest()),
+                )
         rerun = store.run(lease, (record("one"),))
         assert rerun.semantic_report.verified and not rerun.records[0].reused
         assert not rerun.checkpoint_report.verified and not rerun.report.verified
@@ -390,3 +403,45 @@ def test_corpus_retains_one_revision_after_close_and_activation(
         assert owned.status().operations == 0 and owned.status().leases == 0
         assert original_revision not in owned.retire(original_revision).retained
         assert owned.close().closed
+
+
+@pytest.mark.parametrize("kind", ["bytes", "states", "work"])
+def test_checkpoint_write_exhaustion_keeps_completed_findings(
+    tmp_path: Path, kind: str
+) -> None:
+    """Stop real checkpoint ownership after the native semantic result is paid."""
+    from typing import cast
+
+    from bijux_ontology.execution.limits import BudgetKind
+
+    operation = Budget()
+    resource = cast(BudgetKind, kind)
+    owned = manager()
+    admitted = []
+
+    def observe(frame: FrameType, event: str, argument: object) -> None:
+        if event == "call" and frame.f_code is Checkpoint.write.__code__:
+            admitted.append(frame.f_locals["report"])
+            operation.consume(resource, operation.remaining(resource))
+
+    path = tmp_path / "exhausted.sqlite"
+    try:
+        with owned.lease() as lease:
+            sys.setprofile(observe)
+            try:
+                result = ResumeCorpus(path).run(
+                    lease, (record("bad", value=None),), budget=operation
+                )
+            finally:
+                sys.setprofile(None)
+    finally:
+        owned.close()
+    assert len(admitted) == 1 and admitted[0].outcome == "disagreement"
+    assert result.semantic_report.complete and not result.pending
+    assert result.semantic_report.outcome == "disagreement"
+    assert result.records[0].report is admitted[0]
+    assert not result.records[0].durable and not result.records[0].reused
+    assert result.checkpoint_report.outcome == "exhausted"
+    assert any(issue.kind == "finding" for issue in result.report)
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("SELECT count(*) FROM completed").fetchone()[0] == 0

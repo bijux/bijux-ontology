@@ -4,16 +4,15 @@ from collections.abc import Sequence
 from typing import Literal as Kind
 
 from rdflib import BNode, Graph, Literal, URIRef
-from rdflib.namespace import RDF, RDFS, SH, XSD
+from rdflib.namespace import RDF, RDFS, SH
 from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.structure import iter_rdf_list
-from bijux_ontology.rdf.terms import bound_node, literal_datatype
+from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.shacl.authoring.types import (
     ShaclClosed,
     ShaclComparison,
@@ -26,6 +25,7 @@ from bijux_ontology.shacl.authoring.types import (
     ShaclShapeRef,
     ShaclValue,
 )
+from bijux_ontology.shacl.parameters.reading import ParameterReader, boolean_value
 from bijux_ontology.shacl.paths import decode_path
 from bijux_ontology.shacl.profiles.extraction import extract_profile
 
@@ -84,62 +84,24 @@ class _Reader:
     """Read bounded original assertions without expanding recursive references."""
 
     def __init__(self, graph: Graph, budget: Budget) -> None:
-        self.graph = graph
         self.budget = budget
-
-    def values(self, node: Node, predicate: URIRef) -> tuple[Node, ...]:
-        """Capture exact parameter terms under the caller's cumulative allowance."""
-        values = []
-        for value in self.graph.objects(node, predicate):
-            self.budget.consume("work")
-            self.budget.consume("states")
-            bound_node(value, self.budget)
-            values.append(value)
-        return tuple(values)
-
-    def one(self, node: Node, predicate: URIRef) -> Node | None:
-        """Reject ambiguous singleton parameters instead of selecting one."""
-        values = self.values(node, predicate)
-        if len(values) > 1:
-            raise InputError("A typed singleton SHACL parameter has multiple values")
-        return values[0] if values else None
-
-    def count(self, node: Node, predicate: URIRef) -> int | None:
-        """Read valid bounded nonnegative integer counts without normalization."""
-        value = self.one(node, predicate)
-        if value is None:
-            return None
-        if not isinstance(value, Literal) or literal_datatype(value) != XSD.integer:
-            raise InputError("SHACL counts require integer literals")
-        if not check_literal(value, budget=self.budget).verified:
-            raise InputError("SHACL count has invalid integer syntax")
-        if len(value) > min(4096, self.budget.limits.max_bytes):
-            raise LimitExceeded("SHACL count exceeds bounded integer representation")
-        result = int(str(value))
-        if result < 0:
-            raise InputError("SHACL count cannot be negative")
-        return result
+        self.parameters = ParameterReader(graph, budget)
 
     def constraints(self, node: URIRef | BNode) -> tuple[ShaclConstraint, ...]:
         """Project only supported constraint parameters, preserving conjunction."""
         result: list[ShaclConstraint] = []
-        closed = self.one(node, SH.closed)
-        ignored = self.one(node, SH.ignoredProperties)
+        closed = self.parameters.one(node, SH.closed)
+        ignored = self.parameters.one(node, SH.ignoredProperties)
         if ignored is not None and closed is None:
             raise InputError(
                 "Typed ignored properties require an explicit closed policy"
             )
         if closed is not None:
-            if (
-                not isinstance(closed, Literal)
-                or literal_datatype(closed) != XSD.boolean
-                or str(closed) not in ("true", "false", "1", "0")
-            ):
-                raise InputError("SHACL closed requires a boolean literal")
+            closed_value = boolean_value(closed)
             predicates = []
             if ignored is not None:
                 for value in iter_rdf_list(
-                    self.graph,
+                    self.parameters.graph,
                     ignored,
                     max_items=self.budget.limits.max_states,
                     budget=self.budget,
@@ -151,9 +113,9 @@ class _Reader:
                     self.budget.consume("states")
                     self.budget.consume("bytes", 32 + 4 * len(value))
                     predicates.append(str(value))
-            result.append(ShaclClosed(str(closed) in ("true", "1"), tuple(predicates)))
+            result.append(ShaclClosed(closed_value, tuple(predicates)))
         for predicate in (SH.datatype, SH["class"]):
-            parameters = self.values(node, predicate)
+            parameters = self.parameters.values(node, predicate)
             if predicate == SH.datatype and len(parameters) > 1:
                 raise InputError("A datatype constraint requires one parameter")
             for value in parameters:
@@ -164,21 +126,21 @@ class _Reader:
                     if predicate == SH.datatype
                     else ShaclValue(class_iri=str(value))
                 )
-        kind = self.one(node, SH.nodeKind)
+        kind = self.parameters.one(node, SH.nodeKind)
         if kind is not None:
             if kind not in _KINDS:
                 raise InputError("Unknown SHACL node kind")
             result.append(ShaclValue(node_kind=_KINDS[kind]))
-        for value in self.values(node, SH.hasValue):
+        for value in self.parameters.values(node, SH.hasValue):
             result.append(ShaclValue(has_value=_constant(value)))
-        allowed = self.one(node, SH["in"])
+        allowed = self.parameters.one(node, SH["in"])
         if allowed is not None:
             result.append(
                 ShaclValue(
                     in_values=tuple(
                         _constant(value)
                         for value in iter_rdf_list(
-                            self.graph,
+                            self.parameters.graph,
                             allowed,
                             max_items=self.budget.limits.max_states,
                             budget=self.budget,
@@ -186,15 +148,18 @@ class _Reader:
                     )
                 )
             )
-        minimum, maximum = self.count(node, SH.minCount), self.count(node, SH.maxCount)
+        minimum, maximum = (
+            self.parameters.count(node, SH.minCount),
+            self.parameters.count(node, SH.maxCount),
+        )
         if minimum is not None or maximum is not None:
             result.append(ShaclCount(minimum, maximum))
         for predicate, operator in _COMPARISONS.items():
-            for value in self.values(node, predicate):
+            for value in self.parameters.values(node, predicate):
                 if not isinstance(value, URIRef):
                     raise InputError("Property comparison requires an IRI")
                 result.append(ShaclComparison(operator, str(value)))
-        for value in self.values(node, SH.node):
+        for value in self.parameters.values(node, SH.node):
             result.append(ShaclShapeRef(_resource(value)))
         logical: tuple[tuple[URIRef, Kind["and", "or", "xone"]], ...] = (
             (SH["and"], "and"),
@@ -202,11 +167,11 @@ class _Reader:
             (SH.xone, "xone"),
         )
         for predicate, logical_operator in logical:
-            for head in self.values(node, predicate):
+            for head in self.parameters.values(node, predicate):
                 refs = tuple(
                     ShaclShapeRef(_resource(value))
                     for value in iter_rdf_list(
-                        self.graph,
+                        self.parameters.graph,
                         head,
                         max_items=self.budget.limits.max_states,
                         budget=self.budget,
@@ -217,11 +182,11 @@ class _Reader:
                         "Empty logical lists are outside the authoring subset"
                     )
                 result.append(ShaclLogical(logical_operator, refs))
-        for value in self.values(node, SH["not"]):
+        for value in self.parameters.values(node, SH["not"]):
             result.append(ShaclLogical("not", (ShaclShapeRef(_resource(value)),)))
-        qualified = self.one(node, SH.qualifiedValueShape)
+        qualified = self.parameters.one(node, SH.qualifiedValueShape)
         if qualified is None and any(
-            self.values(node, p)
+            self.parameters.values(node, p)
             for p in (
                 SH.qualifiedMinCount,
                 SH.qualifiedMaxCount,
@@ -230,23 +195,18 @@ class _Reader:
         ):
             raise InputError("Qualified parameters require a referenced shape")
         if qualified is not None:
-            qminimum = self.count(node, SH.qualifiedMinCount)
-            qmaximum = self.count(node, SH.qualifiedMaxCount)
+            qminimum = self.parameters.count(node, SH.qualifiedMinCount)
+            qmaximum = self.parameters.count(node, SH.qualifiedMaxCount)
             if qminimum is None and qmaximum is None:
                 raise InputError("Qualified authoring requires a count bound")
-            disjoint = self.one(node, SH.qualifiedValueShapesDisjoint)
-            if disjoint is not None and (
-                not isinstance(disjoint, Literal)
-                or literal_datatype(disjoint) != XSD.boolean
-                or str(disjoint) not in ("true", "false", "1", "0")
-            ):
-                raise InputError("Qualified disjointness requires a boolean literal")
+            disjoint = self.parameters.one(node, SH.qualifiedValueShapesDisjoint)
+            disjoint_value = False if disjoint is None else boolean_value(disjoint)
             result.append(
                 ShaclQualifiedCount(
                     ShaclShapeRef(_resource(qualified)),
                     qminimum,
                     qmaximum,
-                    str(disjoint) in ("true", "1"),
+                    disjoint_value,
                 )
             )
         return tuple(result)
@@ -317,7 +277,7 @@ def inspect_shapes(
             operation.consume("states")
             try:
                 constraints = reader.constraints(node)
-                path = reader.one(node, SH.path)
+                path = reader.parameters.one(node, SH.path)
                 if path is not None:
                     decoded = decode_path(
                         graph, path, budget=operation, raise_limits=True
@@ -337,18 +297,21 @@ def inspect_shapes(
                         raise InputError(
                             "A property constraint requires a property shape"
                         )
-                    classes = reader.values(node, SH.targetClass)
+                    classes = reader.parameters.values(node, SH.targetClass)
                     if any(not isinstance(x, URIRef) for x in classes):
                         raise InputError("Class targets require IRIs")
                     definition = ShaclNodeShape(
                         node,
                         tuple(
                             ShaclShapeRef(_resource(x))
-                            for x in reader.values(node, SH.property)
+                            for x in reader.parameters.values(node, SH.property)
                         ),
                         constraints,
                         tuple(str(x) for x in classes),
-                        tuple(_constant(x) for x in reader.values(node, SH.targetNode)),
+                        tuple(
+                            _constant(x)
+                            for x in reader.parameters.values(node, SH.targetNode)
+                        ),
                     )
                 definitions.append(definition)
                 for _, predicate, value in graph.triples((node, None, None)):

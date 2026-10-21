@@ -10,6 +10,7 @@ import pyoxigraph as ox
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import (
     BUDGET_KINDS,
@@ -20,7 +21,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.json.values import decode_json
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.rdf.sources.types import RdfSource
 
 from .protocol import decode_quads, encode_quads, occurrences
@@ -45,37 +46,47 @@ def _execute(request: dict[str, object], operation: Operation) -> dict[str, obje
     # counters cover explicit retained terms and our protocol operations.
     request["allowances"] = {kind: operation.remaining(kind) for kind in BUDGET_KINDS}
     operation.consume("bytes", json_bound(request, operation))
+    terminal = TerminalResponse(
+        operation,
+        operation.limits.max_total_bytes,
+        max_depth=operation.limits.max_depth * 4 + 16,
+    )
     allowances = {
-        kind: operation.remaining(kind)
+        kind: terminal.available(kind)
         // (2 if kind in ("bytes", "work", "states", "triples") else 1)
         for kind in BUDGET_KINDS
     }
-    request["allowances"] = allowances
+    # The native evaluator returns data/counters; host adoption owns Issues.
+    allowances["issues"] = 0
+    delegated = DelegatedAllowance(operation, allowances)
+    request["allowances"] = delegated.to_data()
     payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
-    raw = execute_worker(
-        "bijux_ontology.rdf.triple_terms.worker",
-        payload,
-        cap=operation.limits.max_total_bytes,
-        timeout=max(0.000001, operation.deadline - time.monotonic()),
-        cancel=operation.cancel,
-    )
-    response = decode_json(
-        raw,
-        max_bytes=operation.limits.max_total_bytes,
-        max_depth=operation.limits.max_depth * 4 + 16,
-    )
-    if not isinstance(response, dict):
-        raise ResourceError("Invalid triple-term worker response")
-    consumed = response.get("consumed")
-    if not isinstance(consumed, dict) or set(consumed) != set(BUDGET_KINDS):
-        if response.get("status") == "exhausted":
+    dispatched = received = False
+    try:
+        terminal.admit(payload)
+        dispatched = True
+        raw = execute_worker(
+            "bijux_ontology.rdf.triple_terms.worker",
+            payload,
+            cap=terminal.cap,
+            timeout=max(0.000001, operation.deadline - time.monotonic()),
+            cancel=operation.cancel,
+        )
+        response = terminal.decode(raw)
+        if not isinstance(response, dict):
+            raise ResourceError("Invalid triple-term worker response")
+        consumed = response.get("consumed")
+        if consumed is None and response.get("status") == "exhausted":
             raise LimitExceeded("Triple-term worker exceeded its protocol allowance")
-        raise ResourceError("Missing triple-term worker counters")
-    for kind in BUDGET_KINDS:
-        amount = consumed[kind]
-        if type(amount) is not int or not 0 <= amount <= allowances[kind]:
-            raise ResourceError("Invalid triple-term worker counters")
-        operation.consume(kind, amount)
+        delegated.settle(consumed)
+        received = True
+    finally:
+        try:
+            terminal.close()
+        finally:
+            if dispatched and not received:
+                delegated.forfeit()
+    operation.consume("work", 0)
     if response.get("status") == "exhausted":
         raise LimitExceeded("Triple-term operation exceeded its shared allowance")
     if response.get("status") == "input_error":

@@ -9,7 +9,7 @@ from rdflib.namespace import XSD
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.queries.access import QueryScope
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.workloads import (

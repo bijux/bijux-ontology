@@ -1,9 +1,12 @@
 """Actual SSSOM joins distinguish SKOS entailment from explicit application rules."""
 
 import importlib.util
+import json
 import sys
 import threading
+import tracemalloc
 from collections.abc import Sequence
+from dataclasses import replace
 from types import FrameType
 from typing import Any, cast
 
@@ -18,7 +21,7 @@ from bijux_ontology.vocabulary.mappings.composition import (
     compose_mappings,
 )
 from bijux_ontology.vocabulary.mappings.interchange import export_sssom, read_sssom
-from bijux_ontology.vocabulary.mappings.types import MappingSet
+from bijux_ontology.vocabulary.mappings.types import MappingRead, MappingSet
 
 LICENSE = "https://creativecommons.org/publicdomain/zero/1.0/"
 SET_ID = "urn:example:mapping-set"
@@ -391,3 +394,91 @@ def test_raw_optional_interchange_report_remains_required() -> None:
         assert raw.report in result.report.children
     else:
         assert result.report.verified and result.left is raw.mapping_set
+
+
+@pytest.mark.parametrize("field", ["row", "cell", "prefix", "metadata"])
+def test_whole_input_qualifies_even_unmatched_rows_and_context(
+    pair: tuple[MappingSet, MappingSet], field: str
+) -> None:
+    """A valid selected path cannot conceal unrelated invalid owned input fields."""
+    left, right = pair
+    attribute = (
+        "prefixes"
+        if field == "prefix"
+        else "metadata_json"
+        if field == "metadata"
+        else "rows"
+    )
+    original = getattr(left, attribute)
+    changed: object
+    if field == "row":
+        changed = (*left.rows[:-1], replace(left.rows[-1], subject="relative"))
+    elif field == "cell":
+        changed = (
+            *left.rows[:-1],
+            replace(left.rows[-1], cells=(("comment", cast(str, None)),)),
+        )
+    elif field == "prefix":
+        changed = (*left.prefixes, ("unused", "relative"))
+    else:
+        changed = '{"other":1,"other":2}'
+    object.__setattr__(left, attribute, changed)
+    try:
+        result = compose_mappings(
+            left, right, intermediates=["urn:example:B"], rules=[EXACT]
+        )
+    finally:
+        object.__setattr__(left, attribute, original)
+    assert result.report.outcome == "input_error"
+    assert not result.report.complete and not result.paths and not result.results
+
+
+def test_metadata_decoding_cannot_overspend_its_actual_enclosing_grant(
+    pair: tuple[MappingSet, MappingSet],
+) -> None:
+    """Prepay the maintained decoder before allocating nested metadata containers."""
+    left, right = pair
+    original = left.metadata_json
+    object.__setattr__(left, "metadata_json", json.dumps({"other": ["xxxx"] * 2_000}))
+    owner = Budget(Limits(max_total_bytes=90_000))
+    tracing = tracemalloc.is_tracing()
+    if not tracing:
+        tracemalloc.start()
+    current, _ = tracemalloc.get_traced_memory()
+    tracemalloc.reset_peak()
+    try:
+        result = compose_mappings(
+            left, right, intermediates=["urn:example:B"], rules=[EXACT], budget=owner
+        )
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        if not tracing:
+            tracemalloc.stop()
+        object.__setattr__(left, "metadata_json", original)
+    assert (
+        result.report.outcome == "exhausted" and not result.paths and not result.results
+    )
+    assert owner._counts["bytes"] <= owner.limits.max_total_bytes
+    assert peak - current < owner.limits.max_total_bytes
+
+
+def test_incomplete_native_producer_cannot_qualify_a_usable_selected_row(
+    pair: tuple[MappingSet, MappingSet],
+) -> None:
+    """Actual failed producer truth survives an apparently usable table reference."""
+    left, right = pair
+    failed = read_sssom(
+        b"subject_id\tpredicate_id\tobject_id\nrelative\tbad\tbad\n",
+        mapping_set_id=SET_ID,
+        license=LICENSE,
+    )
+    assert not failed.report.verified and failed.report.issues
+    result = compose_mappings(
+        MappingRead(left, failed.report),
+        right,
+        intermediates=["urn:example:B"],
+        rules=[EXACT],
+    )
+    assert not result.report.verified and not result.paths and not result.results
+    assert result.left is None and failed.report in result.report.children
+    assert all(issue in result.report.issues for issue in failed.report.issues)

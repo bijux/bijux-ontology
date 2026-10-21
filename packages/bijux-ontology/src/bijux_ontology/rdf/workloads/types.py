@@ -8,7 +8,7 @@ from rdflib import Literal, URIRef
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.answers.types import AnswerArtifact
-from bijux_ontology.rdf.queries.access import QueryScope
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 
 EngineStatus = Choice["completed", "unsupported", "failed", "exhausted"]

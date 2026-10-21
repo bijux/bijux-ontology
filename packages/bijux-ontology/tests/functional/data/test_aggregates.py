@@ -5,6 +5,7 @@ from fractions import Fraction
 from threading import Event
 from typing import Literal as Choice
 
+import pytest
 from rdflib import BNode, Dataset, Graph, Literal, URIRef
 from rdflib.namespace import XSD
 
@@ -252,3 +253,139 @@ def test_cumulative_limits_cancellation_and_paid_completed_group_retention() -> 
     stopped = check_aggregates((first,), numeric(), cancel=event)
     assert stopped.report.outcome == "exhausted" and not stopped.groups
     assert check_aggregates((group(rows, "3"),), numeric()).report.verified
+
+
+@pytest.mark.parametrize("scope", ["default", "named", "union"])
+def test_record_scope_and_owned_blank_corpus_keep_consumer_policies_distinct(
+    scope: str,
+) -> None:
+    """One scope never borrows hidden values, and shared facts choose no policy."""
+    from bijux_ontology.data.keys import check_record_keys
+    from bijux_ontology.data.records.reading import read_records
+    from bijux_ontology.data.topology import TopologyRecord, check_record_topology
+    from bijux_ontology.declarations.keys import KeyComponent, KeyContract
+    from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
+    from bijux_ontology.diagnostics.errors import InputError
+
+    link, primary, hidden = (
+        URIRef("urn:" + name) for name in ("link", "primary", "hidden")
+    )
+    root, child = BNode("root"), BNode("child")
+    lexical = Literal("+01", datatype=XSD.integer, normalize=False)
+    data = Dataset()
+    for graph in (data.default_graph, data.graph(primary)):
+        graph.add((root, VALUE, lexical)).add((child, VALUE, Literal(2))).add(
+            (root, link, child)
+        )
+    data.graph(hidden).add((root, VALUE, Literal(3)))
+    source = prepare_rdf(data)
+    original = source.graph("@default")
+    owned_root = next(original.subjects(link, None))
+    owned_child = next(original.objects(owned_root, link))
+    assert isinstance(owned_root, BNode) and isinstance(owned_child, BNode)
+    original_value = next(original.objects(owned_root, VALUE))
+    name = "@default" if scope == "default" else primary if scope == "named" else None
+    union = scope == "union"
+    rows = tuple(
+        KeyRecord(identifier, source, subject, graph_name=name, union=union)
+        for identifier, subject in (("root", owned_root), ("child", owned_child))
+    )
+    key_contract = KeyContract("value", (KeyComponent(VALUE),))
+    keys = check_record_keys(rows, key_contract, complete=True)
+    numeric_contract = AggregateContract("total", "sum", "entities", VALUE)
+    aggregated = check_aggregates(
+        (AggregateGroup("records", rows, Literal(3), True),), numeric_contract
+    )
+    topology_contract = TopologyContract(
+        (TopologyRelation("children", link, ownership=True, acyclic=True),),
+        min_owners=1,
+        max_owners=1,
+    )
+    focuses = (TopologyRecord("root", owned_root), TopologyRecord("child", owned_child))
+    topology = check_record_topology(
+        source,
+        focuses,
+        topology_contract,
+        roots=("root",),
+        complete=True,
+        closure="closed",
+        graph_name=name,
+        union=union,
+    )
+    assert topology.verified
+    assert keys.verified is (not union) and aggregated.report.verified is (not union)
+    if union:
+        assert (
+            keys.outcome == "disagreement" and aggregated.report.outcome == "unverified"
+        )
+    else:
+        assert aggregated.groups[0].actual == 3
+        assert aggregated.groups[0].contributions[0].values[0] is original_value
+        assert str(original_value) == "+01"
+    foreign = BNode(str(owned_root))
+    foreign_rows = (replace(rows[0], subject=foreign), rows[1])
+    assert (
+        check_record_keys(foreign_rows, key_contract, complete=True).outcome
+        == "unverified"
+    )
+    assert not check_aggregates(
+        (AggregateGroup("records", foreign_rows, Literal(3), True),), numeric_contract
+    ).report.verified
+    assert not check_record_topology(
+        source,
+        (TopologyRecord("root", foreign), focuses[1]),
+        topology_contract,
+        roots=("root",),
+        complete=True,
+        closure="closed",
+        graph_name=name,
+        union=union,
+    ).verified
+    foreign_alias = replace(rows[0], identifier="foreign", subject=foreign)
+    guarded = check_record_keys((*rows, foreign_alias), key_contract, complete=True)
+    assert not guarded.verified and any(
+        issue.code == "data.key_binding_unverified" for issue in guarded.issues
+    )
+    operation = Budget()
+    reader = read_records(source, operation, graph_name=name, union=union)
+    denied = reader.values(foreign, ((VALUE, False),), operation)
+    assert (
+        not denied.complete and denied.coverage == "foreign_blank" and not denied.values
+    )
+    source.graph_name = str(hidden)
+    with pytest.raises(InputError, match="declaration changed"):
+        reader.values(owned_root, ((VALUE, False),), operation)
+
+
+def test_object_only_record_is_present_but_has_no_countable_description() -> None:
+    """Inverse key paths and topology presence do not imply a record description."""
+    from bijux_ontology.data.keys import check_record_keys
+    from bijux_ontology.data.topology import TopologyRecord, check_record_topology
+    from bijux_ontology.declarations.keys import KeyComponent, KeyContract
+    from bijux_ontology.declarations.topology import TopologyContract, TopologyRelation
+
+    root, link = URIRef("urn:root"), URIRef("urn:link")
+    source = prepare_rdf(
+        Graph().add((root, link, BNode())).add((root, VALUE, Literal(1)))
+    )
+    child = next(source.graph().objects(root, link))
+    assert isinstance(child, BNode)
+    row = KeyRecord("child", source, child)
+    key = KeyContract("parent-value", (KeyComponent(~link / VALUE),))
+    assert check_record_keys((row,), key, complete=True).verified
+    counted = check_aggregates(
+        (AggregateGroup("children", (row,), Literal(1), True),),
+        AggregateContract("descriptions", "count", "entities"),
+    )
+    assert (
+        counted.report.outcome == "unverified" and not counted.groups[0].contributions
+    )
+    topology = check_record_topology(
+        source,
+        (TopologyRecord("root", root), TopologyRecord("child", child)),
+        TopologyContract((TopologyRelation("children", link),)),
+        roots=("root",),
+        complete=True,
+        closure="closed",
+    )
+    assert topology.verified

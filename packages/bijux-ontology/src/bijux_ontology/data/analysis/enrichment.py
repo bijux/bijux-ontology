@@ -12,11 +12,13 @@ from rdflib import URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, BudgetKind, IssueCollector, Limits
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.json.values import decode_json, object_value
+from bijux_ontology.json.receipts import TerminalResponse
+from bijux_ontology.json.values import object_value
 from bijux_ontology.vocabulary.relation_paths.automaton import named
 
 from .population import capture, fingerprint, ordered, qualify, reserve, text
@@ -46,9 +48,6 @@ def _native(
     capacity = 4096 + 256 * len(counts)
     if capacity > operation.limits.max_bytes:
         raise LimitExceeded("Numerical family exceeds the owned protocol byte bound")
-    # Prepay bounded input/output pipes, decoding and owned response inventories.
-    operation.consume("bytes", capacity * 6)
-    operation.consume("work", capacity * 2)
     request: dict[str, object] = {
         "tables": [[list(row) for row in item.table] for item in counts],
         "correction": correction,
@@ -59,33 +58,40 @@ def _native(
     if size > capacity:
         raise LimitExceeded("Numerical request exceeds the owned protocol byte bound")
     operation.consume("bytes", size)
-    allowances = {kind: operation.remaining(kind) for kind in _KINDS}
-    request["allowances"] = allowances
+    terminal = TerminalResponse(operation, capacity, max_depth=16)
+    allowances = {kind: terminal.available(kind) for kind in _KINDS}
+    # The native evaluator returns data/counters; host adoption owns Issues.
+    allowances["issues"] = 0
+    delegated = DelegatedAllowance(operation, allowances)
+    request["allowances"] = delegated.to_data()
     payload = json.dumps(request, allow_nan=False, separators=(",", ":")).encode(
         "ascii"
     )
     remaining = operation.deadline - time.monotonic()
     if remaining <= 0:
+        terminal.close()
         raise LimitExceeded("Annotation enrichment exceeded its wall-clock deadline")
-    raw = execute_worker(
-        "bijux_ontology.data.analysis.worker",
-        payload,
-        cap=capacity,
-        timeout=remaining,
-        cancel=operation.cancel,
-    )
-    operation.consume("work")
-    response = object_value(
-        decode_json(raw, max_bytes=capacity, max_depth=16), location="/"
-    )
-    consumed = object_value(response.get("consumed"), location="/consumed")
-    if set(consumed) != set(_KINDS):
-        raise InputError("Malformed numerical control receipt")
-    for kind in _KINDS:
-        amount = consumed[kind]
-        if type(amount) is not int or not 0 <= amount <= allowances[kind]:
-            raise InputError("Numerical worker exceeded its shared control allowance")
-        operation.consume(kind, amount)
+    dispatched = received = False
+    try:
+        terminal.admit(payload)
+        dispatched = True
+        raw = execute_worker(
+            "bijux_ontology.data.analysis.worker",
+            payload,
+            cap=terminal.cap,
+            timeout=remaining,
+            cancel=operation.cancel,
+        )
+        response = object_value(terminal.decode(raw), location="/")
+        delegated.settle(response.get("consumed"))
+        received = True
+    finally:
+        try:
+            terminal.close()
+        finally:
+            if dispatched and not received:
+                delegated.forfeit()
+    operation.consume("work", 0)
     return response
 
 

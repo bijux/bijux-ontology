@@ -33,12 +33,9 @@ from bijux_ontology_reasoning.theories.integration import (
 
 from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.execution.limits import Budget
+from bijux_ontology.owl.modules.contracts import ModuleContract, ModuleRequirement
 from bijux_ontology.owl.obligations import OntologyObligation
-from bijux_ontology.workflows.ontology.modules.types import (
-    ModuleBinding,
-    ModuleContract,
-    ModuleRequirement,
-)
+from bijux_ontology.workflows.ontology.modules.types import ModuleBinding
 
 
 def _class(name: str) -> NamedEntity:

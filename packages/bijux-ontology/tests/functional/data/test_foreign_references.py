@@ -62,7 +62,7 @@ def test_compound_resolution_reuses_index_and_checks_actual_target_contract(
     contract = _contract(target_model="instrument")
     target = _targets(EX.instrument)
     index = prepare_foreign_targets(target, contract, complete=True)
-    import bijux_ontology.data.keys.extraction as extraction
+    import bijux_ontology.data.records.reading as reading
 
     original = path_values
     visited = []
@@ -71,7 +71,7 @@ def test_compound_resolution_reuses_index_and_checks_actual_target_contract(
         visited.append(args[1])
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(extraction, "path_values", observed)
+    monkeypatch.setattr(reading, "path_values", observed)
     models = (ModelDeclaration("instrument", (str(EX.Instrument),)),)
     for _ in range(2):
         result = check_foreign_references(

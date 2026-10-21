@@ -10,11 +10,11 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
-from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.roles.classification import classify_statement, declaration_role
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.types import source_role
 
+from .admission import decode_metadata
 from .types import MappingCheck, MappingPolicy, MappingSet, _iri, _iris
 
 
@@ -201,18 +201,7 @@ def check_mappings(
         sources: dict[str, set[str]] = {}
         relations: dict[tuple[str, str], set[str]] = {}
         uncertain: set[str] = set()
-        bound_text(mapping_set.metadata_json, operation)
-        operation.consume("states", len(mapping_set.metadata_json))
-        operation.consume("work", len(mapping_set.metadata_json))
-        operation.consume("bytes", 4 * len(mapping_set.metadata_json))
-        metadata = object_value(
-            decode_json(
-                mapping_set.metadata_json,
-                max_bytes=operation.limits.max_bytes,
-                max_depth=operation.limits.max_depth,
-            ),
-            location="mapping metadata",
-        )
+        metadata = decode_metadata(mapping_set.metadata_json, operation)
         metadata_uninterpreted = bool(
             metadata.get("predicate_modifier") or metadata.get("other")
         )

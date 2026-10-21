@@ -17,8 +17,8 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
+from bijux_ontology.vocabulary.mappings.admission import AdmittedMapping, admit_mapping
 from bijux_ontology.vocabulary.mappings.checking import check_mappings
-from bijux_ontology.vocabulary.mappings.composition.checking import _input
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.types import (
     MappingPolicy,
@@ -133,6 +133,21 @@ def _introduced_conflicts(
             budget.consume("states")
             result.append(issue)
     return tuple(result)
+
+
+def _admit_release(
+    value: MappingSet | MappingRead,
+    operation: Operation,
+    issues: IssueCollector,
+    children: list[Report],
+) -> AdmittedMapping | None:
+    """Require each actual release producer before interpreting consumer changes."""
+    if isinstance(value, MappingRead):
+        retain_report(value.report, operation, issues)
+        children.append(value.report)
+        if not value.report.verified or value.mapping_set is None:
+            return None
+    return admit_mapping(value, operation)
 
 
 def _uses(
@@ -256,8 +271,10 @@ def assess_mapping_impact(
         owned_coverage = MappingCoverage(
             names(coverage.records, operation), coverage.complete
         )
-        left, _ = _input(before, operation, issues, children)
-        right, _ = _input(after, operation, issues, children)
+        admitted_left = _admit_release(before, operation, issues, children)
+        left = admitted_left.mapping_set if admitted_left is not None else None
+        admitted_right = _admit_release(after, operation, issues, children)
+        right = admitted_right.mapping_set if admitted_right is not None else None
         if left is not None and right is not None:
             selected_uses = _uses(uses, left, owned_coverage, operation)
             requested = max(1, len(selected_uses))
@@ -268,8 +285,11 @@ def assess_mapping_impact(
                 raise InputError(
                     "Selected row qualifications are absent from both releases"
                 )
-            previous, keys, previous_metadata = index(left, selected, operation)
-            current, _, current_metadata = index(right, selected, operation)
+            assert admitted_left is not None and admitted_right is not None
+            previous, keys, previous_metadata = index(
+                admitted_left, selected, operation
+            )
+            current, _, current_metadata = index(admitted_right, selected, operation)
             context_fields = interpretation_fields(left, right, selected, operation)
             contexts_known = True
             changes = differences(previous, current, operation)

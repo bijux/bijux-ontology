@@ -15,6 +15,7 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
+from bijux_ontology.json.encoding import json_bytes
 from bijux_ontology.json.values import (
     array_value,
     decode_json,
@@ -31,7 +32,6 @@ from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary, _VocabularyPreparation
 
-from .codecs import json_bytes
 from .identity import capture_inputs, engine_identity, operation
 from .inspection import inspection_data, read_inspection
 from .sources import TermTable, read_source, read_terms, record, source_data

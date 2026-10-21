@@ -8,7 +8,7 @@ from typing import Literal
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, bound_text
-from bijux_ontology.json.values import decode_json, object_value
+from bijux_ontology.vocabulary.mappings.admission import AdmittedMapping
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
 from bijux_ontology.vocabulary.mappings.types import MappingRow, MappingSet
 
@@ -73,21 +73,12 @@ def signature(
 
 
 def index(
-    value: MappingSet, fields: MappingQualifications, budget: Budget
+    admitted: AdmittedMapping, fields: MappingQualifications, budget: Budget
 ) -> tuple[RowIndex, tuple[Signature, ...], dict[str, object]]:
     """Retain original duplicates and distinguish absent metadata from JSON null."""
+    value = admitted.mapping_set
     size = len(value.metadata_json)
-    budget.consume("work", 4 * size)
-    budget.consume("states", size)
-    budget.consume("bytes", 4 * size)
-    metadata = object_value(
-        decode_json(
-            value.metadata_json,
-            max_bytes=budget.limits.max_bytes,
-            max_depth=budget.limits.max_depth,
-        ),
-        location="mapping metadata",
-    )
+    metadata = admitted.metadata
     if "curie_map" in fields.metadata:
         count = len(value.prefixes)
         budget.consume("states", count + 1)

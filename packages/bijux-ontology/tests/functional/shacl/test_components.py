@@ -354,3 +354,113 @@ def test_bounds_cancellation_and_unexercised_roots_stay_nongreen() -> None:
     assert untargeted.report.verified
     actual = check_components(prepare_rdf(Graph()), untargeted, trusted_sparql=True)
     assert not actual.report.verified
+
+
+def test_role_catalogue_retains_default_terms_and_qualifies_unused_roles() -> None:
+    """Selected roles execute independently of all declared syntax obligations."""
+    lexical = Literal("01", datatype=XSD.integer, normalize=False)
+    graph = _shapes().graph().add((EX.Node, EX.code, lexical))
+    source = prepare_rdf(graph)
+    before = frozenset(source.graph())
+    parameter = ShaclParameter(str(EX.code), datatype=str(XSD.integer))
+    node = ComponentValidator(role="node", select="SELECT $this WHERE {FILTER(1=2)}")
+    generic = ComponentValidator(ask="ASK {FILTER(1=2)}")
+    unused = ComponentValidator(
+        role="property",
+        select="SELECT $this ?value WHERE {$this $PATH ?value . FILTER(1=2)}",
+    )
+    component = ShaclComponent(str(EX.Roles), (parameter,), (generic, node, unused))
+    use = ComponentUse(EX.Node, component.iri, ())
+    compiled = compile_components(source, (component,), (use,))
+    assert compiled.report.verified and compiled.source is not None
+    retained = next(compiled.source.graph().objects(EX.Node, EX.code))
+    assert isinstance(retained, Literal) and str(retained) == "01"
+    assert retained.datatype == XSD.integer and len(compiled.requirements) == 1
+    data = prepare_rdf(Graph().add((EX.value, RDF.type, EX.Class)))
+    actual = check_components(data, compiled, trusted_sparql=True)
+    assert actual.report.verified and actual.result is not None
+    assert actual.result.conforms is True
+    generic_only = ShaclComponent(component.iri, (parameter,), (generic,))
+    failed = check_components(
+        data, compile_components(source, (generic_only,), (use,)), trusted_sparql=True
+    )
+    assert failed.result is not None and failed.result.conforms is False
+    invalid = ShaclComponent(
+        component.iri,
+        (parameter,),
+        (node, ComponentValidator(role="property", select="SELECT ?other WHERE {}")),
+    )
+    rejected = compile_components(source, (invalid,), (use,))
+    assert rejected.structural_report.verified and rejected.source is None
+    assert not rejected.report.verified and frozenset(source.graph()) == before
+
+
+def test_native_false_filter_loss_is_unknown_only_for_selected_execution() -> None:
+    """A valid constant filter cannot disappear from a required native query."""
+    source = _shapes()
+    data = prepare_rdf(Graph().add((EX.record, EX.p, EX.value)))
+    for expression in ("false", "0", '""'):
+        component = _component(
+            validators=(ComponentValidator(ask=f"ASK {{ FILTER({expression}) }}"),)
+        )
+        compiled = compile_components(source, (component,), _uses())
+        assert compiled.structural_report.verified and compiled.source is not None
+        assert compiled.report.outcome == "unverified"
+        actual = check_components(data, compiled, trusted_sparql=True)
+        assert not actual.report.verified
+        raw = validate_shapes(
+            data,
+            compiled.source,
+            trusted_sparql=True,
+            use_shapes=compiled.roots,
+            required_constraints=compiled.requirements,
+        )
+        assert raw.report.outcome == "unverified" and raw.conforms is None
+    generic = ComponentValidator(ask="ASK {FILTER(false)}")
+    node = ComponentValidator(role="node", select="SELECT $this WHERE {FILTER(1=2)}")
+    prop = ComponentValidator(
+        role="property",
+        select="SELECT $this ?value WHERE {$this $PATH ?value . FILTER(1=2)}",
+    )
+    for shape, validators in (
+        (
+            EX.Node,
+            (
+                generic,
+                node,
+                ComponentValidator(
+                    role="property",
+                    select=(
+                        "SELECT $this ?value WHERE {$this $PATH ?value . FILTER(false)}"
+                    ),
+                ),
+            ),
+        ),
+        (
+            EX.Property,
+            (
+                generic,
+                ComponentValidator(
+                    role="node", select="SELECT $this WHERE {FILTER(false)}"
+                ),
+                prop,
+            ),
+        ),
+    ):
+        component = _component(validators=validators)
+        use = ComponentUse(shape, component.iri, ((str(EX.expected), EX.value),))
+        compiled = compile_components(source, (component,), (use,))
+        assert compiled.report.verified
+        actual = check_components(data, compiled, trusted_sparql=True)
+        assert actual.report.verified and actual.result is not None
+        assert actual.result.conforms is True
+    for body, conforms in (
+        ("FILTER(true)", True),
+        ("FILTER(1=2)", False),
+        ("FILTER(false) FILTER(true)", False),
+    ):
+        component = _component(validators=(ComponentValidator(ask=f"ASK {{{body}}}"),))
+        compiled = compile_components(source, (component,), _uses())
+        assert compiled.report.verified
+        actual = check_components(data, compiled, trusted_sparql=True)
+        assert actual.result is not None and actual.result.conforms is conforms

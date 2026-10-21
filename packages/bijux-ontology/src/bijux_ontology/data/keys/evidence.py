@@ -35,8 +35,8 @@ def key_evidence(records: tuple[_Key, ...], budget: Budget) -> str:
     data: list[dict[str, object]] = []
     allowance = 512
     for key in records:
-        name, union = _scope(key.record)
-        source = key.record.source
+        name, union = _scope(key.reader)
+        source = key.reader.metadata
         texts = (
             key.record.identifier,
             str(name or ""),

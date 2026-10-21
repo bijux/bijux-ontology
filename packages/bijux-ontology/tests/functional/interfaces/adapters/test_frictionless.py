@@ -1,8 +1,14 @@
 """Normally installed native package rows, keys and explicit RDF contracts."""
 
+import json
+import subprocess
+import sys
+import threading
 from copy import deepcopy
 from decimal import Decimal
 from pathlib import Path
+from types import FrameType
+from typing import Literal as EventKind
 from typing import cast
 
 import pytest
@@ -15,7 +21,10 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.declarations.value_constraints import ValueConstraints
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, IssueCollector, Limits
+from bijux_ontology.execution.processes.transport import exchange_worker
 from bijux_ontology.interfaces.adapters.frictionless import (
     ColumnBinding,
     ResourceBinding,
@@ -25,6 +34,7 @@ from bijux_ontology.interfaces.adapters.frictionless.profile import array, objec
 from bijux_ontology.interfaces.adapters.vocabulary_bindings.controlled.algebra import (
     compile_allowed,
 )
+from bijux_ontology.json.receipts import TerminalResponse
 
 
 def package() -> tuple[
@@ -376,3 +386,144 @@ def test_bad_public_arguments_are_input_errors(tmp_path: Path) -> None:
         work_directory=tmp_path,
     )
     assert result.report.outcome == "input_error" and result.source is None
+
+
+@pytest.mark.parametrize("mode", ("completed", "missing", "ordinary", "deadline"))
+def test_owned_parent_controls_native_lifetime_and_terminal_receipts(
+    mode: str,
+    tmp_path: Path,
+) -> None:
+    """Observe real native receipts, inherited events and reaped process lifetimes."""
+    pytest.importorskip("frictionless")
+    descriptor, contents, selected = package()
+    cancellation = threading.Event()
+    ledger = Budget()
+    parent = (
+        ledger
+        if mode == "ordinary"
+        else Operation(None, ledger, 0.1 if mode == "deadline" else 30, cancellation)
+    )
+    local = cancellation if mode == "ordinary" else None
+    processes: list[subprocess.Popen[bytes]] = []
+    native: dict[str, int] = {}
+    grants: dict[str, int] = {}
+    host: dict[str, int] = {}
+    before: dict[str, int] = {}
+    timeouts: list[float] = []
+    previous = sys.getprofile()
+
+    def native_command(command: object) -> bool:
+        """Recognize only this adapter's actual native command."""
+        return isinstance(command, (list, tuple)) and any(
+            str(part) == "bijux_ontology.interfaces.adapters.frictionless.worker"
+            for part in command
+        )
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        value: object,
+    ) -> None:
+        """Interrupt actual lifecycle boundaries without replacing producer output."""
+        if previous is not None:
+            previous(frame, event, value)
+        actual = frame.f_code is exchange_worker.__code__ and native_command(
+            frame.f_locals.get("command")
+        )
+        if actual and event == "call":
+            grants.update(json.loads(frame.f_locals["payload"])["allowances"])
+            before.update((kind, ledger.remaining(kind)) for kind in BUDGET_KINDS)
+            timeouts.append(frame.f_locals["timeout"])
+            assert frame.f_locals["cancel"] is cancellation
+        if event != "return":
+            return
+        process = frame.f_locals.get("self")
+        if (
+            frame.f_code is subprocess.Popen.__init__.__code__
+            and isinstance(process, subprocess.Popen)
+            and native_command(process.args)
+        ):
+            processes.append(process)
+            if mode == "missing":
+                cancellation.set()
+        if actual and isinstance(value, bytes):
+            native.update(json.loads(value)["controls"])
+            if mode in ("completed", "ordinary"):
+                cancellation.set()
+        if frame.f_code is TerminalResponse.close.__code__:
+            host.update(frame.f_locals["self"]._host.consumed())
+
+    sys.setprofile(observe)
+    try:
+        result = extract_package(
+            descriptor,
+            contents,
+            selected,
+            work_directory=tmp_path,
+            budget=parent,
+            cancel=local,
+        )
+    finally:
+        sys.setprofile(previous)
+    assert all(process.returncode is not None for process in processes)
+    if mode == "deadline":
+        # A fast native completion is valid; a child never gets a fresh ten seconds.
+        assert result.report.outcome in ("agreement", "exhausted")
+        assert all(0 < timeout <= 0.1 for timeout in timeouts)
+        if not timeouts:
+            assert result.report.outcome == "exhausted"
+    else:
+        assert result.report.outcome == "exhausted" and result.source is None
+        assert processes and bool(native) == (mode != "missing")
+        paid = native if native else grants
+        assert {
+            kind: before[kind] - ledger.remaining(kind) for kind in BUDGET_KINDS
+        } == {kind: paid[kind] + host[kind] for kind in BUDGET_KINDS}
+    assert extract_package(
+        descriptor, contents, selected, work_directory=tmp_path
+    ).report.verified
+
+
+def test_paid_native_failure_keeps_original_cell_after_inherited_cancellation(
+    tmp_path: Path,
+) -> None:
+    """Retain a real paid native finding when its next host adoption is cancelled."""
+    pytest.importorskip("frictionless")
+    descriptor, contents, selected = package()
+    contents["data/observations.csv"] = contents["data/observations.csv"].replace(
+        b"01.250", b"not-a-number", 1
+    )
+    cancellation = threading.Event()
+    operation = Operation(None, Budget(), 30, cancellation)
+    paid: list[Issue] = []
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        value: object,
+    ) -> None:
+        """Cancel after the actual native error has paid its host retention cost."""
+        if previous is not None:
+            previous(frame, event, value)
+        if event == "return" and frame.f_code is IssueCollector.append.__code__:
+            issue = frame.f_locals.get("issue")
+            if (
+                isinstance(issue, Issue)
+                and issue.code == "frictionless.native_type_error"
+            ):
+                paid.append(issue)
+                cancellation.set()
+
+    sys.setprofile(observe)
+    try:
+        result = extract_package(
+            descriptor, contents, selected, work_directory=tmp_path, budget=operation
+        )
+    finally:
+        sys.setprofile(previous)
+    assert result.report.outcome == "exhausted" and result.source is None
+    assert paid and any(issue is paid[0] for issue in result.report.issues)
+    assert paid[0].details is not None
+    assert paid[0].details.source == "data/observations.csv"
+    assert paid[0].details.path == (2, "value")

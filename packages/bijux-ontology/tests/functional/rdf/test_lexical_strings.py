@@ -14,7 +14,8 @@ from bijux_ontology.documents.export import export_rdf
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.rdf.canonical.export import canonicalize_rdf
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.rdf.queries.access import QueryScope, query_rdf
+from bijux_ontology.rdf.queries.access import query_rdf
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.terms import literal_term, term_key
 from bijux_ontology.shacl.checking import validate_shapes
 

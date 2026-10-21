@@ -1,5 +1,6 @@
 """Qualify authored component queries through maintained SHACL/SPARQL machinery."""
 
+from collections.abc import Set as AbstractSet
 from dataclasses import replace
 
 from pyparsing import ParseBaseException, ParseResults
@@ -13,19 +14,13 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.shacl.authoring.parameters import parameter_name
 from bijux_ontology.shacl.sparql.queries import _CASTS, _nodes, analyze_query
 
-from .types import ComponentShapes, ComponentUse, ShaclComponent
-
-_ROLES = {
-    "generic": SH.validator,
-    "node": SH.nodeValidator,
-    "property": SH.propertyValidator,
-}
+from .catalogue import Use
+from .types import ComponentShapes
 
 
-def _prebinding(text: str, parameters: set[str], budget: Budget) -> None:
+def _prebinding(text: str, parameters: AbstractSet[str], budget: Budget) -> None:
     """Check parsed variable roles after maintained PATH substitution.
 
     The backend's own helper also checks its supported pre-binding dialect. This
@@ -101,7 +96,7 @@ def _prefixes(graph: Graph, node: Node, budget: Budget) -> None:
 
 def _qualify(
     compiled: ComponentShapes,
-    jobs: list[tuple[ComponentUse, ShaclComponent, Node]],
+    jobs: list[Use],
     budget: Operation,
 ) -> ComponentShapes:
     """Keep core RDF useful when maintained optional qualification is unavailable."""
@@ -126,41 +121,25 @@ def _qualify(
         budget.consume("states", len(graph))
         budget.consume("triples", len(graph))
         supplied = ShapesGraph(compiled.source.graph())
-        for use, definition, _ in jobs:
-            parameters: set[str] = set()
-            for parameter in definition.parameters:
-                budget.consume("states")
-                bound_text(parameter.path, budget)
-                name = parameter_name(parameter.path)
-                bound_text(name, budget)
-                parameters.add(name)
-                for value in graph.objects(use.shape, URIRef(parameter.path)):
-                    budget.consume("work")
-                    bound_node(value, budget)
-                    if isinstance(value, BNode):
-                        issues.append(
-                            Issue(
-                                "shacl.component_unverified",
-                                "Anonymous parameters lack a separately portable "
-                                "data identity binding",
-                                kind="unverified",
-                            )
-                        )
-            for validator in definition.validators:
+        for use in jobs:
+            parameters = use.definition.names
+            for value in use.bindings:
                 budget.consume("work")
-                node = next(
-                    graph.objects(URIRef(definition.iri), _ROLES[validator.role])
-                )
-                property_role = (
-                    validator.role == "property"
-                    or validator.role == "generic"
-                    and (use.shape, SH.path, None) in graph
-                )
-                path = graph.value(use.shape, SH.path) if property_role else None
-                # An unused role is syntax-qualified with a symbolic predicate;
-                # only explicit real uses receive execution requirements/coverage.
-                if property_role and path is None:
-                    path = URIRef("urn:bijux:ontology:component-path")
+                bound_node(value, budget)
+                if isinstance(value, BNode):
+                    issues.append(
+                        Issue(
+                            "shacl.component_unverified",
+                            "Anonymous parameters lack a separately portable "
+                            "data identity binding",
+                            kind="unverified",
+                        )
+                    )
+            for query in use.queries:
+                budget.consume("work")
+                validator = query.validator.definition
+                node = query.validator.node
+                property_role, path = query.property_role, query.path
                 if path is not None and not isinstance(path, URIRef | BNode):
                     raise InputError("A property shape needs a resource path")
                 _prefixes(supplied.graph, node, budget)
@@ -180,9 +159,15 @@ def _qualify(
                         valuenode=URIRef("urn:bijux:ontology:component-value"),
                         extravars=parameters,
                     )
-                    analysis = analyze_query(shape, node, Literal(concrete), budget)
+                    analysis = analyze_query(
+                        shape,
+                        node,
+                        Literal(concrete),
+                        budget,
+                        require_execution=query.require_execution,
+                    )
                     _prebinding(analysis.text, parameters, budget)
-                except LimitExceeded:
+                except (LimitExceeded, ResourceError):
                     raise
                 except (
                     InputError,

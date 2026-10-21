@@ -9,17 +9,16 @@ from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
-from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.vocabulary.sources.loading import load_vocabulary
-from bijux_ontology.vocabulary.sources.view import Vocabulary
-
-from .builtins import (
+from bijux_ontology.owl.encoding.roles import (
     Regime,
     builtin_kinds,
     kind_matches,
     reserved_name_known,
     validate_regime,
 )
+from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 _CLASS_KINDS = frozenset((OWL.Class, RDFS.Class))
 _PROPERTY_KINDS = frozenset(

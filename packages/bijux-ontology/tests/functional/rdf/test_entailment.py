@@ -1,7 +1,11 @@
 """Maintained entailment preparation is explicit, scoped and independently checked."""
 
 import json
+import subprocess
+import sys
 from threading import Event
+from types import FrameType
+from typing import Literal as EventKind
 from typing import cast
 
 import pytest
@@ -12,8 +16,10 @@ from bijux_ontology.declarations.types import FieldDeclaration as Field
 from bijux_ontology.declarations.types import ModelDeclaration as Model
 from bijux_ontology.declarations.types import ValueDeclaration as Value
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.budgets import Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.execution.workers import execute_worker
+from bijux_ontology.json.receipts import TerminalResponse
 from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.entailment import preparation, prepare_entailment
@@ -275,3 +281,70 @@ def test_host_qualifies_worker_asserted_integrity_and_disjoint_derived_roles(
     assert not detached.report.verified and detached.effective is None
     assert detached.asserted is not None and detached.graph_name is selected
     assert any(i.code == "rdf.structure_changed" for i in detached.report.issues)
+
+
+@pytest.mark.parametrize("phase", ("completed", "interrupted"))
+def test_inherited_cancellation_preserves_terminal_costs_and_reaps_native_work(
+    phase: str,
+) -> None:
+    """Observe real receipts and children without replacing any native results."""
+    pytest.importorskip("owlrl")
+    source = prepare_rdf(domain_graph())
+    ledger = Budget()
+    cancellation = Event()
+    operation = Operation(None, ledger, 30, cancellation)
+    processes: list[subprocess.Popen[bytes]] = []
+    grants: dict[str, int] = {}
+    native: dict[str, int] = {}
+    host: dict[str, int] = {}
+    at_dispatch: dict[str, int] = {}
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: EventKind["call", "return", "c_call", "c_return", "c_exception"],
+        value: object,
+    ) -> None:
+        """Set the inherited Event only at an actual native lifetime boundary."""
+        if previous is not None:
+            previous(frame, event, value)
+        is_worker = (
+            frame.f_code is execute_worker.__code__
+            and frame.f_locals.get("module") == "bijux_ontology.rdf.entailment.worker"
+        )
+        if is_worker and event == "call":
+            grants.update(json.loads(frame.f_locals["payload"])["allowances"])
+            at_dispatch.update((kind, ledger.remaining(kind)) for kind in BUDGET_KINDS)
+        if event != "return":
+            return
+        process = frame.f_locals.get("self")
+        if (
+            frame.f_code is subprocess.Popen.__init__.__code__
+            and isinstance(process, subprocess.Popen)
+            and isinstance(process.args, list)
+            and "bijux_ontology.rdf.entailment.worker" in process.args
+        ):
+            processes.append(process)
+            if phase == "interrupted":
+                cancellation.set()
+        if is_worker and isinstance(value, bytes):
+            native.update(json.loads(value)["consumed"])
+            if phase == "completed":
+                cancellation.set()
+        if frame.f_code is TerminalResponse.close.__code__:
+            host.update(frame.f_locals["self"]._host.consumed())
+
+    sys.setprofile(observe)
+    try:
+        stopped = prepare_entailment(source, regime="rdfs", budget=operation)
+    finally:
+        sys.setprofile(previous)
+    assert stopped.report.outcome == "exhausted"
+    assert processes and all(process.returncode is not None for process in processes)
+    assert bool(native) == (phase == "completed")
+    expected = native if native else grants
+    assert expected and host
+    assert {
+        kind: at_dispatch[kind] - ledger.remaining(kind) for kind in BUDGET_KINDS
+    } == {kind: expected[kind] + host[kind] for kind in BUDGET_KINDS}
+    assert prepare_entailment(source, regime="rdfs").report.verified

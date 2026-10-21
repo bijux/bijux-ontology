@@ -459,3 +459,52 @@ def test_capture_count_and_unicode_diagnostics_are_bounded() -> None:
         len((issue.evidence_json or "").encode("utf-8")) <= 22000
         for issue in report.issues
     )
+
+
+@pytest.mark.parametrize("complete,closure", [(True, "open"), (False, "closed")])
+def test_partial_corpus_preserves_known_violations_and_unknown_absence(
+    complete: bool, closure: Choice["open", "closed"]
+) -> None:
+    """Open or incomplete evidence proves known bad edges, never missing support."""
+    graph = (
+        _graph(EX.root, EX.a, EX.b, EX.orphan)
+        .add((EX.root, EX.contains, EX.a))
+        .add((EX.a, EX.contains, EX.root))
+        .add((EX.b, EX.contains, EX.a))
+        .add((EX.root, EX.contains, EX.external))
+    )
+    result = check_record_topology(
+        prepare_rdf(graph),
+        _records(EX.root, EX.a, EX.b, EX.orphan),
+        _contract(min_owners=1, max_owners=1),
+        roots=(str(EX.root),),
+        complete=complete,
+        closure=closure,
+    )
+    assert not result.complete and result.outcome == "disagreement"
+    cycle = next(issue for issue in result if issue.code == "data.topology_cycle")
+    excess = next(
+        issue
+        for issue in result
+        if issue.code == "data.topology_owners" and issue.actual == "2"
+    )
+    assert cycle.kind == excess.kind == "finding"
+    assert cycle.evidence is not None and excess.evidence is not None
+    paths = cast(list[dict[str, object]], excess.evidence["paths"])
+    assert len(paths) == 2
+    assert {item["source"] for item in paths} == {
+        str(EX.root),
+        str(EX.b),
+    }
+    missing = next(
+        issue for issue in result if issue.code == "data.topology_reference_unverified"
+    )
+    unreachable = next(
+        issue for issue in result if issue.code == "data.topology_unreachable"
+    )
+    minimum = next(
+        issue
+        for issue in result
+        if issue.code == "data.topology_owners" and issue.actual == "0"
+    )
+    assert missing.kind == unreachable.kind == minimum.kind == "unverified"

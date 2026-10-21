@@ -7,31 +7,35 @@ from dataclasses import dataclass, field
 from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
-from bijux_ontology.declarations.types import TermDeclaration
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.owl.encoding.roles import builtin_kinds, kind_matches
+from bijux_ontology.owl.modules.contracts import (
+    ModuleContract,
+    ModulePropertyRequirement,
+    ModuleRequirement,
+)
+from bijux_ontology.owl.modules.qualification import (
+    capture_exports,
+    capture_requirement,
+    contract_text,
+)
 from bijux_ontology.owl.obligations import (
     ObligationResult,
     OntologyObligation,
     _NativeProofs,
 )
 from bijux_ontology.owl.relations.properties import PropertyContract, property_contract
-from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
-from bijux_ontology.vocabulary.builtins import builtin_kinds, kind_matches
 from bijux_ontology.vocabulary.sources.types import source_role
-
-from .types import (
+from bijux_ontology.workflows.ontology.modules.types import (
     ModuleBinding,
-    ModuleContract,
-    ModulePropertyRequirement,
     ModuleProvider,
-    ModuleRequirement,
     ModuleRequirementResult,
     ModuleWiring,
 )
@@ -41,76 +45,6 @@ def _reserve(budget: Budget, count: int = 1) -> None:
     """Prepay mutable and terminal immutable evidence references together."""
     budget.consume("states", count)
     budget.consume("bytes", 64 + 32 * count)
-
-
-def _text(value: str, budget: Budget, *, iri: bool = False) -> None:
-    """Bound caller text before hashing, stripping, parsing or diagnostic use."""
-    if type(value) is not str:
-        raise InputError("Module contracts require plain text names and IRIs")
-    bound_text(value, budget)
-    if iri:
-        absolute_iri(value)
-    elif not value.strip():
-        raise InputError("Module names must be nonempty")
-
-
-def _exports(
-    values: Sequence[TermDeclaration], budget: Budget
-) -> tuple[TermDeclaration, ...]:
-    """Capture named public roles without inferring exports from private facts."""
-    result = capture_items(values, TermDeclaration, budget)
-    seen = set()
-    for value in result:
-        _text(value.iri, budget, iri=True)
-        bound_text(value.location, budget)
-        kinds = capture_items(value.kinds, str, budget)
-        for kind in kinds:
-            _text(kind, budget, iri=True)
-        if not kinds or value.iri in seen:
-            raise InputError("Public exports need explicit roles and unique names")
-        _reserve(budget)
-        seen.add(value.iri)
-    return result
-
-
-def _public(iri: str, exports: set[str], budget: Budget) -> None:
-    """Require custom public operands before native reflexivity can prove them."""
-    _text(iri, budget, iri=True)
-    if iri not in exports and not builtin_kinds(iri):
-        raise InputError("Required custom operands must be explicit public exports")
-
-
-def _requirement(value: ModuleRequirement, budget: Budget) -> ModuleRequirement:
-    """Own one finite selected signature and its typed native questions."""
-    _text(value.name, budget)
-    exports = _exports(value.exports, budget)
-    if not exports:
-        raise InputError("A required module signature needs named public exports")
-    _reserve(budget, len(exports))
-    names = {term.iri for term in exports}
-    questions = capture_items(value.obligations, OntologyObligation, budget)
-    for question in questions:
-        bound_text(question.location, budget)
-        for iri in capture_items(question.actual, str, budget):
-            _public(iri, names, budget)
-        if question.required is not None:
-            _public(question.required, names, budget)
-    properties = capture_items(value.properties, ModulePropertyRequirement, budget)
-    for property_question in properties:
-        _public(property_question.property, names, budget)
-        _public(property_question.required, names, budget)
-        bound_text(property_question.location, budget)
-        _text(property_question.position, budget)
-        _text(property_question.relation, budget)
-        if property_question.position not in (
-            "domain",
-            "range",
-        ) or property_question.relation not in (
-            "subsumption",
-            "datatype_inclusion",
-        ):
-            raise InputError("Select a supported property endpoint relation")
-    return ModuleRequirement(value.name, exports, questions, properties)
 
 
 @dataclass
@@ -198,7 +132,7 @@ def _symbols(
 ) -> bool:
     """Native exact declarations and public inventory are separate obligations."""
     budget = issues.budget
-    exports = _exports(provider.contract.exports, budget)
+    exports = capture_exports(provider.contract.exports, budget)
     _reserve(budget, len(exports))
     public = {term.iri: term for term in exports}
     valid = True
@@ -386,10 +320,12 @@ def check_module_wiring(
     try:
         if not isinstance(consumer, ModuleContract):
             raise InputError("Expected an explicit consumer module contract")
-        _text(consumer.name, operation)
-        _exports(consumer.exports, operation)
+        contract_text(consumer.name, operation)
+        capture_exports(consumer.exports, operation)
         requirements = capture_items(consumer.requires, ModuleRequirement, operation)
-        selected = tuple(_requirement(value, operation) for value in requirements)
+        selected = tuple(
+            capture_requirement(value, operation) for value in requirements
+        )
         _reserve(operation, len(selected))
         names = {value.name for value in selected}
         if len(names) != len(selected):
@@ -404,15 +340,15 @@ def check_module_wiring(
                 raise InputError(
                     "Providers need actual contracts and selected owned views"
                 )
-            _text(provider.contract.name, operation)
+            contract_text(provider.contract.name, operation)
             if provider.contract.name in available:
                 raise InputError("Provider names must be unique")
             _reserve(operation)
             available[provider.contract.name] = provider
         wired = capture_items(bindings, ModuleBinding, operation)
         for binding in wired:
-            _text(binding.requirement, operation)
-            _text(binding.provider, operation)
+            contract_text(binding.requirement, operation)
+            contract_text(binding.provider, operation)
             if binding.requirement not in names:
                 raise InputError("Binding names an undeclared consumer requirement")
         engines: dict[int, _NativeProofs] = {}

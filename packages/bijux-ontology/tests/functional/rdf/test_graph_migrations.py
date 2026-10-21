@@ -14,7 +14,7 @@ from bijux_ontology.documents.migrations import export_migration
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.migrations.candidates import MigrationCheck
 from bijux_ontology.rdf.migrations.graphs import GraphRoute, migrate_graphs
-from bijux_ontology.rdf.queries.access import QueryScope
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource

@@ -13,6 +13,7 @@ FOUNDATION = {
     "execution",
     "absence",
     "diagnostics",
+    "diagnostics.encoding",
     "json",
     "resources",
 }
@@ -44,6 +45,8 @@ PACKAGES = {
 
 def _owner(module: str) -> str:
     parts = module.removeprefix("bijux_ontology.").split(".")
+    if parts[:2] == ["diagnostics", "encoding"]:
+        return "diagnostics.encoding"
     if parts[0] in {"interfaces", "workflows"} and len(parts) > 1:
         return ".".join(parts[:2])
     return "interfaces.cli" if parts[0] == "__main__" else parts[0]
@@ -216,7 +219,12 @@ def test_library_dependencies_follow_feature_ownership(
             if owner == "rdf":
                 assert target_owner in FOUNDATION | {"rdf"}, f"{module} -> {target}"
             if owner in {"jsonld", "owl", "declarations", "shex"}:
-                assert target_owner in FOUNDATION | {"rdf", owner}, (
+                lower = (
+                    {"declarations"}
+                    if _within(module, ("bijux_ontology.owl.modules",))
+                    else set()
+                )
+                assert target_owner in FOUNDATION | {"rdf", owner} | lower, (
                     f"{module} -> {target}"
                 )
             if not owner.startswith("interfaces."):
@@ -252,21 +260,27 @@ def test_library_dependencies_follow_feature_ownership(
                     "preparation",
                 )
             )
-        if module in {
-            "bijux_ontology.workflows.projects.configuration",
-            "bijux_ontology.workflows.projects.jobs",
-            "bijux_ontology.workflows.projects.resources",
-        }:
+        if _within(
+            module,
+            (
+                "bijux_ontology.workflows.projects.configuration",
+                "bijux_ontology.workflows.projects.jobs",
+                "bijux_ontology.workflows.projects.resources",
+            ),
+        ):
             forbidden.extend(
                 (
                     "bijux_ontology.workflows.projects.checking",
                     "bijux_ontology.workflows.projects.operations",
                 )
             )
-        if module in {
-            "bijux_ontology.workflows.projects.configuration",
-            "bijux_ontology.workflows.projects.jobs",
-        }:
+        if _within(
+            module,
+            (
+                "bijux_ontology.workflows.projects.configuration",
+                "bijux_ontology.workflows.projects.jobs",
+            ),
+        ):
             forbidden.append("bijux_ontology.workflows.projects.resources")
         for target in targets:
             assert not _within(target, tuple(forbidden)), f"{module} -> {target}"

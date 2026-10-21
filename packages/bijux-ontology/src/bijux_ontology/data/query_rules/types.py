@@ -9,8 +9,8 @@ from rdflib import BNode, Literal, URIRef
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.queries.access import QueryResult, QueryScope
 from bijux_ontology.rdf.queries.protocol import QueryTerm
+from bijux_ontology.rdf.queries.types import QueryResult, QueryScope
 from bijux_ontology.rdf.terms import literal_term
 
 
