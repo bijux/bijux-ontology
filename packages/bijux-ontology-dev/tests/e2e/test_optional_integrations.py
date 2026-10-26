@@ -34,8 +34,8 @@ import pytest
         from typing import Annotated
         from pydantic import BaseModel, Field
         from rdflib.namespace import XSD
-        from bijux_ontology.interfaces.adapters.contracts import RdfField
-        from bijux_ontology.interfaces.adapters.pydantic import model_declarations
+        from bijux_ontology_adapters.contracts import RdfField
+        from bijux_ontology_adapters.pydantic import model_declarations
         from bijux_ontology.declarations.types import ValueDeclaration
         from bijux_ontology.models.emission.types import ModelUsage
         from bijux_ontology.models.emission.checking import check_emission
@@ -64,8 +64,8 @@ import pytest
         from linkml_runtime.utils.schemaview import SchemaView
         from linkml_runtime.linkml_model.meta import SchemaDefinition
         from rdflib.namespace import XSD
-        from bijux_ontology.interfaces.adapters.contracts import RdfField
-        from bijux_ontology.interfaces.adapters.linkml import model_declarations
+        from bijux_ontology_adapters.contracts import RdfField
+        from bijux_ontology_adapters.linkml import model_declarations
         from bijux_ontology.declarations.types import ValueDeclaration
         view = SchemaView(SchemaDefinition(**{
             "id": "https://example.org/schema", "name": "catalogue",
@@ -276,10 +276,10 @@ def test_external_consumer_uses_installed_public_types(
         from typing import Annotated, assert_type
         from pydantic import BaseModel
         from rdflib.namespace import XSD
-        from bijux_ontology.interfaces.adapters.contracts import (
+        from bijux_ontology_adapters.contracts import (
             ModelExtraction, RdfField,
         )
-        from bijux_ontology.interfaces.adapters.pydantic import model_declarations
+        from bijux_ontology_adapters.pydantic import model_declarations
         from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
         from bijux_ontology.diagnostics.reports import Report
         from bijux_ontology.shacl.checking import validate_shapes
@@ -361,18 +361,12 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
         from importlib.util import find_spec
         from rdflib import Graph
         from bijux_ontology.diagnostics.errors import ResourceError
-        from bijux_ontology.interfaces.adapters.pydantic import (
-            model_declarations as pydantic_models,
-        )
-        from bijux_ontology.interfaces.adapters.linkml import (
-            model_declarations as linkml_models,
-        )
         from bijux_ontology.shacl.checking import validate_shapes
         from bijux_ontology.vocabulary.templates import IdentifierTemplate, TemplateKey
         from bijux_ontology.jsonld.processing.expansion import expand_document
         from bijux_ontology.rdf.comparison import compare_rdf
         for name in (
-            "pyld", "pyshacl", "pydantic", "linkml_runtime",
+            "bijux_ontology_adapters", "pyld", "pyshacl", "pydantic", "linkml_runtime",
             "uri_template", "elementpath", "re2",
         ):
             assert find_spec(name) is None, name
@@ -418,15 +412,6 @@ def test_core_installation_keeps_integrations_optional_and_errors_actionable(
             assert "uri-template>=1.3,<2" in str(error)
         else:
             raise AssertionError("Missing template capability falsely succeeded")
-        for adapter, extra in (
-            (pydantic_models, "pydantic"), (linkml_models, "linkml")
-        ):
-            try:
-                adapter({})
-            except ResourceError as error:
-                assert "[" + extra + "]" in str(error)
-            else:
-                raise AssertionError("Missing integration falsely succeeded")
         result = validate_shapes(Graph(), Graph())
         assert result.conforms is None and not result.report.verified
         assert result.report.outcome == "unverified"
@@ -454,7 +439,7 @@ def test_native_package_profile_is_installed_with_its_locked_dependencies(
         from bijux_ontology.declarations.types import (
             FieldDeclaration, ValueDeclaration,
         )
-        from bijux_ontology.interfaces.adapters.frictionless import (
+        from bijux_ontology_adapters.frictionless import (
             ColumnBinding, ResourceBinding, extract_package,
         )
         assert Path(bijux_ontology.__file__).is_relative_to(Path('env').resolve())
@@ -503,3 +488,43 @@ def test_native_package_profile_is_installed_with_its_locked_dependencies(
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_adapter_installation_keeps_framework_capabilities_optional(
+    installed_adapters: tuple[Path, Path, dict[str, str]],
+) -> None:
+    """Installing the bridge distribution alone never installs every framework."""
+    python, work, env = installed_adapters
+    subprocess.run(
+        [
+            str(python),
+            "-I",
+            "-c",
+            dedent("""
+        from importlib.util import find_spec
+        from bijux_ontology.diagnostics.errors import ResourceError
+        from bijux_ontology_adapters.pydantic import (
+            model_declarations as pydantic_models,
+        )
+        from bijux_ontology_adapters.linkml import (
+            model_declarations as linkml_models,
+        )
+        assert find_spec("pydantic") is None
+        assert find_spec("linkml_runtime") is None
+        for adapter, extra in (
+            (pydantic_models, "pydantic"), (linkml_models, "linkml")
+        ):
+            try:
+                adapter({})
+            except ResourceError as error:
+                assert "[" + extra + "]" in str(error)
+            else:
+                raise AssertionError("Missing integration falsely succeeded")
+        """),
+        ],
+        cwd=work,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )

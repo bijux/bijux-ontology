@@ -26,7 +26,7 @@ def test_oak_host_uses_explicit_native_package_interpreter(
         from rdflib.namespace import XSD
         from bijux_ontology.declarations.types import FieldDeclaration, ValueDeclaration
         from bijux_ontology.diagnostics.errors import ResourceError
-        from bijux_ontology.interfaces.adapters.frictionless import (
+        from bijux_ontology_adapters.frictionless import (
             ColumnBinding, ResourceBinding, extract_package,
             prepare_frictionless_backend,
         )
@@ -79,7 +79,7 @@ def test_oak_host_uses_explicit_native_package_interpreter(
         assert not list(directory.iterdir())
         import subprocess
         located = subprocess.run([str(backend.python), '-I', '-B', '-c',
-            'import bijux_ontology.interfaces.adapters.frictionless.identity as i; '
+            'import bijux_ontology_adapters.frictionless.identity as i; '
             'print(i.__file__)'], check=True, text=True, capture_output=True)
         identity = Path(located.stdout.strip())
         original = identity.read_bytes()

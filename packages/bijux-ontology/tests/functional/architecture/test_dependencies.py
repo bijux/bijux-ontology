@@ -32,7 +32,6 @@ PACKAGES = {
     "interfaces.cli",
     "interfaces.execution",
     "interfaces.exports",
-    "interfaces.adapters",
     "workflows.projects",
     "workflows.ontology",
     "workflows.upgrades",
@@ -199,10 +198,6 @@ def test_library_dependencies_follow_feature_ownership(
         assert owner in FOUNDATION | PACKAGES or module in namespaces, (
             f"Unowned module: {module}"
         )
-        if owner != "interfaces.adapters":
-            assert all(_owner(target) != "interfaces.adapters" for target in targets), (
-                f"Core import of optional adapters: {module}"
-            )
         if module in facades:
             continue
         for target in targets:

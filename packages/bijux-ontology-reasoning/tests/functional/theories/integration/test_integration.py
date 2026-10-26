@@ -5,6 +5,9 @@ from pathlib import Path
 from threading import Event
 
 import pytest
+from rdflib import URIRef
+
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology_reasoning.axioms import NamedEntity, SubClassOf
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import prepare_owl_document
@@ -13,9 +16,6 @@ from bijux_ontology_reasoning.theories.integration import (
     TheoryComponent,
     check_integration,
 )
-from rdflib import URIRef
-
-from bijux_ontology.execution.limits import Budget, Limits
 
 A = URIRef("urn:A")
 DECLARATIONS = " ".join(

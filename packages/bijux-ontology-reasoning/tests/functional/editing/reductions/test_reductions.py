@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 
 import pytest
+
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology_reasoning.axioms import ClassRelation, NamedEntity, SubClassOf
 from bijux_ontology_reasoning.axioms.changes import write_axiom_change
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
@@ -12,8 +14,6 @@ from bijux_ontology_reasoning.editing.reductions import (
     analyze_redundancy,
     prepare_reduction,
 )
-
-from bijux_ontology.execution.limits import Budget, Limits
 
 A, B, C = (NamedEntity("class", "urn:" + name) for name in ("A", "B", "C"))
 AB, BC, AC = SubClassOf(A, B, ()), SubClassOf(B, C, ()), SubClassOf(A, C, ())

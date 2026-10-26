@@ -8,6 +8,7 @@ ROOT_TARGET_SHARED_ENV_test-e2e := 1
 ROOT_TARGET_SHARED_ENV_build := 1
 PACKAGE_RECORDS := \
 	bijux-ontology|primary,check,buildable,test|bijux-ontology.mk \
+	bijux-ontology-adapters|check,buildable,test|bijux-ontology-adapters.mk \
 	bijux-ontology-dev|check,buildable,test|bijux-ontology-dev.mk \
 	bijux-ontology-reasoning|check,buildable,test|bijux-ontology-reasoning.mk
 include $(ROOT_MAKEFILE_DIR)/bijux-py/package-catalog.mk

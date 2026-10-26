@@ -6,6 +6,10 @@ from pathlib import Path
 from threading import Event
 
 import pytest
+
+from bijux_ontology.diagnostics.errors import ResourceError
+from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology_reasoning.axioms import (
     ClassJunction,
     DataQuantifier,
@@ -37,10 +41,6 @@ from bijux_ontology_reasoning.documents import (
 )
 from bijux_ontology_reasoning.inference.consistency import check_consistency
 from bijux_ontology_reasoning.inference.entailment import check_entailments
-
-from bijux_ontology.diagnostics.errors import ResourceError
-from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.execution.limits import Budget, Limits
 
 _BASE = """Ontology(<urn:changes>
  Declaration(Class(<urn:C>)) Declaration(Class(<urn:D>))

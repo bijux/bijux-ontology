@@ -5,6 +5,11 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+
+from bijux_ontology.declarations.types import TermDeclaration
+from bijux_ontology.diagnostics.reports import Report
+from bijux_ontology.execution.limits import Budget
+from bijux_ontology.owl.modules.contracts import ModuleContract
 from bijux_ontology_reasoning.axioms import ClassAssertion, NamedEntity, SubClassOf
 from bijux_ontology_reasoning.axioms.changes import axiom_base
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
@@ -22,11 +27,6 @@ from bijux_ontology_reasoning.editing.renaming import (
     prepare_role_rename,
 )
 from bijux_ontology_reasoning.inference.entailment import check_entailments
-
-from bijux_ontology.declarations.types import TermDeclaration
-from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.execution.limits import Budget
-from bijux_ontology.owl.modules.contracts import ModuleContract
 
 _BASE = """Ontology(<urn:ontology>
  Annotation(<urn:note> <urn:C>)

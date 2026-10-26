@@ -7,15 +7,15 @@ from pathlib import Path
 from threading import Event
 
 import pytest
-from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.inference.consistency import check_consistency
 from rdflib import Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
+from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
+from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
+from bijux_ontology_reasoning.inference.consistency import check_consistency
 
 A, B, C = (URIRef("urn:diagnosis:" + name) for name in ("A", "B", "C"))
 _DECLARATIONS = """Declaration(Class(<urn:diagnosis:A>))

@@ -5,10 +5,6 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
-from bijux_ontology_reasoning.inference.datatypes.types import DatatypeFieldBranch
-from bijux_ontology_reasoning.inference.model_contracts import check_model_compatibility
 from rdflib import Dataset, Graph, URIRef
 from rdflib.namespace import RDF
 
@@ -25,6 +21,10 @@ from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.sources.types import RdfSource
+from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
+from bijux_ontology_reasoning.documents import OwlDocument, prepare_owl_document
+from bijux_ontology_reasoning.inference.datatypes.types import DatatypeFieldBranch
+from bijux_ontology_reasoning.inference.model_contracts import check_model_compatibility
 
 _BASE = """Ontology(<urn:models>
  Declaration(Class(<urn:A>)) Declaration(Class(<urn:B>))

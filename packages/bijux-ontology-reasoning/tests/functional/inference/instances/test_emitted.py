@@ -8,8 +8,6 @@ from pathlib import Path
 from threading import Event
 
 import pytest
-from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
-from bijux_ontology_reasoning.inference.instances import check_emitted_consistency
 from rdflib import BNode, Dataset, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS
 
@@ -24,6 +22,8 @@ from bijux_ontology.models.emission.types import RdfModelUsage
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
+from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
+from bijux_ontology_reasoning.inference.instances import check_emitted_consistency
 
 A, B, C, DEAD, P, INDIVIDUAL, J, K = (
     URIRef("urn:" + name) for name in ("A", "B", "C", "Dead", "p", "i", "j", "k")

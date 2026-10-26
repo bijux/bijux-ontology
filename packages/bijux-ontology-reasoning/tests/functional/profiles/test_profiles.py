@@ -14,12 +14,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
-from bijux_ontology_reasoning.backend import (
-    OwlProfileBackend,
-    backend_capability,
-    prepare_profile_backend,
-)
-from bijux_ontology_reasoning.profiles import check_profile
 from rdflib import BNode, ConjunctiveGraph, Dataset, Graph, URIRef
 from rdflib.namespace import OWL, RDF
 
@@ -29,6 +23,12 @@ from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.rdf.terms import independent_blank_scopes
+from bijux_ontology_reasoning.backend import (
+    OwlProfileBackend,
+    backend_capability,
+    prepare_profile_backend,
+)
+from bijux_ontology_reasoning.profiles import check_profile
 
 _PREFIX = """
 @prefix : <urn:profile:> .

@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bijux-ontology-adapters"
+version = "0.1.0"
+description = "Optional framework, vocabulary and data-format bridges for bijux-ontology"
+readme = "README.md"
+requires-python = ">=3.11,<4"
+license = "MIT"
+authors = [{name = "Bijan Mousavi", email = "bijan@bijux.io"}]
+dependencies = ["bijux-ontology==0.1.0", "rdflib>=7.6,<8"]
+
+[project.optional-dependencies]
+arrow = [
+    "pyarrow>=25.0.1,<=26.0.0",
+]
+biolink = [
+    "bmt==1.5.0",
+    "linkml-runtime>=1.12.0,<=1.12.1",
+]
+oak = [
+    "oaklib==0.7.4; python_version < '3.15'",
+]
+fhir = [
+    "fhir.resources==8.3.0",
+]
+csvw = [
+    "csvw>=4.1.0,<5",
+]
+frictionless = [
+    "frictionless==5.21.0",
+]
+biosamples = [
+    "jsonschema[format-nongpl]>=4.26,<5",
+    "referencing>=0.37,<0.38",
+]
+pydantic = [
+    "pydantic>=2.11,<3",
+]
+linkml = [
+    "linkml-runtime>=1.12.1,<2",
+]
+jsonschema = [
+    "jsonschema>=4.26,<5",
+    "referencing>=0.37,<0.38",
+]
+
+[tool.hatch.build.targets.wheel]
+core-metadata-version = "2.4"
+packages = ["src/bijux_ontology_adapters"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"java" = "bijux_ontology_adapters/java"
+
+[tool.hatch.build.targets.sdist]
+core-metadata-version = "2.4"
+include = ["src", "tests", "java", "pyproject.toml", "README.md", "LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+cache_dir = "artifacts/pytest-cache"
+addopts = "--import-mode=importlib"

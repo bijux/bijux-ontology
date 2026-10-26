@@ -8,6 +8,12 @@ from types import FrameType
 from typing import cast
 
 import pytest
+from rdflib import URIRef
+
+from bijux_ontology.execution.limits import Budget, Limits, retain_report
+from bijux_ontology.vocabulary.mappings import read_sssom
+from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
+from bijux_ontology.vocabulary.mappings.types import MappingSet
 from bijux_ontology_reasoning.axioms import NamedEntity, SubClassOf
 from bijux_ontology_reasoning.backend import OwlProfileBackend, prepare_profile_backend
 from bijux_ontology_reasoning.documents import prepare_owl_document
@@ -17,12 +23,6 @@ from bijux_ontology_reasoning.theories.bridges import (
     check_mapping_bridges,
 )
 from bijux_ontology_reasoning.theories.integration import TheoryComponent
-from rdflib import URIRef
-
-from bijux_ontology.execution.limits import Budget, Limits, retain_report
-from bijux_ontology.vocabulary.mappings import read_sssom
-from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
-from bijux_ontology.vocabulary.mappings.types import MappingSet
 
 A = URIRef("urn:A")
 PROTECTED = (
