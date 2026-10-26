@@ -307,5 +307,10 @@
   "packages/bijux-ontology/tests/unit/limits/test_terminal_receipts.py": 0.01,
   "packages/bijux-ontology/tests/unit/rdf/test_components.py": 0.123,
   "packages/bijux-ontology/tests/unit/reports/test_outcomes.py": 0.38,
-  "packages/bijux-ontology/tests/unit/shacl/test_parameters.py": 0.043
+  "packages/bijux-ontology/tests/unit/shacl/test_parameters.py": 0.043,
+  "packages/bijux-ontology-dev/tests/e2e/test_frictionless_runtime.py": 41.558,
+  "packages/bijux-ontology-dev/tests/e2e/test_native_versions.py": 137.758,
+  "packages/bijux-ontology-dev/tests/e2e/test_project_contracts.py": 8.224,
+  "packages/bijux-ontology/tests/functional/models/test_serialized_observations.py": 0.968,
+  "packages/bijux-ontology/tests/unit/execution/test_versions.py": 0.001
 }
