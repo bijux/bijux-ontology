@@ -73,7 +73,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--group", type=int, required=True)
-    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--workers", type=int, default=3)
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be positive")
@@ -102,7 +102,7 @@ def main() -> None:
         encoding="utf-8",
     )
     packages: dict[str, list[str]] = {}
-    for name in selected:
+    for name in sorted(selected, key=lambda name: (-weights.get(name, 1.0), name)):
         path = Path(name)
         packages.setdefault(path.parts[1], []).append(
             path.relative_to(Path("packages") / path.parts[1]).as_posix()
@@ -116,7 +116,7 @@ def main() -> None:
                 f"PACKAGE={package}",
                 f"TEST_PATHS={' '.join(paths)}",
                 f"PYTHON={sys.executable}",
-                f"PYTEST_ADDOPTS_EXTRA=-n {args.workers} --dist=worksteal "
+                f"PYTEST_ADDOPTS_EXTRA=-n {args.workers} --dist=load --maxschedchunk=1 "
                 "--max-worker-restart=0",
             ],
             cwd=root,
