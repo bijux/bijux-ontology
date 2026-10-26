@@ -101,16 +101,20 @@ def check_rdf_stream(
     check_literals: bool = True,
     required_global: Sequence[GlobalCheck] = (),
     max_stream_bytes: int | None = None,
+    max_compressed_bytes: int | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
     timeout: float = 30,
     cancel: Event | None = None,
 ) -> StreamCheck:
-    """Check plain local NT/NQ streams without retaining a complete data graph.
+    """Check plain or explicitly gzipped local NT/NQ without retaining a data graph.
 
     max_bytes bounds each physical record conservatively, before native parsing;
-    max_stream_bytes independently caps observed source bytes and defaults to
-    max_total_bytes. Syntax, escapes and term validity belong to PyOxigraph.
+    max_stream_bytes caps expanded RDF bytes; max_compressed_bytes separately
+    caps gzip input. Both default to max_total_bytes and consume one cumulative
+    byte allowance. bytes_read counts expanded bytes; compressed_bytes_read
+    counts gzip bytes. source_sha256 identifies original input bytes only after
+    complete single-member/trailer EOF. Syntax belongs to PyOxigraph.
     Exact predicate/type/literal checks reuse existing validators. Duplicate
     statement occurrences stay distinct. Requested global work remains unknown.
 
@@ -130,6 +134,13 @@ def check_rdf_stream(
     )
     if type(maximum) is not int or maximum <= 0:
         raise InputError("RDF stream byte cap must be a positive integer")
+    compressed_maximum = (
+        operation.limits.max_total_bytes
+        if max_compressed_bytes is None
+        else max_compressed_bytes
+    )
+    if type(compressed_maximum) is not int or compressed_maximum <= 0:
+        raise InputError("Compressed RDF byte cap must be a positive integer")
     issues = IssueCollector(operation)
     parsing = IssueCollector(operation)
     global_issues = IssueCollector(operation)
@@ -139,6 +150,7 @@ def check_rdf_stream(
     completed = False
     statements = selected = checks = count = 0
     digest = None
+    compressed_count = None
     document = effective = None
     adoption: ControlBudget | None = None
     adoption_paid_issues = 0
@@ -162,8 +174,10 @@ def check_rdf_stream(
                 "RDF streaming requires an explicit local Path or RdfSource"
             )
         resource = source if isinstance(source, RdfSource) else RdfSource(source)
-        if not isinstance(resource.content, Path) or resource.compression is not None:
-            raise InputError("Stream profile supports plain local Path-backed NT/NQ")
+        if not isinstance(resource.content, Path):
+            raise InputError("Stream profile supports local Path-backed NT/NQ")
+        if resource.compression is None and max_compressed_bytes is not None:
+            raise InputError("max_compressed_bytes requires explicit gzip input")
         if resource.union:
             raise InputError(
                 "Stream checks retain physical graphs, not flattened unions"
@@ -212,6 +226,8 @@ def check_rdf_stream(
             "check_types": check_types,
             "check_literals": check_literals,
             "max_stream_bytes": maximum,
+            "compression": resource.compression,
+            "max_compressed_bytes": compressed_maximum,
             "limits": asdict(operation.limits),
         }
         operation.consume("bytes", json_bound(request, operation))
@@ -265,6 +281,8 @@ def check_rdf_stream(
                 limits=operation.limits,
                 allowances=allowances,
                 maximum=maximum,
+                compression=resource.compression,
+                maximum_compressed=compressed_maximum,
                 budget=decoder,
             )
             projected = dict(consumed)
@@ -300,6 +318,7 @@ def check_rdf_stream(
                 for k in ("statements", "selected", "checks", "bytes_read")
             )
             digest = response["sha256"]
+            compressed_count = response["compressed_bytes_read"]
             blanks: dict[str, BNode] = {}
             records, errors = response["records"], response["parse_issues"]
             for record in records:
@@ -427,4 +446,5 @@ def check_rdf_stream(
         local_report,
         global_report,
         report,
+        compressed_count,
     )

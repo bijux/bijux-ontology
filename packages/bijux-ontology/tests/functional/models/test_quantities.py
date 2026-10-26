@@ -273,3 +273,94 @@ def test_quantity_scalar_validation_uses_the_parent_allowance() -> None:
     invalid = prepared.check({**record, "value": "invalid"}, contract)
     assert any(issue.code == "literal.lexical_invalid" for issue in invalid.report)
     assert not invalid.report.verified
+
+
+def test_named_quantity_checks_share_capture_and_retain_independent_outcomes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Retain independent field outcomes and publish only a complete record."""
+    from typing import Any
+
+    from bijux_ontology.models.quantities.checking import _snapshot
+
+    prepared = prepare_quantities((*_bindings(), UnitBinding("ms", "millisecond")))
+    contracts = {
+        "length": QuantityContract(
+            ("length", "v"), ("length", "u"), str(EX.m), maximum=Decimal("0.6")
+        ),
+        "duration": QuantityContract(("duration", "v"), ("duration", "u"), "s"),
+        "depth": QuantityContract(("depth", "v"), ("depth", "u"), str(EX.m)),
+    }
+    document = {
+        "length": {"v": "900", "u": "mm"},
+        "duration": {"v": "1000", "u": "unknown"},
+        "depth": {"v": "250", "u": "mm"},
+    }
+    calls = 0
+
+    def snapshot(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        return _snapshot(*args, **kwargs)
+
+    monkeypatch.setattr("bijux_ontology.models.quantities.records._snapshot", snapshot)
+    failed = prepared.check_many(document, contracts, convert=True)
+    assert calls == 1 and failed.converted is None
+    assert failed.checks["length"].report.outcome == "disagreement"
+    assert failed.checks["duration"].report.outcome == "unverified"
+    assert failed.checks["depth"].report.verified
+    assert any(
+        i.code == "quantity.bound_mismatch" and i.location == "/length/v"
+        for i in failed.report.issues
+    )
+    assert document == failed.source
+    bounded = prepared.check_many(
+        document, contracts, budget=Budget(Limits(max_issues=1))
+    )
+    assert bounded.report.outcome == "exhausted"
+    assert any(
+        issue.code == "quantity.bound_mismatch" for issue in bounded.report.issues
+    )
+    assert bounded.checks["length"].report.outcome == "disagreement"
+    document["length"]["v"] = "500"
+    document["duration"]["u"] = "ms"
+    calls = 0
+    readonly = prepared.check_many(document, contracts)
+    assert readonly.report.verified and readonly.converted is None and calls == 1
+    calls = 0
+    converted = prepared.check_many(document, contracts, convert=True)
+    assert converted.report.verified, converted.report.to_dict()
+    assert calls == 2  # One original capture plus one joint candidate recheck.
+    assert [r.reference_value for r in converted.checks.values()] == [
+        Decimal("0.5"),
+        Decimal("1"),
+        Decimal("0.25"),
+    ]
+    assert converted.source == document and converted.converted != document
+    candidate = converted.converted
+    assert isinstance(candidate, dict)
+    candidate.clear()
+    assert converted.converted
+
+
+def test_joint_quantity_conversion_coalesces_only_consistent_shared_unit_writes() -> (
+    None
+):
+    """Convert all selected values sharing a unit; conflicting writes stay private."""
+    prepared = prepare_quantities(_bindings())
+    document = {"x": "1000", "y": "2000", "unit": "mm"}
+    contracts = {
+        "x": QuantityContract(("x",), ("unit",), str(EX.m)),
+        "y": QuantityContract(("y",), ("unit",), str(EX.m)),
+    }
+    consistent = prepared.check_many(document, contracts, convert=True)
+    assert consistent.report.verified, consistent.report.to_dict()
+    assert consistent.converted == {"x": "1.000", "y": "2.000", "unit": str(EX.m)}
+    assert consistent.source == document == {"x": "1000", "y": "2000", "unit": "mm"}
+    conflicting = prepared.check_many(
+        document,
+        {**contracts, "y": replace(contracts["y"], reference_unit="mm")},
+        convert=True,
+    )
+    assert not conflicting.report.verified and conflicting.converted is None
+    assert all(result.report.verified for result in conflicting.checks.values())

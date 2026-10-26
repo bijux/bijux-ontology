@@ -167,6 +167,17 @@ def test_maintained_schema_exact_boundaries_local_refs_and_finite_capabilities()
         assert "[jsonschema]" in result.report.issues[0].message
         return
     assert result.report.verified, result.report.to_dict()
+    malformed_schema = check_json_literal(
+        _literal('{"amount":0.1,"count":1}'),
+        JsonLiteralContract(schema=schema | {"type": 17}, dialect=DIALECT),
+        location="record.payload",
+    )
+    assert malformed_schema.report.outcome == "input_error"
+    assert any(
+        issue.code == "literal.json_schema_invalid"
+        and issue.location == "record.payload"
+        for issue in malformed_schema.report
+    )
     for text, pointer in (
         ('{"amount":0.099999999999999999999,"count":1}', "/amount"),
         ('{"amount":0.1,"count":1.000000000000000000001}', "/count"),

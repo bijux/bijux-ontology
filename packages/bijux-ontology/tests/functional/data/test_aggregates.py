@@ -542,3 +542,92 @@ def test_member_stops_keep_only_original_paid_findings_and_recover() -> None:
     assert [i.location for i in stopped.report if i.kind == "finding"] == ["missing"]
     assert not any(i.code == "literal.lexical_invalid" for i in stopped.report)
     assert check_aggregates((group(records("1", "2"), "3"),), numeric()).report.verified
+
+
+@pytest.mark.parametrize(
+    ("reference", "measurements", "expected"),
+    [
+        ("um", (("a", "1000", "nm"), ("a", "1", "um"), ("b", "0.0005", "mm")), "1.5"),
+        ("s", (("a", "2", "ms"), ("b", "3000", "us")), "0.005"),
+    ],
+)
+def test_exact_reference_unit_aggregation_retains_original_rdf_contributions(
+    reference: str, measurements: tuple[tuple[str, str, str], ...], expected: str
+) -> None:
+    """Equivalent entity descriptions agree after native length/time conversion."""
+    from bijux_ontology.declarations.aggregates import (
+        AggregateUnitConversion,
+        RdfUnitBinding,
+    )
+
+    conversion = AggregateUnitConversion(
+        tuple(
+            RdfUnitBinding(URIRef("urn:" + code), native)
+            for code, native in (
+                ("um", "micrometer"),
+                ("nm", "nanometer"),
+                ("mm", "millimeter"),
+                ("s", "second"),
+                ("ms", "millisecond"),
+                ("us", "microsecond"),
+            )
+        )
+    )
+    rows = []
+    for index, (entity, value, unit) in enumerate(measurements):
+        subject = URIRef("urn:" + entity)
+        graph = (
+            Graph()
+            .add(
+                (subject, VALUE, Literal(value, datatype=XSD.decimal, normalize=False))
+            )
+            .add((subject, UNIT, URIRef("urn:" + unit)))
+        )
+        rows.append(KeyRecord(str(index), prepare_rdf(graph), subject))
+    selected = AggregateContract(
+        "length-time",
+        "sum",
+        "entities",
+        VALUE,
+        unit=URIRef("urn:" + reference),
+        unit_path=UNIT,
+        conversion=conversion,
+    )
+    result = check_aggregates((group(tuple(rows), expected),), selected)
+    assert result.report.verified, result.report.to_dict()
+    assert result.groups[0].actual == Fraction(expected)
+    assert [
+        contribution.record for contribution in result.groups[0].contributions
+    ] == rows
+    assert [
+        tuple(str(v) for v in c.values) for c in result.groups[0].contributions
+    ] == [(value, "urn:" + unit) for _, value, unit in measurements]
+    # The original exact-unit contract keeps its stricter admission rule.
+    exact = check_aggregates(
+        (group(tuple(rows), expected),), replace(selected, conversion=None)
+    )
+    assert exact.groups[0].actual is None and not exact.report.verified
+    for bad_value, bad_unit in (
+        (Literal("1"), URIRef("urn:" + reference)),
+        (Literal(1), Literal("urn:" + reference)),
+        (Literal(1), URIRef("urn:unknown")),
+        (Literal(1), URIRef("urn:s" if reference == "um" else "urn:um")),
+    ):
+        bad = URIRef("urn:bad")
+        source = prepare_rdf(
+            Graph().add((bad, VALUE, bad_value)).add((bad, UNIT, bad_unit))
+        )
+        blocked = check_aggregates(
+            (group((*rows, KeyRecord("bad", source, bad)), expected),), selected
+        )
+        assert blocked.groups[0].actual is None and not blocked.report.verified
+        assert len(blocked.groups[0].contributions) == len(rows) + 1
+    temperature = replace(
+        selected,
+        unit=URIRef("urn:K"),
+        conversion=AggregateUnitConversion(
+            (RdfUnitBinding(URIRef("urn:K"), "kelvin"),)
+        ),
+    )
+    unsupported = check_aggregates((group(tuple(rows), expected),), temperature)
+    assert not unsupported.report.verified and unsupported.groups[0].actual is None

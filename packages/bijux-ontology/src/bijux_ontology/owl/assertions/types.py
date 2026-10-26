@@ -3,11 +3,23 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from rdflib import BNode, URIRef
+from rdflib import Literal as RdfLiteral
+
 from bijux_ontology.diagnostics.reports import Report
 
 TermKey = tuple[str | None, ...]
 Statement = tuple[TermKey, TermKey, TermKey]
 EqualityRule = Literal["same_individual", "functional", "inverse_functional", "key"]
+
+
+@dataclass(frozen=True)
+class PropertyAssertion:
+    """An original property assertion with its qualified proof premise."""
+
+    subject: URIRef | BNode
+    value: URIRef | BNode | RdfLiteral
+    premise: Statement
 
 
 @dataclass(frozen=True)

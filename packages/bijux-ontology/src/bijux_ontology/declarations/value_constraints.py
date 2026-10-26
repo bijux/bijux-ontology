@@ -8,7 +8,6 @@ from rdflib import BNode, URIRef
 from rdflib import Literal as RDFLiteral
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.identifiers import absolute_iri
 
 from .enumerations import ValueEnumeration
@@ -39,10 +38,7 @@ class ValueConstraints:
         if self.enumeration is not None and not isinstance(
             self.enumeration, ValueEnumeration
         ):
-            if (
-                type(self.enumeration) is not tuple
-                or len(self.enumeration) > Limits().max_states
-            ):
+            if type(self.enumeration) is not tuple:
                 raise InputError("Enumeration requires a bounded immutable term tuple")
             for term in self.enumeration:
                 if not isinstance(term, URIRef | RDFLiteral):
@@ -51,10 +47,7 @@ class ValueConstraints:
                     )
                 if isinstance(term, URIRef):
                     absolute_iri(str(term))
-        if (
-            type(self.iri_namespaces) is not tuple
-            or len(self.iri_namespaces) > Limits().max_states
-        ):
+        if type(self.iri_namespaces) is not tuple:
             raise InputError("IRI namespaces require a bounded immutable tuple")
         for namespace in self.iri_namespaces:
             if not isinstance(namespace, str) or isinstance(

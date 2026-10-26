@@ -31,8 +31,8 @@ from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.models.value_constraints.checking import (
     application_matches,
 )
+from bijux_ontology.models.value_constraints.literals import check_field_literal
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.structure import read_rdf_list
 from bijux_ontology.rdf.terms import term_key
@@ -355,9 +355,10 @@ class RdfFieldObligations:
             literal = (
                 Report("literal", 1)
                 if projected is not None
-                else check_literal(
+                else check_field_literal(
                     node,
-                    location=field_where,
+                    field.literal_contract,
+                    where=field_where,
                     datatype_registry=self.datatype_registry,
                     budget=self.budget,
                 )

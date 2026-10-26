@@ -171,7 +171,7 @@ def prepare_emission_request(
     _, document_json = snapshot(document, operation)
     model_data, models_json = snapshot(models, operation)
     usage_data, usages_json = snapshot(usages, operation)
-    declarations = models_from_data(model_data)
+    declarations = models_from_data(model_data, budget=operation)
     bindings = usages_from_data(usage_data)
     if not declarations or not bindings:
         raise InputError("Emission reproduction requires nonempty models and usages")

@@ -1,6 +1,6 @@
 """Explicit resource interpretation contracts without merging logical facets."""
 
-from dataclasses import KW_ONLY, dataclass
+from dataclasses import KW_ONLY, InitVar, dataclass
 from typing import Literal as Choice
 
 from rdflib import BNode, Literal
@@ -38,10 +38,13 @@ class RoleBridge:
     _: KW_ONLY
     source_role: ResourceKind = "concept"
     reverse: bool = False
+    budget: InitVar[Budget | None] = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, budget: Budget | None) -> None:
         """Bound the exact predicate and finite source-role/direction choices."""
-        _iri(self.predicate, Budget())
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Role bridge admission requires a Budget")
+        _iri(self.predicate, budget if budget is not None else Budget())
         _kind(self.source_role)
         if type(self.reverse) is not bool:
             raise InputError("Role bridge direction must be a boolean")
@@ -63,13 +66,16 @@ class ResourceRole:
     type_mode: Choice["asserted", "named"] = "asserted"
     punning: Choice["allow", "forbid"] = "forbid"
     bridge: RoleBridge | None = None
+    budget: InitVar[Budget | None] = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, budget: Budget | None) -> None:
         """Require finite explicit instance classes and structurally valid policy."""
         _kind(self.kind)
         if type(self.types) is not tuple:
             raise InputError("Role instance classes require an immutable tuple")
-        budget = Budget()
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Resource role admission requires a Budget")
+        budget = budget if budget is not None else Budget()
         if len(self.types) > budget.limits.max_states:
             raise InputError("Role class inventory exceeds max_states")
         for iri in self.types:

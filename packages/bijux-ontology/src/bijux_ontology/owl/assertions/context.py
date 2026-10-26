@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Literal as Choice
 from typing import cast
 
@@ -17,20 +16,12 @@ from bijux_ontology.owl.obligations import OntologyObligation, _NativeProofs
 from bijux_ontology.rdf.literals.checking import check_literal
 from bijux_ontology.rdf.roles.classification import declaration_role
 from bijux_ontology.rdf.terms import bound_node, literal_datatype, term_key
-from bijux_ontology.rdf.value_comparison.comparing import compare_literal_values
+from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 
 from .identity import Identity, retain_premises
+from .indexing import PropertyRows
 from .patterns import Patterns, Resource, Value
-from .types import AssertionWitness, Statement, TermKey
-
-
-@dataclass(frozen=True)
-class _Row:
-    """An original property assertion and its already qualified proof premise."""
-
-    subject: Resource
-    value: Value
-    premise: Statement
+from .types import AssertionWitness, PropertyAssertion, Statement, TermKey
 
 
 class AssertionContext:
@@ -50,13 +41,15 @@ class AssertionContext:
         self.properties: dict[
             URIRef, tuple[Choice["object", "data"] | None, tuple[Statement, ...]]
         ] = {}
-        self.assertions: dict[URIRef, tuple[_Row, ...]] = {}
+        self.assertions: dict[URIRef, tuple[PropertyAssertion, ...]] = {}
+        self.row_indexes: dict[URIRef, tuple[int, PropertyRows]] = {}
         self.named: set[TermKey] = set()
         self.types: list[tuple[Resource, URIRef, Statement]] = []
         self.literal_relations: dict[
             tuple[TermKey, TermKey], Choice["equal", "different"] | None
         ] = {}
         self.validated: set[TermKey] = set()
+        self.comparisons = ScalarComparisons(operation)
         self.memberships: dict[tuple[URIRef, URIRef], tuple[Statement, ...] | None] = {}
 
     def unknown(self, message: str) -> None:
@@ -152,7 +145,7 @@ class AssertionContext:
         )
         return self.properties[predicate]
 
-    def rows(self, predicate: URIRef) -> tuple[_Row, ...]:
+    def rows(self, predicate: URIRef) -> tuple[PropertyAssertion, ...]:
         """Cache only demanded property assertions using the maintained graph index."""
         cached = self.assertions.get(predicate)
         if cached is not None:
@@ -180,13 +173,26 @@ class AssertionContext:
                 self.mark_named(value)
             self.operation.consume("states")
             self.operation.consume("bytes", 96)
-            row = _Row(subject, cast(Value, value), proof)
+            row = PropertyAssertion(subject, cast(Value, value), proof)
             rows.append(row)
             if isinstance(value, Literal):
                 self.validate(value, (proof, *declaration))
         result = tuple(rows)
         self.assertions[predicate] = result
         return result
+
+    def indexed_rows(self, predicate: URIRef) -> PropertyRows:
+        """Rebuild only after a new individual identity changes row membership."""
+        generation = len(self.identity.consequences)
+        existing = self.row_indexes.get(predicate)
+        if existing is None or existing[0] != generation:
+            rows = PropertyRows(
+                self.rows(predicate), self.identity, self.operation, self.key
+            )
+            self.operation.consume("states")
+            self.operation.reserve_storage(128)
+            self.row_indexes[predicate] = generation, rows
+        return self.row_indexes[predicate][1]
 
     def validate(self, value: Literal, premises: tuple[Statement, ...]) -> None:
         """Qualify actual selected data samples without changing their lexical form."""
@@ -224,8 +230,8 @@ class AssertionContext:
             self.children.append(report)
             answer = "equal" if report.verified else None
         else:
-            comparison = compare_literal_values(
-                left, right, regime="owl2-datatype-map", budget=self.operation
+            comparison = self.comparisons.compare(
+                left, right, regime="owl2-datatype-map"
             )
             retain_report(comparison.report, self.operation, self.issues)
             self.children.append(comparison.report)

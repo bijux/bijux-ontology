@@ -26,7 +26,6 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.json.encoding import json_bytes
-from bijux_ontology.json.values import measure_json
 from bijux_ontology.jsonld.contexts.processing import inspect_context
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
@@ -37,6 +36,7 @@ from bijux_ontology.models.persistence.loading import (
     load_model_artifact,
 )
 from bijux_ontology.models.persistence.types import PreparationIdentity
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.types import RdfSource
@@ -118,6 +118,7 @@ def prepare_revision(
     budget: Budget | None = None,
     timeout: float = 30,
     cancel: Event | None = None,
+    datatype_registry: DatatypeRegistry | None = None,
 ) -> RevisionPreparation:
     """Prepare one complete declared model/context/optional-shape revision.
 
@@ -185,16 +186,8 @@ def prepare_revision(
         selected_context, documents, selected_base, selected_regime, direction = (
             _options(captured.options)
         )
-        declaration_nodes = measure_json(
-            captured.declarations,
-            budget=operation,
-            max_bytes=operation.limits.max_bytes,
-            max_depth=operation.limits.max_depth,
-        ).weight
-        operation.consume("bytes", 128 * declaration_nodes)
-        operation.consume("work", 8 * declaration_nodes)
         artifact = compile_model_artifact(
-            models_from_data(captured.declarations),
+            models_from_data(captured.declarations, budget=operation),
             captured.source,
             imports=captured.imports,
             lookup=captured.lookup,
@@ -203,6 +196,7 @@ def prepare_revision(
             base=selected_base,
             regime=selected_regime,
             rdf_direction=direction,
+            datatype_registry=datatype_registry,
             budget=operation,
         )
         reports.append(artifact.report)
@@ -217,6 +211,7 @@ def prepare_revision(
             artifact.content,
             expected=captured.identity,
             trusted_sha256=artifact.sha256,
+            datatype_registry=datatype_registry,
             budget=operation,
         )
         reports.append(restored.report)

@@ -54,3 +54,4 @@ class StreamCheck:
     local_report: Report
     global_report: Report | None
     report: Report
+    compressed_bytes_read: int | None = None

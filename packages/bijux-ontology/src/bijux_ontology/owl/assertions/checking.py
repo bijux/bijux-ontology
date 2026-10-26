@@ -16,8 +16,8 @@ from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 
-from .consequences import functionality, key_identities
 from .context import AssertionContext
+from .propagation import close_identities
 from .types import AssertionWitnesses
 from .witnesses import differences, disjoint, edge_witnesses, negatives, type_witnesses
 
@@ -89,11 +89,7 @@ def check_assertion_witnesses(
         for predicate in state.characteristic(OWL.DatatypeProperty):
             state.rows(predicate)
         keys = state.patterns.keys()
-        changed = True
-        while changed:
-            operation.consume("work")
-            changed = functionality(state, functional, inverse)
-            changed |= key_identities(state, keys)
+        close_identities(state, functional, inverse, keys)
         edge_witnesses(state, irreflexive, asymmetric)
         disjoint(state)
         negatives(state)

@@ -1,6 +1,7 @@
 """Grouped exact arithmetic over explicit associated RDF record populations."""
 
 from collections.abc import Sequence
+from decimal import Decimal
 from fractions import Fraction
 from threading import Event
 
@@ -15,6 +16,14 @@ from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.models.quantities.checking import PreparedQuantities
+from bijux_ontology.models.quantities.conversion import (
+    _DimensionMismatch,
+    _Unavailable,
+    convert_scalar,
+)
+from bijux_ontology.models.quantities.preparation import prepare_quantities
+from bijux_ontology.models.quantities.types import UnitBinding
 from bijux_ontology.rdf.paths.traversal import finite_path_steps
 from bijux_ontology.rdf.paths.types import capture_path
 from bijux_ontology.rdf.terms import bound_node, term_key
@@ -124,6 +133,7 @@ def _records(
     issues: IssueCollector,
     retained: list[AggregateContribution],
     excluded: list[str],
+    quantities: PreparedQuantities | None,
 ) -> list[tuple[object, Fraction | tuple[object, ...]]]:
     """Retain independent member obligations without inventing partial totals.
 
@@ -232,6 +242,7 @@ def _records(
         if position is not None:
             retained.append(AggregateContribution(record, row))
         unit_complete = True
+        unit_value: Node | None = None
         if selected.unit_path is not None:
             unit_value = _scalar(
                 reader,
@@ -249,7 +260,14 @@ def _records(
                 if position is not None:
                     row = (*row, unit_value)
                     retained[position] = AggregateContribution(record, row)
-                if unit_value != selected.unit:
+                if selected.conversion is not None and type(unit_value) is not URIRef:
+                    _issue(
+                        issues,
+                        "A contributing unit must be an actual IRI",
+                        record.identifier,
+                    )
+                    unit_complete = False
+                elif selected.conversion is None and unit_value != selected.unit:
                     _issue(
                         issues,
                         "A contributing value lacks the exact declared unit",
@@ -281,6 +299,37 @@ def _records(
                 continue
         if not unit_complete:
             continue
+        if quantities is not None:
+            if not quantities.report.verified:
+                _issue(
+                    issues,
+                    "The unit conversion profile is not completely prepared",
+                    record.identifier,
+                )
+                continue
+            assert isinstance(row[0], Literal) and isinstance(unit_value, URIRef)
+            assert selected.unit is not None
+            operation.reserve_storage(256 + 32 * len(str(row[0])))
+            try:
+                converted = convert_scalar(
+                    quantities,
+                    Decimal(str(row[0])),
+                    str(unit_value),
+                    str(selected.unit),
+                    operation,
+                )
+                operation.consume("work", len(str(converted)) + 1)
+                operation.reserve_storage(256 + 32 * len(str(converted)))
+                value = Fraction(converted)
+            except LimitExceeded:
+                raise
+            except (_Unavailable, _DimensionMismatch):
+                _issue(
+                    issues,
+                    "A contributing unit has no supported exact reference conversion",
+                    record.identifier,
+                )
+                continue
         if selected.counting == "entities":
             if entity in entities:
                 prior = entities[entity]
@@ -351,6 +400,17 @@ def check_aggregates(
     finished = False
     try:
         owned = contract(selected, operation)
+        quantities = None
+        if owned.conversion is not None:
+            quantities = prepare_quantities(
+                tuple(
+                    UnitBinding(str(binding.unit), binding.pint_unit)
+                    for binding in owned.conversion.bindings
+                ),
+                profile=owned.conversion.profile,
+                budget=operation,
+            )
+            issues.retain_completed(quantities.report)
         captured = capture_items(groups, AggregateGroup, operation)
         if not captured:
             raise InputError("Choose a nonempty finite aggregate group inventory")
@@ -402,7 +462,9 @@ def check_aggregates(
                     operation,
                     count=owned.function in ("count", "distinct_count"),
                 )
-                values = _records(group, owned, operation, local, retained, excluded)
+                values = _records(
+                    group, owned, operation, local, retained, excluded, quantities
+                )
                 if not group.complete:
                     _issue(
                         local,

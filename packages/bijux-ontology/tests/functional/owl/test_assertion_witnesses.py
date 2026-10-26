@@ -243,3 +243,200 @@ def test_selected_graph_union_pins_cancel_and_prefix_limits_are_honest() -> None
     assert any(
         issue.code == "owl.assertion_contradiction" for issue in bounded.report.issues
     )
+
+
+def test_sparse_identity_witnesses_exclude_unrelated_assertion_products(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Index only established identity, retaining authored conflict premises."""
+    from typing import Any
+
+    from bijux_ontology.owl.assertions.context import AssertionContext
+
+    graph = _object(_object(Graph()), E.q)
+    graph.add((E.p, RDF.type, OWL.AsymmetricProperty))
+    graph.add((E.p, OWL.propertyDisjointWith, E.q))
+    members = [E[f"a-{index}"] for index in range(256)]
+    for index, subject in enumerate(members):
+        graph.add((subject, E.p, E[f"b-{index}"]))
+        graph.add((subject, E.q, E[f"c-{index}"]))
+    head = BNode()
+    Collection(graph, head, [*members])
+    graph.add((E.group, RDF.type, OWL.AllDifferent))
+    graph.add((E.group, OWL.distinctMembers, head))
+    negative = BNode()
+    for predicate, value in (
+        (RDF.type, OWL.NegativePropertyAssertion),
+        (OWL.sourceIndividual, members[0]),
+        (OWL.assertionProperty, E.p),
+        (OWL.targetIndividual, E["b-1"]),
+    ):
+        graph.add((negative, predicate, value))
+    calls = 0
+    original = AssertionContext.equal
+
+    def equal(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(AssertionContext, "equal", equal)
+    sparse = check_assertion_witnesses(graph)
+    assert sparse.report.verified, sparse.report.to_dict()
+    assert calls == 0  # No blanket 32,896/65,536/32,640 endpoint-proof scans.
+    blank = BNode()
+    graph.add((members[0], OWL.sameAs, members[1]))
+    graph.add((E["b-0"], OWL.sameAs, E["b-1"]))
+    graph.add((blank, OWL.sameAs, members[0]))
+    graph.add((blank, E.q, E["b-1"]))
+    graph.add((E["b-1"], E.p, members[1]))
+    selected = prepare_rdf(graph)
+    conflict = check_assertion_witnesses(selected)
+    assert {w.rule for w in conflict.witnesses} >= {
+        "asymmetric",
+        "disjoint_properties",
+        "negative_assertion",
+        "different_individuals",
+    }
+    original_terms = {
+        tuple(term_key(term) for term in triple) for triple in selected.graph()
+    }
+    assert all(set(w.premises) <= original_terms for w in conflict.witnesses)
+    assert any(
+        tuple(term_key(term) for term in (members[0], OWL.sameAs, members[1]))
+        in w.premises
+        for w in conflict.witnesses
+    )
+
+
+def test_identity_merge_queue_revisits_only_affected_functional_buckets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Late identity enables the next obligation; cancellation retains paid proofs."""
+    from typing import Any
+
+    from bijux_ontology.owl.assertions.consequences import functional_pair
+
+    graph = Graph().add((E["left-0"], OWL.sameAs, E["right-0"]))
+    for index in range(32):
+        predicate = E[f"property-{index}"]
+        inverse = index % 2 == 1
+        marker = OWL.InverseFunctionalProperty if inverse else OWL.FunctionalProperty
+        _object(graph, predicate).add((predicate, RDF.type, marker))
+        for side in ("left", "right"):
+            subject, value = E[f"{side}-{index}"], E[f"{side}-{index + 1}"]
+            graph.add(
+                (value, predicate, subject) if inverse else (subject, predicate, value)
+            )
+    selected = prepare_rdf(graph)
+    calls = 0
+    cancel = threading.Event()
+    stopping = False
+
+    def pair(*args: Any, **kwargs: Any) -> None:
+        nonlocal calls
+        calls += 1
+        functional_pair(*args, **kwargs)
+        if stopping and calls == 16:
+            cancel.set()
+
+    monkeypatch.setattr(
+        "bijux_ontology.owl.assertions.propagation.functional_pair", pair
+    )
+    complete = check_assertion_witnesses(selected)
+    assert complete.report.verified, complete.report.to_dict()
+    assert calls == 32 and len(complete.equalities) == 33
+    assert any(
+        {item.left, item.right} == {term_key(E["left-32"]), term_key(E["right-32"])}
+        for item in complete.equalities
+    )
+    calls = 0
+    stopping = True
+    interrupted = check_assertion_witnesses(selected, cancel=cancel)
+    assert (
+        interrupted.status == "incomplete" and interrupted.report.outcome == "exhausted"
+    )
+    assert calls == 16 and len(interrupted.equalities) == 17
+    original = {tuple(term_key(term) for term in triple) for triple in selected.graph()}
+    assert all(set(item.premises) <= original for item in interrupted.equalities)
+
+
+def test_sparse_multivalued_owl_keys_join_only_shared_complete_subjects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Every property needs its own witness; missing and unknown values cannot merge."""
+    from typing import Any
+
+    from bijux_ontology.owl.assertions.context import AssertionContext
+
+    graph = _object(_object(Graph()), E.q)
+    graph.add((E.r, RDF.type, OWL.DatatypeProperty))
+    head = BNode()
+    Collection(graph, head, [E.p, E.q, E.r])
+    graph.add((E.Kind, OWL.hasKey, head))
+    for index in range(256):
+        subject = E[f"key-{index}"]
+        graph.add((subject, RDF.type, E.Kind))
+        graph.add((subject, E.p, E[f"value-{index}"]))
+        graph.add((subject, E.p, E[f"extra-{index}"]))
+        graph.add((subject, E.q, E.shared))
+        graph.add((subject, E.r, literal_term("1", datatype=str(XSD.integer))))
+    calls = 0
+    original = AssertionContext.equal
+
+    def equal(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(AssertionContext, "equal", equal)
+    sparse = check_assertion_witnesses(graph)
+    assert sparse.report.verified, sparse.report.to_dict()
+    assert not sparse.equalities and calls == 0  # No 32,640 member-pair scans.
+    graph.add((E["key-1"], E.p, E["value-0"]))
+    shared = check_assertion_witnesses(graph)
+    assert shared.report.verified, shared.report.to_dict()
+    assert len(shared.equalities) == 1 and shared.equalities[0].rule == "key"
+    assert {shared.equalities[0].left, shared.equalities[0].right} == {
+        term_key(E["key-0"]),
+        term_key(E["key-1"]),
+    }
+    graph.remove((E["key-1"], E.r, None))
+    missing = check_assertion_witnesses(graph)
+    assert missing.report.verified and not missing.equalities
+    graph.add((E["key-1"], E.r, Literal("opaque", datatype=E.Custom)))
+    unknown = check_assertion_witnesses(graph)
+    assert unknown.status == "incomplete" and not unknown.equalities
+
+
+def test_multivalued_key_candidates_preserve_original_member_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Overlapping value buckets must not order identity proofs by hash iteration."""
+    from collections.abc import Iterator
+
+    from bijux_ontology.owl.assertions.key_join import KeyJoin
+
+    graph = _object(_object(Graph()), E.q)
+    head = BNode()
+    Collection(graph, head, [E.p, E.q])
+    graph.add((E.Kind, OWL.hasKey, head))
+    for subject in (E.a, E.b, E.c, E.d):
+        graph.add((subject, RDF.type, E.Kind))
+        for value in (E.left_value, E.right_value):
+            graph.add((subject, E.p, value))
+        for value in (E.first_group, E.second_group):
+            graph.add((subject, E.q, value))
+    visits: list[list[int]] = []
+    original = KeyJoin.candidates
+
+    def candidates(join: KeyJoin, position: int) -> Iterator[int]:
+        actual = list(original(join, position))
+        visits.append(actual)
+        assert actual == sorted(actual)
+        yield from actual
+
+    monkeypatch.setattr(KeyJoin, "candidates", candidates)
+    result = check_assertion_witnesses(graph)
+    assert result.report.verified and len(result.equalities) == 3
+    assert any(len(actual) == 3 for actual in visits)

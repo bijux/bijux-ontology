@@ -56,14 +56,18 @@ def upgrade(options: argparse.Namespace) -> CommandResult:
     )
     terms = (
         terms_from_data(
-            json_input(options.inventory, limits), source=str(options.inventory)
+            json_input(options.inventory, limits),
+            source=str(options.inventory),
+            limits=limits,
         )
         if options.inventory is not None
         else ()
     )
     models = (
         models_from_data(
-            json_input(options.declarations, limits), source=str(options.declarations)
+            json_input(options.declarations, limits),
+            source=str(options.declarations),
+            limits=limits,
         )
         if options.declarations is not None
         else ()

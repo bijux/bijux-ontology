@@ -7,6 +7,10 @@ from dataclasses import replace
 from rdflib import Literal, URIRef
 from rdflib.term import Node
 
+from bijux_ontology.declarations.literal_contracts import (
+    JsonLiteralObligation,
+    MarkupLiteralContract,
+)
 from bijux_ontology.declarations.types import ModelDeclaration, ValueDeclaration
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Issue, Report
@@ -20,9 +24,10 @@ from bijux_ontology.models.contracts.matching import matches_value
 from bijux_ontology.models.emission.direction import DirectionCheck
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.models.value_constraints.checking import application_matches
+from bijux_ontology.models.value_constraints.literals import check_field_literal
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
-from bijux_ontology.rdf.literals.checking import check_literal
+from bijux_ontology.rdf.literal_values.json.types import JsonLiteralContract
 from bijux_ontology.rdf.terms import literal_term
 
 
@@ -115,6 +120,10 @@ def _literal_result(
     native: dict[str, Literal],
     direction_check: DirectionCheck | None = None,
     datatype_registry: DatatypeRegistry | None = None,
+    literal_contract: JsonLiteralContract
+    | JsonLiteralObligation
+    | MarkupLiteralContract
+    | None = None,
 ) -> Report:
     """Validate actual lexical values, obtaining native spelling from PyLD itself."""
     if direction_check is not None:
@@ -128,7 +137,7 @@ def _literal_result(
         absolute_iri(datatype)
     if language is not None:
         language_tag(language)
-    if raw.get("@type") == "@json":
+    if raw.get("@type") == "@json" and literal_contract is None:
         return Report(
             "literal",
             1,
@@ -145,7 +154,7 @@ def _literal_result(
     try:
         if isinstance(value, str):
             term = literal_term(value, datatype=datatype, language=language)
-        elif type(value) in (int, float, bool):
+        elif type(value) in (int, float, bool) or raw.get("@type") == "@json":
             key = occurrence.value_json
             if key not in native:
                 budget.consume("states")
@@ -186,6 +195,10 @@ def _literal_result(
                 ),
             ),
         )
-    return check_literal(
-        term, location=where, datatype_registry=datatype_registry, budget=budget
+    return check_field_literal(
+        term,
+        literal_contract,
+        where=where,
+        datatype_registry=datatype_registry,
+        budget=budget,
     )

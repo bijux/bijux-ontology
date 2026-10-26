@@ -1,7 +1,7 @@
 """Plain declarations supplied by application-owned extraction adapters."""
 
 from collections.abc import Iterable
-from dataclasses import KW_ONLY, dataclass
+from dataclasses import KW_ONLY, InitVar, dataclass
 from typing import Literal, TypeVar
 
 from rdflib import RDF, URIRef
@@ -9,8 +9,11 @@ from rdflib import Literal as RDFLiteral
 
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
+from bijux_ontology.rdf.literal_values.json.types import JsonLiteralContract
 
+from .literal_contracts import JsonLiteralObligation, MarkupLiteralContract
 from .resource_roles import ResourceRole
 from .value_constraints import ValueConstraints
 
@@ -186,8 +189,14 @@ class FieldDeclaration:
     _: KW_ONLY
     emission: Emission = "unknown"
     output: OutputRequirement | None = None
+    literal_contract: (
+        JsonLiteralContract | JsonLiteralObligation | MarkupLiteralContract | None
+    ) = None
+    budget: InitVar[Budget | None] = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, budget: Budget | None) -> None:
+        if budget is not None and not isinstance(budget, Budget):
+            raise InputError("Field declaration admission requires a Budget")
         _text(self.name, "name")
         _text(self.location, "location", empty=True)
         _text(self.predicate, "predicate")
@@ -232,6 +241,25 @@ class FieldDeclaration:
         ):
             raise InputError("A field requires explicit alternative value declarations")
         object.__setattr__(self, "values", values)
+        contract = self.literal_contract
+        if isinstance(contract, JsonLiteralContract):
+            contract = JsonLiteralObligation(contract, budget=budget)
+            object.__setattr__(self, "literal_contract", contract)
+        if contract is not None:
+            if not isinstance(contract, JsonLiteralObligation | MarkupLiteralContract):
+                raise InputError("Expected an explicit opaque literal contract")
+            allowed = (
+                {str(RDF.JSON)}
+                if isinstance(contract, JsonLiteralObligation)
+                else {str(RDF.HTML), str(RDF.XMLLiteral)}
+            )
+            if any(
+                value.kind != "literal" or value.datatype not in allowed
+                for value in values
+            ):
+                raise InputError(
+                    "Opaque contracts require matching literal datatype branches"
+                )
 
 
 @dataclass(frozen=True)

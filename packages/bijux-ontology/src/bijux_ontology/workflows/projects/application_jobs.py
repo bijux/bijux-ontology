@@ -121,7 +121,7 @@ def _application(value: object, inputs: _Inputs) -> ApplicationVersion:
     for identifier, raw in inputs.mapping(entry.get("terms", {})).items():
         where = input_location(str(path), ("terms", identifier))
         with at_input_location(str(path), ("terms", identifier)):
-            term = terms_from_data([raw])[0]
+            term = terms_from_data([raw], budget=inputs.budget)[0]
         terms[identifier] = replace(term, location=term.location or where)
     models = {}
     for identifier, raw in inputs.mapping(entry.get("models", {})).items():
@@ -130,7 +130,7 @@ def _application(value: object, inputs: _Inputs) -> ApplicationVersion:
         for field in fields_raw:
             inputs.array(object_value(field, location=str(path)).get("values"))
         with at_input_location(str(path), ("models", identifier)):
-            model = models_from_data([raw])[0]
+            model = models_from_data([raw], budget=inputs.budget)[0]
         models[identifier] = replace(
             model,
             location=model.location
@@ -275,7 +275,7 @@ def run_application_job(
         inputs.array(usages)
         return check_emission(
             document,
-            models_from_data(declarations, source=str(path)),
+            models_from_data(declarations, source=str(path), budget=inputs.budget),
             usages_from_data(usages),
             vocabulary=vocabulary,
             base=optional_string_value(selected.get("base")),

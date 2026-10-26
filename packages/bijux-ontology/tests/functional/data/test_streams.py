@@ -1,5 +1,6 @@
 """Actual native streaming checks retain local evidence without global claims."""
 
+import gzip
 import hashlib
 import importlib.util
 import json
@@ -43,6 +44,68 @@ def _vocabulary() -> Graph:
         .add((E.p, RDF.type, OWL.DatatypeProperty))
         .add((E.C, RDF.type, OWL.Class))
     )
+
+
+@pytest.mark.parametrize("syntax", ("nt", "nquads"))
+def test_explicit_gzip_preserves_occurrences_and_separate_byte_meanings(
+    tmp_path: Path,
+    syntax: str,
+) -> None:
+    suffix = " <urn:graph>" if syntax == "nquads" else ""
+    row = f'<urn:stream:s> <urn:stream:p> "value"{suffix} .\n'
+    missing = f'<urn:stream:s> <urn:stream:missing> "value"{suffix} .\n'
+    raw = (missing + row * 300).encode()
+    packed = gzip.compress(raw, mtime=0)
+    plain, compressed = tmp_path / "data.rdf", tmp_path / "data.rdf.gz"
+    plain.write_bytes(raw)
+    compressed.write_bytes(packed)
+    limits = Limits(max_bytes=4096, max_work=10000000, max_total_bytes=100000000)
+    assert len(raw) > limits.max_bytes
+    original = check_rdf_stream(
+        RdfSource(plain, format=syntax), _vocabulary(), limits=limits
+    )
+    source = RdfSource(compressed, format=syntax, compression="gzip")
+    result = check_rdf_stream(source, _vocabulary(), limits=limits)
+    assert result.parse_report.verified and result.statements == original.statements
+    assert [(item.issue.code, item.statement.index) for item in result.findings] == [
+        (item.issue.code, item.statement.index) for item in original.findings
+    ]
+    assert result.bytes_read == len(raw) and result.compressed_bytes_read == len(packed)
+    assert result.source_sha256 == hashlib.sha256(packed).hexdigest()
+    stopped_results = (
+        check_rdf_stream(
+            source, _vocabulary(), limits=limits, max_stream_bytes=len(raw) - 1
+        ),
+        check_rdf_stream(
+            source, _vocabulary(), limits=limits, max_compressed_bytes=len(packed) - 1
+        ),
+    )
+    for stopped in stopped_results:
+        assert not stopped.parse_report.complete and stopped.source_sha256 is None
+
+
+def test_gzip_trailer_and_single_member_failures_retain_only_established_prefixes(
+    tmp_path: Path,
+) -> None:
+    raw = (
+        "<urn:stream:s> <urn:stream:missing> <urn:stream:o> .\n"
+        + '<urn:stream:s> <urn:stream:p> "value" .\n' * 400
+    ).encode()
+    packed = gzip.compress(raw, mtime=0)
+    corrupt = bytearray(packed)
+    corrupt[-8] ^= 1
+    path = tmp_path / "data.nt.gz"
+    for content in (packed[:-4], bytes(corrupt), packed + gzip.compress(raw, mtime=0)):
+        path.write_bytes(content)
+        result = check_rdf_stream(
+            RdfSource(path, format="nt", compression="gzip"),
+            _vocabulary(),
+        )
+        assert not result.parse_report.complete and result.source_sha256 is None
+        assert result.findings and result.findings[0].statement.index == 1
+        assert all(
+            item.statement.index <= result.statements for item in result.findings
+        )
 
 
 def test_small_native_oracle_exact_literals_and_independent_global_scope(

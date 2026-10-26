@@ -7,6 +7,10 @@ from typing import cast
 from rdflib import Literal, URIRef
 
 from bijux_ontology.absence import ABSENT
+from bijux_ontology.declarations.literal_contracts import (
+    JsonLiteralObligation,
+    MarkupLiteralContract,
+)
 from bijux_ontology.declarations.resource_roles import ResourceRole, RoleBridge
 from bijux_ontology.declarations.types import (
     EmissionCondition,
@@ -22,6 +26,7 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.declarations.value_constraints import ValueConstraints
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget
+from bijux_ontology.rdf.literal_values.json.types import JsonRequirement
 from bijux_ontology.rdf.terms import bound_node
 
 _DECLARATIONS = (
@@ -37,6 +42,7 @@ _DECLARATIONS = (
     EmissionScenario,
     OutputRequirement,
     SubjectIdentity,
+    JsonRequirement,
 )
 
 
@@ -80,6 +86,20 @@ def declaration_data(value: object, budget: Budget, depth: int = 0) -> object:
         budget.consume("bytes", 4 * length)
         budget.consume("work", length)
         return format(value, "f")
+    if isinstance(value, JsonLiteralObligation):
+        contract = value.contract(budget)
+        return {
+            "kind": "json",
+            "requirements": declaration_data(contract.requirements, budget, depth + 1),
+            "schema": contract.schema,
+            "dialect": contract.dialect,
+        }
+    if isinstance(value, MarkupLiteralContract):
+        return {
+            "kind": "markup",
+            "canonicalization": value.canonicalization,
+            "expected": declaration_data(value.expected, budget, depth + 1),
+        }
     if type(value) in _DECLARATIONS:
         budget.consume("bytes", 64 + 32 * len(fields(cast(ModelDeclaration, value))))
         return {

@@ -8,6 +8,11 @@ from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.values import measure_json
 
+
+class InvalidSchema(InputError):
+    """The maintained validator rejected syntax in the explicitly selected dialect."""
+
+
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
 DRAFT07 = "http://json-schema.org/draft-07/schema#"
 # These published BioSamples expressions have finite linear matching behavior.
@@ -203,7 +208,7 @@ def validator(
     try:
         cls.check_schema(schema)
     except SchemaError as error:
-        raise InputError(
+        raise InvalidSchema(
             "Generated schema is not valid in its declared dialect"
         ) from error
     if dialect == DRAFT07:

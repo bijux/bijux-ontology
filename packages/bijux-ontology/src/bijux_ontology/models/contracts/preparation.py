@@ -23,6 +23,7 @@ from bijux_ontology.models.emission.checking import check_emission
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.samples import compose_context
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
+from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.literals.checking import Regime
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
@@ -49,7 +50,9 @@ class PreparedModels:
     outputs, including child obligations, using fixed construction limits.
     JSON-LD resources must be closed parsed snapshots; paths and arbitrary
     loader callbacks are not retained. Changed declarations, imports, contexts
-    or resources require constructing another plan. Revision values are opaque
+    or resources require constructing another plan. A bound immutable datatype
+    catalogue is explicit runtime capability: callbacks are evaluated afresh and
+    never persisted as executable provenance. Revision values are opaque
     snapshot identities, not RDF canonical or semantic content hashes.
     """
 
@@ -63,6 +66,8 @@ class PreparedModels:
     _base: str | None
     _rdf_direction: DirectionPolicy | None
     _vocabulary: Vocabulary
+    _datatype_registry: DatatypeRegistry | None
+    _regime: Regime
 
     def __init__(
         self,
@@ -76,6 +81,7 @@ class PreparedModels:
         budget: Budget | None = None,
         regime: Regime = "application",
         rdf_direction: DirectionPolicy | None = None,
+        datatype_registry: DatatypeRegistry | None = None,
     ) -> None:
         if rdf_direction not in (None, "i18n-datatype", "compound-literal"):
             raise InputError("Unsupported RDF direction policy")
@@ -123,6 +129,7 @@ class PreparedModels:
             owned,
             regime=regime,
             rdf_direction=rdf_direction,
+            datatype_registry=datatype_registry,
             budget=operation,
         )
         revision = uuid4().hex
@@ -134,7 +141,11 @@ class PreparedModels:
         names.extend(f"jsonld:{url}" for url in sorted(snapshots))
         if rdf_direction is not None:
             names.append("rdf_direction")
+        if datatype_registry is not None:
+            names.append("datatype_catalogue")
         object.__setattr__(self, "_vocabulary", owned)
+        object.__setattr__(self, "_datatype_registry", datatype_registry)
+        object.__setattr__(self, "_regime", regime)
         object.__setattr__(self, "models", declarations)
         object.__setattr__(self, "declaration_report", report)
         object.__setattr__(self, "limits", selected)
@@ -203,12 +214,26 @@ class PreparedModels:
             scope=scope if scope == "models.batch.remaining" else "models.prepared",
         )
 
+    def _runtime_declarations(self, operation: Budget) -> Report:
+        """Re-evaluate bound callbacks instead of caching executable behaviour."""
+        if self._datatype_registry is None:
+            return self.declaration_report
+        return check_models(
+            self.models,
+            self._vocabulary,
+            regime=self._regime,
+            rdf_direction=self._rdf_direction,
+            datatype_registry=self._datatype_registry,
+            budget=operation,
+        )
+
     def _check(
         self, document: object, usages: Sequence[ModelUsage], operation: Budget
     ) -> Report:
         """Use one fresh or shared batch budget without changing the plan."""
         try:
             operation.consume("issues", len(self.declaration_report.issues))
+            declarations = self._runtime_declarations(operation)
             report = check_emission(
                 self._document(document, operation),
                 self.models,
@@ -217,11 +242,16 @@ class PreparedModels:
                 base=self._base,
                 document_loader=self._loader,
                 rdf_direction=self._rdf_direction,
+                datatype_registry=self._datatype_registry,
                 budget=operation,
             )
         except InputError as error:
             return self._failure(error, operation=operation)
-        return self._result(report)
+        return self._result(
+            report
+            if self._datatype_registry is None
+            else combine_reports("models.runtime", declarations, report)
+        )
 
     def check(
         self,
@@ -256,6 +286,7 @@ class PreparedModels:
         operation = budget if budget is not None else Budget(self.limits)
         try:
             operation.consume("issues", len(self.declaration_report.issues))
+            declarations = self._runtime_declarations(operation)
             report = check_rdf_emission(
                 source,
                 self.models,
@@ -264,11 +295,16 @@ class PreparedModels:
                 graph_name=graph_name,
                 union=union,
                 rdf_direction=self._rdf_direction,
+                datatype_registry=self._datatype_registry,
                 budget=operation,
             )
         except InputError as error:
             return self._failure(error, scope="rdf-emission", operation=operation)
-        return self._result(report)
+        return self._result(
+            report
+            if self._datatype_registry is None
+            else combine_reports("models.runtime", declarations, report)
+        )
 
     def check_many(
         self,
