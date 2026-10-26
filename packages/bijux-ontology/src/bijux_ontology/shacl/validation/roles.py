@@ -31,6 +31,7 @@ def prepare_role(
     resolve_imports: bool = False,
     budget: Budget | None = None,
 ) -> Graph:
+    """Capture the selected physical graph and explicitly requested import closure."""
     if isinstance(source, PreparedSource):
         graph = source._read(graph_name, union=union, budget=budget)
         _charge_graph(

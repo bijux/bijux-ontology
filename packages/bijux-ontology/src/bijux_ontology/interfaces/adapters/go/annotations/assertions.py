@@ -32,6 +32,7 @@ def interpret_annotation(
     """Decode only supported field roles, without merging evidence by subject."""
 
     def cell(index: int, required: bool = True) -> str:
+        """Read a native column and locate any missing required value."""
         value = fields[index]
         if required and not value:
             raise source_error(

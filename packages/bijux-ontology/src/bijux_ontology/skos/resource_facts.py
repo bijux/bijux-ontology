@@ -18,6 +18,7 @@ LABEL_PREDICATES = (SKOS.prefLabel, SKOS.altLabel, SKOS.hiddenLabel)
 
 
 def literal_key(value: Literal) -> tuple[str, str, str]:
+    """Retain lexical identity with RDF-equivalent language and string types."""
     return (
         str(value),
         (value.language or "").lower(),
@@ -32,6 +33,7 @@ def literal_key(value: Literal) -> tuple[str, str, str]:
 
 
 def is_lexical(value: Node) -> bool:
+    """Recognise plain or language-tagged string literals without coercion."""
     return isinstance(value, Literal) and (
         value.language is not None or value.datatype in (None, XSD.string)
     )

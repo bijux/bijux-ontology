@@ -19,6 +19,7 @@ def check_resource_publication(
     budget: Budget,
     issues: IssueCollector,
 ) -> None:
+    """Apply explicit label, language, scheme and definition requirements."""
     selected.qualify(budget)
     scope = selected.scope
     graph, facts = (scope.graph, scope.facts)
@@ -94,6 +95,7 @@ def check_resource_publication(
 def check_xl_form_policy(
     label_node: Node, forms: tuple[Node, ...], issues: IssueCollector
 ) -> None:
+    """Require string literal forms for the selected XL projection."""
     for form in forms:
         if not is_lexical(form):
             issues.append(
@@ -111,6 +113,7 @@ def check_required_notation(
     budget: Budget,
     issues: IssueCollector,
 ) -> int:
+    """Report selected resources lacking required notation."""
     selected.qualify(budget)
     scope = selected.scope
     graph = scope.graph
@@ -138,6 +141,7 @@ def check_unique_notation(
     budget: Budget,
     issues: IssueCollector,
 ) -> int:
+    """Check exact notation identity within each selected publication scope."""
     selected.qualify(budget)
     scope = selected.scope
     graph, facts, resources = (scope.graph, scope.facts, scope.resources)
@@ -197,6 +201,7 @@ def check_active_deprecation(
     budget: Budget,
     issues: IssueCollector,
 ) -> int:
+    """Report active deprecated resources without inferring missing metadata."""
     selected.qualify(budget)
     scope = selected.scope
     graph, facts, resources, view = (
@@ -257,6 +262,7 @@ def check_active_deprecation(
 
 
 def check_collection_member_shape(collection: Node, issues: IssueCollector) -> None:
+    """Record a selected collection member that is not a resource."""
     issues.append(
         Issue(
             "skos.policy.collection_member_shape",

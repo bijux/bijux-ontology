@@ -211,6 +211,7 @@ def occurrences(
     def walk(
         value: object, remaining: tuple[str, ...], where: SourcePath, depth: int
     ) -> Iterator[tuple[SourcePath, object]]:
+        """Retain concrete paths while descending selected repeated fields."""
         budget.consume("work")
         if depth > budget.limits.max_depth:
             raise LimitExceeded("Selected field traversal exceeds max_depth")

@@ -18,6 +18,7 @@ def check_label_integrity(
     budget: Budget,
     issues: IssueCollector,
 ) -> None:
+    """Report conflicting preferred languages and disjoint label roles."""
     if "label-integrity" in rules:
         per_language: dict[str, set[tuple[str, str, str]]] = {}
         for value in values[SKOS.prefLabel]:
@@ -72,6 +73,7 @@ def check_label_integrity(
 def check_xl_forms(
     label_node: Node, forms: tuple[Node, ...], issues: IssueCollector
 ) -> None:
+    """Report distinct literal forms assigned to one XL label."""
     if len({literal_key(value) for value in forms if isinstance(value, Literal)}) > 1:
         issues.append(
             Issue(
@@ -83,6 +85,7 @@ def check_xl_forms(
 
 
 def check_xl_role(label_node: Node, scope: SkosScope, issues: IssueCollector) -> None:
+    """Reject XL labels also assigned disjoint SKOS resource roles."""
     facts = scope.facts
     if facts.roles.get(label_node, frozenset()) & {
         SKOS.Concept,
@@ -104,6 +107,7 @@ def check_resource_roles(
     budget: Budget,
     issues: IssueCollector,
 ) -> int:
+    """Check selected classifications for disjoint SKOS resource roles."""
     scope = selected.scope
     facts, resources, rules = scope.facts, scope.resources, policy.names
     checked = 0
@@ -133,6 +137,7 @@ def check_resource_roles(
 def check_collection_role(
     scope: SkosScope, collection: Node, member: Node, issues: IssueCollector
 ) -> None:
+    """Reject known schemes used as concept or collection members."""
     facts = scope.facts
     if SKOS.ConceptScheme in facts.roles.get(member, frozenset()):
         issues.append(
