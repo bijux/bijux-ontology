@@ -307,7 +307,7 @@ _CODES = {
         "query_variables_mismatch query_answer_unexpected query_answer_missing "
         "query_violation query_empty_scope".split()
     ),
-    "contract": frozenset("coverage_missing unavailable".split()),
+    "contract": frozenset("coverage_missing binding_missing unavailable".split()),
     "project": frozenset("dependency_unverified job_pending input_error".split()),
     "profile": frozenset(
         "instantiation_unverified "
@@ -1109,6 +1109,12 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
         "Inspect the processor diagnostic, supported PyLD installation and required "
         "context resources; processing failure does not prove a remapping.",
         "uv pip install 'bijux-ontology[jsonld]'",
+    ),
+    "contract.binding_missing": (
+        "A required application binding has no completed observation.",
+        "Supply and check the exact required owner/path identity; aggregate "
+        "comparison counts cannot substitute for that binding's evidence.",
+        "ContractObligation(name, check, required_bindings=(identity,))",
     ),
     "shacl.query_unverified": (
         "A supplied SHACL SPARQL query could not be analysed in the supported scope.",
