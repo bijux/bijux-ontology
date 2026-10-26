@@ -255,7 +255,7 @@ def test_jsonld_metadata_bounds_and_actual_loader_document_identity(
 
 
 @pytest.mark.parametrize("boundary", ["rdf", "jsonld"])
-@pytest.mark.parametrize("mutation", ["modify", "replace"])
+@pytest.mark.parametrize("mutation", ["modify", "replace", "fifo"])
 def test_path_capture_rejects_changed_revision_before_publication(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -266,6 +266,8 @@ def test_path_capture_rejects_changed_revision_before_publication(
     import os
     from typing import IO, Any
 
+    if mutation == "fifo" and os.name != "posix":
+        pytest.skip("FIFO replacement requires POSIX")
     target = tmp_path / "document.input"
     first = b"<urn:s> <urn:p> <urn:old> .\n"
     payload = (
@@ -287,15 +289,20 @@ def test_path_capture_rejects_changed_revision_before_publication(
             data = super().read(min(size, 65536))
             if not changed:
                 changed = True
-                if mutation == "replace":
+                if mutation in {"replace", "fifo"}:
                     target.unlink()
-                with io.FileIO(target, "w" if mutation == "replace" else "r+") as out:
-                    out.write(payload.replace(b"old", b"new"))
-                revision = target.stat()
-                os.utime(
-                    target,
-                    ns=(revision.st_atime_ns, revision.st_mtime_ns + 1_000_000),
-                )
+                if mutation == "fifo":
+                    os.mkfifo(target)
+                else:
+                    with io.FileIO(
+                        target, "w" if mutation == "replace" else "r+"
+                    ) as out:
+                        out.write(payload.replace(b"old", b"new"))
+                    revision = target.stat()
+                    os.utime(
+                        target,
+                        ns=(revision.st_atime_ns, revision.st_mtime_ns + 1_000_000),
+                    )
             return data + (super().read(size - len(data)) if size > len(data) else b"")
 
     def opened(path: Path, mode: str = "r", *args: Any, **kwargs: Any) -> IO[Any]:
@@ -311,6 +318,9 @@ def test_path_capture_rejects_changed_revision_before_publication(
             else:
                 OfflineDocumentLoader({"urn:input": target})("urn:input", {})
     assert changed
+    if mutation == "fifo":
+        target.unlink()
+        target.write_bytes(payload.replace(b"old", b"new"))
     # The same current bytes remain ordinary supported input after capture stops.
     if boundary == "rdf":
         stable = prepare_rdf(RdfSource(target, format="nt")).graph()

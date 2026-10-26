@@ -36,8 +36,17 @@ def capture_file(path: Path, budget: Budget) -> Iterator[tuple[BinaryIO, int]]:
         before = os.fstat(stream.fileno())
         yield stream, before.st_size
         budget.consume("work", 2)
-        if _revision(before) != _revision(os.fstat(stream.fileno())) or (
-            _revision(before) != _revision(path.stat())
+        after = os.fstat(stream.fileno())
+        # Windows path and descriptor ctime fields can have different meanings.
+        # Read named metadata through a descriptor too; nonblocking open prevents
+        # a replacement FIFO from holding the capture's final identity check.
+        named_fd = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        try:
+            named = os.fstat(named_fd)
+        finally:
+            os.close(named_fd)
+        if _revision(before) != _revision(after) or (
+            _revision(before) != _revision(named)
         ):
             raise ResourceError("Input file changed during capture", location=str(path))
 
