@@ -280,7 +280,7 @@
   "packages/bijux-ontology/tests/functional/workflows/projects/test_routing.py": 40.904,
   "packages/bijux-ontology/tests/functional/workflows/test_corpus_resume.py": 21.402,
   "packages/bijux-ontology/tests/functional/workflows/test_finding_streams.py": 21.563,
-  "packages/bijux-ontology/tests/functional/workflows/test_reproductions.py": 207.936,
+  "packages/bijux-ontology/tests/functional/workflows/test_reproductions.py": 249.02,
   "packages/bijux-ontology/tests/functional/workflows/test_revisions.py": 42.387,
   "packages/bijux-ontology/tests/functional/workflows/upgrades/test_anonymous_attachments.py": 5.972,
   "packages/bijux-ontology/tests/functional/workflows/upgrades/test_applications.py": 16.616,
