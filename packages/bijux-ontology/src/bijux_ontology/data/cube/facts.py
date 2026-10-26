@@ -286,6 +286,38 @@ class Coordinates:
                 )
             )
 
+    def measure_rows(
+        self, budget: Budget
+    ) -> tuple[KeyContract | None, tuple[_Key, ...]]:
+        """Project the non-measure coordinates once for every IC17 obligation."""
+        assert self.contract is not None
+        positions = tuple(
+            index for index, dim in enumerate(self.dimensions) if dim != QB.measureType
+        )
+        budget.consume("states", len(positions))
+        budget.reserve_storage(64 + 16 * len(positions))
+        if not positions:
+            return None, self.keys
+        budget.consume("states", len(positions) + len(self.keys))
+        budget.reserve_storage(128 + 32 * len(positions))
+        contract = replace(
+            self.contract,
+            components=tuple(self.contract.components[index] for index in positions),
+        )
+        projected = []
+        for key in self.keys:
+            budget.consume("work", len(positions))
+            budget.consume("states", 2 * len(positions))
+            budget.reserve_storage(128 + 32 * len(positions))
+            projected.append(
+                replace(
+                    key,
+                    values=tuple(key.values[index] for index in positions),
+                    tokens=tuple(key.tokens[index] for index in positions),
+                )
+            )
+        return contract, tuple(projected)
+
     def relation(
         self,
         left: _Key,
@@ -293,37 +325,16 @@ class Coordinates:
         budget: Budget,
         issues: IssueCollector,
         *,
-        measures: bool = False,
+        contract: KeyContract | None = None,
     ) -> str:
         """Use SPARQL-aware native key relations for the exact selected coordinates."""
         assert self.contract is not None
-        contract = self.contract
-        if measures:
-            positions = tuple(
-                index
-                for index, dim in enumerate(self.dimensions)
-                if dim != QB.measureType
-            )
-            if not positions:
-                return "equal"
-            budget.consume("states", 6 * len(positions))
-            budget.consume("bytes", 256 + 64 * len(positions))
-            left = replace(
-                left,
-                values=tuple(left.values[index] for index in positions),
-                tokens=tuple(left.tokens[index] for index in positions),
-            )
-            right = replace(
-                right,
-                values=tuple(right.values[index] for index in positions),
-                tokens=tuple(right.tokens[index] for index in positions),
-            )
-            contract = replace(
-                contract,
-                components=tuple(contract.components[index] for index in positions),
-            )
         relation, pending = compare_keys(
-            left, right, contract, budget, comparisons=self.comparisons
+            left,
+            right,
+            self.contract if contract is None else contract,
+            budget,
+            comparisons=self.comparisons,
         )
         issues.extend(pending)
         return relation

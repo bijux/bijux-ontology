@@ -1,6 +1,7 @@
 """Fixed resource capture, finite locality qualification and actual full baseline."""
 
 from collections.abc import Sequence
+from contextlib import nullcontext
 from threading import Event
 
 from rdflib import BNode, Graph, Literal, URIRef
@@ -159,6 +160,31 @@ def _locality(
     return local, frozenset(predicates), portable
 
 
+def _session(
+    shapes: PreparedSource,
+    ontology: PreparedSource | None,
+    roots: tuple[str, ...],
+    operation: Operation,
+    *,
+    trusted_sparql: bool,
+    pairs: bool = False,
+) -> ShaclSession:
+    """Fund one fixed preparation and worker owner for the selected roots."""
+    operation.consume("resources")
+    return ShaclSession(
+        shapes,
+        ontology=ontology,
+        use_shapes=roots,
+        trusted_sparql=trusted_sparql,
+        mode="pairs" if pairs else "targets",
+        preflight=True,
+        coverage=ShaclCoverageContract(minimum_focus=1),
+        limits=operation.limits,
+        budget=operation,
+        timeout=remaining_deadline(operation),
+    )
+
+
 def _run(
     shapes: PreparedSource,
     ontology: PreparedSource | None,
@@ -169,21 +195,23 @@ def _run(
     trusted_sparql: bool,
     focus: tuple[URIRef, ...] = (),
     pairs: bool = False,
+    session: ShaclSession | None = None,
 ) -> ShaclResult:
-    """Use an ordinary session and qualify its report before adoption."""
-    operation.consume("resources")
-    with ShaclSession(
-        shapes,
-        ontology=ontology,
-        use_shapes=roots,
-        trusted_sparql=trusted_sparql,
-        mode="pairs" if pairs else "targets",
-        preflight=True,
-        coverage=ShaclCoverageContract(minimum_focus=1),
-        limits=operation.limits,
-        timeout=remaining_deadline(operation),
-    ) as session:
-        result = session._validate(
+    """Use the exact root/focus group through one owned fixed preparation."""
+    owner = (
+        nullcontext(session)
+        if session is not None
+        else _session(
+            shapes,
+            ontology,
+            roots,
+            operation,
+            trusted_sparql=trusted_sparql,
+            pairs=pairs,
+        )
+    )
+    with owner as active:
+        result = active._validate(
             data,
             focus_nodes=focus,
             graph_name=None,
@@ -192,6 +220,7 @@ def _run(
             scope="dataset",
             cancel=operation.cancel,
             budget=operation,
+            selected_roots=roots if session is not None else None,
         )
     retained = IssueCollector(operation)
     try:
@@ -257,8 +286,9 @@ def prepare_incremental(
     Plain graphs and physically pinned datasets are supported. Reuse requires
     a complete passing result, named actual root/focus coverage and qualified
     direct-property Core locality. Other features retain full revalidation.
-    Existing SHACL preparation has per-session limits; patch/report ownership
-    is cumulative and execution uses the remaining operation deadline.
+    Fixed SHACL preparation and patch/report ownership share the operation
+    allowance. Revalidation reuses one session for exact affected root/focus
+    groups, under the remaining operation deadline.
     """
     operation = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(operation)

@@ -214,8 +214,13 @@ def enrich_annotations(
             reserve(operation, len(selected) * 8)
             for term in selected:
                 members = population.members[term]
-                operation.consume("work", len(actual_study))
-                a = sum(entity in members for entity in actual_study)
+                candidates, lookup = (
+                    (members, actual_study)
+                    if len(members) < len(actual_study)
+                    else (actual_study, members)
+                )
+                operation.consume("work", len(candidates))
+                a = sum(entity in lookup for entity in candidates)
                 K = len(members)
                 counts.append(
                     EnrichmentCounts(

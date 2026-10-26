@@ -66,6 +66,22 @@ def _prepared_job(
         aliases[node] = anchors[anchor]
     dataset = Dataset()
     budget = Budget(Limits(**plan["limits"]))
+    selected_roots = request.get("root_shapes")
+    if selected_roots is not None:
+        _, fixed_roots = read_bindings(static)
+        if (
+            not plan.get("pair_mode")
+            or not isinstance(selected_roots, list)
+            or not selected_roots
+            or any(type(root) is not str for root in selected_roots)
+        ):
+            raise InputError("Invalid prepared named root selection")
+        budget.consume("states", len(selected_roots))
+        selected = {URIRef(root) for root in selected_roots}
+        if len(selected) != len(selected_roots) or not selected.issubset(fixed_roots):
+            raise InputError("Selected roots differ from the fixed SHACL preparation")
+    else:
+        selected = None
     for name in (
         "shapes",
         "authored-shapes",
@@ -76,6 +92,13 @@ def _prepared_job(
         target = dataset.graph(URIRef(f"urn:bijux:shacl:{name}"))
         for triple in static.graph(URIRef(f"urn:bijux:shacl:{name}")):
             budget.consume("work")
+            if (
+                name == "bindings"
+                and triple[1] == SELECTION.shape
+                and selected is not None
+                and triple[2] not in selected
+            ):
+                continue
             target.add(triple)
     for name in ("data", "bindings"):
         target = dataset.graph(URIRef(f"urn:bijux:shacl:{name}"))
@@ -147,6 +170,7 @@ def _session(cap: int) -> int:
                     "focus_nodes",
                     "binding_count",
                     "anchor_count",
+                    "root_shapes",
                 }:
                     raise InputError(
                         "SHACL batch cannot replace fixed preparation options"

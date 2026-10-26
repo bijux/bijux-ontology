@@ -482,3 +482,41 @@ def test_incomplete_native_producer_cannot_qualify_a_usable_selected_row(
     assert not result.report.verified and not result.paths and not result.results
     assert result.left is None and failed.report in result.report.children
     assert all(issue in result.report.issues for issue in failed.report.issues)
+
+
+def test_unrelated_rules_do_not_multiply_selected_join_storage() -> None:
+    """Rule admission grows linearly, independently of the selected path product."""
+    left = _read(_row("A", "B") * 8)
+    right = _read(_row("B", "C") * 8)
+    unrelated = [
+        MappingCompositionRule(
+            f"urn:left:{index}",
+            f"urn:right:{index}",
+            "urn:result",
+            "application",
+            f"urn:rule:{index}",
+        )
+        for index in range(100)
+    ]
+    budgets = [Budget(), Budget()]
+    results = [
+        compose_mappings(
+            left, right, intermediates=["urn:example:B"], rules=rules, budget=owner
+        )
+        for rules, owner in zip(([EXACT], [EXACT, *unrelated]), budgets, strict=True)
+    ]
+    assert all(result.report.verified for result in results)
+    assert results[0].paths == results[1].paths
+    assert results[0].results == results[1].results
+    extra_states = budgets[1]._counts["states"] - budgets[0]._counts["states"]
+    assert extra_states < 100 * 20
+    # The same real many-to-many expansion is refused before retaining any path.
+    limited = compose_mappings(
+        left,
+        right,
+        intermediates=["urn:example:B"],
+        rules=[EXACT],
+        limits=Limits(max_states=budgets[0]._counts["states"] - 1),
+    )
+    assert limited.report.outcome == "exhausted"
+    assert not limited.paths and not limited.results

@@ -5,6 +5,11 @@ from dataclasses import replace
 
 import pytest
 
+from bijux_ontology.declarations.bindings import (
+    BindingIdentity,
+    BindingObservation,
+    ContractEvidence,
+)
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import (
     AcceptancePolicy,
@@ -12,9 +17,13 @@ from bijux_ontology.diagnostics.reports import (
     Issue,
     IssueSelection,
     Report,
+    combine_reports,
 )
+from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
+from bijux_ontology.jsonld.usages.checking import check_context
 from bijux_ontology.workflows.projects.contracts import (
     ContractObligation,
+    ContractResult,
     check_contract,
 )
 
@@ -127,3 +136,79 @@ def test_unverified_execution_is_strict_and_names_are_validated_before_running()
             (ContractObligation("same", None), ContractObligation("same", None))
         )
     assert not check_contract((ContractObligation("missing", None),)).accepted
+
+
+def test_required_identities_use_actual_two_sample_coverage_not_counts() -> None:
+    required = (
+        BindingIdentity("Study", ("title",)),
+        BindingIdentity("Study", ("abstract",)),
+    )
+
+    def observe(document: dict[str, object]) -> tuple[BindingObservation, ...]:
+        return tuple(
+            BindingObservation(
+                BindingIdentity("Study", (key,)),
+                check_context(document, (ContextExpectation((key,), "urn:" + key),)),
+            )
+            for key in document
+            if key != "@context"
+        )
+
+    title = observe({"@context": {"@vocab": "urn:"}, "title": "Study"})
+    abstract = observe({"@context": {"@vocab": "urn:"}, "abstract": "Overview"})
+
+    def contract(observations: tuple[BindingObservation, ...]) -> ContractResult:
+        raw = combine_reports("samples", *(item.report for item in observations))
+        return check_contract(
+            (
+                ContractObligation(
+                    "output",
+                    lambda: ContractEvidence(raw, observations),
+                    bindings=len(observations),
+                    minimum_bindings=2,
+                    required_bindings=required,
+                ),
+            )
+        )
+
+    repeated = contract(title + title)
+    assert not repeated.accepted and not repeated.report.verified
+    assert any(
+        issue.code == "contract.binding_missing" for issue in repeated.report.issues
+    )
+    completed = contract(title + abstract)
+    assert completed.accepted and completed.require_verified().verified
+    assert completed.observed_bindings == (("output", title + abstract),)
+
+
+def test_unverified_and_excluded_bindings_never_satisfy_required_coverage() -> None:
+    identity = BindingIdentity("Study", ("abstract",))
+    unknown = Report(
+        "association",
+        1,
+        (Issue("association.unknown", "No proved correspondence", kind="unverified"),),
+    )
+    for observation in (
+        BindingObservation(identity, unknown),
+        BindingObservation(
+            identity, Report("sample", 1), exclusion="Unmapped extension"
+        ),
+    ):
+
+        def check(current: BindingObservation = observation) -> ContractEvidence:
+            return ContractEvidence(Report("sample", 1), (current,))
+
+        result = check_contract(
+            (
+                ContractObligation(
+                    "output",
+                    check,
+                    required_bindings=(identity,),
+                ),
+            )
+        )
+        assert not result.accepted
+        assert any(
+            issue.code == "contract.binding_missing" for issue in result.report.issues
+        )
+        assert result.observed_bindings == (("output", (observation,)),)

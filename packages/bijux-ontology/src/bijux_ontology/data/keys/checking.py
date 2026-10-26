@@ -3,16 +3,15 @@
 from collections.abc import Sequence
 from typing import cast
 
-from rdflib import BNode
-
 from bijux_ontology.declarations.keys import KeyContract
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 
+from .candidates import KeyCandidates
 from .evidence import compare_keys, key_evidence
-from .extraction import _Key, _KeyExtraction
+from .extraction import _KeyExtraction
 from .types import KeyRecord
 
 
@@ -54,23 +53,10 @@ def check_record_keys(
         comparisons = ScalarComparisons(operation)
         bound_text(contract.name, operation)
         anchor = contract.name
-        keys: list[_Key] = []
-        groups: dict[tuple[tuple[str | None, ...], ...], list[_Key]] = {}
-        uncertain_keys: list[_Key] = []
-        semantic = any(c.equality != "rdf-term" for c in contract.components)
+        candidates = KeyCandidates(contract, operation)
+        eligible = 0
         for key in extraction:
-            has_blank = any(isinstance(value, BNode) for value in key.values)
-            if semantic or has_blank:
-                candidates = keys
-            else:
-                operation.consume(
-                    "work",
-                    sum(len(part or "") for token in key.tokens for part in token) + 1,
-                )
-                matches = groups.get(key.tokens, ())
-                operation.consume("states", len(matches) + len(uncertain_keys))
-                candidates = [*matches, *uncertain_keys]
-            for prior in candidates:
+            for prior in candidates.select(key):
                 relation, pending = compare_keys(
                     prior, key, contract, operation, comparisons=comparisons
                 )
@@ -90,13 +76,9 @@ def check_record_keys(
                         evidence_json=key_evidence((prior, key), operation),
                     )
                 )
-            operation.consume("states", 2)
-            keys.append(key)
-            if has_blank:
-                uncertain_keys.append(key)
-            else:
-                groups.setdefault(key.tokens, []).append(key)
-        if not keys and extraction.exclusions:
+            candidates.add(key)
+            eligible += 1
+        if not eligible and extraction.exclusions:
             issues.append(
                 Issue(
                     "data.key_corpus_unverified",

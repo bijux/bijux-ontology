@@ -5,6 +5,7 @@ from typing import Literal as Choice
 
 from rdflib import BNode, Graph, URIRef
 
+from bijux_ontology.data.keys.candidates import KeyCandidates
 from bijux_ontology.data.keys.evidence import compare_keys, encode_evidence
 from bijux_ontology.data.keys.extraction import _Key, _scope
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
@@ -57,6 +58,15 @@ def _retain(key: _Key, budget: Budget) -> None:
                 bound_text(text, budget)
 
 
+def admit_targets(targets: ForeignTargetIndex, budget: Budget) -> KeyCandidates:
+    """Qualify the exact target inventory once under each using operation."""
+    candidates = KeyCandidates(targets.contract.target, budget)
+    for target in targets._keys:
+        _retain(target, budget)
+        candidates.add(target)
+    return candidates
+
+
 def _evidence(source: _Key, targets: Sequence[_Key], budget: Budget) -> str:
     """Bound correlated original terms before encoding required diagnostic evidence."""
     rows: list[dict[str, object]] = []
@@ -64,7 +74,6 @@ def _evidence(source: _Key, targets: Sequence[_Key], budget: Budget) -> str:
     budget.consume("states", len(targets) + 1)
     budget.consume("bytes", 64 + 32 * (len(targets) + 1))
     for role, key in (("source", source), *(("target", target) for target in targets)):
-        _retain(key, budget)
         name, union = _scope(key.reader)
         allowance += 256 + 12 * sum(
             len(part or "")
@@ -107,27 +116,16 @@ def resolve_reference(
     issues: IssueCollector,
     resolutions: list[ForeignResolution],
     *,
-    semantic: bool,
+    candidates: KeyCandidates,
     comparisons: ScalarComparisons,
 ) -> tuple[ForeignResolution, list[_Key]]:
     """Resolve one original source key and retain its known findings immediately."""
     contract = targets.contract
     _retain(key, operation)
-    if semantic or any(isinstance(value, BNode) for value in key.values):
-        candidates = targets._keys
-    else:
-        operation.consume(
-            "work",
-            1 + sum(len(part or "") for token in key.tokens for part in token),
-        )
-        bucket = targets._buckets.get(key.tokens, ())
-        operation.consume("states", len(bucket) + len(targets._uncertain))
-        candidates = (*bucket, *targets._uncertain)
     matches: list[_Key] = []
     uncertain = False
-    for target in candidates:
+    for target in candidates.select(key):
         operation.consume("work")
-        _retain(target, operation)
         relation, pending = compare_keys(
             key, target, contract.source, operation, comparisons=comparisons
         )

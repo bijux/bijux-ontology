@@ -98,7 +98,8 @@ def _run(
     maximum: int | None,
     budget: Budget,
     require_match: bool,
-) -> RelationPathResult:
+    roots: tuple[URIRef, ...] | None = None,
+) -> tuple[RelationPathResult, ...]:
     """Search the finite node/automaton product, preserving shortest edge depth."""
     issues = IssueCollector(budget)
     children: list[Report] = []
@@ -108,6 +109,7 @@ def _run(
     complete = False
     found = False
     checked = 0
+    matches: dict[URIRef, RelationPathResult] = {}
     try:
         start = named(source, budget)
         depth_limit = budget.limits.max_depth if maximum is None else maximum
@@ -116,6 +118,10 @@ def _run(
         depth_limit = min(depth_limit, budget.limits.max_depth)
         automaton = Automaton(path, budget)
         conditions = _endpoint(endpoint, budget, inventory)
+        remaining = set(roots) if roots is not None else None
+        if roots is not None:
+            budget.consume("states", len(roots) * 2)
+            budget.consume("bytes", len(roots) * 128)
         if projections is not None:
             inventory.supplied_view(projections)
         if view.lookup(str(start)).status == "absent":
@@ -140,9 +146,37 @@ def _run(
                 budget.consume("work")
                 if best[node, state] != len(current):
                     continue
-                if state == automaton.end and _matches(view, node, conditions, budget):
-                    goal, witness, found = node, current, True
-                    break
+                if state == automaton.end:
+                    if remaining is not None:
+                        if node in remaining:
+                            budget.consume("work", len(issues) + len(children) + 1)
+                            budget.consume("states", len(issues) + len(children) + 1)
+                            budget.consume(
+                                "bytes", 128 + 64 * (len(issues) + len(children))
+                            )
+                            proof = Report(
+                                "terms.relation_path",
+                                1,
+                                tuple(issues),
+                                requested=1,
+                                complete=inventory.complete,
+                                children=tuple(children),
+                                regime="asserted-typed-relation-path",
+                            )
+                            matches[node] = RelationPathResult(
+                                "found" if inventory.complete else "incomplete",
+                                start,
+                                node,
+                                current,
+                                proof,
+                            )
+                            remaining.remove(node)
+                        found = not remaining
+                        if found:
+                            break
+                    elif _matches(view, node, conditions, budget):
+                        goal, witness, found = node, current, True
+                        break
                 for arc in automaton.arcs[state]:
                     budget.consume("work")
                     if arc.step is None:
@@ -210,12 +244,53 @@ def _run(
         children=tuple(children),
         regime="asserted-typed-relation-path",
     )
-    return RelationPathResult(
-        "found" if complete and found else "nonmatch" if complete else "incomplete",
-        start,
-        goal,
-        witness,
-        report,
+    if roots is not None:
+        return tuple(
+            matches[root]
+            if root in matches
+            else RelationPathResult(
+                "nonmatch" if complete else "incomplete",
+                start,
+                None,
+                (),
+                report,
+            )
+            for root in roots
+        )
+    return (
+        RelationPathResult(
+            "found" if complete and found else "nonmatch" if complete else "incomplete",
+            start,
+            goal,
+            witness,
+            report,
+        ),
+    )
+
+
+def find_relation_endpoints(
+    view: VocabularyView,
+    source: str,
+    path: RelationSpec,
+    roots: tuple[URIRef, ...],
+    *,
+    projections: Selection[RestrictionProjection] | None = None,
+    max_depth: int | None = None,
+    budget: Budget,
+) -> tuple[RelationPathResult, ...]:
+    """Search once for all prepaid named roots, retaining required coverage."""
+    if type(roots) is not tuple or not roots:
+        raise InputError("Select a nonempty named endpoint inventory")
+    return _run(
+        view,
+        source,
+        path,
+        RelationEndpoint(roots),
+        projections,
+        max_depth,
+        budget,
+        False,
+        roots,
     )
 
 
@@ -246,7 +321,9 @@ def check_relation_path(
     ):
         raise InputError("Expected VocabularyView and optional shared Budget")
     operation = budget if budget is not None else Budget(view.limits)
-    return _run(view, source, path, endpoint, projections, max_depth, operation, True)
+    return _run(view, source, path, endpoint, projections, max_depth, operation, True)[
+        0
+    ]
 
 
 def find_relation_path(
@@ -272,7 +349,9 @@ def find_relation_path(
     ):
         raise InputError("Expected VocabularyView and optional shared Budget")
     operation = budget if budget is not None else Budget(view.limits)
-    return _run(view, source, path, endpoint, projections, max_depth, operation, False)
+    return _run(view, source, path, endpoint, projections, max_depth, operation, False)[
+        0
+    ]
 
 
 def relation_enumeration(
@@ -325,7 +404,7 @@ def relation_enumeration(
                 max_depth,
                 operation,
                 False,
-            )
+            )[0]
             children.append(result.report)
             checked += 1
             if result.status == "found":

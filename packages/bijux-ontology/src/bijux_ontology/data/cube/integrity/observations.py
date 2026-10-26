@@ -1,9 +1,9 @@
 """Finite integrity families over the same owned normalized Cube facts."""
 
-from itertools import islice
-
 from rdflib import BNode, URIRef
 from rdflib.term import Node
+
+from bijux_ontology.data.keys.candidates import KeyCandidates
 
 from ..facts import boolean_flag
 from ..normalization import QB
@@ -47,10 +47,11 @@ def check_coordinate_uniqueness(state: CubeIntegrity) -> int:
                 data, "IC12 requires at least one supported declared dimension"
             )
             continue
+        candidates = KeyCandidates(rows.contract, state.budget)
         for position, left in enumerate(rows.keys):
-            for right in islice(rows.keys, position):
+            count += position
+            for right in candidates.select(left):
                 state.budget.consume("work")
-                count += 1
                 relation = rows.relation(left, right, state.budget, state.issues)
                 if relation == "equal":
                     state.finding(
@@ -63,6 +64,7 @@ def check_coordinate_uniqueness(state: CubeIntegrity) -> int:
                         right.record.subject,
                         "IC12 coordinate equality is unavailable",
                     )
+            candidates.add(left)
     return count
 
 
@@ -162,22 +164,74 @@ def check_measure_groups(state: CubeIntegrity) -> int:
             state.unknown(data, "IC17 coordinate extraction is unavailable")
             continue
         declared = set(state.read.properties(dsd, QB.MeasureProperty))
-        for left in rows.keys:
-            found: set[Node] = set()
-            matched = 0
-            uncertain = len(rows.keys) != rows.count
-            for right in rows.keys:
-                state.budget.consume("work")
-                relation = rows.relation(
-                    left, right, state.budget, state.issues, measures=True
+        contract, projected = rows.measure_rows(state.budget)
+        candidates = KeyCandidates(contract, state.budget) if contract else None
+        measures: dict[Node, tuple[Node, ...]] = {}
+        for key in projected:
+            state.budget.consume("states")
+            state.budget.reserve_storage(128)
+            measures[key.record.subject] = state.read.values(
+                key.record.subject, QB.measureType
+            )
+            if candidates is not None:
+                candidates.add(key)
+        state.budget.consume("work", len(projected) * len(rows.dimensions))
+        exact = (
+            contract is None
+            or all(
+                component.equality == "rdf-term" for component in contract.components
+            )
+            and not any(
+                isinstance(value, BNode) for key in projected for value in key.values
+            )
+        )
+        neighbourhoods: dict[
+            tuple[tuple[str | None, ...], ...], tuple[int, frozenset[Node], bool]
+        ] = {}
+        for left in projected:
+            found: set[Node] | frozenset[Node]
+            identity = left.tokens if contract is not None else ()
+            if exact:
+                state.budget.consume(
+                    "work",
+                    1 + sum(len(part or "") for token in identity for part in token),
                 )
-                if relation == "equal":
-                    matched += 1
-                    found.update(
-                        state.read.values(right.record.subject, QB.measureType)
+            previous = neighbourhoods.get(identity) if exact else None
+            if previous is not None:
+                matched, known, uncertain = previous
+                found = known
+            else:
+                found = set()
+                matched = 0
+                uncertain = len(rows.keys) != rows.count
+                neighbours = candidates.select(left) if candidates else iter(projected)
+                for right in neighbours:
+                    state.budget.consume("work")
+                    relation = (
+                        rows.relation(
+                            left, right, state.budget, state.issues, contract=contract
+                        )
+                        if contract is not None
+                        else "equal"
                     )
-                elif relation != "different":
-                    uncertain = True
+                    if relation == "equal":
+                        matched += 1
+                        state.budget.consume(
+                            "work", len(measures[right.record.subject])
+                        )
+                        state.budget.consume(
+                            "states", len(measures[right.record.subject])
+                        )
+                        state.budget.reserve_storage(
+                            64 * len(measures[right.record.subject])
+                        )
+                        found.update(measures[right.record.subject])
+                    elif relation != "different":
+                        uncertain = True
+                if exact:
+                    state.budget.consume("states", 1 + len(found))
+                    state.budget.reserve_storage(128 + 32 * len(found))
+                    neighbourhoods[identity] = matched, frozenset(found), uncertain
             count += 1
             if uncertain:
                 state.unknown(

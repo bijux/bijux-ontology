@@ -1,11 +1,9 @@
-"""Prepare reusable exact-key buckets from the existing streaming key extractor."""
+"""Prepare owned target keys with conservative indexed duplicate detection."""
 
 from collections.abc import Sequence
-from types import MappingProxyType
 from typing import cast
 
-from rdflib import BNode
-
+from bijux_ontology.data.keys.candidates import KeyCandidates
 from bijux_ontology.data.keys.evidence import compare_keys, key_evidence
 from bijux_ontology.data.keys.extraction import _Key, _KeyExtraction
 from bijux_ontology.data.keys.types import KeyRecord
@@ -60,26 +58,17 @@ def prepare_foreign_targets(
     issues = IssueCollector(operation)
     extraction = _KeyExtraction(records, contract.target, operation, issues, count)
     keys: list[_Key] = []
-    buckets: dict[tuple[tuple[str | None, ...], ...], list[_Key]] = {}
-    uncertain: list[_Key] = []
     duplicates: list[tuple[KeyRecord, KeyRecord]] = []
     finished = True
     anchor = ""
-    semantic = any(c.equality != "rdf-term" for c in contract.target.components)
     try:
         comparisons = ScalarComparisons(operation)
         bound_text(contract.name, operation)
         anchor = contract.name
         bound_text(contract.target.name, operation)
+        candidates = KeyCandidates(contract.target, operation)
         for key in extraction:
-            blank = any(isinstance(value, BNode) for value in key.values)
-            if semantic or blank:
-                candidates = keys
-            else:
-                matches = buckets.get(key.tokens, ())
-                operation.consume("states", len(matches) + len(uncertain))
-                candidates = [*matches, *uncertain]
-            for prior in candidates:
+            for prior in candidates.select(key):
                 relation, pending = compare_keys(
                     prior, key, contract.target, operation, comparisons=comparisons
                 )
@@ -100,10 +89,7 @@ def prepare_foreign_targets(
             operation.consume("states", 2)
             operation.consume("bytes", 128)
             keys.append(key)
-            if blank:
-                uncertain.append(key)
-            else:
-                buckets.setdefault(key.tokens, []).append(key)
+            candidates.add(key)
         if not keys and extraction.exclusions:
             issues.append(
                 Issue(
@@ -151,13 +137,6 @@ def prepare_foreign_targets(
             and len(keys) + len(extraction.exclusions) == count,
         ),
         ("_keys", tuple(keys)),
-        (
-            "_buckets",
-            MappingProxyType(
-                {token: tuple(values) for token, values in buckets.items()}
-            ),
-        ),
-        ("_uncertain", tuple(uncertain)),
     ):
         object.__setattr__(result, name, value)
     return result

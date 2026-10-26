@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tarfile
 import tomllib
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -188,3 +189,54 @@ def installed_frictionless(
         tmp_path_factory.mktemp("installed-frictionless"),
         extras=("frictionless",),
     )
+
+
+@pytest.fixture(scope="session")
+def installed_reasoning(
+    installed: tuple[Path, Path, dict[str, str]],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[Path, Path, dict[str, str]]:
+    """Build the optional typed distribution from its sdist beside exact core."""
+    python, _, env = installed
+    work = tmp_path_factory.mktemp("installed-reasoning")
+    root = Path(__file__).resolve().parents[4]
+
+    def run(arguments: list[str], cwd: Path) -> None:
+        subprocess.run(arguments, cwd=cwd, env=env, check=True, capture_output=True)
+
+    run(
+        [
+            sys.executable,
+            "-m",
+            "build",
+            "--sdist",
+            "--no-isolation",
+            "--outdir",
+            str(work / "dist"),
+        ],
+        root / "packages/bijux-ontology-reasoning",
+    )
+    with tarfile.open(next((work / "dist").glob("*.tar.gz"))) as archive:
+        assert any(name.endswith("/py.typed") for name in archive.getnames())
+        archive.extractall(work / "source", filter="data")
+    source = next((work / "source").iterdir())
+    run(
+        [
+            sys.executable,
+            "-m",
+            "build",
+            "--wheel",
+            "--no-isolation",
+            "--outdir",
+            str(work / "dist"),
+        ],
+        source,
+    )
+    wheel = next((work / "dist").glob("*.whl"))
+    with zipfile.ZipFile(wheel) as wheel_archive:
+        assert "bijux_ontology_reasoning/py.typed" in wheel_archive.namelist()
+    run(
+        ["uv", "pip", "install", "--offline", "--python", str(python), str(wheel)], work
+    )
+    run(["uv", "pip", "check", "--python", str(python)], work)
+    return python, work, env

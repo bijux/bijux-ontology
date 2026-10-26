@@ -1,12 +1,15 @@
 """One bounded deduplicated entity population over selected typed hierarchy edges."""
 
 import hashlib
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 from graphlib import CycleError, TopologicalSorter
 from threading import Event
 from types import MappingProxyType
 from typing import Literal, TypeVar, cast
+from weakref import ReferenceType, ref
 
+from rdflib import Literal as RdfLiteral
 from rdflib import URIRef
 from rdflib.namespace import OWL
 
@@ -92,10 +95,10 @@ def fingerprint(rows: Sequence[Sequence[str]], budget: Budget) -> str:
     return digest.hexdigest()
 
 
-def qualify(
+def _qualify_evidence(
     population: AnnotationPopulation, budget: Budget, issues: IssueCollector
 ) -> None:
-    """Requalify retained evidence under this operation's own smaller allowance."""
+    """Qualify immutable retained evidence once when admitting its read boundary."""
     if type(population) is not AnnotationPopulation or not population.report.verified:
         raise InputError("Analysis requires an owned qualified annotation population")
     reserve(budget)
@@ -128,6 +131,110 @@ def qualify(
             _edge(cast(Edge, witness.evidence), budget)
         reserve(budget)
     retain_report(population.report, budget, issues)
+
+
+@dataclass(frozen=True)
+class _PopulationAdmission:
+    """Exact owned field identities and a prepaid retained-evidence footprint."""
+
+    owner: ReferenceType[AnnotationPopulation]
+    fields: tuple[tuple[str, object], ...]
+    identity_values: tuple[str, ...]
+    states: int
+    bytes: int
+    scalar_bytes: int
+
+
+def _scalars(population: AnnotationPopulation) -> Iterator[str]:
+    """Visit already qualified scalar ownership once, not once per pair query."""
+    yield from vars(population.identity).values()
+    yield from population.background
+    yield from population.terms
+    for row in population.annotations:
+        yield row.entity
+        yield row.term
+    for witness in population.witnesses:
+        yield witness.source
+        yield witness.target
+        yield witness.relation.predicate
+        yield witness.relation.role
+        evidence = witness.evidence
+        if isinstance(evidence, RestrictionProjection):
+            for value in (
+                evidence.owner,
+                evidence.authored_owner,
+                evidence.expression,
+                evidence.property,
+                evidence.quantifier,
+                evidence.filler,
+            ):
+                if value is not None:
+                    yield cast(str, value)
+            yield evidence.status
+            edges = (evidence.axiom, *evidence.inheritance, *evidence.structure)
+        else:
+            edges = (evidence,)
+        for edge in edges:
+            yield edge.scope
+            for node in (edge.subject, edge.predicate, edge.object):
+                yield cast(str, node)
+                if isinstance(node, RdfLiteral):
+                    yield node.datatype or ""
+                    yield node.language or ""
+
+
+def _admit_population(population: AnnotationPopulation, budget: Budget) -> None:
+    """Seal actual prepared evidence and its smaller-reader admission capacity."""
+    before_states, before_bytes = budget.remaining("states"), budget.remaining("bytes")
+    _qualify_evidence(population, budget, IssueCollector(budget))
+    states = before_states - budget.remaining("states")
+    size = before_bytes - budget.remaining("bytes")
+    maximum = 0
+    for scalar in _scalars(population):
+        before = budget.remaining("bytes")
+        bound_text(scalar, budget)
+        maximum = max(maximum, before - budget.remaining("bytes"))
+    reserve(budget, 16)
+    admission = _PopulationAdmission(
+        ref(population),
+        tuple(vars(population).items()),
+        tuple(vars(population.identity).values()),
+        states + 16,
+        size + 16 * 96,
+        maximum,
+    )
+    object.__setattr__(population, "_admission", admission)
+
+
+def qualify(
+    population: AnnotationPopulation, budget: Budget, issues: IssueCollector
+) -> None:
+    """Admit owned immutable evidence in constant work, charging retained capacity.
+
+    Every read pays the complete retained states/byte footprint under its own
+    allowance, then pays actual accessed sets. Scalar-size limits remain required.
+    No process-global cache, caller-built object or altered identity authorises a read.
+    """
+    admission = getattr(population, "_admission", None)
+    reserve(budget)
+    if (
+        type(population) is not AnnotationPopulation
+        or not isinstance(admission, _PopulationAdmission)
+        or admission.owner() is not population
+        or any(
+            getattr(population, name, None) is not value
+            for name, value in admission.fields
+        )
+        or tuple(vars(population.identity).values()) != admission.identity_values
+    ):
+        raise InputError("Analysis requires an unchanged owned annotation population")
+    budget.consume("work", len(admission.fields) + len(admission.identity_values))
+    if admission.scalar_bytes > budget.limits.max_bytes:
+        raise LimitExceeded("Annotation population scalars exceed max_bytes")
+    budget.consume("states", admission.states)
+    budget.consume("bytes", admission.bytes)
+    for issue in population.report.issues:
+        issues.append(issue)
 
 
 def prepare_annotation_population(
@@ -242,6 +349,7 @@ def prepare_annotation_population(
         reserve(operation, len(selected) * 2)
         parents: dict[URIRef, set[URIRef]] = {term: set() for term in term_order}
         witnesses = []
+        inverse_coverage: set[str] = set()
         for term in term_order:
             for step, inverse in oriented:
                 for witness in inventory.neighbours(term, step, inverse):
@@ -259,9 +367,19 @@ def prepare_annotation_population(
                     else:
                         parents[term].add(witness.target)
                 if step.role == "existential":
-                    sources = inventory.all_owners() if inverse else (term,)
-                    for owner in sources:
-                        for record in inventory.projections(owner):
+                    coverage: tuple[Sequence[RestrictionProjection], ...]
+                    if inverse:
+                        if step.predicate in inverse_coverage:
+                            continue
+                        inventory.inverse_projections()
+                        inverse_coverage.add(step.predicate)
+                        coverage = (
+                            inventory.unsupported.get(URIRef(step.predicate), ()),
+                        )
+                    else:
+                        coverage = (inventory.projections(term),)
+                    for records in coverage:
+                        for record in records:
                             operation.consume("work")
                             if record.property == URIRef(step.predicate) and (
                                 record.status != "supported"
@@ -408,4 +526,17 @@ def prepare_annotation_population(
         if report.verified
         else None
     )
+    if population is not None:
+        try:
+            _admit_population(population, operation)
+        except LimitExceeded as error:
+            issues.exhausted(str(error))
+            population = None
+            report = Report(
+                "analysis.population",
+                requested=1,
+                complete=False,
+                issues=tuple(issues),
+                children=tuple(reports),
+            )
     return PopulationRead(population, report, tuple(unknown), unannotated)

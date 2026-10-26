@@ -8,13 +8,13 @@ from math import isfinite
 from types import TracebackType
 from typing import cast
 
-from rdflib import Graph
+from rdflib import Graph, URIRef
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.budgets import Operation, operation
 from bijux_ontology.execution.inputs import capture
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.evidence.findings import ShaclSource
@@ -220,6 +220,7 @@ class ShaclSession:
         cancel: threading.Event | None,
         budget: Budget | None,
         coverage: ShaclCoverageContract | None = None,
+        selected_roots: tuple[str, ...] | None = None,
     ) -> ShaclResult:
         if self._closed.is_set():
             raise InputError("SHACL session is closed")
@@ -232,6 +233,25 @@ class ShaclSession:
         chosen = operation(
             self._plan.limits, self._budget if budget is None else budget
         )
+        roots = self._plan.roots
+        if selected_roots is not None:
+            if (
+                self._plan.mode != "pairs"
+                or type(selected_roots) is not tuple
+                or not selected_roots
+                or any(type(root) is not str for root in selected_roots)
+                or len(set(selected_roots)) != len(selected_roots)
+            ):
+                raise InputError("Select distinct prepared named roots in pair mode")
+            chosen.consume("states", len(selected_roots))
+            chosen.reserve_storage(64 + 64 * len(selected_roots))
+            for root in selected_roots:
+                bound_text(root, chosen)
+            roots = tuple(URIRef(root) for root in selected_roots)
+            if any(root not in self._plan.roots for root in roots):
+                raise InputError(
+                    "A selected root is outside the fixed SHACL preparation"
+                )
         if coverage is not None:
             if self._plan.coverage is None:
                 raise InputError("Fixed SHACL preparation did not enable coverage")
@@ -240,6 +260,7 @@ class ShaclSession:
             self._plan,
             budget=chosen,
             coverage=self._plan.coverage if coverage is None else coverage,
+            roots=roots,
         )
         if scope not in ("dataset", "records"):
             raise InputError("SHACL scope must be dataset or records")
@@ -320,6 +341,11 @@ class ShaclSession:
                     else (),
                     "binding_count": len(focus),
                     "anchor_count": len(references),
+                    **(
+                        {"root_shapes": selected_roots}
+                        if selected_roots is not None
+                        else {}
+                    ),
                 },
                 chosen,
             )

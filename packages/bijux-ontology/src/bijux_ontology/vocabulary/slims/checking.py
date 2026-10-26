@@ -20,9 +20,8 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.browsing.results import Selection
 from bijux_ontology.vocabulary.relation_paths.automaton import named
-from bijux_ontology.vocabulary.relation_paths.checking import find_relation_path
+from bijux_ontology.vocabulary.relation_paths.checking import find_relation_endpoints
 from bijux_ontology.vocabulary.relation_paths.types import (
-    RelationEndpoint,
     RelationPathResult,
     RelationRepeat,
     RelationSpec,
@@ -231,19 +230,23 @@ def assign_slim(
                 operation.consume("states", 4 * count + 2)
                 operation.consume("bytes", 256 + 192 * count)
                 progress.comparisons = [None] * count
-                for index, root in enumerate(selected_roots):
-                    result = find_relation_path(
-                        view,
-                        progress.term,
-                        path,
-                        endpoint=RelationEndpoint((root,)),
-                        projections=projections,
-                        max_depth=max_depth,
-                        budget=operation,
-                    )
+                comparisons = find_relation_endpoints(
+                    view,
+                    progress.term,
+                    path,
+                    tuple(selected_roots),
+                    projections=projections,
+                    max_depth=max_depth,
+                    budget=operation,
+                )
+                for index, result in enumerate(comparisons):
                     progress.comparisons[index] = result
-                    children.append(result.report)
-                    retain_report(result.report, operation, issues)
+                reports_seen: set[int] = set()
+                for result in comparisons:
+                    if id(result.report) not in reports_seen:
+                        reports_seen.add(id(result.report))
+                        children.append(result.report)
+                        retain_report(result.report, operation, issues)
                 progress.complete = root_complete and all(
                     result is not None
                     and result.report.verified

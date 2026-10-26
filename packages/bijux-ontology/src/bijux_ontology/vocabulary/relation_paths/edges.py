@@ -106,6 +106,10 @@ class _Inventory:
         ] = {}
         self.supplied: tuple[RestrictionProjection, ...] | None = None
         self.owners: tuple[URIRef, ...] | None = None
+        self.reverse: (
+            dict[tuple[URIRef, URIRef], list[RestrictionProjection]] | None
+        ) = None
+        self.unsupported: dict[URIRef | None, list[RestrictionProjection]] = {}
 
     def adopt(self, report: Report, *, owned: bool = True) -> None:
         """Keep paid native reports; qualify supplied metadata before publication."""
@@ -189,6 +193,39 @@ class _Inventory:
             self.owners = tuple(owners)
         return self.owners
 
+    def inverse_projections(
+        self,
+    ) -> dict[tuple[URIRef, URIRef], list[RestrictionProjection]]:
+        """Index original existential witnesses once, including unknown coverage."""
+        if self.reverse is None:
+            reverse: dict[tuple[URIRef, URIRef], list[RestrictionProjection]] = {}
+            records = (
+                iter(self.supplied)
+                if self.supplied is not None
+                else (
+                    record
+                    for owner in self.all_owners()
+                    for record in self.projections(owner)
+                )
+            )
+            for record in records:
+                self.budget.consume("work")
+                self.budget.consume("states", 2)
+                self.budget.consume("bytes", 192)
+                if (
+                    record.status == "supported"
+                    and record.quantifier == OWL.someValuesFrom
+                    and isinstance(record.property, URIRef)
+                    and isinstance(record.filler, URIRef)
+                ):
+                    reverse.setdefault((record.property, record.filler), []).append(
+                        record
+                    )
+                else:
+                    self.unsupported.setdefault(record.property, []).append(record)
+            self.reverse = reverse
+        return self.reverse
+
     def neighbours(
         self, node: URIRef, step: RelationStep, inverse: bool
     ) -> Iterator[RelationWitness]:
@@ -212,14 +249,12 @@ class _Inventory:
                 self.budget.consume("bytes", 128)
                 yield RelationWitness(node, target, step, inverse, edge)
             return
-        if self.supplied is not None:
-            records = iter(self.supplied)
-        elif inverse:
-            records = (
-                record
-                for owner in self.all_owners()
-                for record in self.projections(owner)
+        if inverse:
+            records = iter(
+                self.inverse_projections().get((URIRef(step.predicate), node), ())
             )
+        elif self.supplied is not None:
+            records = iter(self.supplied)
         else:
             records = iter(self.projections(node))
         for record in records:

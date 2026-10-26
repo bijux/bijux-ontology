@@ -1,6 +1,8 @@
 # bijux-ontology
 
-Typed Python checks for supplied RDF vocabularies, JSON-LD usages and application declarations. Inspect terms, check a multilingual vocabulary or assess an upgrade against actual application contracts. Findings and incomplete comparisons remain distinct from policy acceptance. This package does not perform general OWL reasoning.
+Python tools for checking that application data, vocabulary declarations and ontology definitions agree. Use the typed library or CLI to inspect RDF terms, verify JSON-LD mappings, check model contracts and actual output, validate SKOS or supplied SHACL shapes, and assess ontology upgrades. Optional framework adapters extract explicit application contracts.
+
+The separate `bijux-ontology-reasoning` distribution provides Java-backed OWL profile, consistency, satisfiability and supported entailment checks. The core library's finite structural checks do not replace a reasoner. Both preserve findings, incomplete work and policy acceptance as separate outcomes; neither establishes scientific truth or correctness of unseen application output.
 
 ## Install and verify
 
@@ -40,7 +42,7 @@ report = check_vocabulary(vocabulary, [TermDeclaration(term.iri)])
 report.raise_for_findings()
 ```
 
-Runnable core-only examples cover [inspection and declarations](examples/check_declarations.py), [multilingual SKOS](examples/multilingual_vocabulary.py), [catalogue upgrades](examples/catalogue_upgrade.py), [controlled resources](examples/controlled_resources.py), [custom annotations](examples/annotation_conventions.py) and [dataclasses](examples/dataclass_declarations.py). Framework adapters use explicit RDF metadata; required Python fields do not imply guaranteed RDF emission.
+Runnable examples cover [inspection and declarations](examples/check_declarations.py), [multilingual SKOS](examples/multilingual_vocabulary.py), [catalogue upgrades](examples/catalogue_upgrade.py), [controlled resources](examples/controlled_resources.py), [custom annotations](examples/annotation_conventions.py) and [dataclasses](examples/dataclass_declarations.py). The [recipe guide](docs/integration.md) identifies their optional dependencies. Framework adapters use explicit RDF metadata; required Python fields do not imply guaranteed RDF emission.
 
 | Operation | Supported scope | Incomplete behaviour |
 | --- | --- | --- |
@@ -49,7 +51,7 @@ Runnable core-only examples cover [inspection and declarations](examples/check_d
 | `check_context`, `check_emission` | Actual selected JSON-LD occurrences, value traits and representative output | Unattributable or unsupported occurrences cannot verify |
 | `check_models` | Finite named hierarchy, equivalent/inverse properties, explicit disjointness and literal contracts | Unknown serializers and relevant unsupported OWL remain unverified |
 | `assess_upgrade` | Before/after facts, affected uses and rechecked consumer contracts | Verdict distinguishes demonstrated breaks from unassessed impact |
-| `shacl.validate_shapes` | Supplied data and shapes; real optional backend, inference disabled | Empty required shape scopes, missing extras and backend failures cannot verify |
+| `validate_shapes` | Supplied data and shapes; real optional backend, inference disabled | Empty required shape scopes, missing extras and backend failures cannot verify |
 | `documents.export`, `rdf.transforms` | Copied syntactic candidates and reparsed RDF preservation checks | Lossy output is refused or explicitly excluded; no automatic domain correction |
 
 RDF text preserves exact supported literal terms. RDFLib inputs retain the terms supplied by their caller; earlier normalisation cannot be recovered. Dataset operations require explicit selection or union. TriG retains declared empty named graphs where both maintained parsers support the input; otherwise primary quads retain explicit incomplete inventory and complete-inventory requests reject that scope. Synchronous APIs use work budgets; CLI deadlines interrupt an owned worker. POSIX worker groups include owned descendants. Windows Job ownership is implemented but awaits actual Windows qualification; unsupported process ownership fails before execution.
@@ -74,7 +76,23 @@ Supply contexts and imports explicitly. Default loaders never fetch missing reso
 
 See [migration notes](docs/migration.md) and [consumer integration](docs/integration.md).
 
-The uv workspace contains the public library in `packages/bijux-ontology` and internal tooling and installation tests in `packages/bijux-ontology-dev`. Each package owns its tests.
+The uv workspace contains the core library, optional reasoning library and internal tooling in `packages/bijux-ontology`, `packages/bijux-ontology-reasoning` and `packages/bijux-ontology-dev`. Each package owns its tests.
+
+## Supported Python entry points
+
+These concrete entry modules are the supported consumer surface. Internal implementation stages may move without changing these imports. Types retain the same identity when returned by another operation; no root-level export registry is needed.
+
+| Responsibility | Entry modules and symbols |
+| --- | --- |
+| Prepare RDF | `documents.preparation.prepare_source`; `rdf.sources.types.RdfSource`; `rdf.sources.snapshots.PreparedSource` |
+| Declare intent | `declarations.types`: `TermDeclaration`, `ModelDeclaration`, `FieldDeclaration`, `ValueDeclaration` |
+| Inspect and check vocabularies | `vocabulary.sources.loading.load_vocabulary`; `vocabulary.browsing.inspection.inspect_vocabulary`; `vocabulary.checking.check_vocabulary` |
+| Check models and output | `models.contracts.checking.check_models`; `models.emission.checking.check_emission`; `models.emission.rdf.check_rdf_emission`; `models.emission.types`: `ModelUsage`, `RdfModelUsage` |
+| Check JSON-LD intent | `jsonld.usages.checking.check_context`; `jsonld.contracts.expectations.ContextExpectation` |
+| Validate supplied shapes | `shacl.checking.validate_shapes`; `shacl.evidence.results.ShaclResult` |
+| Bound work and inspect results | `execution.limits`: `Limits`, `Budget`; `diagnostics.reports.Report`; `diagnostics.errors`: `InputError`, `ResourceError`, `LimitExceeded` |
+
+Paths in this table are relative to `bijux_ontology`. JSON-LD and SHACL operations require their respective extras. Importing the package root starts no workers and loads no optional framework; importing an operation loads its implementation. Other advanced operations remain documented by their concrete owner without a blanket stability promise for every internal module.
 
 ## Package ownership
 
@@ -84,4 +102,4 @@ The uv workspace contains the public library in `packages/bijux-ontology` and in
 - `documents` composes RDF and JSON-LD preparation and verified export. `vocabulary`, `models`, `skos`, `data` and `shacl` own their respective checks; `declarations` owns application contracts.
 - `workflows` composes project jobs, ontology checks and consumer upgrade assessments. Semantic engines do not import workflows or interfaces.
 
-Use root imports for the supported convenience API. Tests separate focused unit cases, functional capability contracts and installed-package E2E; generated environments and reports remain under `artifacts/`.
+Tests separate focused unit cases, functional capability contracts and installed-package E2E; generated environments and reports remain under `artifacts/`.
