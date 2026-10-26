@@ -23,10 +23,10 @@ from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.jsonld.processing.preparation import prepare_jsonld
 from bijux_ontology.jsonld.processing.runtime import processor
-from bijux_ontology.rdf.comparison import compare_rdf
+from bijux_ontology.rdf.comparison import _compare_rdf_owned
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.vocabulary.sources.loading import load_vocabulary
+from bijux_ontology.vocabulary.sources.loading import _load_vocabulary_owned
 from bijux_ontology.workflows.projects.acquisition.closure import Closure
 from bijux_ontology.workflows.projects.acquisition.http import (
     HttpAcquisition,
@@ -188,7 +188,7 @@ def _prepared(
         default = source._read("@default", budget=operation).identifier
         for graph in source._owned_contexts(operation):
             operation.consume("work")
-            load_vocabulary(
+            _load_vocabulary_owned(
                 source,
                 graph_name="@default"
                 if graph.identifier == default
@@ -196,15 +196,13 @@ def _prepared(
                 imports=closure,
                 document_loader=closure.context,
                 budget=operation,
-                _owned_worker=True,
             )
     else:
-        load_vocabulary(
+        _load_vocabulary_owned(
             source,
             imports=closure,
             document_loader=closure.context,
             budget=operation,
-            _owned_worker=True,
         )
     children.append(Report("publication.required_resources", 1))
     return source
@@ -252,12 +250,11 @@ def _variant(
                 remaining = operation.deadline - time.monotonic()
                 if remaining <= 0:
                     raise LimitExceeded("Publication comparison exceeded its deadline")
-                compared = compare_rdf(
+                compared = _compare_rdf_owned(
                     reference,
                     source,
                     budget=operation,
                     timeout_seconds=remaining,
-                    _owned_worker=True,
                 )
                 retain_report(compared, operation, issues)
                 children.append(compared)

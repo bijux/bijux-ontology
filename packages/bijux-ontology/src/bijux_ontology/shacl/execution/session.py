@@ -15,12 +15,15 @@ from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.budgets import Operation, operation
 from bijux_ontology.execution.inputs import capture
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.rdf.sources.loading import _charge_graph
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.shacl.evidence.findings import ShaclSource
 from bijux_ontology.shacl.evidence.results import ShaclResult
-from bijux_ontology.shacl.execution.planning import _prepare_plan
+from bijux_ontology.shacl.execution.preparation import (
+    SessionPreparation,
+    preparation_budget,
+    prepare_session,
+)
 from bijux_ontology.shacl.execution.transport import SessionBackend
 from bijux_ontology.shacl.sparql.functions import ShaclFunctionCatalog
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
@@ -30,21 +33,18 @@ from bijux_ontology.shacl.validation.adoption import (
     retain_result,
 )
 from bijux_ontology.shacl.validation.bindings import (
-    StaticBindings,
     TermSelection,
     transport_roles,
 )
 from bijux_ontology.shacl.validation.contracts import (
     ShaclConstraintRequirement,
     capture_contract,
-    request_options,
     selection_metadata,
 )
 from bijux_ontology.shacl.validation.encoding import encode_roles
 from bijux_ontology.shacl.validation.roles import (
     prepare_data,
     prepay_graph,
-    role_graphs,
 )
 
 
@@ -96,34 +96,8 @@ class ShaclSession:
             type(timeout) not in (int, float) or not isfinite(timeout) or timeout <= 0
         ):
             raise InputError("timeout must be a positive finite number or None")
-        if memory_bytes is not None and (
-            type(memory_bytes) is not int or memory_bytes <= 0
-        ):
-            raise InputError("memory_bytes must be a positive integer")
-        if limits is not None and not isinstance(limits, Limits):
-            raise InputError("SHACL session requires Limits")
-        storage = operation(limits, budget)
-        self._budget = budget
-        required_constraints = capture_contract(
-            coverage, required_constraints, functions, storage
-        )
-        for source in (shapes, ontology):
-            if source is not None:
-                if not isinstance(source, Graph | PreparedSource):
-                    raise InputError("SHACL roles require graphs or prepared sources")
-                prepay_graph(
-                    source._read(budget=storage)
-                    if isinstance(source, PreparedSource)
-                    else source,
-                    storage,
-                )
-        if functions is not None:
-            if not isinstance(functions, ShaclFunctionCatalog):
-                raise InputError("functions requires a ShaclFunctionCatalog")
-            prepay_graph(functions._graph, storage)
-        storage.consume("bytes", 1024)
-        storage.consume("states", 16)
-        plan = _prepare_plan(
+        storage = preparation_budget(limits, budget, memory_bytes)
+        preparation = prepare_session(
             shapes,
             ontology=ontology,
             imports=imports,
@@ -136,43 +110,53 @@ class ShaclSession:
             coverage=coverage,
             required_constraints=required_constraints,
             functions=functions,
-            limits=storage.limits,
+            limits=limits,
             budget=storage,
+            memory_bytes=memory_bytes,
         )
-        self._plan = replace(plan, budget=budget)
-        for graph in (
-            self._plan.shapes,
-            self._plan.ontology,
-            self._plan.function_plan.graph if self._plan.has_functions else None,
-        ):
-            if graph is not None:
-                storage.consume("resources")
-                _charge_graph(graph, storage, self._plan.limits.max_bytes)
-        prepay_graph(self._plan.shapes, storage)
-        roles = role_graphs(self._plan)
-        self._bindings = StaticBindings(roles, self._plan.limits, budget=storage)
-        static = transport_roles(
-            roles,
-            (),
-            self._plan.roots,
-            self._plan.limits,
-            anchors=self._bindings.anchors,
-            budget=storage,
-        )
-        storage.consume("bytes", 1024)
+        self._reserve_runtime(storage)
+        self._initialize(preparation, budget, timeout)
+
+    @classmethod
+    def _from_preparation(
+        cls,
+        preparation: SessionPreparation,
+        *,
+        storage: Budget,
+    ) -> "ShaclSession":
+        """Create one lazy worker lifetime from exact revision-owned preparation."""
+        if type(preparation) is not SessionPreparation:
+            raise InputError("Expected owned fixed SHACL preparation")
+        operation(preparation.plan.limits, storage)
+        storage.consume("work", 0)
+        cls._reserve_runtime(storage)
+        result = object.__new__(cls)
+        result._initialize(preparation, None, None)
+        return result
+
+    @staticmethod
+    def _reserve_runtime(storage: Budget) -> None:
+        """Fund controlled session/backend, commands, locks, events and conditions."""
+        # Fixed host owners exclude paid roles/payload and native process memory.
+        storage.consume("bytes", 8192)
         storage.consume("states", 16)
-        preparation = encode_roles(
-            static,
-            {
-                "command": "prepare",
-                **request_options(self._plan, ()),
-                "anchor_count": len(self._bindings.anchors),
-                "memory_bytes": memory_bytes,
-            },
-            storage,
+
+    def _initialize(
+        self,
+        preparation: SessionPreparation,
+        budget: Budget | None,
+        timeout: float | None,
+    ) -> None:
+        """Initialize a paid runtime without re-reading fixed semantic resources."""
+        self._budget = budget
+        self._plan = (
+            preparation.plan
+            if budget is None
+            else replace(preparation.plan, budget=budget)
         )
+        self._bindings = preparation.bindings
         self._backend = SessionBackend(
-            preparation, cap=self._plan.limits.max_total_bytes
+            preparation.payload, cap=self._plan.limits.max_total_bytes
         )
         self._timeout = timeout
         self._lock = threading.Lock()
@@ -235,6 +219,7 @@ class ShaclSession:
         scope: str,
         cancel: threading.Event | None,
         budget: Budget | None,
+        coverage: ShaclCoverageContract | None = None,
     ) -> ShaclResult:
         if self._closed.is_set():
             raise InputError("SHACL session is closed")
@@ -247,7 +232,15 @@ class ShaclSession:
         chosen = operation(
             self._plan.limits, self._budget if budget is None else budget
         )
-        plan = replace(self._plan, budget=chosen)
+        if coverage is not None:
+            if self._plan.coverage is None:
+                raise InputError("Fixed SHACL preparation did not enable coverage")
+            capture_contract(coverage, (), None, chosen)
+        plan = replace(
+            self._plan,
+            budget=chosen,
+            coverage=self._plan.coverage if coverage is None else coverage,
+        )
         if scope not in ("dataset", "records"):
             raise InputError("SHACL scope must be dataset or records")
         if cancel is not None and not isinstance(cancel, threading.Event):

@@ -163,7 +163,6 @@ def compare_rdf(
     timeout_seconds: float = 10.0,
     ignore_empty_graphs: bool = False,
     cancel: threading.Event | None = None,
-    _owned_worker: bool = False,
 ) -> Report:
     """Compare exact RDF structure, dataset membership and blank-node identity.
 
@@ -174,12 +173,56 @@ def compare_rdf(
     wall-clock deadline because RDFLib exposes no internal work/state allowance.
     Capture and worker execution share that deadline and support cancellation;
     the owned worker process group is reaped before returning.
-    Internal owned-worker execution reuses the native protocol inline; its outer
-    process owns the hard deadline and cleanup, avoiding detached grandchildren.
     Implicit RDF 1.1 string datatypes and language-tag case denote the same term.
-    Numeric lexical forms stay distinct; OWL entailment is never evaluated.
-    """
-    if type(_owned_worker) is not bool:
+    Numeric lexical forms stay distinct; OWL entailment is never evaluated."""
+    return _compare_rdf(
+        before,
+        after,
+        limits=limits,
+        budget=budget,
+        timeout_seconds=timeout_seconds,
+        ignore_empty_graphs=ignore_empty_graphs,
+        cancel=cancel,
+        owned_worker=False,
+    )
+
+
+def _compare_rdf_owned(
+    before: Graph | PreparedSource,
+    after: Graph | PreparedSource,
+    *,
+    limits: Limits | None = None,
+    budget: Budget | None = None,
+    timeout_seconds: float = 10.0,
+    ignore_empty_graphs: bool = False,
+    cancel: threading.Event | None = None,
+) -> Report:
+    """Compare inside a disposable worker whose supervisor owns its hard deadline."""
+    return _compare_rdf(
+        before,
+        after,
+        limits=limits,
+        budget=budget,
+        timeout_seconds=timeout_seconds,
+        ignore_empty_graphs=ignore_empty_graphs,
+        cancel=cancel,
+        owned_worker=True,
+    )
+
+
+def _compare_rdf(
+    before: Graph | PreparedSource,
+    after: Graph | PreparedSource,
+    *,
+    limits: Limits | None = None,
+    budget: Budget | None = None,
+    timeout_seconds: float = 10.0,
+    ignore_empty_graphs: bool = False,
+    cancel: threading.Event | None = None,
+    owned_worker: bool,
+) -> Report:
+    """Share original input and result qualification for fixed owned routes."""
+    if type(owned_worker) is not bool:
         raise InputError("Owned RDF comparison selection must be a boolean")
     if type(ignore_empty_graphs) is not bool:
         raise InputError("ignore_empty_graphs must be a boolean")
@@ -243,7 +286,7 @@ def compare_rdf(
                 payload,
                 deadline - time.monotonic(),
                 cancel,
-                _owned_worker=_owned_worker,
+                _owned_worker=owned_worker,
             )
         checkpoint(deadline, cancel)
         checked = 1

@@ -1,7 +1,10 @@
 """Actual immutable preparation, atomic activation and in-flight revision leases."""
 
+import os
+import sys
 from pathlib import Path
 from threading import Barrier, Event, Thread
+from types import FrameType
 
 import pytest
 from rdflib import URIRef
@@ -14,8 +17,12 @@ from bijux_ontology.declarations.types import (
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.processes.sessions import FramedSession
 from bijux_ontology.models.emission.types import ModelUsage, RdfModelUsage
 from bijux_ontology.rdf.sources.types import RdfSource
+from bijux_ontology.shacl.execution.preparation import prepare_session
+from bijux_ontology.shacl.execution.session import ShaclSession
+from bijux_ontology.shacl.execution.transport import SessionBackend
 from bijux_ontology.workflows.revisions import (
     PreparedRevision,
     RevisionLease,
@@ -424,3 +431,208 @@ def test_semantic_identity_binds_closed_inputs_independently_of_activation_uuid(
     )
     assert changed_context.prepared is None and not changed_context.report.verified
     contextual.prepared.close()
+
+
+def test_revision_workers_reuse_exact_preparation_and_drain_after_native_requests() -> (
+    None
+):
+    """Fresh focus, recovery and queued cancellation stay within each retained owner."""
+    first, second = prepared("A", native_shapes=True), prepared("B", native_shapes=True)
+    manager = RevisionManager(max_retained=2)
+    manager.activate(first)
+    lease = manager.lease()
+    source = prepare_source(data("A"))
+    positive = lease.validate_shapes(source, focus_nodes=(E + "root",))
+    session = lease._record.session
+    assert session is not None and session.worker_launches == 1
+    native = session._backend.generation
+    assert native is not None
+    negative = lease.validate_shapes(source, focus_nodes=(E + "other",))
+    assert (
+        positive.report.verified and negative.shacl and negative.shacl.conforms is False
+    )
+    assert negative.shacl.coverage and negative.shacl.coverage.report.verified
+    assert {str(target.focus_node) for target in negative.shacl.coverage.targets} == {
+        E + "other"
+    }
+    assert session._backend.generation is native and session.worker_launches == 1
+    preparation = lease._record.state
+    assert preparation is not None and preparation.shacl_preparation is not None
+    assert preparation.shacl_preparation.plan.budget is None
+    with pytest.raises(InputError, match="matching limits"):
+        ShaclSession._from_preparation(
+            preparation.shacl_preparation, storage=Budget(Limits(max_work=2_000_000))
+        )
+    tight = Budget(preparation.shacl_preparation.plan.limits)
+    tight.consume("bytes", tight.limits.max_total_bytes - 8191)
+    with pytest.raises(LimitExceeded, match="max_total_bytes"):
+        ShaclSession._from_preparation(preparation.shacl_preparation, storage=tight)
+    assert tight._counts.get("states", 0) == 0
+    assert session._backend.generation is native
+
+    def deplete_preparation(frame: FrameType, event: str, value: object) -> None:
+        """Stop the actual implicit construction allowance between owned stages."""
+        if event == "return" and frame.f_code is prepare_session.__code__:
+            storage = frame.f_locals["storage"]
+            storage.consume("bytes", storage.remaining("bytes") - 8191)
+
+    previous = sys.getprofile()
+    sys.setprofile(deplete_preparation)
+    try:
+        with pytest.raises(LimitExceeded, match="max_total_bytes"):
+            ShaclSession(preparation.shacl_preparation.plan.shapes)
+    finally:
+        sys.setprofile(previous)
+    running = native
+    entered, resume, queued = Event(), Event(), Event()
+    cancel = Event()
+    results: list[RevisionResult] = []
+    errors: list[BaseException] = []
+
+    def request() -> None:
+        """Pause only after the real native reply while the borrowed owner is live."""
+
+        def observe(frame: FrameType, event: str, value: object) -> None:
+            if (
+                event == "return"
+                and frame.f_code is SessionBackend.execute.__code__
+                and frame.f_locals.get("self") is session._backend
+            ):
+                entered.set()
+                assert resume.wait(20)
+
+        sys.setprofile(observe)
+        try:
+            results.append(lease.validate_shapes(source, focus_nodes=(E + "root",)))
+        except BaseException as error:
+            errors.append(error)
+        finally:
+            sys.setprofile(None)
+
+    thread = Thread(target=request)
+    thread.start()
+    assert entered.wait(10)
+
+    def waiter() -> None:
+        """Cancel at the real queue checkpoint without touching the active worker."""
+
+        def observe(frame: FrameType, event: str, value: object) -> None:
+            if (
+                event == "call"
+                and frame.f_code is FramedSession.checkpoint.__code__
+                and frame.f_locals.get("cancel") is cancel
+            ):
+                queued.set()
+                cancel.set()
+
+        sys.setprofile(observe)
+        try:
+            results.append(
+                lease.validate_shapes(source, focus_nodes=(E + "root",), cancel=cancel)
+            )
+        except BaseException as error:
+            errors.append(error)
+        finally:
+            sys.setprofile(None)
+
+    waiting = Thread(target=waiter)
+    waiting.start()
+    waiting.join(10)
+    assert not waiting.is_alive() and queued.is_set() and not errors
+    assert results[0].report.outcome == "exhausted"
+    assert session._backend.generation is running
+    cancel_lease = manager.lease()
+    manager.activate(second, expected_active=first.revision)
+    current_lease = manager.lease()
+    current = current_lease.validate_shapes(
+        prepare_source(data("B")), focus_nodes=(E + "root",)
+    )
+    current_session = current_lease._record.session
+    assert current.report.verified and current_session is not None
+    current_worker = current_session._backend.generation
+    assert current_worker is not None and current_worker is not running
+    lease.close()
+    with pytest.raises(InputError, match="closed"):
+        lease.validate_shapes(source, focus_nodes=(E + "root",))
+    with pytest.raises(ResourceError, match="in-use"):
+        manager.retire(first.revision)
+    assert manager.status().operations == 1
+    resume.set()
+    thread.join(10)
+    assert not thread.is_alive() and not errors
+    assert results[-1].report.verified and results[-1].revision == first.revision
+    active_cancel = Event()
+
+    def cancel_completed(frame: FrameType, event: str, value: object) -> None:
+        """Cancel at the actual old worker reply before its host publication."""
+        if (
+            event == "return"
+            and frame.f_code is SessionBackend.execute.__code__
+            and frame.f_locals.get("self") is session._backend
+        ):
+            active_cancel.set()
+
+    previous = sys.getprofile()
+    sys.setprofile(cancel_completed)
+    try:
+        stopped = cancel_lease.validate_shapes(
+            source, focus_nodes=(E + "root",), cancel=active_cancel
+        )
+    finally:
+        sys.setprofile(previous)
+    assert stopped.revision == first.revision and stopped.report.outcome == "exhausted"
+    assert session._backend.generation is not running and session.worker_launches == 1
+    with pytest.raises(ProcessLookupError):
+        os.kill(running.pid, 0)
+    assert current_session._backend.generation is current_worker
+    recovered = cancel_lease.validate_shapes(source, focus_nodes=(E + "root",))
+    assert recovered.report.verified and recovered.revision == first.revision
+    assert session.worker_launches == 2
+    running = session._backend.generation
+    assert running is not None and running is not native
+    cancel_lease.close()
+    reaping, reap = Event(), Event()
+
+    def retire() -> None:
+        """Observe cleanup before native reaping without holding the manager lock."""
+
+        def observe(frame: FrameType, event: str, value: object) -> None:
+            if (
+                event == "call"
+                and frame.f_code is ShaclSession.close.__code__
+                and frame.f_locals.get("self") is session
+            ):
+                reaping.set()
+                assert reap.wait(10)
+
+        sys.setprofile(observe)
+        try:
+            manager.retire(first.revision)
+        except BaseException as error:
+            errors.append(error)
+        finally:
+            sys.setprofile(None)
+
+    retiring = Thread(target=retire)
+    retiring.start()
+    assert reaping.wait(10)
+    status = manager.status()
+    assert first.revision in status.retained and len(status.retained) == 2
+    assert status.retained_bytes == first.retained_bytes + second.retained_bytes
+    with pytest.raises(ResourceError, match="still-retained"):
+        manager.rollback(first.revision, expected_active=second.revision)
+    reap.set()
+    retiring.join(10)
+    assert not retiring.is_alive() and not errors
+    with pytest.raises(ProcessLookupError):
+        os.kill(running.pid, 0)
+    assert current_session._backend.generation is current_worker
+    assert not manager.close().closed
+    assert current_lease.validate_shapes(
+        prepare_source(data("B")), focus_nodes=(E + "root",)
+    ).report.verified
+    assert current_session._backend.generation is current_worker
+    current_lease.close()
+    assert manager.status().closed
+    with pytest.raises(ProcessLookupError):
+        os.kill(current_worker.pid, 0)

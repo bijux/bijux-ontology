@@ -567,3 +567,29 @@ def test_shacl_direct_and_owned_project_preserve_named_findings(
     if minimum == 1:
         assert direct == owned
     assert not list((tmp_path / "runs").iterdir())
+
+
+@pytest.mark.parametrize("boundary", ["rdf", "jsonld"])
+def test_local_capture_preserves_stable_files_after_timestamp_changes(
+    tmp_path: Path, boundary: str
+) -> None:
+    """Actual path reads stay supported when creation and change times diverge."""
+    from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
+    from bijux_ontology.rdf.sources.loading import prepare_rdf
+    from bijux_ontology.rdf.sources.types import RdfSource
+
+    source = tmp_path / "record.input"
+    source.write_text(
+        '<urn:record> <urn:p> "value" .'
+        if boundary == "rdf"
+        else '{"value":"original"}',
+        encoding="utf-8",
+    )
+    revision = source.stat()
+    os.utime(source, ns=(revision.st_atime_ns, 1_000_000_000))
+    if boundary == "rdf":
+        prepared = prepare_rdf(RdfSource(source, format="turtle"))
+        assert [str(value) for value in prepared.graph().objects()] == ["value"]
+    else:
+        loaded = OfflineDocumentLoader({"urn:document": source})("urn:document", {})
+        assert loaded["document"] == {"value": "original"}

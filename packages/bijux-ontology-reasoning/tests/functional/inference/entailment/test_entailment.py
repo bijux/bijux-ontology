@@ -220,3 +220,28 @@ def test_cumulative_budget_and_cancelled_execution_retain_no_fabricated_answer(
         assert all(answer.outcome == "unknown" for answer in result.answers)
     recovery = check_entailments(backend, _native(), queries)
     assert recovery.report.verified
+
+
+def test_invalid_obligations_are_input_errors_without_native_execution(
+    backend: OwlProfileBackend,
+) -> None:
+    from collections.abc import Sequence
+    from typing import cast
+
+    from bijux_ontology_reasoning.axioms.types import ProjectedAxiom
+
+    for supplied in ((), ("not a typed axiom",), "urn:axiom"):
+        budget = Budget()
+        result = check_entailments(
+            backend,
+            _native(),
+            cast(Sequence[ProjectedAxiom], supplied),
+            budget=budget,
+        )
+        assert result.report.outcome == "input_error"
+        assert result.report.exit_code() == 2 and not result.answers
+        assert "Entailment" in result.report.issues[0].message or (
+            "entailment" in result.report.issues[0].message
+        )
+        assert budget.remaining("resources") == budget.limits.max_resources
+        assert not list(backend.artifacts.glob("entailment-*"))

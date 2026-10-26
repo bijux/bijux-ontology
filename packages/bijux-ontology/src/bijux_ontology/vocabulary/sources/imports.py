@@ -57,7 +57,7 @@ def _same(
     _owned_worker: bool = False,
 ) -> None:
     # Required alias agreement reuses the maintained bounded RDF comparison.
-    from bijux_ontology.rdf.comparison import compare_rdf
+    from bijux_ontology.rdf.comparison import _compare_rdf_owned, compare_rdf
 
     left, right = first.selected, second.selected
     if first.source.prepared.is_dataset or second.source.prepared.is_dataset:
@@ -68,7 +68,8 @@ def _same(
                 "Conflicting selected graph ownership for a required document alias",
                 location=alias,
             )
-    report = compare_rdf(left, right, budget=budget, _owned_worker=_owned_worker)
+    compare = _compare_rdf_owned if _owned_worker else compare_rdf
+    report = compare(left, right, budget=budget)
     if not report.verified:
         raise ResourceError(
             "Conflicting or unverified supplied sources for a required document alias",
@@ -84,9 +85,51 @@ def required_imports(
     budget: Budget,
     preserve_literals: bool,
     document_loader: DocumentLoader | None = None,
-    _owned_worker: bool = False,
 ) -> tuple[OwnedSource, ...]:
     """Resolve requested keys only; lookup/header IRIs never establish aliases."""
+    return _required_imports(
+        prepared,
+        local,
+        supplied,
+        budget=budget,
+        preserve_literals=preserve_literals,
+        document_loader=document_loader,
+        owned_worker=False,
+    )
+
+
+def _required_imports_owned(
+    prepared: PreparedSource,
+    local: OwnedSource,
+    supplied: Mapping[str, RdfSource | Payload] | None,
+    *,
+    budget: Budget,
+    preserve_literals: bool,
+    document_loader: DocumentLoader | None = None,
+) -> tuple[OwnedSource, ...]:
+    """Resolve required aliases inside the supervising disposable worker."""
+    return _required_imports(
+        prepared,
+        local,
+        supplied,
+        budget=budget,
+        preserve_literals=preserve_literals,
+        document_loader=document_loader,
+        owned_worker=True,
+    )
+
+
+def _required_imports(
+    prepared: PreparedSource,
+    local: OwnedSource,
+    supplied: Mapping[str, RdfSource | Payload] | None,
+    *,
+    budget: Budget,
+    preserve_literals: bool,
+    document_loader: DocumentLoader | None = None,
+    owned_worker: bool,
+) -> tuple[OwnedSource, ...]:
+    """Share original input and result qualification for fixed owned routes."""
     root = _Binding(local)
     aliases = {
         iri: root
@@ -160,7 +203,7 @@ def required_imports(
             if collisions:
                 representative = next(iter(collisions.values()))
                 _same(
-                    representative, candidate, budget, iri, _owned_worker=_owned_worker
+                    representative, candidate, budget, iri, _owned_worker=owned_worker
                 )
             else:
                 representative = candidate

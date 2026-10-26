@@ -24,6 +24,7 @@ from bijux_ontology.rdf.sources.snapshots import (
     copy_graph,
 )
 from bijux_ontology.rdf.sources.types import Compression, Payload, RdfSource
+from bijux_ontology.resources.files import capture_file
 
 _ALIASES = {
     "ttl": "turtle",
@@ -104,7 +105,7 @@ def _read(content: Payload, max_bytes: int, budget: Budget, *, binary: bool) -> 
     """Own finite source bytes without closing caller-provided streams."""
     if isinstance(content, Path):
         try:
-            with content.open("rb") as stream:
+            with capture_file(content, budget) as (stream, _):
                 return _stream_bytes(stream, max_bytes, budget, binary=binary)
         except OSError as error:
             raise ResourceError(f"Cannot read RDF source: {content}") from error

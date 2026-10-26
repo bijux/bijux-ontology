@@ -406,3 +406,120 @@ def test_framed_thread_start_failure_reaps_real_worker_and_recovers(
     finally:
         session.close()
     assert len(children) == 2 and all(child.poll() is not None for child in children)
+
+
+def test_framed_diagnostics_bound_interrupts_live_worker_and_recovers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A partial diagnostic block cannot hide overflow until response or EOF."""
+    from bijux_ontology.execution.processes import sessions
+    from bijux_ontology.execution.processes.ownership import spawn_owned_process
+
+    spawn = spawn_owned_process
+    children: list[subprocess.Popen[bytes]] = []
+
+    def capture(
+        command: list[str] | tuple[str, ...],
+        *,
+        stdin: int | None = None,
+        stdout: int | None = None,
+        stderr: int | None = None,
+    ) -> subprocess.Popen[bytes]:
+        process = spawn(command, stdin=stdin, stdout=stdout, stderr=stderr)
+        children.append(process)
+        return process
+
+    marker = tmp_path / "diagnostic-request"
+    program = """import os,struct,sys
+from pathlib import Path
+while True:
+ header=sys.stdin.buffer.read(8)
+ if not header:break
+ data=sys.stdin.buffer.read(struct.unpack('>Q',header)[0])
+ if data==b'overflow':
+  Path(sys.argv[1]).write_text(str(os.getpid()))
+  os.write(2,b'x'*129)
+  continue
+ os.write(2,b'x'*8)
+ sys.stdout.buffer.write(header+data)
+ sys.stdout.buffer.flush()
+"""
+    session = FramedSession(
+        (sys.executable, "-I", "-B", "-c", program, str(marker)), cap=128
+    )
+    monkeypatch.setattr(sessions, "spawn_owned_process", capture)
+    try:
+        first = session.ensure_generation(time.monotonic() + 5, None)
+        for payload in (b"one", b"two"):
+            assert (
+                session.exchange(first, payload, time.monotonic() + 5, None) == payload
+            )
+        live = session.generation
+        assert live is first and len(children) == 1
+        with pytest.raises(LimitExceeded, match="diagnostics exceed protocol byte"):
+            session.exchange(first, b"overflow", time.monotonic() + 5, None)
+        assert marker.exists() and children[0].poll() is not None
+        released = session.generation
+        assert released is None
+        recovered = session.ensure_generation(time.monotonic() + 5, None)
+        assert recovered.number == first.number + 1
+        assert recovered is not first and len(children) == 2
+        assert (
+            session.exchange(recovered, b"fresh", time.monotonic() + 5, None)
+            == b"fresh"
+        )
+    finally:
+        session.close()
+    assert len(children) == 2 and all(child.poll() is not None for child in children)
+
+
+@pytest.mark.parametrize("entry", ["generation", "frame"])
+def test_known_diagnostic_overflow_rejects_reuse_before_native_input(
+    tmp_path: Path, entry: str
+) -> None:
+    """Observed overflow discards its owner before a subsequent request is sent."""
+    gate, marker = tmp_path / "emit-diagnostics", tmp_path / "processed-request"
+    program = """import os,struct,sys,time
+from pathlib import Path
+reader=sys.stdin.buffer;writer=sys.stdout.buffer
+header=reader.read(8)
+data=reader.read(struct.unpack('>Q',header)[0])
+writer.write(header+data);writer.flush()
+while not Path(sys.argv[1]).exists():time.sleep(.001)
+os.write(2,b'x'*129)
+header=reader.read(8)
+if header:
+ data=reader.read(struct.unpack('>Q',header)[0])
+ Path(sys.argv[2]).write_bytes(data)
+ writer.write(header+data);writer.flush()
+while True:time.sleep(1)
+"""
+    session = FramedSession(
+        (sys.executable, "-I", "-B", "-c", program, str(gate), str(marker)), cap=128
+    )
+    try:
+        first = session.ensure_generation(time.monotonic() + 5, None)
+        assert session.exchange(first, b"first", time.monotonic() + 5, None) == b"first"
+        worker = session._worker
+        assert worker is not None
+        gate.write_text("emit")
+        assert worker.stderr_overflow.wait(5)
+        with pytest.raises(LimitExceeded, match="diagnostics exceed protocol byte"):
+            if entry == "generation":
+                session.ensure_generation(time.monotonic() + 5, None)
+            else:
+                session.exchange(first, b"second", time.monotonic() + 5, None)
+        assert not marker.exists() and worker.process.poll() is not None
+        assert session.generation is None
+        gate.unlink()
+        recovered = session.ensure_generation(time.monotonic() + 5, None)
+        assert recovered.number == first.number + 1
+        fresh = session._worker
+        assert fresh is not None and fresh.token is recovered
+        assert (
+            session.exchange(recovered, b"fresh", time.monotonic() + 5, None)
+            == b"fresh"
+        )
+    finally:
+        session.close()
+    assert worker.process.poll() is not None and fresh.process.poll() is not None

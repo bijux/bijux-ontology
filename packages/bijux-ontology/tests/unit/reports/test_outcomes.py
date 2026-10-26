@@ -322,3 +322,79 @@ def test_report_encoding_stops_before_materializing_unpaid_metadata(
     finally:
         tracemalloc.stop()
     assert peak < 32_768
+
+
+def test_large_public_report_composition_prepares_membership_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    size = 3000
+    findings = tuple(
+        Issue("field.mismatch", "Different value", str(index)) for index in range(size)
+    )
+    child = Report("fields", size, findings)
+    original = Issue.__eq__
+    comparisons = 0
+
+    def count_equal(left: Issue, right: object) -> bool:
+        nonlocal comparisons
+        comparisons += 1
+        return original(left, right)
+
+    monkeypatch.setattr(Issue, "__eq__", count_equal)
+    result = combine_reports("document", child, Report("other", 1))
+    assert comparisons < 5 * size
+    assert result.issues == findings and result.children[0] is child
+    assert result.checked == result.requested == size + 1
+    assert result.outcome == "disagreement" and not result.verified
+    encoded = result.to_dict()
+    assert encoded["issues"] == [
+        issue.to_dict() for issue in sorted(findings, key=lambda issue: issue.location)
+    ]
+    assert encoded["scopes"] == [child.to_dict(), Report("other", 1).to_dict()]
+
+
+def test_report_membership_preserves_original_parent_and_child_occurrences() -> None:
+    parent = Issue("field.mismatch", "Different value", "parent")
+    equal_parent = Issue("field.mismatch", "Different value", "parent")
+    child = Issue("field.mismatch", "Different value", "child")
+    equal_child = Issue("field.mismatch", "Different value", "child")
+    assert parent is not equal_parent and child is not equal_child
+    first = Report("first", 1, (equal_parent, child, child))
+    second = Report("second", 1, (equal_child,))
+    result = Report("direct", 2, (parent, parent), children=(first, second))
+    assert len(result.issues) == 5
+    assert all(
+        actual is expected
+        for actual, expected in zip(
+            result.issues, (parent, parent, child, child, equal_child), strict=True
+        )
+    )
+    empty_parent = Report("direct", 2, children=(first, second))
+    assert empty_parent.issues == first.issues + second.issues
+    combined = combine_reports("combined", first, second)
+    assert combined.issues == first.issues + second.issues
+
+
+def test_hierarchy_admission_stops_before_aggregate_and_keeps_paid_findings() -> None:
+    from bijux_ontology.diagnostics.errors import LimitExceeded
+    from bijux_ontology.execution.limits import (
+        Budget,
+        IssueCollector,
+        Limits,
+        retain_report,
+    )
+
+    budget = Budget(Limits(max_states=12))
+    findings = IssueCollector(budget)
+    finding = Issue("field.mismatch", "Different value", "paid")
+    findings.append(finding)
+    child = Report("field", 1, (finding,))
+    excessive = Report("many fields", 1000, children=(child,) * 1000)
+    with pytest.raises(LimitExceeded, match="max_states"):
+        retain_report(excessive, budget, findings)
+        combine_reports("aggregate", excessive)
+    findings.exhausted("Report hierarchy exceeds its retained allowance")
+    terminal = Report("bounded aggregate", 1, tuple(findings), requested=1000)
+    assert terminal.issues[0] is finding
+    assert terminal.outcome == "exhausted" and not terminal.complete
+    assert not terminal.children

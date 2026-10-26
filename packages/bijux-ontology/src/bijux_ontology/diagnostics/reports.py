@@ -277,8 +277,14 @@ class Report:
             raise InputError("A report requires typed child reports")
         # Aggregators already retain child diagnostics. Direct construction must
         # preserve the same truth without adding their comparison counts again.
+        # Membership refers only to the original parent occurrences. Adding a
+        # child must not suppress an equal occurrence in a later child.
+        parent_issues = frozenset(issues) if children else frozenset()
         issues += tuple(
-            issue for child in children for issue in child.issues if issue not in issues
+            issue
+            for child in children
+            for issue in child.issues
+            if issue not in parent_issues
         )
         if (
             not self.checked

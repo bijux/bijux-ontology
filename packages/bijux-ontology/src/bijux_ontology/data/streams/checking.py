@@ -197,7 +197,7 @@ def check_rdf_stream(
             payload,
             cap=max(len(payload), output_cap),
             timeout=max(0.000001, operation.deadline - time.monotonic()),
-            cancel=cancel,
+            cancel=operation.cancel,
         )
         if isinstance(vocabulary, StoredRdf):
             verify_files(vocabulary.directory, vocabulary.files, operation)

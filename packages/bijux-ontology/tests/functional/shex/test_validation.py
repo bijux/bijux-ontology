@@ -11,7 +11,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.shex import ShexBinding, ShexSchema, validate_shex
@@ -337,6 +337,7 @@ def test_shared_limits_and_cancelled_paid_prefix_recover(
                 return
             stop.wait(0.002)
 
+    owner = Budget(limits)
     watcher = Thread(target=cancel_after_completed)
     watcher.start()
     try:
@@ -347,7 +348,9 @@ def test_shared_limits_and_cancelled_paid_prefix_recover(
             limits=limits,
             budget=Operation(
                 limits,
-                Operation(limits, None, 30, cancellation if inherited_cancel else None),
+                Operation(
+                    limits, owner, 30, cancellation if inherited_cancel else None
+                ),
                 30,
                 None,
             ),
@@ -365,4 +368,8 @@ def test_shared_limits_and_cancelled_paid_prefix_recover(
         == "nonconformant"
     )
     assert any(item.status == "unknown" for item in result.obligations)
+    for kind in BUDGET_KINDS:
+        assert owner.remaining(kind) == (
+            limits.max_issues - len(bindings) - 1 if kind == "issues" else 0
+        )
     assert check(graph, supplied, tmp_path).report.verified

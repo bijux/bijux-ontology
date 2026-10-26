@@ -3,11 +3,52 @@
 from __future__ import annotations
 
 import hashlib
+import os
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import BinaryIO
 
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.execution.limits import Budget, bound_text
+
+
+def _revision(value: os.stat_result) -> tuple[int, ...]:
+    """Compare opened and named file identity without claiming atomic snapshots."""
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
+@contextmanager
+def capture_file(path: Path, budget: Budget) -> Iterator[tuple[BinaryIO, int]]:
+    """Own one read handle and reject observed mutation or path replacement."""
+    budget.consume("states", 3)
+    budget.consume("bytes", 4096)
+    budget.consume("work")
+    with path.open("rb") as stream:
+        before = os.fstat(stream.fileno())
+        yield stream, before.st_size
+        budget.consume("work", 2)
+        after = os.fstat(stream.fileno())
+        # Windows path and descriptor ctime fields can have different meanings.
+        # Read named metadata through a descriptor too; nonblocking open prevents
+        # a replacement FIFO from holding the capture's final identity check.
+        named_fd = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        try:
+            named = os.fstat(named_fd)
+        finally:
+            os.close(named_fd)
+        if _revision(before) != _revision(after) or (
+            _revision(before) != _revision(named)
+        ):
+            raise ResourceError("Input file changed during capture", location=str(path))
 
 
 @dataclass(frozen=True)
@@ -40,11 +81,7 @@ def seal_files(directory: Path, budget: Budget) -> tuple[FileSnapshot, ...]:
                 budget.consume("bytes", len(chunk))
                 digest.update(chunk)
         after = path.stat()
-        if (before.st_size, before.st_mtime_ns, before.st_ino) != (
-            after.st_size,
-            after.st_mtime_ns,
-            after.st_ino,
-        ):
+        if _revision(before) != _revision(after):
             raise ResourceError("Owned file changed while its seal was captured")
         result.append(
             FileSnapshot(

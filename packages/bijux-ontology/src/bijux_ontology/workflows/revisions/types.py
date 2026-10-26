@@ -1,7 +1,6 @@
 """Sealed semantic preparation and revision-bound operation receipts."""
 
 from _thread import LockType
-from collections.abc import Mapping
 from dataclasses import dataclass
 from threading import Lock
 
@@ -12,9 +11,9 @@ from bijux_ontology.models.persistence.types import (
     ModelPreparationArtifact,
     PreparationIdentity,
 )
-from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.evidence.results import ShaclResult
+from bijux_ontology.shacl.execution.preparation import SessionPreparation
 
 
 @dataclass(frozen=True)
@@ -63,12 +62,10 @@ class _RevisionState:
     identity: PreparationIdentity
     artifact: ModelPreparationArtifact
     models: PreparedModels
-    ontology: PreparedSource | None
-    shapes: PreparedSource | None
-    imports: Mapping[str, RdfSource]
     roots: tuple[str, ...]
     report: Report
     retained_bytes: int
+    shacl_preparation: SessionPreparation | None
 
 
 class PreparedRevision:

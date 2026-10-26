@@ -2,15 +2,25 @@
 
 import hashlib
 import importlib.util
+import os
+import subprocess
+import sys
+import time
 from pathlib import Path
 from threading import Event
+from types import FrameType
+from typing import Literal as ProfileLiteral
 
+import pytest
 from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, SH
 
 from bijux_ontology.data.streams import check_rdf_stream
 from bijux_ontology.data.usage import check_data_usage
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.processes.ownership import spawn_owned_process
+from bijux_ontology.execution.processes.transport import checkpoint, exchange_worker
 from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
@@ -334,3 +344,69 @@ def test_explicit_excluded_predicates_remain_in_checked_scope(tmp_path: Path) ->
     assert str(E.missing) in result.local_report.exclusions
     assert {"shapes", "identity", "cardinality"} <= set(result.local_report.exclusions)
     assert not check_rdf_stream(source, _vocabulary()).report.verified
+
+
+def test_inherited_cancellation_reaps_the_actual_stream_worker_and_recovers(
+    tmp_path: Path,
+) -> None:
+    """One parent Event interrupts its native child; expired admission starts none."""
+    source = tmp_path / "cancelled.nt"
+    source.write_text("<urn:stream:s> <urn:stream:p> <urn:stream:o> .\n")
+    cancel = Event()
+    parent = Operation(None, Budget(), 30, cancel)
+    processes: list[subprocess.Popen[bytes]] = []
+    interrupted: list[int] = []
+    previous = sys.getprofile()
+
+    def observe(
+        frame: FrameType,
+        event: ProfileLiteral["call", "return", "c_call", "c_return", "c_exception"],
+        value: object,
+    ) -> None:
+        """Cancel at real supervision after the installed worker and pipes start."""
+        if previous is not None:
+            previous(frame, event, value)
+        if (
+            event == "return"
+            and frame.f_code is spawn_owned_process.__code__
+            and isinstance(value, subprocess.Popen)
+            and isinstance(value.args, (list, tuple))
+            and "bijux_ontology.data.streams.worker" in value.args
+        ):
+            processes.append(value)
+        if (
+            event == "call"
+            and frame.f_code is checkpoint.__code__
+            and frame.f_back is not None
+            and frame.f_back.f_code is exchange_worker.__code__
+            and processes
+            and not cancel.is_set()
+        ):
+            process = processes[-1]
+            assert process.poll() is None
+            interrupted.append(process.pid)
+            cancel.set()
+
+    sys.setprofile(observe)
+    try:
+        stopped = check_rdf_stream(source, _vocabulary(), budget=parent)
+        assert stopped.report.outcome == "exhausted" and not stopped.report.complete
+        assert len(processes) == 1 and interrupted == [processes[0].pid]
+        terminated = processes[0]
+        assert terminated.poll() is not None and terminated.returncode != 0
+        if os.name == "posix":
+            assert terminated.returncode < 0
+            with pytest.raises(ProcessLookupError):
+                os.kill(terminated.pid, 0)
+        expired = Operation(None, Budget(), 0.001, None)
+        Event().wait(0.002)
+        assert time.monotonic() >= expired.deadline
+        denied = check_rdf_stream(source, _vocabulary(), budget=expired)
+        assert denied.report.outcome == "exhausted" and len(processes) == 1
+        # The cancelled parent stays cancelled; recovery owns a fresh allowance.
+        fresh = check_rdf_stream(source, _vocabulary(), budget=Budget())
+        assert fresh.report.verified and fresh.statements == 1 and cancel.is_set()
+        assert len(processes) == 2 and processes[-1].pid != terminated.pid
+        assert processes[-1].poll() == 0
+    finally:
+        sys.setprofile(previous)

@@ -173,3 +173,109 @@ def test_budget_cancellation_and_fresh_recovery_cannot_manufacture_answers(
     assert timed.report.outcome == "exhausted" and timed.consistent is None
     recovery = check_consistency(backend, _native(_DECLARATIONS))
     assert recovery.report.verified and recovery.consistent is True
+
+
+@pytest.mark.parametrize(
+    ("selection", "location"),
+    [
+        ("urn:A", "named_classes"),
+        (["urn:A"], "named_classes/0"),
+        ([URIRef("relative")], "named_classes/0"),
+        ([A, A], "named_classes/1"),
+    ],
+)
+def test_invalid_named_selection_is_input_error_before_backend_execution(
+    backend: OwlProfileBackend, selection: object, location: str
+) -> None:
+    from collections.abc import Sequence
+    from typing import cast
+
+    budget = Budget()
+    result = check_consistency(
+        backend,
+        _native(_DECLARATIONS),
+        named_classes=cast(Sequence[URIRef], selection),
+        budget=budget,
+    )
+    assert result.report.outcome == "input_error"
+    assert result.report.exit_code() == 2 and result.consistent is None
+    assert result.report.issues[0].location == location
+    assert result.report.issues[0].message != "DL diagnosis is unavailable"
+    assert budget.remaining("resources") == budget.limits.max_resources
+    assert not list(backend.artifacts.glob("diagnosis-*"))
+
+
+def test_malformed_import_retains_real_resource_and_parser_evidence(
+    backend: OwlProfileBackend,
+) -> None:
+    from bijux_ontology_reasoning.axioms import NamedEntity, SubClassOf
+    from bijux_ontology_reasoning.inference.entailment import check_entailments
+
+    root = Graph()
+    root.add((URIRef("urn:root"), RDF.type, OWL.Ontology))
+    root.add((URIRef("urn:root"), OWL.imports, URIRef("urn:broken")))
+    source = prepare_rdf(root)
+    imports = {
+        "urn:broken": RdfSource(
+            "this is not turtle", format="turtle", document_iri="urn:broken"
+        )
+    }
+    reports = (
+        check_consistency(backend, source, imports=imports).report,
+        check_entailments(
+            backend,
+            source,
+            (
+                SubClassOf(
+                    NamedEntity("class", str(A)), NamedEntity("class", str(B)), ()
+                ),
+            ),
+            imports=imports,
+        ).report,
+    )
+    for report in reports:
+        assert report.outcome == "unverified" and not report.complete
+        issue = report.issues[0]
+        assert "Cannot parse turtle" in issue.message
+        assert issue.location == "urn:broken" and issue.details is not None
+        assert issue.details.failure is not None
+        assert issue.details.failure.document_iri == "urn:broken"
+        assert issue.details.failure.role == "import"
+        # Coordinates, when present, belong to the actual parser receipt.
+        assert issue.details.failure.span is None or (
+            issue.details.failure.span.start_line == 1
+        )
+
+
+def test_malformed_backend_and_unavailable_java_have_distinct_outcomes(
+    backend: OwlProfileBackend, tmp_path: Path
+) -> None:
+    from typing import cast
+
+    from bijux_ontology_reasoning.axioms import NamedEntity, SubClassOf
+    from bijux_ontology_reasoning.inference.entailment import check_entailments
+
+    source = _native(_DECLARATIONS)
+    malformed = cast(OwlProfileBackend, "not a backend descriptor")
+    unavailable = prepare_profile_backend(
+        tmp_path / "missing-java",
+        backend.directory,
+        manifest_sha256=backend.manifest_sha256,
+        artifacts=tmp_path / "unavailable-jobs",
+    )
+    obligation = SubClassOf(
+        NamedEntity("class", str(A)), NamedEntity("class", str(B)), ()
+    )
+    for selected, expected in ((malformed, "input_error"), (unavailable, "unverified")):
+        reports = (
+            check_consistency(selected, source).report,
+            check_entailments(selected, source, (obligation,)).report,
+        )
+        for report in reports:
+            assert report.outcome == expected and not report.complete
+            assert report.exit_code() == (2 if expected == "input_error" else 0)
+            issue = report.issues[0]
+            if expected == "input_error":
+                assert issue.location == "backend"
+            else:
+                assert issue.message == "The explicit Java executable is unavailable"
