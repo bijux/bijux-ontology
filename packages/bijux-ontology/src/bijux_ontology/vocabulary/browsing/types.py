@@ -5,7 +5,7 @@ from typing import Generic, TypeVar
 
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.vocabulary.sources.view import _VocabularyIndex
+from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 T = TypeVar("T")
 
@@ -18,7 +18,8 @@ class VocabularyCursor:
     nor portable blank-node identifiers, and cannot follow a replaced snapshot.
     """
 
-    _index: _VocabularyIndex = field(repr=False)
+    _source: Vocabulary = field(repr=False)
+    _scopes: tuple[str, ...] = field(repr=False)
     _contract: tuple[object, ...] = field(repr=False)
     _position: int
     _phase: int
@@ -30,14 +31,16 @@ class VocabularyCursor:
     @classmethod
     def _at(
         cls,
-        index: _VocabularyIndex,
+        source: Vocabulary,
+        scopes: tuple[str, ...],
         contract: tuple[object, ...],
         position: int,
         phase: int,
     ) -> "VocabularyCursor":
         """Own the exact continuation after the last fully processed candidate."""
         result = object.__new__(cls)
-        object.__setattr__(result, "_index", index)
+        object.__setattr__(result, "_source", source)
+        object.__setattr__(result, "_scopes", scopes)
         object.__setattr__(result, "_contract", contract)
         object.__setattr__(result, "_position", position)
         object.__setattr__(result, "_phase", phase)

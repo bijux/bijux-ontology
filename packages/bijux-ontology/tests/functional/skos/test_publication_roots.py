@@ -115,7 +115,7 @@ def test_policy_inventory_ownership_and_runtime_boundaries() -> None:
         TopConceptPolicy(str(EX.Scheme), required=(str(EX.Root), str(EX.Root)))
 
 
-def test_incomplete_inventory_retains_truth_before_exhausted_parent_lookup() -> None:
+def test_incomplete_inventory_and_exhausted_diagnostics_retain_truth() -> None:
     source = graph()
     source.add((EX.Scheme, SKOS.hasTopConcept, EX.Root))
     source.add((EX.Root, SKOS.broader, EX.Parent))
@@ -128,7 +128,7 @@ def test_incomplete_inventory_retains_truth_before_exhausted_parent_lookup() -> 
         for issue in result.report.issues
     )
     policy = TopConceptPolicy(str(EX.Scheme), allowed=(), broader="forbid")
-    result = check_top_concepts(view, policy, budget=Budget(Limits(max_work=200)))
+    result = check_top_concepts(view, policy, budget=Budget(Limits(max_issues=1)))
     assert result.report.outcome == "exhausted"
     assert any(
         issue.code == "skos.publication.root_not_allowed"

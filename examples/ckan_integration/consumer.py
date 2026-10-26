@@ -21,13 +21,17 @@ from bijux_ontology.declarations.types import (
 )
 from bijux_ontology.documents.compaction import export_jsonld
 from bijux_ontology.documents.preparation import prepare_source
+from bijux_ontology.execution.limits import Budget
 from bijux_ontology.models.contracts.checking import check_models
 from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.models.emission.types import RdfModelUsage
+from bijux_ontology.models.persistence.codecs import declaration_data
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
 from bijux_ontology.shacl.checking import validate_shapes
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
+from bijux_ontology.workflows.projects.checking import check_project
+from bijux_ontology.workflows.projects.configuration import ProjectConfig
 
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
 DCT = Namespace("http://purl.org/dc/terms/")
@@ -161,6 +165,48 @@ def main():
         retain(name + ".rdf", compare_rdf(source.graph(), prepared.graph()))
 
     check("native", source)
+
+    def project_output(name, graph):
+        """The ordinary portable job must agree with the native Python checker."""
+        (args.output / "models.json").write_text(
+            json.dumps(declaration_data(models, Budget())), encoding="utf-8"
+        )
+        (args.output / "bindings.json").write_text(
+            json.dumps([{"model": "dataset", "subject": str(SUBJECT), "location": ""}]),
+            encoding="utf-8",
+        )
+        (args.output / "native-output.ttl").write_text(
+            graph.serialize(format="turtle"), encoding="utf-8"
+        )
+        configured = ProjectConfig(
+            {
+                "version": 2,
+                "rdf": {"output": {"path": "native-output.ttl"}},
+                "checks": [
+                    {
+                        "name": "native-output",
+                        "kind": "rdf-emission",
+                        "document": "output",
+                        "declarations": "models.json",
+                        "usages": "bindings.json",
+                    }
+                ],
+            },
+            directory=args.output,
+        )
+        ordinary = check_project(configured)
+        direct = check_rdf_emission(prepare_source(graph), models, bindings)
+        require(
+            [(i.code, i.location) for i in ordinary.issues]
+            == [(i.code, i.location) for i in direct.issues],
+            "Project/native RDF emission findings differ",
+        )
+        retain(name, ordinary, direct.verified)
+
+    project_output("project.native", source.graph())
+    missing_title = source.graph()
+    missing_title.remove((SUBJECT, DCT.title, None))
+    project_output("project.missing_title", missing_title)
     for syntax, suffix in (("turtle", "ttl"), ("json-ld", "jsonld")):
         # Fresh producers prevent repeat calls from accumulating new blank nodes.
         output = RDFSerializer(profiles=["euro_dcat_ap_2"]).serialize_dataset(

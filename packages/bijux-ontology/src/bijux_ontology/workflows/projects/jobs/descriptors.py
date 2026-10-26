@@ -17,6 +17,7 @@ CheckKind = Literal[
     "skos",
     "query-rules",
     "emission",
+    "rdf-emission",
     "context-corpus",
     "upgrade",
 ]
@@ -40,6 +41,20 @@ _RESOURCES = frozenset({"source", "lookup", "graph_name", "union"})
 
 DESCRIPTORS: Mapping[CheckKind, JobDescriptor] = MappingProxyType(
     {
+        "rdf-emission": JobDescriptor(
+            _COMMON
+            | _RESOURCES
+            | {
+                "document",
+                "declarations",
+                "usages",
+                "data_graph",
+                "data_union",
+                "rdf_direction",
+            },
+            direct_files=("declarations", "usages"),
+            executor="application",
+        ),
         "emission": JobDescriptor(
             _COMMON
             | _RESOURCES
@@ -136,6 +151,7 @@ DESCRIPTORS: Mapping[CheckKind, JobDescriptor] = MappingProxyType(
             _COMMON
             | {
                 "allow_empty",
+                "coverage",
                 "data_graph",
                 "data_union",
                 "document",

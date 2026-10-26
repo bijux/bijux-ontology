@@ -7,7 +7,11 @@ from rdflib import Graph
 from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Budget, Limits
-from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_resources
+from bijux_ontology.jsonld.processing.resources import (
+    ContextResources,
+    DocumentLoader,
+    context_resources,
+)
 from bijux_ontology.rdf.sources.loading import _charge_graph
 from bijux_ontology.rdf.sources.snapshots import GraphSelection, PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
@@ -103,6 +107,11 @@ def _load_vocabulary(
     """Share original input and result qualification for fixed owned routes."""
     if type(owned_worker) is not bool:
         raise InputError("Owned vocabulary loading selection must be a boolean")
+    admitted_budget = (
+        document_loader.budget
+        if isinstance(document_loader, ContextResources)
+        else budget
+    )
     resources = context_resources(document_loader, limits=limits, budget=budget)
     budget = resources.budget
     selected = budget.limits
@@ -158,5 +167,10 @@ def _load_vocabulary(
             _charge_graph(graph, budget, selected.max_bytes)
         lookups.append(OwnedSource(resource, graph))
     return Vocabulary._from_owned(
-        local, imported, tuple(lookups), selected, required_imports_qualified=True
+        local,
+        imported,
+        tuple(lookups),
+        selected,
+        required_imports_qualified=True,
+        admitted_budget=admitted_budget,
     )

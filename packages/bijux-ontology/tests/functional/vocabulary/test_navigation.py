@@ -117,7 +117,7 @@ def test_embedded_traversals_share_work_and_respect_tighter_depth_bounds() -> No
     view = inspect_vocabulary(
         Graph().add((EX.A, RDFS.subClassOf, EX.B)).add((EX.B, RDFS.subClassOf, EX.C))
     )
-    shared = Budget(Limits(max_work=100))
+    shared = Budget(Limits(max_work=1000))
     assert traverse(view, str(EX.A), budget=shared).report.verified
     results = [traverse(view, str(EX.A), budget=shared) for _ in range(100)]
     assert results[-1].report.outcome == "exhausted"

@@ -10,12 +10,9 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
+from bijux_ontology.vocabulary.browsing.admission import _comparison_text, _PageBudget
 from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
-from bijux_ontology.vocabulary.browsing.pages import (
-    _comparison_text,
-    _operation,
-    _PageBudget,
-)
+from bijux_ontology.vocabulary.browsing.pages import _operation
 from bijux_ontology.vocabulary.sources.view import _LexicalCandidate
 
 from .types import LexicalIndex, LexicalPreparation
@@ -74,8 +71,8 @@ def prepare_lexical_index(
     Languages select exact case-insensitive tags; an empty selection admits all
     tags and untagged text. Identifier fields ignore language selection. Unicode
     casefold is optional; no normalization, tokenization or IRI expansion occurs.
-    Typo lookup supports at most one codepoint insertion/deletion/substitution,
-    not adjacent transposition or semantic similarity.
+    Exact and prefix reads need no typo derivative. Use prepare_typo_index for
+    bounded one-codepoint insertion/deletion/substitution suggestions.
     """
     selected = _operation(view, budget)
     if (
@@ -100,7 +97,7 @@ def prepare_lexical_index(
         language_set = frozenset(tags)
         entries: dict[str, list[_LexicalCandidate]] = {}
         candidates = view._vocabulary._browse_lexical(
-            view._reader, view._index, operation
+            view._reader, view._prepare_index(operation), operation
         )
         for candidate in candidates:
             operation.consume("work")
@@ -122,20 +119,8 @@ def prepare_lexical_index(
         operation.consume("states", 3 * len(entries))
         operation.consume("bytes", 128 + 96 * len(entries) + 16 * checked)
         keys = tuple(sorted(entries))
-        deletions: dict[str, list[str]] = {}
-        for key in keys:
-            for variant in _variants(key, operation):
-                operation.consume("work", len(variant) + 1)
-                operation.consume("states", 2)
-                operation.consume("bytes", 96)
-                deletions.setdefault(variant, []).append(key)
-        operation.consume("states", len(deletions))
-        operation.consume("bytes", 64 + 64 * len(deletions))
         frozen_entries = MappingProxyType(
             {key: tuple(value) for key, value in entries.items()}
-        )
-        frozen_deletions = MappingProxyType(
-            {key: tuple(value) for key, value in deletions.items()}
         )
         operation.consume("states", len(view._reader.scopes))
         operation.consume("bytes", 32 + 8 * len(view._reader.scopes))
@@ -150,7 +135,7 @@ def prepare_lexical_index(
             selected.limits,
             keys,
             frozen_entries,
-            frozen_deletions,
+            None,
             MappingProxyType(priority),
         )
     except LimitExceeded as error:
@@ -165,5 +150,71 @@ def prepare_lexical_index(
             requested=checked if result is not None else checked + 1,
             complete=result is not None,
             regime="indexed-asserted-lexical-evidence",
+        ),
+    )
+
+
+def prepare_typo_index(
+    index: LexicalIndex,
+    *,
+    budget: Budget | None = None,
+    cancel: Event | None = None,
+) -> LexicalPreparation:
+    """Add a completed one-edit derivative, sharing the original lexical records.
+
+    A failed attempt returns no derivative and never invalidates or changes the
+    supplied base index. Deletion keys support insertion/deletion/substitution,
+    not adjacent transposition or semantic similarity.
+    """
+    if not isinstance(index, LexicalIndex):
+        raise InputError("Typo preparation requires a prepared LexicalIndex")
+    if budget is not None and not isinstance(budget, Budget):
+        raise InputError("Typo preparation requires Budget")
+    if cancel is not None and not isinstance(cancel, Event):
+        raise InputError("Typo cancellation requires threading.Event")
+    selected = budget if budget is not None else Budget(index.limits)
+    operation = _PageBudget(selected, cancel)
+    issues = IssueCollector(selected)
+    result = None
+    checked = 0
+    try:
+        operation.consume("work", 0)
+        deletions: dict[str, list[str]] = {}
+        for key in index._keys:
+            for variant in _variants(key, operation):
+                operation.consume("work", len(variant) + 1)
+                operation.consume("states", 2)
+                operation.consume("bytes", 96)
+                deletions.setdefault(variant, []).append(key)
+            checked += 1
+        operation.consume("states", len(deletions))
+        operation.consume("bytes", 64 + 64 * len(deletions))
+        frozen = MappingProxyType(
+            {key: tuple(value) for key, value in deletions.items()}
+        )
+        operation.consume("work", 0)
+        result = LexicalIndex._owned(
+            index.fields,
+            index.languages,
+            index.scopes,
+            index.casefold,
+            index.limits,
+            index._keys,
+            index._entries,
+            frozen,
+            index._priority,
+        )
+    except LimitExceeded as error:
+        issues.exhausted(str(error), location="terms.lexical.prepare_typo")
+    return LexicalPreparation(
+        result,
+        Report(
+            "terms.lexical.prepare_typo",
+            checked,
+            tuple(issues),
+            allow_empty=True,
+            requested=checked if result is not None else checked + 1,
+            complete=result is not None,
+            regime="indexed-one-codepoint-edit",
         ),
     )

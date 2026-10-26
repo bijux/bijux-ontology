@@ -369,13 +369,16 @@ For JSON-LD, pass original usages and expectations to `check_context`. Reuse exp
 ## Lexical lookup and domain adapters
 
 `vocabulary.lexical.prepare_lexical_index(view, fields=..., languages=...)`
-reuses the selected vocabulary's lexical inventory for repeated `autocomplete`
-and `suggest` calls. Results retain labels, identifiers, languages, source roles
+prepares exact/prefix lookup. `prepare_typo_index(index)` adds optional bounded
+one-edit suggestions while sharing the completed base records. Repeated
+`autocomplete` and `suggest` calls retain labels, identifiers, languages, source roles
 and ranking evidence. Suggestions allow one codepoint insertion, deletion or
 substitution; they never replace identifiers or assert semantic mappings.
 Inspect both `.report.complete` and `.truncated` when consuming bounded results.
 
-`annotate_text(index, text)` reuses that index to locate overlapping dictionary
+`prepare_mention_index(index)` prepares a reusable bounded dictionary automaton;
+`annotate_text(index, text)` also accepts the base index and prepares it within
+the operation. Both locate overlapping dictionary
 mentions with all selected candidate terms and lexical evidence. Its half-open
 spans count original Python characters, including when casefold expands a
 character. Word boundaries are explicit; `boundary="substring"` also permits
@@ -672,7 +675,11 @@ focus_nodes=record_iris, pairs=shape_focus_pairs)` from
 requires completed root target evaluations when passed as `coverage=` to
 `validate_shapes`. Inspect `result.coverage` separately from `conforms` and
 `conformance_report`; a targetless shape can conform while required coverage fails.
-Nested conditional constraint execution is not inferred from root coverage.
+Portable `shacl` project jobs accept the same `coverage` object:
+`{"minimum_focus": 1, "focus_nodes": ["urn:record"], "pairs": [["urn:Shape", "urn:record"]]}`.
+Selections do not count as observations; an explicit empty object requests only
+inspection of completed targets. Nested conditional constraint execution is not
+inferred from root coverage.
 Use `required_constraints=(ShaclConstraintRequirement(shape_iri, parameter_iri),)`
 for explicit supported parameter/component bindings and inspect `result.constraints`
 for execution coverage. A required nested-only constraint remains unverified.
@@ -1432,6 +1439,11 @@ Modifiers, composed/literal endpoints, extension semantics and unmapped sentinel
 remain unknown; sentinels cannot satisfy required cardinality. The supported TSV
 body excludes hash characters because maintained comment handling can lose data.
 
+`propose_lexical_mappings_page(source, target, cursor=...)` traverses lexical
+key/source/target occurrences, including resumable positions within ambiguous
+groups. A complete page may be explicitly approved; it certifies neither global
+rank nor complete enumeration. Only `enumeration_complete` marks the join's end.
+
 `bijux_ontology.vocabulary.mappings.composition.compose_mappings` joins explicit
 intermediate IRIs in two owned mapping sets or raw `MappingRead` results. Supply
 finite `MappingCompositionRule` records: only exactMatch transitivity has a SKOS
@@ -1601,6 +1613,16 @@ resources. Inspect original single-version checks, exact outputs and deployable
 cells; other known combinations and unused consumers remain visibly untested.
 Missing versions, inputs or representative corpora keep required cells incomplete.
 A passing majority cannot hide a failed or unknown selected obligation.
+
+## Native RDF project output
+
+A `rdf-emission` project job names a registered RDF `document`, a `declarations`
+JSON file and a `usages` JSON file such as
+`[{"model":"Record","subject":"urn:record","location":"record"}]`.
+Use `data_graph` (including `"@default"`) or explicit `data_union` for datasets.
+Only named root subjects are configurable; nested blank children retain their
+owned RDF identity. Required RDF occurrences use `emission="guaranteed"` or
+`minimum_values`; JSON source-presence claims are not inferred from RDF.
 
 ## Stored and streamed data
 

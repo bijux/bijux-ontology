@@ -25,8 +25,13 @@ from bijux_ontology.jsonld.contracts.codecs import expectations_from_data
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.models.emission.checking import check_emission
-from bijux_ontology.models.emission.codecs import usages_from_data
-from bijux_ontology.workflows.projects.jobs.decoding import VocabularySelection, strings
+from bijux_ontology.models.emission.codecs import rdf_usages_from_data, usages_from_data
+from bijux_ontology.models.emission.rdf import check_rdf_emission
+from bijux_ontology.workflows.projects.jobs.decoding import (
+    GraphSelection,
+    VocabularySelection,
+    strings,
+)
 from bijux_ontology.workflows.projects.resources import ProjectResources
 from bijux_ontology.workflows.upgrades.applications.comparison import (
     compare_applications,
@@ -260,6 +265,33 @@ def run_application_job(
     inputs = _Inputs(resources)
     if kind == "context-corpus":
         return _corpus(selected, inputs)
+    if kind == "rdf-emission":
+        declarations, path = inputs.read(selected.get("declarations"))
+        usages, _ = inputs.read(selected.get("usages"))
+        graph = GraphSelection.from_job(
+            selected, name_key="data_graph", union_key="data_union"
+        )
+        vocabulary = None
+        if "source" in selected:
+            scope = VocabularySelection.from_job(selected)
+            vocabulary = resources.vocabulary(
+                scope.source,
+                lookup=scope.lookup,
+                graph_name=scope.graph.name,
+                union=scope.graph.union,
+            )
+        elif set(selected) & {"lookup", "graph_name", "union"}:
+            raise InputError("Vocabulary options require a selected source")
+        return check_rdf_emission(
+            resources.source(text_value(selected.get("document"), location="document")),
+            models_from_data(declarations, source=str(path), budget=inputs.budget),
+            rdf_usages_from_data(usages, budget=inputs.budget),
+            vocabulary=vocabulary,
+            graph_name=graph.name,
+            union=graph.union,
+            rdf_direction=_direction(selected),
+            budget=inputs.budget,
+        )
     if kind == "emission":
         scope = VocabularySelection.from_job(selected)
         vocabulary = resources.vocabulary(

@@ -317,11 +317,15 @@ def test_known_empty_missing_scopes_binding_overlap_and_shared_limits() -> None:
 
 
 def test_partial_lifecycle_evidence_never_becomes_closed_absence() -> None:
+    source = _vocabulary()
+    # The later assertion alone exceeds the operation storage allowance; the
+    # earlier active/deprecated observations fit without relying on work counts.
+    source.add((EX.C, OWL.deprecated, Literal("unexamined" * 10_000)))
     subset = select_concepts(
-        inspect_vocabulary(_vocabulary()),
+        inspect_vocabulary(source),
         scheme=str(EX.scheme),
         closed=True,
-        budget=Budget(Limits(max_work=30)),
+        budget=Budget(Limits(max_total_bytes=100_000)),
     )
     assert subset.report.outcome == "exhausted" and not subset.report.complete
     assert subset.values == (EX.A,) and subset.excluded == (EX.B,)

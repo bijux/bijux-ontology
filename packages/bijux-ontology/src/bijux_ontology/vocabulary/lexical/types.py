@@ -27,7 +27,7 @@ class LexicalIndex:
     limits: Limits
     _keys: tuple[str, ...]
     _entries: Mapping[str, tuple[_LexicalCandidate, ...]]
-    _deletions: Mapping[str, tuple[str, ...]]
+    _deletions: Mapping[str, tuple[str, ...]] | None
     _priority: Mapping[str, int]
 
     def __init__(self) -> None:
@@ -44,7 +44,7 @@ class LexicalIndex:
         limits: Limits,
         keys: tuple[str, ...],
         entries: Mapping[str, tuple[_LexicalCandidate, ...]],
-        deletions: Mapping[str, tuple[str, ...]],
+        deletions: Mapping[str, tuple[str, ...]] | None,
         priority: Mapping[str, int],
     ) -> "LexicalIndex":
         """Adopt only completed bounded immutable preparation products."""

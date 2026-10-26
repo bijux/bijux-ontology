@@ -181,20 +181,19 @@ def test_limits_retain_known_forbidden_truth_without_fabricating_missing_forms()
     source = labels()
     policy = XLRelationPolicy(str(EX.acronym), forbidden=True)
     view = inspect_vocabulary(source)
-    retained = False
-    for work in (1, 20, 40, 200, 375, 400, 500):
-        result = check_xl_relations(
-            view, [policy], budget=Budget(Limits(max_work=work))
-        )
-        assert not any(
-            i.code == "skos.xl_form_unresolved" for i in result.report.issues
-        )
-        if result.report.outcome == "exhausted":
-            assert not result.report.complete and not result.report.verified
-            retained |= any(
-                i.code == "skos.xl_relation.forbidden" for i in result.report.issues
-            )
-    assert retained
+    # A forbidden relation is proved before the independent language mismatch
+    # requests a second diagnostic. No intermediate work-count window is assumed.
+    result = check_xl_relations(
+        view,
+        [replace(policy, source_language="fr")],
+        budget=Budget(Limits(max_issues=1)),
+    )
+    assert result.report.outcome == "exhausted"
+    assert not result.report.complete and not result.report.verified
+    assert {issue.code for issue in result.report.issues} == {
+        "skos.xl_relation.forbidden",
+        "execution.limit_exceeded",
+    }
     for limits in (
         Limits(max_issues=1),
         Limits(max_total_bytes=20),

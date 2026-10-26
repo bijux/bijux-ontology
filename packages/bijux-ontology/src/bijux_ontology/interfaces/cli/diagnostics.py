@@ -210,7 +210,10 @@ _CODES = {
         "selection_unverified superseded".split()
     ),
     "sdrf": frozenset("unverified semantic_mismatch consumer".split()),
-    "serialization": frozenset(("coverage_missing",)),
+    "serialization": frozenset(
+        "coverage_missing binding_unverified binding_predicate_mismatch "
+        "bindings_invalid".split()
+    ),
     "selector": frozenset(
         "parent_count_mismatch count_mismatch "
         "structure_mismatch binding_unverified".split()
@@ -898,7 +901,7 @@ _FAMILIES: dict[str, tuple[str, str, str, str]] = {
         "check_sdrf(parsed_table, effective_schema, terminology)",
     ),
     "serialization": (
-        "required representative serializer coverage",
+        "actual serializer bindings and required representative coverage",
         "Actual cases do not establish every selected alternative or scenario.",
         "Supply unambiguous cases for each required branch and retain failed samples.",
         'BranchCoverage("record", "value", 0)',
@@ -1121,6 +1124,24 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
         "Repair the schema before checking its JSON values; distinguish an "
         "invalid schema from a valid schema's value mismatch.",
         '{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}',
+    ),
+    "serialization.binding_unverified": (
+        "An actual source selection cannot establish the intended field binding.",
+        "Inspect the reported identity, model usage and original source path; "
+        "retain unresolved associations instead of treating them as successful checks.",
+        'SerializedFieldBinding(identity, usage, "label", ("label",))',
+    ),
+    "serialization.binding_predicate_mismatch": (
+        "The actual field predicate or reverse direction differs from its declaration.",
+        "Compare the original context expansion with the intended field predicate "
+        "and direction; correct the mapping or declaration without rewriting evidence.",
+        'FieldDeclaration("label", "https://example.org/label", values)',
+    ),
+    "serialization.bindings_invalid": (
+        "The supplied field binding inventory is invalid for the selected models.",
+        "Correct the reported binding identity, usage, field or source path; "
+        "invalid inputs do not establish serializer conformance.",
+        'SerializedFieldBinding(identity, usage, "label", ("label",))',
     ),
     "shacl.query_unverified": (
         "A supplied SHACL SPARQL query could not be analysed in the supported scope.",

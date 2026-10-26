@@ -1,14 +1,16 @@
 """Exact identities, source scopes, multilingual evidence and owned inspection."""
 
 import tracemalloc
+from threading import Event
 
 import pytest
 from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS, XSD
 
-from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Limits
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.execution.limits import Budget, BudgetKind, Limits
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
+from bijux_ontology.vocabulary.browsing.pages import terms_page
 from bijux_ontology.vocabulary.registry.prefixes import compact_iri, expand_curie
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
@@ -115,3 +117,75 @@ def test_predicate_selection_does_not_copy_large_unselected_iris() -> None:
         (RDFS.subClassOf, EX.B)
     ]
     assert peak < 100_000
+
+
+def test_bulk_index_limits_cancel_and_cached_admission_are_atomic() -> None:
+    graph = Graph()
+    for index in range(300):
+        graph.add((EX[f"Item{index}"], RDF.type, OWL.Class))
+    source = Vocabulary(graph)
+    view = inspect_vocabulary(source)
+    for limits in (Limits(max_states=1), Limits(max_total_bytes=1)):
+        result = view.terms(budget=Budget(limits))
+        assert result.report.outcome == "exhausted"
+        assert not source._indexes
+    cancel = Event()
+
+    class InterruptedBudget(Budget):
+        """Cancel after part of the index has been built, before publication."""
+
+        def consume(self, kind: BudgetKind, amount: int = 1) -> None:
+            super().consume(kind, amount)
+            if (
+                kind == "states"
+                and self.remaining("states") < self.limits.max_states - 32
+            ):
+                cancel.set()
+
+    stopped = terms_page(view, budget=InterruptedBudget(), cancel=cancel)
+    assert stopped.report.outcome == "exhausted" and not source._indexes
+    cancel.clear()
+    assert view.terms().report.verified
+    retained = source._indexes[("local",)]
+    assert not view.terms(budget=Budget(Limits(max_states=1))).report.verified
+    assert source._indexes[("local",)] is retained
+    assert view.terms().report.verified
+
+
+def test_targeted_inspection_avoids_full_index_and_agrees_with_bulk_roles() -> None:
+    local = Graph()
+    for index in range(2000):
+        local.add((EX[f"Item{index}"], RDF.type, OWL.Class))
+    local.add((EX.Item0, EX.predicate, Literal("value", datatype=EX.Datatype)))
+    imported = Graph().add((EX.Item0, RDF.type, OWL.Class))
+    lookup = Graph().add((EX.Lookup, RDF.type, OWL.Class))
+    source = Vocabulary(local, (imported,), (lookup,))
+    view = inspect_vocabulary(source)
+    selected = view.lookup(str(EX.Item0), budget=Budget(Limits(max_work=100)))
+    assert selected.scopes == ("import[0]", "local") and not source._indexes
+    adjacent = view.relationships(str(EX.Item0))
+    assert len(adjacent.items) == 3 and not source._indexes
+    prepared_index = view._prepare_index(Budget(Limits(max_work=20_000_000)))
+    for iri in (EX.Item0, EX.predicate, EX.Datatype, EX.Lookup, EX.Absent):
+        assert view.lookup(str(iri)) == prepared_index.terms.get(
+            str(iri), type(selected)(str(iri), "absent", (), ())
+        )
+    assert adjacent.items == prepared_index.outgoing[EX.Item0]
+
+
+def test_lookup_and_deferred_union_retain_the_callers_allowance() -> None:
+    local = Graph().add((EX.A, RDF.type, OWL.Class))
+    imported = Graph().add((EX.B, RDF.type, OWL.Class))
+    source = Vocabulary(local, (imported,))
+    budget = Budget(Limits(max_work=10))
+    view = inspect_vocabulary(source, budget=budget)
+    budget.consume("work", budget.remaining("work"))
+    with pytest.raises(LimitExceeded, match="max_work"):
+        _ = view._reader.graph
+    assert not source._reads
+    fresh = inspect_vocabulary(source)
+    assert len(fresh.graph()) == 2
+    with pytest.raises(LimitExceeded, match="max_work"):
+        view._read()
+    with pytest.raises(LimitExceeded, match="max_bytes"):
+        fresh.lookup("urn:" + "x" * 10000, budget=Budget(Limits(max_bytes=32)))

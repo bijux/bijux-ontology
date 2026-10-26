@@ -16,6 +16,7 @@ from bijux_ontology.vocabulary.lexical import (
     LexicalIndex,
     autocomplete,
     prepare_lexical_index,
+    prepare_typo_index,
     suggest,
 )
 from bijux_ontology.vocabulary.sources.view import Vocabulary
@@ -46,7 +47,9 @@ def test_prefix_and_one_edit_preserve_homonyms_fields_languages_and_roles() -> N
         view, fields=(URIRef(RDFS.label), str(SKOS.altLabel)), languages=("EN",)
     )
     assert built.index is not None and built.report.verified
-    index = built.index
+    typo_prepared = prepare_typo_index(built.index)
+    assert typo_prepared.index is not None and typo_prepared.report.verified
+    index = typo_prepared.index
     assert index.scopes == ("local",) and index.languages == ("en",)
     prefix = autocomplete(index, "Alp")
     assert prefix.report.verified and [m.match.term.iri for m in prefix.items] == [
@@ -108,7 +111,9 @@ def test_case_policy_identifier_priority_exact_lexicals_and_source_immutability(
     assert not autocomplete(sensitive.index, "STRAS").items
     street = autocomplete(folded.index, "STRAS")
     assert street.report.verified and street.items[0].match.value == "Straße"
-    assert suggest(folded.index, "01").items[0].match.value == "01"
+    typo_prepared = prepare_typo_index(folded.index)
+    assert typo_prepared.index is not None
+    assert suggest(typo_prepared.index, "01").items[0].match.value == "01"
     assert (
         autocomplete(folded.index, "https://example.org/lexical/Street")
         .items[0]
@@ -169,12 +174,20 @@ def test_top_order_truncation_empty_scope_and_invalid_contracts() -> None:
 def test_preallocation_shared_limits_cancellation_and_interrupted_candidates() -> None:
     """Deletion workspace is paid first; interrupted candidates stay nongreen."""
     graph = Graph()
-    _term(graph, "Large", "x" * 3000)
+    graph.add((URIRef("urn:" + "x" * 3000), RDF.type, OWL.Class))
     view = inspect_vocabulary(graph)
-    refused = prepare_lexical_index(
-        view, fields=(str(RDFS.label),), budget=Budget(Limits(max_total_bytes=500000))
+    base = prepare_lexical_index(
+        view, fields=("iri",), budget=Budget(Limits(max_total_bytes=500000))
+    )
+    assert base.index is not None and base.report.verified
+    assert autocomplete(base.index, "urn:xxx").report.verified
+    with pytest.raises(InputError, match="prepare_typo_index"):
+        suggest(base.index, "xxx")
+    refused = prepare_typo_index(
+        base.index, budget=Budget(Limits(max_total_bytes=500000))
     )
     assert refused.index is None and refused.report.outcome == "exhausted"
+    assert autocomplete(base.index, "urn:xxx").report.verified
     small = Graph()
     for n in range(20):
         _term(small, f"T{n:02}", "Alpha")
@@ -182,8 +195,12 @@ def test_preallocation_shared_limits_cancellation_and_interrupted_candidates() -
         inspect_vocabulary(small), fields=(str(RDFS.label),), casefold=True
     )
     assert built.index is not None
+    built = prepare_typo_index(built.index)
+    assert built.index is not None
     event = Event()
     event.set()
+    assert prepare_typo_index(base.index, cancel=event).index is None
+    assert autocomplete(base.index, "urn:xxx").report.verified
     assert (
         prepare_lexical_index(inspect_vocabulary(small), cancel=event).report.outcome
         == "exhausted"
@@ -226,6 +243,8 @@ def test_five_thousand_term_repeated_lookup_uses_less_than_full_inventory_work()
         view, fields=(str(RDFS.label),), budget=prep_budget
     )
     assert prepared.index is not None and prepared.report.verified
+    prepared = prepare_typo_index(prepared.index, budget=prep_budget)
+    assert prepared.index is not None
     queries = [f"term{n:05}" for n in (17, 812, 2491, 3702, 4999)]
     indexed = Budget(limits)
     scanned = Budget(limits)

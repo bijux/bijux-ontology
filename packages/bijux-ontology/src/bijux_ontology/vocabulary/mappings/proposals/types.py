@@ -7,6 +7,7 @@ from bijux_ontology.diagnostics.errors import InputError
 from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.vocabulary.browsing.results import SearchMatch
+from bijux_ontology.vocabulary.lexical.types import LexicalIndex
 
 
 @dataclass(frozen=True)
@@ -61,3 +62,78 @@ class MappingApproval:
     predicate: str
     justification: str
     qualifications: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True, init=False, eq=False)
+class MappingProposalCursor:
+    """In-process join position bound to two exact immutable lexical indexes."""
+
+    _source: LexicalIndex
+    _target: LexicalIndex
+    _language: Literal["same", "any"]
+    _position: tuple[int, int, int]
+
+    def __init__(self) -> None:
+        """Require a generated continuation rather than manually selected positions."""
+        raise InputError(
+            "Mapping proposal cursors require propose_lexical_mappings_page"
+        )
+
+    @classmethod
+    def _at(
+        cls,
+        source: LexicalIndex,
+        target: LexicalIndex,
+        language: Literal["same", "any"],
+        position: tuple[int, int, int],
+    ) -> "MappingProposalCursor":
+        """Retain the first uncommitted candidate position and its exact contract."""
+        result = object.__new__(cls)
+        for name, value in (
+            ("_source", source),
+            ("_target", target),
+            ("_language", language),
+            ("_position", position),
+        ):
+            object.__setattr__(result, name, value)
+        return result
+
+
+@dataclass(frozen=True, init=False, eq=False)
+class MappingProposalPage:
+    """Completed page occurrences may be reviewed without certifying the whole join.
+
+    Order is lexical key, source occurrence, then target occurrence. It is not
+    global rank order. Only enumeration_complete certifies the end of the join.
+    """
+
+    items: tuple[LexicalMappingProposal, ...]
+    report: Report
+    limits: Limits
+    next_cursor: MappingProposalCursor | None
+    enumeration_complete: bool
+
+    def __init__(self) -> None:
+        """Require owned completed-page occurrences and qualified continuation."""
+        raise InputError("Mapping pages require propose_lexical_mappings_page")
+
+    @classmethod
+    def _page(
+        cls,
+        items: tuple[LexicalMappingProposal, ...],
+        report: Report,
+        limits: Limits,
+        cursor: MappingProposalCursor | None,
+        enumeration_complete: bool,
+    ) -> "MappingProposalPage":
+        """Own the actual retained occurrences and their qualified page status."""
+        result = object.__new__(cls)
+        for name, value in (
+            ("items", items),
+            ("report", report),
+            ("limits", limits),
+            ("next_cursor", cursor),
+            ("enumeration_complete", enumeration_complete),
+        ):
+            object.__setattr__(result, name, value)
+        return result

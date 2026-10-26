@@ -18,13 +18,13 @@ from bijux_ontology.vocabulary.registry.types import IdentifierRegistry
 
 from ..production import produce_mapping_table
 from ..types import MappingRead, _iri
-from .types import MappingApproval, MappingProposals
+from .types import MappingApproval, MappingProposalPage, MappingProposals
 
 _IDENTITY = ("subject_id", "predicate_id", "object_id", "mapping_justification")
 
 
 def approve_mapping_proposals(
-    proposals: MappingProposals,
+    proposals: MappingProposals | MappingProposalPage,
     approvals: Sequence[MappingApproval],
     *,
     registry: IdentifierRegistry,
@@ -37,7 +37,8 @@ def approve_mapping_proposals(
 ) -> MappingRead:
     """Author only explicitly approved occurrences, with no inferred predicate.
 
-    Every approval must reference an actual proposal in this completed result.
+    Every approval must reference an actual occurrence in this completed eager
+    result or completed page. Page approval does not certify global enumeration.
     Predicate, justification and qualifications are mandatory caller choices.
     The explicit registry must round-trip each endpoint, predicate and
     justification; no global prefix lookup or identity rewrite is performed.
@@ -48,9 +49,9 @@ def approve_mapping_proposals(
     enclosing deadline. Interchange success does not certify endpoint membership
     or semantic truth: use check_mappings with the intended consumer policy.
     """
-    if not isinstance(proposals, MappingProposals) or not isinstance(
-        registry, IdentifierRegistry
-    ):
+    if not isinstance(
+        proposals, MappingProposals | MappingProposalPage
+    ) or not isinstance(registry, IdentifierRegistry):
         raise InputError("Approval requires owned proposals and an explicit registry")
     operation = Operation(
         limits or (proposals.limits if budget is None else None),

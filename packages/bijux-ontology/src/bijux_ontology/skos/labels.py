@@ -226,7 +226,7 @@ def check_label_collisions(
             view = inspect_vocabulary(
                 source, scopes=_capture(scopes, budget), budget=budget
             )
-        facts = structure(view._read(), budget)
+        facts = structure(view._read(budget=budget), budget)
         memberships: dict[Node, tuple[str, ...]] = {}
         seen_schemes: set[str] = set()
         for owner, values in facts.schemes.items():

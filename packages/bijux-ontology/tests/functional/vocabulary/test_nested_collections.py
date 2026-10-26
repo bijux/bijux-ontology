@@ -170,7 +170,7 @@ def test_empty_lists_depth_and_shared_output_limits_are_explicit() -> None:
     concepts(long, EX.A)
     ordered(long, EX.Root, (EX.A,) * 30)
     prefix = expand_collection(
-        inspect_vocabulary(long), str(EX.Root), budget=Budget(Limits(max_work=25))
+        inspect_vocabulary(long), str(EX.Root), budget=Budget(Limits(max_work=725))
     )
     assert prefix.report.outcome == "exhausted" and prefix.members
     assert prefix.concepts == frozenset((EX.A,))

@@ -5,36 +5,21 @@ HermiT 1.4.5.519 with explicit Java 11 or newer. Imports start no JVM or downloa
 bijux-ontology remains usable without Java. Profile membership does not establish
 consistency, satisfiability or entailment. Incomplete parsing remains unknown.
 
-Build a bundle from the repository root with Maven and a Java development kit.
-Use a fresh bundle directory for each revision; native runtime operations never
-compile or fetch dependencies.
+Build the shipped `java/` directory from an unpacked source distribution with
+Maven and JDK 11 or newer; no repository checkout is needed:
 
 ```sh
-ontology_root="$(pwd)"
-mkdir "$ontology_root/artifacts/owl-profile-bundle"
-mvn -B -f packages/bijux-ontology-reasoning/java/pom.xml \
-  -Dmaven.repo.local="$ontology_root/artifacts/maven" \
-  -DoutputDirectory="$ontology_root/artifacts/owl-profile-bundle" \
-  -DskipTests package dependency:copy-dependencies
-cp artifacts/bijux-ontology-reasoning/java/owl-profile-worker-0.1.0.jar \
-  artifacts/owl-profile-bundle/
-python3 - <<'PYTHON'
-import hashlib, json
-from pathlib import Path
-bundle = Path("artifacts/owl-profile-bundle")
-manifest = {
-    "protocol": 1,
-    "owlapi": "5.5.1",
-    "main_class": "org.bijux.ontology.profiles.ProfileWorker",
-    "loader_profile": "turtle-permissive-no-punning-repair-offline",
-    "jars": [{"name": path.name, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-             for path in sorted(bundle.glob("*.jar"))],
-}
-raw = (json.dumps(manifest, indent=2) + "\n").encode()
-(bundle / "manifest.json").write_bytes(raw)
-print(hashlib.sha256(raw).hexdigest())
-PYTHON
+python -m bijux_ontology_reasoning.backend.owlapi.build \
+  --source /absolute/path/to/unpacked/java \
+  --maven /absolute/path/to/mvn --java /absolute/path/to/jdk/bin/java \
+  --build-directory /absolute/path/to/artifacts/build \
+  --dependency-directory /absolute/path/to/artifacts/maven \
+  --output /absolute/path/to/artifacts/owl-profile-bundle
 ```
+
+The explicit build downloads dependencies only into the supplied Maven location,
+checks real positive/negative operations, and prints the verified manifest pin.
+Output must be new; failed output is removed. Logs remain in the build directory.
 
 Pass that printed SHA to `prepare_profile_backend(Path(java), Path(bundle),
 manifest_sha256=sha, artifacts=Path("artifacts/owl-jobs"))` from

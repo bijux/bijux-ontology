@@ -169,7 +169,7 @@ def test_partial_reads_keep_known_records_and_do_not_invent_absent_bases() -> No
     annotate(graph, EX.Term, OIO.hasExactSynonym, Literal("same"), "X:2")
     view = inspect_vocabulary(graph)
     incomplete = []
-    for cap in range(1, 160):
+    for cap in range(1, 10000, 19):
         result = read_obo_records(
             view, str(EX.Term), budget=Budget(Limits(max_work=cap))
         )

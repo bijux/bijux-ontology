@@ -2,12 +2,17 @@
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.execution.inputs import capture
+from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.json.values import known_keys, text_value
 
 from .descriptors import CheckKind, describe
+
+if TYPE_CHECKING:
+    from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
 
 
 def strings(value: object) -> tuple[str, ...]:
@@ -80,3 +85,41 @@ class VocabularySelection:
             strings(job.get("lookup", [])),
             graph,
         )
+
+
+def shacl_coverage(value: object, budget: Budget) -> "ShaclCoverageContract | None":
+    """Decode required completed targets, separately from execution selections."""
+    from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
+
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise InputError("SHACL coverage requires an object", location="coverage")
+    known_keys(value, {"minimum_focus", "focus_nodes", "pairs"}, location="coverage")
+    raw_focus = value.get("focus_nodes", [])
+    if not isinstance(raw_focus, list):
+        raise InputError("Coverage focus nodes require an array")
+    focus = tuple(
+        text_value(iri, location="coverage.focus_nodes")
+        for iri in capture(raw_focus, budget)
+    )
+    for iri in focus:
+        bound_text(iri, budget)
+    raw_pairs = value.get("pairs", [])
+    if not isinstance(raw_pairs, list):
+        raise InputError("Coverage pairs require an array", location="coverage.pairs")
+    pairs = []
+    for raw in capture(raw_pairs, budget):
+        if not isinstance(raw, list) or len(raw) != 2:
+            raise InputError("Coverage pairs require shape/focus IRIs")
+        pair = tuple(
+            text_value(iri, location="coverage.pairs") for iri in capture(raw, budget)
+        )
+        for iri in pair:
+            bound_text(iri, budget)
+        pairs.append((pair[0], pair[1]))
+    return ShaclCoverageContract(
+        minimum_focus=cast(int, value.get("minimum_focus", 0)),
+        focus_nodes=focus,
+        pairs=tuple(pairs),
+    )

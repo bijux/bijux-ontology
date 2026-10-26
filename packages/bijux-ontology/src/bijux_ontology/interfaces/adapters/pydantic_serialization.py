@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
-from typing import TYPE_CHECKING, Literal, cast, get_args
+from typing import TYPE_CHECKING, get_args
 
 from rdflib import Graph
 
@@ -11,7 +11,6 @@ from bijux_ontology.declarations.types import (
     FieldDeclaration,
     ModelDeclaration,
     OutputRequirement,
-    ValueDeclaration,
 )
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
@@ -25,7 +24,6 @@ from bijux_ontology.interfaces.adapters.contracts import ModelExtraction
 from bijux_ontology.json.paths import SourcePath, at_path, location
 from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.evidence.entities import object_key
-from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import DocumentLoader, context_resources
 from bijux_ontology.jsonld.usages.checking import PreparedUsages
@@ -35,6 +33,7 @@ from bijux_ontology.models.emission.bindings import (
     source_node_traits,
 )
 from bijux_ontology.models.emission.counts import check_occurrences
+from bijux_ontology.models.emission.observations import observed_value
 from bijux_ontology.models.emission.samples import SampledOutput, serialization_failure
 from bijux_ontology.models.emission.serialization import InstanceCheck
 from bijux_ontology.models.emission.types import ModelUsage
@@ -77,27 +76,6 @@ def _children(annotation: object, budget: Budget) -> tuple[type["BaseModel"], ..
             for child in _children(argument, budget)
         )
     )
-
-
-def _branch(item: ObservedOccurrence, model: str | None) -> ValueDeclaration:
-    traits = item.traits
-    container = "@list" if item.container == "list" else None
-    if traits.kind == "literal":
-        return ValueDeclaration(
-            "literal",
-            datatype=traits.datatype if traits.direction is None else None,
-            language=traits.language,
-            direction=cast(Literal["ltr", "rtl"] | None, traits.direction),
-            container=container,
-        )
-    if traits.kind in {"iri", "blank", "node"}:
-        return ValueDeclaration(
-            "object" if model or traits.kind != "iri" else "iri",
-            types=traits.types,
-            model=model,
-            container=container,
-        )
-    return ValueDeclaration(container=container)
 
 
 class _Sample:
@@ -265,7 +243,7 @@ class _Sample:
                             selected,
                         )
                 values = tuple(
-                    dict.fromkeys(_branch(item, child_model) for item in own)
+                    dict.fromkeys(observed_value(item, child_model) for item in own)
                 )
                 declaration = FieldDeclaration(
                     name,

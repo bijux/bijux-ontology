@@ -6,7 +6,7 @@ from hashlib import sha256
 
 from rdflib import URIRef
 
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.execution.limits import Budget, BudgetKind
 from bijux_ontology.interfaces.adapters.go.taxon_constraints import (
     GoTaxonAnnotation,
     GoTaxonPolicy,
@@ -250,21 +250,34 @@ def test_cumulative_budget_cuts_keep_paid_negative_evidence_and_cancel() -> None
     baseline = Budget()
     completed = check_go_taxa(release, annotation, policy=POLICY, budget=baseline)
     assert completed.report.outcome == "disagreement"
-    paid_late = 0
-    for offset in (1, 32, 64, 128, 256, 512, 1024):
-        budget = Budget(Limits(max_work=max(1, baseline._counts["work"] - offset)))
-        result = check_go_taxa(release, annotation, policy=POLICY, budget=budget)
-        paid = {
-            id(issue)
-            for issue in budget._retained_issues.values()
-            if issue.kind == "finding"
-        }
-        assert paid <= {id(issue) for issue in result.report.issues}
-        assert budget.remaining("work") >= 0 and not result.report.verified
-        paid_late += bool(paid) and any(
-            issue.kind == "exhausted" for issue in result.report.issues
-        )
-    assert paid_late
+
+    class StopAfterFinding(Budget):
+        """Exhaust subsequent work only after real negative evidence was paid."""
+
+        def consume(self, kind: BudgetKind, amount: int = 1) -> None:
+            if kind == "work" and any(
+                issue.code == "go.taxon_disallowed"
+                for issue in self._retained_issues.values()
+            ):
+                super().consume(kind, self.remaining(kind) + 1)
+            super().consume(kind, amount)
+
+    budget = StopAfterFinding()
+    result = check_go_taxa(
+        release,
+        (*annotation, _annotation("Child", "Arabidopsis")),
+        policy=POLICY,
+        budget=budget,
+    )
+    paid = {
+        id(issue)
+        for issue in budget._retained_issues.values()
+        if issue.kind == "finding"
+    }
+    assert paid and paid <= {id(issue) for issue in result.report.issues}
+    assert budget.remaining("work") >= 0 and not result.report.verified
+    assert result.report.requested == 2 and not result.report.complete
+    assert any(issue.kind == "exhausted" for issue in result.report.issues)
     event = threading.Event()
     event.set()
     stopped = check_go_taxa(release, annotation, policy=POLICY, cancel=event)
