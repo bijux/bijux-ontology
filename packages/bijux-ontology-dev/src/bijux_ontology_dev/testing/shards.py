@@ -73,7 +73,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--group", type=int, required=True)
-    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--workers", type=int, default=2)
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be positive")
@@ -117,7 +117,7 @@ def main() -> None:
                 f"PACKAGE={package}",
                 f"TEST_PATHS={' '.join(paths)}",
                 f"PYTHON={sys.executable}",
-                f"PYTEST_ADDOPTS_EXTRA=-n {args.workers} --dist=load --maxschedchunk=1 "
+                f"PYTEST_ADDOPTS_EXTRA=-n {args.workers} --dist=loadfile "
                 "--max-worker-restart=0",
             ],
             cwd=root,
