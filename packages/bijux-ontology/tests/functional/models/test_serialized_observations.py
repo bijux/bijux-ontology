@@ -3,6 +3,7 @@
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
+from typing import cast
 
 from rdflib import Graph, Namespace
 from rdflib.namespace import OWL, RDF, XSD
@@ -109,7 +110,7 @@ def test_flat_graph_bindings_retain_independent_mapping(tmp_path: Path) -> None:
         "unassociated model field: study.abstract" in result.observed.report.exclusions
     )
     changed = deepcopy(document)
-    changed["@context"]["title"] = str(EX.changed)
+    cast(dict[str, str], changed["@context"])["title"] = str(EX.changed)
     wrong = check_serialized(
         changed, _models(), usages, vocabulary=_vocabulary(), bindings=bindings
     )
@@ -150,7 +151,7 @@ def test_flat_graph_bindings_retain_independent_mapping(tmp_path: Path) -> None:
     )
 
     empty_document = deepcopy(document)
-    empty_document["@graph"][0]["title"] = []
+    cast(list[dict[str, object]], empty_document["@graph"])[0]["title"] = []
     empty = check_serialized(
         empty_document, _models(), usages, vocabulary=_vocabulary(), bindings=bindings
     )
