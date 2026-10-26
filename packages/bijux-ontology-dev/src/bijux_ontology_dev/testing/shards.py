@@ -73,7 +73,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--group", type=int, required=True)
-    parser.add_argument("--workers", type=int, default=3)
+    parser.add_argument("--workers", type=int, default=4)
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be positive")
@@ -95,6 +95,7 @@ def main() -> None:
                 "groups": groups,
                 "selected": args.group,
                 "workers": args.workers,
+                "python": sys.version.split()[0],
             },
             indent=2,
         )

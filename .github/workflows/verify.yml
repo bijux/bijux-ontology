@@ -170,7 +170,6 @@
     timeout-minutes: 2
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
-      python: ${{ steps.matrix.outputs.python }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - id: matrix
@@ -181,12 +180,11 @@
         from pathlib import Path
         matrix = json.loads(Path("configs/test-matrix.json").read_text())
         with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-            output.write("matrix=" + json.dumps({"group": matrix["group"]}, separators=(",", ":")) + "\n")
-            output.write("python<<RUNTIMES\n" + "\n".join(matrix["python"]) + "\nRUNTIMES\n")
+            output.write("matrix=" + json.dumps(matrix, separators=(",", ":")) + "\n")
         PYTHON
   python-tests:
     needs: test-plan
-    name: python tests / group ${{ matrix.group }}
+    name: python tests / ${{ matrix.python }} / ${{ matrix.group }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     strategy:
@@ -198,19 +196,25 @@
         fetch-depth: 0
     - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
       with:
-        python-version: ${{ needs.test-plan.outputs.python }}
+        python-version: ${{ matrix.python }}
     - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
       with:
         version: 0.13.1
         enable-cache: false
+    - name: Install frozen test tools
+      run: make install PYTHON=python
     - name: Run every test assigned to this group
-      run: python -B packages/bijux-ontology-dev/src/bijux_ontology_dev/testing/runtimes.py --group ${{ matrix.group }}
+      run: artifacts/root/check-venv/bin/python -B -m bijux_ontology_dev.testing.shards --group ${{ matrix.group }}
     - name: Retain complete test-group receipts
       if: ${{ always() }}
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
-        name: python-tests-${{ matrix.group }}
-        path: artifacts/ci/test-groups/python-*
+        name: python-tests-${{ matrix.python }}-${{ matrix.group }}
+        path: |-
+          artifacts/*/test/junit.xml
+          artifacts/*/test/coverage.xml
+          artifacts/*/test/.coverage
+          artifacts/ci/test-groups/group-*.json
         include-hidden-files: true
         if-no-files-found: error
         retention-days: 7
