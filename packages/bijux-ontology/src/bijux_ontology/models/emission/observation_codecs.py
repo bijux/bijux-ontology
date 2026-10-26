@@ -52,7 +52,7 @@ def bindings_from_data(
         for part in usage_path:
             if isinstance(part, str):
                 bound_text(part, budget)
-        selected = usages_from_data([usage])[0]
+        selected = usages_from_data([usage], budget=budget)[0]
         result.append(
             SerializedFieldBinding(
                 BindingIdentity(owner, paths[0]), selected, field, paths[1]

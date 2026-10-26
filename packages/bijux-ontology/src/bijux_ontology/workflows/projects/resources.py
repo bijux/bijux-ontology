@@ -432,13 +432,29 @@ class ProjectResources:
                         self._preparing = previous
             return self._sources[name]
 
-    def read_json(self, path: Path) -> object:
+    def read_json(self, path: Path, *, budget: Budget | None = None) -> object:
         """Decode one original-path snapshot using this operation's owned inputs."""
-        if self._budget is not None:
-            bound_text(str(path), self._budget)
+        operation = budget if budget is not None else self._budget
+        if operation is not None:
+            bound_text(str(path), operation)
+            operation.consume("resources")
         if self._captured is None:
+            cap = self._storage.limits.max_bytes
+            if operation is not None:
+                operation.consume("bytes")
+                operation.consume("work")
+                cap = min(
+                    cap, operation.remaining("bytes"), operation.remaining("work")
+                )
             with path.open("rb") as handle:
-                payload = handle.read(self._storage.limits.max_bytes + 1)
+                payload = handle.read(cap + 1)
+            if operation is not None:
+                operation.consume("bytes", max(0, len(payload) - 1))
+                operation.consume("work", max(0, len(payload) - 1))
+                if len(payload) > cap and cap < self._storage.limits.max_bytes:
+                    raise LimitExceeded(
+                        "Project JSON acquisition exhausted its allowance"
+                    )
         else:
             payload = _captured_bytes(path, self._captured)
         return decode_json(
@@ -446,7 +462,7 @@ class ProjectResources:
             source=str(path),
             max_bytes=self._storage.limits.max_bytes,
             max_depth=self._storage.limits.max_depth,
-            budget=self._budget,
+            budget=operation,
         )
 
     def replace_resources(

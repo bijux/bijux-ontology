@@ -17,6 +17,7 @@ def test_installed_shape_coverage_survives_portable_cli_and_parallel(
         from bijux_ontology.workflows.projects.bundles import load_bundle
         from bijux_ontology.workflows.projects.checking import check_project
         from bijux_ontology.workflows.projects.configuration import load_project
+        from bijux_ontology.execution.limits import Limits
         from bijux_ontology.workflows.projects.parallel import checking as parallel
         root = Path("coverage-inputs").resolve()
         root.mkdir()
@@ -25,23 +26,61 @@ def test_installed_shape_coverage_survives_portable_cli_and_parallel(
             '@prefix sh:<http://www.w3.org/ns/shacl#>. <urn:Shape> a sh:NodeShape;'
             'sh:targetNode <urn:record>;sh:property '
             '[sh:path <urn:title>;sh:minCount 1].')
-        config = {"version": 2, "rdf": {
+        config = {"version": 2, "limits": {
+            "max_work": 10000000, "max_states": 1000000,
+            "max_total_bytes": 200000000}, "rdf": {
             "data": {"path": "data.ttl", "iri": "urn:data"},
             "shapes": {"path": "shapes.ttl", "iri": "urn:shapes"}},
             "checks": [{"name": "records", "kind": "shacl", "document": "data",
                 "shapes": "shapes", "coverage": {
                     "pairs": [["urn:Shape", "urn:absent"]]}}]}
+        (root / "vocabulary.ttl").write_text(
+            '<urn:Record> a <http://www.w3.org/2002/07/owl#Class>.'
+            '<urn:title> a <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>.')
+        (root / "data.ttl").write_text(
+            '<urn:record> a <urn:Record>; <urn:title> "Title".')
+        models = [{"identifier": "Record", "types": ["urn:Record"], "fields": [{
+            "name": "title", "predicate": "urn:title", "emission": "guaranteed",
+            "values": [{"kind": "literal",
+                        "datatype": "http://www.w3.org/2001/XMLSchema#string"}]}]}]
+        (root / "models.json").write_text(json.dumps(models))
+        (root / "output.json").write_text(json.dumps({
+            "@context": {"title": "urn:title"}, "@type": "urn:Record",
+            "title": "Title"}))
+        (root / "usages.json").write_text('[{"model":"Record","path":[]}]')
+        (root / "roots.json").write_text(
+            '[{"model":"Record","subject":"urn:record"}]')
+        (root / "expectations.json").write_text(
+            '[{"path":["title"],"predicate":"urn:title"}]')
+        config["rdf"]["vocabulary"] = {
+            "path": "vocabulary.ttl", "iri": "urn:vocabulary"}
+        config["checks"] = [
+            {"name": "models", "kind": "models", "source": "vocabulary",
+             "declarations": "models.json"},
+            {"name": "context", "kind": "context", "document": "output.json",
+             "expectations": "expectations.json"},
+            {"name": "output", "kind": "emission", "source": "vocabulary",
+             "document": "output.json", "declarations": "models.json",
+             "usages": "usages.json", "depends_on": ["models"]},
+            {"name": "native", "kind": "rdf-emission", "document": "data",
+             "declarations": "models.json", "usages": "roots.json",
+             "depends_on": ["models"]},
+            *config["checks"]]
         (root / "project.json").write_text(json.dumps(config))
         ordinary = check_project(load_project(root / "project.json"))
         assert not ordinary.verified
-        relocated = load_bundle(root).materialize(root.parent / "portable-coverage")
+        relocated = load_bundle(root, limits=Limits(**config["limits"])).materialize(
+            root.parent / "portable-coverage")
         checked = parallel.check_project_parallel(
             relocated, artifacts=root.parent / "runs")
         codes = [i.code for i in ordinary.issues]
-        assert [i.code for i in checked.report.issues] == codes
+        assert [i.code for i in checked.report.issues] == codes, (
+            checked.report.to_dict())
         command = subprocess.run([
             sys.executable, "-I", "-m", "bijux_ontology", "project",
-            str(relocated.directory / "project.json"), "--json"],
+            str(relocated.directory / "project.json"), "--json",
+            "--execution", "parallel", "--workers", "3",
+            "--execution-artifacts", str(root.parent / "cli-runs")],
             text=True, capture_output=True)
         assert command.returncode == 1, command.stdout + command.stderr
         assert "shacl.coverage_pair_missing" in command.stdout

@@ -29,16 +29,27 @@ from bijux_ontology.json.values import measure_json
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 
+from .identity import PROFILE
 from .profile import UnsupportedPackage, array, capture, object_value, text
 from .projection import bindings as capture_bindings
 from .projection import rows as project_rows
-from .types import PackageCell, PackageExtraction, PackageProducer, ResourceBinding
+from .types import (
+    FrictionlessBackend,
+    PackageCell,
+    PackageExtraction,
+    PackageProducer,
+    ResourceBinding,
+)
 
 
 def _run(
     descriptor: dict[str, object],
     directory: str,
     budget: Operation,
+    *,
+    python: Path | None = None,
+    expected_worker: dict[str, str] | None = None,
+    capability: bool = False,
 ) -> dict[str, object]:
     """Delegate native allowances once, retaining no credit after a missing receipt."""
     request: dict[str, object] = {
@@ -51,6 +62,10 @@ def _run(
         "max_errors": max(1, budget.remaining("issues")),
         "output_cap": 1,
     }
+    if expected_worker is not None:
+        request["worker"] = expected_worker
+    if capability:
+        request["action"] = "capability"
     size = measure_json(
         request,
         budget=budget,
@@ -82,7 +97,7 @@ def _run(
         dispatched = True
         raw = exchange_worker(
             [
-                sys.executable,
+                str(python) if python is not None else sys.executable,
                 "-I",
                 "-B",
                 "-m",
@@ -95,20 +110,22 @@ def _run(
             cancel=budget.cancel,
         )
         reply = object_value(terminal.decode(raw))
+        keys = {
+            "protocol",
+            "status",
+            "producer",
+            "valid",
+            "complete",
+            "warnings",
+            "rows",
+            "errors",
+            "message",
+            "controls",
+        }
+        if expected_worker is not None or capability:
+            keys.add("worker")
         if (
-            set(reply)
-            != {
-                "protocol",
-                "status",
-                "producer",
-                "valid",
-                "complete",
-                "warnings",
-                "rows",
-                "errors",
-                "message",
-                "controls",
-            }
+            set(reply) != keys
             or type(reply["protocol"]) is not int
             or reply["protocol"] != 1
             or reply["status"]
@@ -122,6 +139,14 @@ def _run(
         ):
             raise ResourceError(
                 "Native package returned an invalid observation receipt"
+            )
+        if (
+            reply["status"] == "completed"
+            and expected_worker is not None
+            and reply["worker"] != expected_worker
+        ):
+            raise ResourceError(
+                "Native package worker identity differs from its admission"
             )
         delegated.settle(reply.get("controls"))
         received = True
@@ -181,6 +206,7 @@ def extract_package(
     bindings: tuple[ResourceBinding, ...],
     *,
     work_directory: Path,
+    backend: FrictionlessBackend | None = None,
     timeout: float = 10.0,
     cancel: threading.Event | None = None,
     limits: Limits | None = None,
@@ -213,6 +239,8 @@ def extract_package(
         raise InputError("Cancellation requires threading.Event")
     if limits is not None and not isinstance(limits, Limits):
         raise InputError("Package limits require Limits")
+    if backend is not None and not isinstance(backend, FrictionlessBackend):
+        raise InputError("Supply an admitted FrictionlessBackend")
     current = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(current)
     native_issues = IssueCollector(current)
@@ -241,7 +269,15 @@ def extract_package(
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 with destination.open("xb") as output:
                     output.write(content)
-            response = _run(descriptor, directory, current)
+            response = _run(
+                descriptor,
+                directory,
+                current,
+                python=backend.python if backend else None,
+                expected_worker={"profile": PROFILE, "sha256": backend.worker_sha256}
+                if backend
+                else None,
+            )
         raw_producer = response["producer"]
         if raw_producer is not None:
             identity = object_value(raw_producer)
@@ -253,6 +289,8 @@ def extract_package(
                 raise ResourceError("Native package producer identity is not qualified")
             python = text(identity["python"])
             bound_text(python, current)
+            if backend is not None and python != backend.python_version:
+                raise ResourceError("Native interpreter differs from its admission")
             producer = PackageProducer("5.21.0", python)
         _native_errors(response["errors"], current, native_issues)
         for raw_warning in array(response["warnings"]):

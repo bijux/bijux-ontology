@@ -8,10 +8,11 @@ from typing import Any
 
 from rdflib import Graph
 
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.versions import qualify_release
 from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.entailment.protocol import decode_rows
 
@@ -59,8 +60,13 @@ def execute(request: dict[str, Any], directory: Path, cap: int) -> None:
         except ImportError:
             status = "shex.backend_unavailable"
             return
-        if version("pyrudof") != "0.3.20":
-            status = "shex.backend_unavailable"
+        try:
+            qualify_release(
+                "pyrudof", version("pyrudof"), request.get("required_version")
+            )
+        except ResourceError as error:
+            status = "shex.backend_unsupported"
+            diagnostic = error_details(error)
             return
         backend = "pyrudof " + version("pyrudof")
         triples = decode_rows(request["data"], {}, budget, ordinary=True)

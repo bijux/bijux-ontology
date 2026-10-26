@@ -81,7 +81,9 @@ def _execute_check(
     config = resources.configuration
     descriptor = describe(kind)
     if budget is not None and descriptor.worker is None:
-        raise InputError("Shared project budgets support vocabulary, context and SHACL")
+        raise InputError(
+            "Selected project job does not support shared execution budgets"
+        )
     if shacl_input is not None and kind != "shacl":
         raise InputError("Runtime SHACL inputs require a SHACL job")
     if descriptor.executor == "application":
@@ -89,7 +91,7 @@ def _execute_check(
             run_application_job,
         )
 
-        return run_application_job(kind, job, resources)
+        return run_application_job(kind, job, resources, budget=budget)
 
     def snapshot(key: str) -> object:
         """Read one explicitly selected bounded JSON input."""

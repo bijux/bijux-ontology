@@ -7,9 +7,10 @@ from typing import Literal, cast
 
 from bijux_ontology.absence import ABSENT
 from bijux_ontology.declarations.codecs import models_from_data, terms_from_data
+from bijux_ontology.diagnostics.encoding import report_to_data
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.diagnostics.reports import Report
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
+from bijux_ontology.execution.limits import Budget, Limits, bound_text
 from bijux_ontology.json.values import (
     array_value,
     boolean_value,
@@ -372,7 +373,7 @@ def execute_operation(
             result = check_serialized(
                 document,
                 models,
-                usages_from_data(parameters.get("usages")),
+                usages_from_data(parameters.get("usages"), budget=allowance),
                 vocabulary=vocabulary,
                 bindings=bindings_from_data(parameters["bindings"], allowance),
                 rdf_direction=cast(
@@ -384,22 +385,51 @@ def execute_operation(
                 budget=allowance,
             )
             observation = result.observed
-            return result.report, {
-                "declarations": declaration_data(observation.declarations, allowance)
-                if observation
-                else [],
-                "bindings": [
-                    {
-                        "owner": item.identity.owner,
-                        "path": list(item.identity.path),
-                        "report": item.report.to_dict(),
-                        "exclusion": item.exclusion,
-                    }
-                    for item in observation.bindings
-                ]
-                if observation
-                else [],
-            }
+            try:
+                bindings_data: list[dict[str, object]] = []
+                if observation is not None:
+                    allowance.consume("states", len(observation.bindings))
+                    allowance.consume("bytes", 128 + 512 * len(observation.bindings))
+                    for item in observation.bindings:
+                        bound_text(item.identity.owner, allowance)
+                        allowance.consume("states", len(item.identity.path))
+                        allowance.consume("bytes", 64 + 16 * len(item.identity.path))
+                        allowance.consume("work", len(item.identity.path) + 1)
+                        if item.exclusion is not None:
+                            bound_text(item.exclusion, allowance)
+                        bindings_data.append(
+                            {
+                                "owner": item.identity.owner,
+                                "path": list(item.identity.path),
+                                "report": report_to_data(item.report, allowance),
+                                "exclusion": item.exclusion,
+                            }
+                        )
+                return result.report, {
+                    "declarations": declaration_data(
+                        observation.declarations, allowance
+                    )
+                    if observation
+                    else [],
+                    "bindings": bindings_data,
+                }
+            except LimitExceeded:
+                return combine_reports(
+                    "serialization.sample",
+                    result.report,
+                    Report(
+                        "serialization.bindings",
+                        requested=1,
+                        complete=False,
+                        issues=(
+                            Issue(
+                                "execution.limit_exceeded",
+                                "Serialized binding publication exceeded its allowance",
+                                kind="exhausted",
+                            ),
+                        ),
+                    ),
+                ), None
         if "vocabulary" in parameters:
             raise InputError("A vocabulary requires explicit serialized bindings")
         return check_emission(

@@ -22,6 +22,8 @@ from bijux_ontology.execution.limits import (
     Limits,
     retain_report,
 )
+from bijux_ontology.execution.processes import transport
+from bijux_ontology.execution.processes.ownership import spawn_owned_process
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.workflows.projects.checking import PreparedChecks, check_project
 from bijux_ontology.workflows.projects.configuration import ProjectConfig
@@ -32,6 +34,57 @@ from bijux_ontology.workflows.projects.resources import ProjectResources
 
 EX = "https://example.org/"
 LIMITS = Limits(max_work=10_000_000, max_total_bytes=200_000_000, max_states=1_000_000)
+
+
+class _OwnedWorkerRendezvous:
+    """Prove the first actual isolated workers coexist before feeding their input."""
+
+    def __init__(self, parties: int) -> None:
+        self._spawn = spawn_owned_process
+        self._guard = threading.Lock()
+        self._wave: list[subprocess.Popen[bytes]] = []
+        self.barrier = threading.Barrier(parties, action=self._qualify)
+        self.started = 0
+        self.live_pids: tuple[int, ...] = ()
+
+    def _qualify(self) -> None:
+        """The barrier action runs before any participant can return its child."""
+        with self._guard:
+            assert len(self._wave) == self.barrier.parties
+            assert all(process.poll() is None for process in self._wave)
+            self.live_pids = tuple(process.pid for process in self._wave)
+
+    def spawn(
+        self,
+        command: list[str] | tuple[str, ...],
+        *,
+        stdin: int | None = None,
+        stdout: int | None = None,
+        stderr: int | None = None,
+    ) -> subprocess.Popen[bytes]:
+        """Keep real spawning/transport; only the first project wave rendezvous."""
+        process = self._spawn(command, stdin=stdin, stdout=stdout, stderr=stderr)
+        if "bijux_ontology.workflows.projects.parallel.worker" not in command:
+            return process
+        with self._guard:
+            self.started += 1
+            join = self.started <= self.barrier.parties
+            if join:
+                self._wave.append(process)
+        if join:
+            try:
+                self.barrier.wait(timeout=5)
+            except BaseException as error:
+                # Transport has not received this handle yet; the wrapper still
+                # owns cleanup if the expected parallel wave cannot be started.
+                try:
+                    transport.stop_process(process, failure=error)
+                finally:
+                    for stream in (process.stdin, process.stdout, process.stderr):
+                        if stream is not None:
+                            stream.close()
+                raise
+        return process
 
 
 def project(
@@ -106,29 +159,9 @@ def test_actual_checks_overlap_and_keep_sequential_order(
     config = project(tmp_path / "inputs")
     ordinary = check_project(config)
     delivered: list[str] = []
-    rendezvous = threading.Barrier(3)
-
-    def concurrent_workers(
-        module: str,
-        payload: bytes,
-        *,
-        cap: int,
-        timeout: float | None,
-        cancel: threading.Event | None = None,
-        completed: Callable[[bytes], None] | None = None,
-    ) -> bytes:
-        rendezvous.wait(timeout=5)
-        return execute_worker(
-            module,
-            payload,
-            cap=cap,
-            timeout=timeout,
-            cancel=cancel,
-            completed=completed,
-        )
-
-    with monkeypatch.context() as scheduled:
-        scheduled.setattr(parallel_runtime, "execute_worker", concurrent_workers)
+    rendezvous = _OwnedWorkerRendezvous(3)
+    with monkeypatch.context() as spawning:
+        spawning.setattr(transport, "spawn_owned_process", rendezvous.spawn)
         result = check_project_parallel(
             config,
             workers=3,
@@ -141,9 +174,14 @@ def test_actual_checks_overlap_and_keep_sequential_order(
     assert [job.report.outcome for job in result.jobs] == [
         child.outcome for child in ordinary.children
     ]
-    intervals = [(job.started_ns, job.finished_ns) for job in result.jobs]
-    assert all(a is not None and b is not None and a <= b for a, b in intervals)
-    assert not rendezvous.broken and rendezvous.n_waiting == 0
+    assert len(set(rendezvous.live_pids)) == 3 and rendezvous.started == 3
+    assert not rendezvous.barrier.broken and rendezvous.barrier.n_waiting == 0
+    assert all(
+        job.started_ns is not None
+        and job.finished_ns is not None
+        and job.started_ns <= job.finished_ns
+        for job in result.jobs
+    )
     assert all(dict(job.consumed)["work"] > 0 for job in result.jobs)
     assert not list((tmp_path / "runs").iterdir())
 
@@ -488,10 +526,9 @@ def test_unsupported_revisions_and_jobs_are_required_not_stale(tmp_path: Path) -
     raw = config.to_dict()
     raw["checks"] = [
         {
-            "name": "models",
-            "kind": "models",
+            "name": "encoding",
+            "kind": "ontology",
             "source": "terms",
-            "declarations": "missing.json",
         }
     ]
     result = check_project_parallel(
@@ -636,3 +673,140 @@ def test_completed_native_receipt_survives_late_stop_and_preserves_counters(
     monkeypatch.setattr(parallel_runtime, "execute_worker", actual_exchange)
     recovered = check_project_parallel(config, artifacts=tmp_path / "recovery")
     assert recovered.report.complete and recovered.report.verified is not missing
+
+
+def application_project(path: Path) -> ProjectConfig:
+    """Share one actual declared record across JSON-LD, RDF and SHACL jobs."""
+    original = project(path)
+    with (path / "vocab.ttl").open("a") as stream:
+        stream.write(
+            f"<{EX}Record> a <http://www.w3.org/2002/07/owl#Class>."
+            f"<{EX}title> a <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>."
+        )
+    (path / "models.json").write_text(
+        json.dumps(
+            [
+                {
+                    "identifier": "Record",
+                    "types": [EX + "Record"],
+                    "fields": [
+                        {
+                            "name": "title",
+                            "predicate": EX + "title",
+                            "emission": "guaranteed",
+                            "values": [
+                                {
+                                    "kind": "literal",
+                                    "datatype": "http://www.w3.org/2001/XMLSchema#string",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ]
+        )
+    )
+    (path / "usages.json").write_text('[{"model":"Record","path":[]}]')
+    (path / "roots.json").write_text(
+        json.dumps([{"model": "Record", "subject": EX + "record"}])
+    )
+    (path / "document.json").write_text(
+        json.dumps(
+            {"@context": EX + "context", "@type": EX + "Record", "title": "Example"}
+        )
+    )
+    (path / "data.ttl").write_text(
+        f'<{EX}record> a <{EX}Record>; <{EX}title> "Example".'
+    )
+    data = original.to_dict()
+    terms, context, shapes = original.checks()
+    data["checks"] = [
+        terms,
+        {
+            "name": "models",
+            "kind": "models",
+            "source": "terms",
+            "declarations": "models.json",
+            "depends_on": ["terms"],
+        },
+        context,
+        {
+            "name": "output",
+            "kind": "emission",
+            "source": "terms",
+            "declarations": "models.json",
+            "usages": "usages.json",
+            "document": "document.json",
+            "depends_on": ["models"],
+        },
+        {
+            "name": "native",
+            "kind": "rdf-emission",
+            "document": "data",
+            "declarations": "models.json",
+            "usages": "roots.json",
+            "depends_on": ["models"],
+        },
+        {**shapes, "coverage": {"pairs": [[EX + "Shape", EX + "record"]]}},
+    ]
+    return ProjectConfig(data, directory=path)
+
+
+def test_mixed_contract_jobs_use_captured_files_and_real_parallel_budgets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = application_project(tmp_path / "inputs")
+    ordinary = check_project(config)
+    assert ordinary.verified, ordinary.to_dict()
+    runs = tmp_path / "runs"
+    stopped, mutated = threading.Event(), threading.Event()
+
+    def replace_captured_originals() -> None:
+        """Delete application inputs only after immutable capture has completed."""
+        while not stopped.wait(0.001):
+            if list(runs.glob("project-checks-*/project.json")):
+                for path in config.input_paths():
+                    path.unlink()
+                mutated.set()
+                return
+
+    observer = threading.Thread(target=replace_captured_originals, daemon=True)
+    observer.start()
+    budget = Budget(config.limits)
+    rendezvous = _OwnedWorkerRendezvous(3)
+    try:
+        with monkeypatch.context() as scheduled:
+            scheduled.setattr(transport, "spawn_owned_process", rendezvous.spawn)
+            result = check_project_parallel(
+                config, workers=3, budget=budget, artifacts=runs
+            )
+    finally:
+        stopped.set()
+        observer.join(timeout=1)
+    assert mutated.is_set() and result.report.verified, result.report.to_dict()
+    assert [job.name for job in result.jobs] == [
+        "terms",
+        "models",
+        "context",
+        "output",
+        "native",
+        "shapes",
+    ]
+    assert [job.report.outcome for job in result.jobs] == [
+        child.outcome for child in ordinary.children
+    ]
+    assert len(set(rendezvous.live_pids)) == 3 and rendezvous.started == 6
+    assert not rendezvous.barrier.broken and rendezvous.barrier.n_waiting == 0
+    assert all(
+        job.started_ns is not None
+        and job.finished_ns is not None
+        and job.started_ns <= job.finished_ns
+        for job in result.jobs
+    )
+    for kind in ("bytes", "work", "issues", "states", "resources", "triples"):
+        maximum = getattr(
+            config.limits, "max_total_bytes" if kind == "bytes" else "max_" + kind
+        )
+        assert sum(dict(job.consumed).get(kind, 0) for job in result.jobs) <= (
+            maximum - budget.remaining(kind)
+        )

@@ -3,6 +3,7 @@
 import math
 import sys
 from dataclasses import replace
+from importlib.metadata import version
 from threading import Event
 from typing import TypedDict, Unpack, cast
 
@@ -336,7 +337,12 @@ def test_enrichment_matches_direct_native_fixed_family_and_changed_background() 
     assert [row.adjusted_p for row in result.tests] == adjusted
     assert result.tests[-1].raw_p == 1.0 and result.tests[-1].counts.term == EX.Zero
     assert result.identity is not None
-    assert result.identity.scipy_version == "1.17.1"
+    assert result.identity.scipy_version == version("scipy")
+    mismatch = enrich_annotations(
+        population, ("e1", "e2"), require_scipy="1.14.0", **options
+    )
+    assert not mismatch.report.verified and not mismatch.tests
+    assert any("exact requirement" in issue.message for issue in mismatch.report.issues)
     assert result.identity.test == "fisher-exact/greater/fixed-margins"
     changed = enrich_annotations(
         _population(background=("e1", "e2", "e3", "e4", "unannotated")),

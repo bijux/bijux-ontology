@@ -4,8 +4,9 @@ import json
 import math
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+from contextlib import contextmanager
 from dataclasses import asdict, replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -173,6 +174,17 @@ def _execute(
         )
 
 
+@contextmanager
+def _worker_pool(workers: int, stop: threading.Event) -> Iterator[ThreadPoolExecutor]:
+    """Signal owned children before waiting for threads during any host exit."""
+    pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="project-check")
+    try:
+        yield pool
+    finally:
+        stop.set()
+        pool.shutdown(wait=True, cancel_futures=True)
+
+
 def check_project_parallel(
     configuration: ProjectConfig,
     *,
@@ -184,7 +196,7 @@ def check_project_parallel(
     cancel: threading.Event | None = None,
     completed: Callable[[ParallelJobResult], None] | None = None,
 ) -> ParallelProjectResult:
-    """Run finite vocabulary, context and SHACL jobs in separate owned processes.
+    """Run qualified declaration, output, vocabulary and shape jobs in owned workers.
 
     Only validated ProjectConfig inputs are supported; PreparedChecks revisions
     and runtime routed inputs must use their ordinary runner. Context corpus and
@@ -286,9 +298,7 @@ def check_project_parallel(
                 tuple(name_indexes[name] for name in dependencies(job)) for job in jobs
             )
             control_remaining = cap * count
-            with ThreadPoolExecutor(
-                max_workers=workers, thread_name_prefix="project-check"
-            ) as pool:
+            with _worker_pool(workers, stop) as pool:
                 while len(results) < count:
                     try:
                         checkpoint(operation.deadline, operation.cancel)

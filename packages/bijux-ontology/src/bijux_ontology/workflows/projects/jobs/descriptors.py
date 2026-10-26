@@ -54,6 +54,7 @@ DESCRIPTORS: Mapping[CheckKind, JobDescriptor] = MappingProxyType(
             },
             direct_files=("declarations", "usages"),
             executor="application",
+            worker="isolated",
         ),
         "emission": JobDescriptor(
             _COMMON
@@ -68,6 +69,7 @@ DESCRIPTORS: Mapping[CheckKind, JobDescriptor] = MappingProxyType(
             },
             direct_files=("declarations", "document", "usages"),
             executor="application",
+            worker="isolated",
         ),
         "context-corpus": JobDescriptor(
             _COMMON
@@ -113,6 +115,7 @@ DESCRIPTORS: Mapping[CheckKind, JobDescriptor] = MappingProxyType(
         "models": JobDescriptor(
             _COMMON | _RESOURCES | {"declarations", "rdf_direction", "regime"},
             direct_files=("declarations",),
+            worker="isolated",
         ),
         "context": JobDescriptor(
             _COMMON

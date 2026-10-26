@@ -13,6 +13,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.execution.versions import qualify_release
 from bijux_ontology.json.values import decode_json, object_value
 
 from .evaluation import check_association
@@ -84,10 +85,10 @@ def _toolkit(
         raise ResourceError(
             "Install bijux-ontology[biolink] with bmt==1.5.0"
         ) from error
-    if installed != "1.5.0" or linkml != "1.12.1":
-        raise ResourceError(
-            "The qualified profile requires bmt1.5.0/linkml-runtime1.12.1"
-        )
+    qualify_release("bmt", installed, cast(str | None, request.get("require_bmt")))
+    qualify_release(
+        "linkml-runtime", linkml, cast(str | None, request.get("require_linkml"))
+    )
     source = object_value(request["model"], location="Biolink model")
     mapping = object_value(request["predicate_map"], location="Biolink map")
     root, pmap = _yaml(source, budget), _yaml(mapping, budget)

@@ -11,6 +11,7 @@ from rdflib.namespace import XSD
 from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.execution.inputs import capture_items
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
+from bijux_ontology.execution.versions import qualify_release
 from bijux_ontology.models.contracts.preparation import PreparedModels
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.terms import bound_node
@@ -18,7 +19,7 @@ from bijux_ontology.rdf.terms import bound_node
 from .types import ArrowColumn, ArrowContract
 
 
-def backend() -> Any:
+def backend(required_version: str | None = None) -> Any:
     """Load the optional maintained implementation only for an Arrow operation."""
     try:
         importlib.import_module("pyarrow")
@@ -27,8 +28,7 @@ def backend() -> Any:
             "Install bijux-ontology[arrow] for Arrow records"
         ) from error
     native = sys.modules["pyarrow"]
-    if native.__version__ != "26.0.0":
-        raise ResourceError("Arrow records require qualified PyArrow 26.0.0")
+    qualify_release("pyarrow", native.__version__, required_version)
     return native
 
 

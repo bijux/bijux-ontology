@@ -21,6 +21,7 @@ from rdflib import BNode, Graph, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
 import bijux_ontology
+from bijux_ontology.declarations.bindings import BindingIdentity
 from bijux_ontology.declarations.types import ValueDeclaration
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.namespaces import namespace_inventory
@@ -168,6 +169,149 @@ def selected_contracts(extraction, native_graph, executor, document, base):
             for subject in subjects
         )
     return models, usages, selections
+
+
+def qualify_samples(extraction, native, fixtures, executor, ontology_text, output):
+    """Qualify reusable native checks; fixed revisions/counts belong in this harness."""
+    from adapter import check_metadata, check_output
+
+    executor = replace(
+        executor,
+        limits=replace(
+            executor.limits,
+            max_work=50_000_000,
+            max_states=3_000_000,
+            max_total_bytes=500_000_000,
+        ),
+    )
+    intended = []
+    for model in extraction.declarations:
+        selected = []
+        for field in model.fields:
+            if field.name == "name":
+                field = replace(
+                    field,
+                    values=(ValueDeclaration("literal", datatype=str(XSD.string)),),
+                )
+            elif model.identifier.endswith(".Study") and field.name == "author":
+                field = replace(
+                    field,
+                    values=(
+                        ValueDeclaration(
+                            "iri", types=(str(BIA.Contributor),), container="@set"
+                        ),
+                    ),
+                )
+            selected.append(field)
+        intended.append(replace(model, fields=tuple(selected)))
+    minimal, issues = parse(fixtures / "test_minimal_valid_ro_crate")
+    require(minimal is not None, f"Native minimal crate failed: {issues}")
+    populations, evidence = [], {}
+    for name, parsed in (("typical", native), ("minimal", minimal)):
+        metadata = parsed.metadata
+        populations.append(
+            {type(entity).__qualname__ for entity in metadata.get_objects()}
+        )
+        required = tuple(
+            BindingIdentity(
+                f"{type(entity).__module__}.{type(entity).__qualname__}",
+                (entity.id, field),
+            )
+            for entity in metadata.get_objects()
+            if isinstance(entity, (Study, Contributor, Dataset))
+            for field in (
+                ("name", "author") if isinstance(entity, Study) else ("name",)
+            )
+        )
+        result = check_metadata(
+            metadata,
+            intended,
+            executor=executor,
+            vocabulary=ontology_text,
+            required_bindings=required,
+        )
+        require(
+            result.required is not None and result.required.accepted,
+            f"Native {name} required contract failed: "
+            f"{result.execution.report.to_dict()}",
+        )
+        require(
+            result.document == metadata.to_dict(),
+            "Adapter changed original native output",
+        )
+        expected = sum(
+            len(model.fields)
+            for entity in metadata.get_objects()
+            for model in intended
+            if model.identifier
+            == f"{type(entity).__module__}.{type(entity).__qualname__}"
+        )
+        require(
+            len(result.bindings) == expected,
+            f"Native {name} mapped fields lack explicit sample coverage: "
+            f"{result.execution.report.to_dict()}",
+        )
+        evidence[name] = {
+            "required": result.required.report.to_dict(),
+            "raw": result.execution.report.to_dict(),
+            "unassociated_models": result.unassociated_models,
+            "coverage": [
+                {
+                    "owner": item.identity.owner,
+                    "path": item.identity.path,
+                    "completed": item.completed,
+                    "exclusion": item.exclusion,
+                    "report": item.report.to_dict(),
+                }
+                for item in result.bindings
+            ],
+        }
+        if name == "typical":
+            for mutation in ("predicate", "coercion", "emission"):
+                changed = deepcopy(result.document)
+                if mutation == "emission":
+                    reference = next(
+                        item.path[0] for item in required if item.path[-1] == "name"
+                    )
+                    next(
+                        node for node in changed["@graph"] if node["@id"] == reference
+                    ).pop("name")
+                else:
+                    changed["@context"]["name"] = (
+                        {"@id": "urn:incorrect-name"}
+                        if mutation == "predicate"
+                        else {"@id": "http://schema.org/name", "@type": "@id"}
+                    )
+                negative = check_output(
+                    metadata,
+                    changed,
+                    intended,
+                    executor=executor,
+                    vocabulary=ontology_text,
+                    required_bindings=required,
+                )
+                require(
+                    negative.required is not None and not negative.required.accepted,
+                    f"Native {mutation} mutation escaped the required contract",
+                )
+                expected_code = {
+                    "predicate": "serialization.binding_predicate_mismatch",
+                    "coercion": "serialization.binding_value_mismatch",
+                    "emission": "contract.binding_missing",
+                }[mutation]
+                require(
+                    any(
+                        issue.code == expected_code
+                        for issue in negative.required.report
+                    ),
+                    f"Native {mutation} failed for an unrelated reason",
+                )
+                evidence[mutation] = negative.required.report.to_dict()
+    require(
+        populations[0] != populations[1],
+        "Native samples must exercise different model populations",
+    )
+    save(output, "native-adapter-samples.json", evidence)
 
 
 def qualify(source, worker, output):
@@ -515,6 +659,8 @@ def qualify(source, worker, output):
         "selected_contract_verified": contract.report.verified,
         "native_issues": native_issues,
     }
+    qualify_samples(extracted, native, fixtures, executor, ontology_text, output)
+    summary["native_adapter_samples"] = ["typical", "minimal"]
     save(output, "evidence.json", summary)
     print(json.dumps(summary, indent=2))
 

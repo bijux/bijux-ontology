@@ -6,6 +6,7 @@ import json
 from dataclasses import replace
 from hashlib import sha256
 from importlib import import_module
+from importlib.metadata import version as installed_version
 from pathlib import Path
 
 import pytest
@@ -52,7 +53,7 @@ def _inputs(
             _resource("attributes", version, read(version + "-attributes.yaml.gz")),
             _resource(
                 "linkml:types",
-                "1.12.1",
+                installed_version("linkml-runtime"),
                 (Path(schema_directory) / "types.yaml").read_bytes(),
             ),
         ),
@@ -66,7 +67,7 @@ def model() -> BiolinkModel:
     result = prepare_biolink(first, second, imports=imports, limits=LIMITS)
     assert result.report.verified and result.identity is not None
     assert result.identity.model_version == "4.4.4"
-    assert result.identity.toolkit_version == "1.5.0"
+    assert result.identity.toolkit_version == installed_version("bmt")
     return result
 
 
@@ -93,6 +94,12 @@ def test_real_official_qualified_example_preserves_full_statement(
     model: BiolinkModel,
 ) -> None:
     """Native effective slots and original CURIE/qualifier order remain inspectable."""
+    first, second, imports = _inputs("4.4.4")
+    mismatch = prepare_biolink(
+        first, second, imports=imports, require_bmt="1.0.0", limits=LIMITS
+    )
+    assert not mismatch.report.verified and mismatch.identity is None
+    assert any("exact requirement" in issue.message for issue in mismatch.report.issues)
     example = _example()
     result = check_biolink(model, (example,), limits=LIMITS)
     assert result.report.verified and result.associations == (example,)

@@ -21,6 +21,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
 )
 from bijux_ontology.execution.protocol import json_bound
+from bijux_ontology.execution.versions import exact_requirement
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json, object_value
 
@@ -198,18 +199,22 @@ def prepare_biolink(
     predicate_map: BiolinkResource,
     *,
     imports: Sequence[BiolinkResource] = (),
+    require_bmt: str | None = None,
+    require_linkml: str | None = None,
     limits: Limits | None = None,
     budget: Budget | None = None,
     timeout: float = 30,
     cancel: threading.Event | None = None,
 ) -> BiolinkModel:
-    """Qualify explicitly supplied local resources with BMT 1.5.0.
+    """Qualify explicitly supplied local resources with maintained BMT/LinkML APIs.
 
     Every import, including linkml:types, must be supplied and byte-pinned. Native
     schema loading has an owned hard deadline; explicit counters meter adapter
     controls and allocation reservations, not opaque framework instructions/RSS.
     No model, predicate map or schema import falls back to a network default.
     """
+    exact_requirement(require_bmt)
+    exact_requirement(require_linkml)
     operation = Operation(limits, budget, timeout, cancel)
     issues = IssueCollector(operation)
     first = second = None
@@ -240,6 +245,10 @@ def prepare_biolink(
             "associations": [],
             "policy": {},
         }
+        if require_bmt is not None:
+            request["require_bmt"] = require_bmt
+        if require_linkml is not None:
+            request["require_linkml"] = require_linkml
         data, native_report = dispatch(request, operation, expected=8192)
         issues.retain_completed(native_report)
         native_identity = identity(data["identity"])

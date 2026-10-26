@@ -9,8 +9,8 @@ from bijux_ontology.json.encoding import json_bytes
 from bijux_ontology.json.values import decode_json
 
 
-def encode_report(report: Report, budget: Budget) -> bytes:
-    """Prepay typed diagnostic ownership before canonical inert serialization."""
+def report_to_data(report: Report, budget: Budget) -> dict[str, object]:
+    """Prepay typed diagnostic ownership before materialising inert JSON data."""
     pending = [(report, 0)]
     while pending:
         current, depth = pending.pop()
@@ -25,7 +25,12 @@ def encode_report(report: Report, budget: Budget) -> bytes:
         budget.consume("states", len(current.children))
         budget.consume("bytes", 64 + 32 * len(current.children))
         pending.extend((child, depth + 1) for child in current.children)
-    return json_bytes(report.to_dict(), budget)
+    return report.to_dict()
+
+
+def encode_report(report: Report, budget: Budget) -> bytes:
+    """Encode canonical inert diagnostics after their ownership has been funded."""
+    return json_bytes(report_to_data(report, budget), budget)
 
 
 def _report_texts(report: Report, budget: Budget) -> Iterator[str]:

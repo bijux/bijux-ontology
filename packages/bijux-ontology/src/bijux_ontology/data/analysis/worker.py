@@ -6,15 +6,21 @@ import sys
 from importlib.metadata import version
 from typing import cast
 
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import Limits, bound_text
+from bijux_ontology.execution.versions import qualify_release
 from bijux_ontology.json.values import decode_json, object_value
 
 
 def calculate(request: dict[str, object], capacity: int) -> dict[str, object]:
     """Validate the concrete finite tables before entering maintained numerical code."""
-    if set(request) != {"tables", "correction", "limits", "allowances"}:
+    if set(request) - {"required_version"} != {
+        "tables",
+        "correction",
+        "limits",
+        "allowances",
+    }:
         raise InputError("Malformed annotation analysis request")
     limits_data = object_value(request["limits"], location="/limits")
     if any(type(value) is not int for value in limits_data.values()):
@@ -62,12 +68,14 @@ def calculate(request: dict[str, object], capacity: int) -> dict[str, object]:
                 "for maintained exact testing",
             }
         else:
-            if scipy.__version__ != "1.17.1":
-                result = {
-                    "status": "unsupported",
-                    "message": "Exact testing requires the qualified "
-                    "SciPy 1.17.1 backend",
-                }
+            try:
+                qualify_release(
+                    "scipy",
+                    scipy.__version__,
+                    cast(str | None, request.get("required_version")),
+                )
+            except ResourceError as error:
+                result = {"status": "unsupported", "message": str(error)}
             else:
                 budget.consume("work", 8 * len(tables))
                 raw = [

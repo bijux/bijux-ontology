@@ -1614,6 +1614,17 @@ cells; other known combinations and unused consumers remain visibly untested.
 Missing versions, inputs or representative corpora keep required cells incomplete.
 A passing majority cannot hide a failed or unknown selected obligation.
 
+## Parallel project execution
+
+`bijux-ontology project project.json --execution parallel --workers 3` runs
+qualified vocabulary, single-document context, model, JSON-LD/RDF output and
+SHACL jobs against captured inputs. Other job kinds remain explicitly unsupported.
+Dependencies use raw verification; returned results retain declaration order.
+Configured cumulative limits fund both captured preparation and disjoint workers.
+`--timeout` and SIGINT use the same parallel owner, retaining completed sibling
+findings while cancelling/reaping native work. Host filesystem preparation remains
+cooperative; this is not an OS hard deadline for arbitrary filesystem operations.
+
 ## Native RDF project output
 
 A `rdf-emission` project job names a registered RDF `document`, a `declarations`
@@ -1893,6 +1904,11 @@ profile. Use a separate environment from `[oak]`: their native dependencies
 require incompatible chardet versions. The workspace lock declares that conflict
 and installed-package checks exercise both profiles with their real dependencies.
 Workspace development requires uv 0.13.1 or later to resolve those profiles correctly.
+An OAK host can explicitly call `prepare_frictionless_backend(python,
+work_directory=...)`, then pass that admitted `backend` to `extract_package`.
+Install the same core wheel and `[frictionless]` in that selected interpreter;
+admission checks native version and exact shipped worker identity without installing
+or discovering anything. Omitting `backend` retains the host-interpreter path.
 `interfaces.adapters.frictionless.extract_package` consumes an unchanged inline
 descriptor, exactly supplied package-relative bytes, explicit column bindings and
 an existing work directory. The owned worker runs actual native typing, missing
@@ -1981,7 +1997,7 @@ it does not assert the quoted positive edge or an OWL negative assertion.
 The supported field grammar and selected vocabulary checks are separate from
 GO editorial quality control; permitted retirement retains its raw evidence.
 
-Install `bijux-ontology[biolink]` for the qualified BMT 1.5.0/LinkML 1.12.1
+Install `bijux-ontology[biolink]` for the qualified BMT 1.5.0/LinkML 1.12.0–1.12.1
 profile. `interfaces.adapters.biolink.prepare_biolink` requires explicit local
 `BiolinkResource` bytes, SHA256 pins, model version, predicate map and every
 schema import, including `linkml:types`. `check_biolink` takes oriented
@@ -2017,7 +2033,7 @@ retains native, model and relationship reports separately. Its pinned RDF
 dependencies belong to that environment; the ordinary core installation stays
 independently usable.
 
-Install `bijux-ontology[arrow]` for the qualified PyArrow 26.0.0 profile.
+Install `bijux-ontology[arrow]` for the qualified PyArrow 25.0.1–26.0.0 profile.
 `interfaces.adapters.arrow.prepare_arrow_contract` binds a `PreparedModels` plan
 to explicit subject, physical column, predicate, datatype, list and graph choices.
 Use `with open_arrow_records(reader, contract) as checked` and consume its batches;
@@ -2028,3 +2044,12 @@ one-dimensional lists and distinct null/NaN policies. Required unknown metadata,
 extensions, changed schemas or failed producers leave coverage incomplete.
 Validation consumes/closes a supplied native reader; Table/C-stream imports use
 maintained Arrow ownership. Producer callbacks are cooperative in-process work.
+
+Maintained native API admission also supports SciPy 1.17.0–1.17.1 and pyrudof
+0.3.20–0.3.21; development locks retain exact releases. BMT remains 1.5.0:
+the tested earlier constructor requires remote predicate-map loading and is not
+admitted. Callers may require an exact release with `require_scipy` on
+`enrich_annotations`, `require_pyarrow` on `open_arrow_records`,
+`require_bmt`/`require_linkml` on `prepare_biolink`, or `require_pyrudof` on
+`validate_shex`. A mismatch stays unsupported before native interpretation;
+these ranges do not alter the supported scientific or schema profiles.

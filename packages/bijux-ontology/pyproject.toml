@@ -20,14 +20,14 @@ bijux-ontology = "bijux_ontology.interfaces.cli:main"
 
 [project.optional-dependencies]
 arrow = [
-    "pyarrow==26.0.0",
+    "pyarrow>=25.0.1,<=26.0.0",
 ]
 biolink = [
     "bmt==1.5.0",
-    "linkml-runtime==1.12.1",
+    "linkml-runtime>=1.12.0,<=1.12.1",
 ]
 analysis = [
-    "scipy==1.17.1",
+    "scipy>=1.17.0,<=1.17.1",
 ]
 oak = [
     "oaklib==0.7.4; python_version < '3.15'",
@@ -36,7 +36,7 @@ fhir = [
     "fhir.resources==8.3.0",
 ]
 shex = [
-    "pyrudof==0.3.20",
+    "pyrudof>=0.3.20,<=0.3.21",
 ]
 quantities = [
     "pint>=0.25.3,<0.26",
