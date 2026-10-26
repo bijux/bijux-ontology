@@ -72,15 +72,19 @@ def main() -> None:
     """Run one complete group through each package's existing Make test gate."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
-    parser.add_argument("--group", type=int, choices=range(1, 6), required=True)
+    parser.add_argument("--group", type=int, required=True)
     parser.add_argument("--workers", type=int, default=4)
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be positive")
     root = args.repo_root.resolve()
+    matrix = json.loads((root / "configs/test-matrix.json").read_text())
+    group_ids = matrix["group"]
+    if group_ids != list(range(1, len(group_ids) + 1)) or args.group not in group_ids:
+        parser.error("--group must name one contiguous configured group")
     files = test_files(root)
     weights = read_weights(root / "configs/test-groups.json")
-    groups = partition(files, weights)
+    groups = partition(files, weights, len(group_ids))
     selected = groups[args.group - 1]
     output = root / "artifacts/ci/test-groups"
     output.mkdir(parents=True, exist_ok=True)

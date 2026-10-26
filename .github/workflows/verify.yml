@@ -31,7 +31,7 @@
   "standard":
     "name": "std / standard"
     "runs-on": "ubuntu-latest"
-    "timeout-minutes": 10
+    "timeout-minutes": 5
     "steps":
       - "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
         "with":
@@ -133,7 +133,7 @@
   python-checks:
     name: python source / ${{ matrix.python }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
@@ -164,22 +164,32 @@
           artifacts/*/build
         if-no-files-found: error
         retention-days: 7
+  test-plan:
+    name: python test inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+    - id: matrix
+      name: Read the complete configured test matrix
+      run: |-
+        python3 - <<'PYTHON'
+        import json, os
+        from pathlib import Path
+        matrix = json.loads(Path("configs/test-matrix.json").read_text())
+        with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+            output.write("matrix=" + json.dumps(matrix, separators=(",", ":")) + "\n")
+        PYTHON
   python-tests:
+    needs: test-plan
     name: python tests / ${{ matrix.python }} / ${{ matrix.group }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     strategy:
       fail-fast: false
-      matrix:
-        python:
-        - '3.11'
-        - '3.13'
-        group:
-        - 1
-        - 2
-        - 3
-        - 4
-        - 5
+      matrix: ${{ fromJSON(needs.test-plan.outputs.matrix) }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -239,7 +249,7 @@
   "windows":
     "name": "python / windows 3.13"
     "runs-on": "windows-latest"
-    "timeout-minutes": 15
+    "timeout-minutes": 5
     "env":
       "WINDOWS_PROOF_ROOT": "${{ github.workspace }}/artifacts/ci/windows"
       "UV_CACHE_DIR": "${{ github.workspace }}/artifacts/ci/windows/uv-cache"
