@@ -219,6 +219,11 @@ def test_new_many_to_one_uses_actual_native_cardinality_and_preserves_prior_fail
     assert persistent.verdict == "informational"
     assert persistent.obligations[0].status == "preserved"
     assert persistent.after_check is not None and not persistent.after_check.verified
+
+
+def test_unverified_baseline_cannot_demonstrate_mapping_cardinality_changes(
+    releases: dict[str, MappingRead],
+) -> None:
     uncertain = _check(releases["open_baseline"], releases["ambiguous"])
     assert uncertain.before_check is not None and not uncertain.before_check.complete
     assert uncertain.verdict == "unverified"
@@ -227,6 +232,11 @@ def test_new_many_to_one_uses_actual_native_cardinality_and_preserves_prior_fail
         issue.code == "upgrade.mapping_cardinality_changed"
         for issue in uncertain.report
     )
+
+
+def test_mapping_relation_conflicts_retain_previous_failures(
+    releases: dict[str, MappingRead],
+) -> None:
     conflict_policy = replace(
         POLICY, conflicts=((str(SKOS.broadMatch), str(SKOS.narrowMatch)),)
     )
@@ -243,6 +253,14 @@ def test_new_many_to_one_uses_actual_native_cardinality_and_preserves_prior_fail
     assert (
         persistent.verdict == "informational"
         and persistent.obligations[0].status == "preserved"
+    )
+
+
+def test_unselected_mapping_relations_cannot_demonstrate_a_break(
+    releases: dict[str, MappingRead],
+) -> None:
+    conflict_policy = replace(
+        POLICY, conflicts=((str(SKOS.broadMatch), str(SKOS.narrowMatch)),)
     )
     unrelated = _check(
         releases["before"], releases["unrelated_conflict"], policy=conflict_policy
