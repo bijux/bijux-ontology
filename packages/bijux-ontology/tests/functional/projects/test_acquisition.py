@@ -809,7 +809,7 @@ def test_outer_bundle_cancellation_terminates_nested_http_process(
             assert outer
             if os.name == "posix":
                 rows = subprocess.check_output(
-                    ["ps", "-axo", "pid=,ppid=,command="], text=True
+                    ["ps", "-ww", "-axo", "pid=,ppid=,command="], text=True
                 ).splitlines()
                 for row in rows:
                     fields = row.strip().split(None, 2)
