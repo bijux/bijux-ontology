@@ -2,7 +2,6 @@
 
 import json
 import threading
-from importlib import import_module
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Location, Report
@@ -11,7 +10,12 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, boun
 from bijux_ontology.json.values import array_value, object_value, text_value
 from bijux_ontology.rdf.identifiers import absolute_iri
 
-from ..json import UnsupportedJsonNumber, decode_fhir_json, same_json
+from ..admission import (
+    NativeFidelityUnavailable,
+    NativeVersionUnavailable,
+    admit_r5_json,
+)
+from ..json import UnsupportedJsonNumber, decode_fhir_json
 from ..value_set.reading import _source_kinds, _Unsupported
 from .types import (
     FhirConceptMap,
@@ -134,21 +138,17 @@ def native_json(payload: bytes, budget: Budget) -> tuple[dict[str, object], byte
             if "noMap" in record and type(record["noMap"]) is not bool:
                 raise InputError("noMap requires an original JSON boolean")
     try:
-        from fhir.resources import __fhir_version__
-
-        if __fhir_version__ != "5.0.0":
-            raise ResourceError("The maintained model must implement FHIR R5")
-        native_type = import_module("fhir.resources.conceptmap").ConceptMap
-        native = native_type.model_validate_json(payload, strict=True)
-        produced = native.model_dump_json()
+        produced = admit_r5_json(payload, raw, "ConceptMap", budget)
+    except NativeVersionUnavailable as error:
+        raise ResourceError("The maintained model must implement FHIR R5") from error
+    except NativeFidelityUnavailable as error:
+        raise ResourceError(
+            "Native R5 production changes original ConceptMap values"
+        ) from error
     except ModuleNotFoundError as error:
         raise ResourceError(
             "Install bijux-ontology[fhir] for maintained R5 models"
         ) from error
-    if len(produced) > budget.limits.max_bytes:
-        raise LimitExceeded("Native ConceptMap output exceeds max_bytes")
-    if not same_json(raw, decode_fhir_json(produced, budget), budget):
-        raise ResourceError("Native R5 production changes original ConceptMap values")
     budget.consume("bytes", 4 * len(produced))
     budget.consume("work", len(produced) + 1)
     return raw, produced.encode("utf-8")

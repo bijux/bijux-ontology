@@ -146,11 +146,15 @@ def check_emission(
                                 actual=branch.model,
                             )
                         )
-        snapshot = own_json(
-            document,
-            max_bytes=selected.max_bytes,
-            max_depth=selected.max_depth,
-            budget=budget,
+        snapshot = (
+            _prepared._document
+            if _prepared is not None
+            else own_json(
+                document,
+                max_bytes=selected.max_bytes,
+                max_depth=selected.max_depth,
+                budget=budget,
+            )
         )
         prepared = (
             _prepared
@@ -202,7 +206,7 @@ def check_emission(
         issues.extend(mapping.issues)
         complete = mapping.complete
         preservation = direction_check.check(
-            prepared._document, base=base, loader=prepared._loader, budget=budget
+            prepared._original_expansion, budget=budget
         )
         if preservation is not None:
             checked += preservation.checked

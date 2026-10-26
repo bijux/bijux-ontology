@@ -14,9 +14,10 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.paths import location
 from bijux_ontology.jsonld.evidence.occurrences import occurrences
 from bijux_ontology.jsonld.processing.expansion import (
+    OriginalExpansion,
     _drop_issues,
     _validate_allowed_drops,
-    expand_document,
+    capture_original_expansion,
 )
 from bijux_ontology.jsonld.processing.resources import (
     ContextInputError,
@@ -272,14 +273,11 @@ def _direction_identity_issues(
             previous[direction] = raw
 
 
-def _convert_to_rdf_dataset(
-    document: object,
+def _convert_original_expansion(
+    original: OriginalExpansion,
     *,
-    base: str | None = None,
-    document_loader: DocumentLoader | None = None,
     allowed_drops: frozenset[str] = frozenset(),
-    limits: Limits | None = None,
-    budget: Budget | None = None,
+    budget: Budget,
     preserve: bool = True,
     direction: DirectionPolicy | None = None,
 ) -> _DatasetConversion:
@@ -296,9 +294,13 @@ def _convert_to_rdf_dataset(
     ):
         raise InputError("Invalid RDF conversion policy")
     _validate_allowed_drops(allowed_drops)
-    resources = context_resources(document_loader, limits=limits, budget=budget)
-    operation = resources.budget
-    dropped: list[str | None] = []
+    if type(original) is not OriginalExpansion:
+        raise InputError("Expected an owned OriginalExpansion")
+    original.require_operation(budget)
+    resources = original._resources
+    operation = original._budget
+    expanded = original._expanded
+    dropped = original._dropped
     issues = IssueCollector(operation)
     directional = False
 
@@ -308,12 +310,6 @@ def _convert_to_rdf_dataset(
         directional = True
 
     try:
-        expanded = expand_document(
-            document,
-            base=base,
-            document_loader=resources,
-            on_property_dropped=dropped.append,
-        )
         preservation_issues(
             expanded,
             direction=direction,
@@ -405,6 +401,54 @@ def _convert_to_rdf_dataset(
     ):
         return _DatasetConversion(None, "", report)
     return _DatasetConversion(cast(dict[str, object], dataset), converted, report)
+
+
+def _convert_to_rdf_dataset(
+    document: object,
+    *,
+    base: str | None = None,
+    document_loader: DocumentLoader | None = None,
+    allowed_drops: frozenset[str] = frozenset(),
+    limits: Limits | None = None,
+    budget: Budget | None = None,
+    preserve: bool = True,
+    direction: DirectionPolicy | None = None,
+) -> _DatasetConversion:
+    """Capture fresh original input, then perform one independent RDF conversion."""
+    if type(preserve) is not bool or direction not in (
+        None,
+        "i18n-datatype",
+        "compound-literal",
+    ):
+        raise InputError("Invalid RDF conversion policy")
+    _validate_allowed_drops(allowed_drops)
+    resources = context_resources(document_loader, limits=limits, budget=budget)
+    operation = resources.budget
+    try:
+        original = capture_original_expansion(
+            document, base=base, document_loader=resources
+        )
+    except LimitExceeded as error:
+        issues = IssueCollector(operation)
+        issues.exhausted(str(error))
+        return _DatasetConversion(
+            None,
+            "",
+            Report(
+                "jsonld_to_rdf",
+                issues=tuple(issues),
+                requested=1,
+                complete=False,
+                regime="jsonld_to_rdf",
+            ),
+        )
+    return _convert_original_expansion(
+        original,
+        budget=operation,
+        allowed_drops=allowed_drops,
+        preserve=preserve,
+        direction=direction,
+    )
 
 
 def convert_to_rdf(

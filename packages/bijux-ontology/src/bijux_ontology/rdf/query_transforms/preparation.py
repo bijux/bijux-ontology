@@ -9,9 +9,13 @@ from rdflib.plugins.sparql.parser import Var, parseQuery, parseUpdate
 from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.term import Node
 
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.rdf.queries.filters import (
+    capture_lone_filter,
+    require_filter_preservation,
+)
 from bijux_ontology.rdf.queries.literals import check_literal_scope
 from bijux_ontology.rdf.records.types import (
     PatchBlank,
@@ -96,11 +100,15 @@ def checked_program(text: str, kind: str, budget: Budget) -> Any:
             )
         prefixes = set()
         referenced = set()
+        lone_filters: list[CompValue] = []
         for value in syntax_nodes(parsed, budget):
             if isinstance(value, URIRef):
                 bound_node(value, budget)
                 absolute_iri(value)
             elif isinstance(value, CompValue):
+                original = capture_lone_filter(value, budget)
+                if original is not None:
+                    lone_filters.append(original)
                 if value.name in (
                     "Bind",
                     "SubSelect",
@@ -153,6 +161,7 @@ def checked_program(text: str, kind: str, budget: Budget) -> Any:
             else translateUpdate(parsed, initNs={})
         )
         check_literal_scope(compiled.algebra, budget)
+        require_filter_preservation(lone_filters, budget)
         for value in syntax_nodes(compiled.algebra, budget):
             if (
                 isinstance(value, Literal)
@@ -163,6 +172,8 @@ def checked_program(text: str, kind: str, budget: Budget) -> Any:
                     "RDFLib plain query constants require explicit xsd:string"
                 )
         return compiled
+    except ResourceError as error:
+        raise TransformUnavailable(str(error)) from error
     except (InputError, LimitExceeded):
         raise
     except RecursionError as error:

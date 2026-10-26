@@ -1,5 +1,7 @@
 """Ordinary nested Pydantic samples use actual output and one semantic source."""
 
+import sys
+from types import FrameType
 from typing import Annotated, Any, ClassVar, cast
 
 import pytest
@@ -87,13 +89,46 @@ def vocabulary() -> Graph:
 
 def test_ordinary_nested_profile_dumps_once_and_returns_owned_checked_output() -> None:
     Catalogue.calls.clear()
-    result = check_instance(
-        catalogue(),
-        vocabulary=vocabulary(),
-        context=CONTEXT,
-        options=OPTIONS,
-        requirements={(Item, "label"): OutputRequirement(require_property=True)},
-    )
+    originals: list[bool] = []
+    receipts: list[bool] = []
+
+    def observe(frame: FrameType, event: str, arg: object) -> None:
+        """Count only original preparation; derivative documents remain independent."""
+        if event != "call":
+            return
+        module = frame.f_globals.get("__name__")
+        if module == "bijux_ontology.jsonld.processing.expansion" and (
+            frame.f_code.co_name == "capture_original_expansion"
+            and frame.f_back is not None
+            and frame.f_back.f_globals.get("__name__")
+            == "bijux_ontology.jsonld.usages.checking"
+            and frame.f_back.f_code.co_name == "__init__"
+        ):
+            originals.append(True)
+        if module == "bijux_ontology.models.emission.checking" and (
+            frame.f_code.co_name == "check_emission"
+        ):
+            prepared = frame.f_locals.get("_prepared")
+            receipts.append(
+                prepared is not None
+                and prepared._budget is frame.f_locals["budget"]
+                and prepared._document is frame.f_locals["document"]
+                and prepared._loader is frame.f_locals["document_loader"]
+            )
+
+    previous = sys.getprofile()
+    try:
+        sys.setprofile(observe)
+        result = check_instance(
+            catalogue(),
+            vocabulary=vocabulary(),
+            context=CONTEXT,
+            options=OPTIONS,
+            requirements={(Item, "label"): OutputRequirement(require_property=True)},
+        )
+    finally:
+        sys.setprofile(previous)
+    assert originals == [True] and receipts == [True]
     assert result.report.verified, result.report.to_dict()
     assert Catalogue.calls == [OPTIONS]
     assert isinstance(result.output, dict) and "@context" not in result.output
@@ -315,7 +350,7 @@ def test_failed_resource_or_exhausted_preparation_keeps_actual_sample_output() -
         options=OPTIONS,
         limits=Limits(max_work=1),
     )
-    assert not bounded.report.complete and bounded.output
+    assert not bounded.report.complete and bounded.output_json is None
     assert any(issue.kind == "exhausted" for issue in bounded.report.issues)
 
 

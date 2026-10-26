@@ -21,10 +21,16 @@ from bijux_ontology.json.values import measure_json
 from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.vocabulary.languages.matching import matches_language
 
+from ..admission import (
+    NativeFidelityUnavailable,
+    NativeVersionUnavailable,
+    admit_r5_value,
+    r5_models,
+)
 from ..code_system.reading import read_code_system
 from ..code_system.types import FhirCodeSystem
 from ..identity import FhirCodeBinding
-from ..json import decode_fhir_json, same_json
+from ..json import decode_fhir_json
 from ..value_set.composition import compile_value_set
 from ..value_set.types import FhirValueSet, FhirValueSetPolicy, FhirValueSetSelection
 from .types import FhirCodingBinding, FhirDisplayPolicy
@@ -91,15 +97,12 @@ def encode(value: object, budget: Budget) -> str:
 def native_types() -> tuple[Any, Any, Any]:
     """Load actual optional R5 models lazily, without a mandatory core dependency."""
     try:
-        from fhir.resources import __fhir_version__
-
-        if __fhir_version__ != "5.0.0":
-            raise ResourceError("Coding bindings require the maintained FHIR R5 model")
-        return (
-            import_module("fhir.resources.coding").Coding,
-            import_module("fhir.resources.codeableconcept").CodeableConcept,
-            import_module("pydantic").BaseModel,
-        )
+        coding, concept = r5_models("Coding", "CodeableConcept")
+        return coding, concept, import_module("pydantic").BaseModel
+    except NativeVersionUnavailable as error:
+        raise ResourceError(
+            "Coding bindings require the maintained FHIR R5 model"
+        ) from error
     except ModuleNotFoundError as error:
         raise ResourceError(
             "Install bijux-ontology[fhir] for maintained R5 coding models"
@@ -176,10 +179,8 @@ def native_value(
     if datatype == "code":
         if type(raw) is not str:
             raise InputError("A bare FHIR code requires an actual string")
-        produced = (
-            native[0].model_validate({"code": raw}, strict=True).model_dump_json()
-        )
         expected = {"code": raw}
+        model = native[0]
     else:
         if type(raw) is not dict:
             raise InputError("Coding/CodeableConcept require an actual object")
@@ -192,10 +193,13 @@ def native_value(
                 "CodeableConcept requires coding or text beyond Element.id"
             )
         model = native[0] if datatype == "Coding" else native[1]
-        produced = model.model_validate(raw, strict=True).model_dump_json()
         expected = raw
-    if not same_json(expected, decode_fhir_json(produced, budget), budget):
-        raise ResourceError("Native FHIR production changes selected source values")
+    try:
+        admit_r5_value(model, expected, budget)
+    except NativeFidelityUnavailable as error:
+        raise ResourceError(
+            "Native FHIR production changes selected source values"
+        ) from error
     budget.consume("work", 0)
     return raw, source
 

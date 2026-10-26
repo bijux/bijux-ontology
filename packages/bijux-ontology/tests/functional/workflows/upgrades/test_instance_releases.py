@@ -140,8 +140,8 @@ def test_named_identity_is_explicit_and_blank_identity_never_uses_labels() -> No
         and not mapped.added_entities
         and not mapped.removed_entities
     )
-    old = _release('e:A e:child _:old. _:old e:label "same".', EX.A)
-    new = _release('e:A e:child _:new. _:new e:label "same".', EX.A)
+    old = _release('e:A e:child _:old; e:mirror _:old. _:old e:label "same".', EX.A)
+    new = _release('e:A e:child _:new; e:mirror _:new. _:new e:label "same".', EX.A)
     a, b = _blank(old.source, EX.A, EX.child), _blank(new.source, EX.A, EX.child)
     stable = compare_instance_releases(
         old,
@@ -155,6 +155,16 @@ def test_named_identity_is_explicit_and_blank_identity_never_uses_labels() -> No
         and stable.patch is not None
         and not stable.patch.additions
     )
+    automatic = compare_instance_releases(
+        old,
+        new,
+        fields=(
+            InstanceFieldPolicy("child", EX.child),
+            InstanceFieldPolicy("mirror", EX.mirror),
+        ),
+    )
+    assert automatic.report.verified
+    assert all(field.exact_equal and field.accepted for field in automatic.fields)
     symmetric = _release(
         'e:A e:child _:x, _:y. _:x e:label "same". _:y e:label "same".', EX.A
     )

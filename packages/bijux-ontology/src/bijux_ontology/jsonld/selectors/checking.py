@@ -1,8 +1,7 @@
 """Resolve declared source traversals and exact asserted entity selections."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from itertools import chain
-from typing import cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
@@ -15,11 +14,12 @@ from bijux_ontology.json.paths import (
     bound_pointer_text,
     bounded_location,
 )
+from bijux_ontology.jsonld.evidence.associations import source_associations
 from bijux_ontology.jsonld.evidence.entities import (
     EntityInventory,
     EntityKey,
+    SourceEntity,
     object_key,
-    source_entity,
     subject_key,
 )
 from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
@@ -66,6 +66,162 @@ def _selector_metadata(
                 bound_pointer_text(key, budget)
 
 
+def _count_matches(
+    count: int,
+    minimum: int,
+    maximum: int | None,
+    where: str,
+    budget: Budget,
+    issues: IssueCollector,
+    *,
+    parent: str | None = None,
+) -> None:
+    """Check aggregate or per-parent bounds without borrowing sibling counts."""
+    budget.consume("work")
+    if count < minimum or maximum is not None and count > maximum:
+        upper = str(maximum) if maximum is not None else "unbounded"
+        issues.append(
+            Issue(
+                "selector.parent_count_mismatch"
+                if parent
+                else "selector.count_mismatch",
+                f"Selected {parent} count violates per-parent bounds"
+                if parent is not None
+                else "Selected matches violate aggregate bounds",
+                where,
+                expected=f"{minimum}..{upper}",
+                actual=str(count),
+            )
+        )
+
+
+class _SourceMatches:
+    """One selector's completed associations and its own coverage policy."""
+
+    __slots__ = (
+        "keys",
+        "include_references",
+        "budget",
+        "issues",
+        "paths",
+        "established",
+    )
+
+    def __init__(
+        self,
+        keys: set[EntityKey],
+        include_references: bool,
+        budget: Budget,
+        issues: IssueCollector,
+    ) -> None:
+        budget.consume("states")
+        budget.reserve_storage(384)
+        self.keys, self.include_references = keys, include_references
+        self.budget, self.issues = budget, issues
+        self.paths: list[SourcePath] = []
+        self.established: set[EntityKey] = set()
+
+    def adopt(self, evidence: SourceEntity | ObservedUsage) -> None:
+        """Retain only paid relevant describing objects or explicit uncertainties."""
+        if not self.keys:
+            return
+        if isinstance(evidence, SourceEntity):
+            if evidence.key in self.keys and (
+                evidence.described or self.include_references
+            ):
+                self.budget.consume("states", 2)
+                self.budget.reserve_storage(128)
+                self.paths.append(evidence.path)
+                self.established.add(evidence.key)
+        elif evidence.limitation:
+            relevant = any(
+                subject_key(item) in self.keys or object_key(item) in self.keys
+                for item in evidence.occurrences
+            )
+            if relevant or not evidence.occurrences:
+                self.issues.append(
+                    Issue(
+                        "selector.binding_unverified",
+                        evidence.limitation,
+                        bounded_location(evidence.path, self.budget),
+                        kind="unverified",
+                    )
+                )
+
+    def finish(self) -> None:
+        """Missing descriptions require a completed source traversal."""
+        if not self.keys:
+            return
+        self.budget.consume("states", len(self.keys) * 2)
+        self.budget.reserve_storage(256 + 128 * len(self.keys))
+        for key in sorted(
+            self.keys - self.established,
+            key=lambda item: (
+                item.identifier or "",
+                item.anonymous if item.anonymous is not None else -1,
+            ),
+        ):
+            self.budget.consume("work")
+            self.issues.append(
+                Issue(
+                    "selector.binding_unverified",
+                    "No describing source object could be associated with this entity",
+                    f"entity[{key.identifier}]",
+                    kind="unverified",
+                )
+            )
+
+
+def _matching_entities(
+    selector: EntitySelector,
+    inventory: EntityInventory,
+    budget: Budget,
+) -> Iterator[EntityKey]:
+    """Yield qualified identity/type matches without precollecting the inventory."""
+    budget.reserve_storage(256 + 64 * len(selector.types))
+    required_types = set(selector.types)
+    for entity in inventory.iter_entities(budget=budget):
+        budget.consume("work")
+        key = entity.key
+        if key.anonymous_graph or key.graph != selector.graph:
+            continue
+        if selector.identifiers and key.identifier not in selector.identifiers:
+            continue
+        budget.consume("states", len(entity.types))
+        budget.reserve_storage(256 + 64 * len(entity.types))
+        asserted = set(entity.types)
+        if (
+            required_types != asserted
+            if selector.exact_types
+            else not required_types <= asserted
+        ):
+            continue
+        if entity.described or selector.include_references:
+            budget.consume("states")
+            budget.reserve_storage(128)
+            yield key
+
+
+def _selection(
+    unit: CoverageUnit,
+    paths: tuple[SourcePath, ...],
+    entities: tuple[EntityKey, ...],
+    minimum: int,
+    issues: IssueCollector,
+) -> Selection:
+    """Keep the declared coverage unit and its raw completed evidence explicit."""
+    count = len(paths) if unit == "source_occurrence" else len(entities)
+    report = Report(
+        f"jsonld-selection:{unit}",
+        count or int(bool(issues)),
+        tuple(issues),
+        allow_empty=minimum == 0,
+        regime="jsonld:asserted",
+        families=("selection", unit),
+    )
+    return Selection(unit, paths, entities, report)
+
+
 def resolve_selection(
     selector: SourceSelector | EntitySelector,
     document: object,
@@ -103,32 +259,6 @@ def resolve_selection(
         else "source_occurrence"
     )
     matching: list[EntityKey] = []
-
-    def count_matches(
-        count: int,
-        minimum: int,
-        maximum: int | None,
-        where: str,
-        *,
-        parent: str | None = None,
-    ) -> None:
-        """Check aggregate or per-parent bounds without borrowing sibling counts."""
-        budget.consume("work")
-        if count < minimum or maximum is not None and count > maximum:
-            upper = str(maximum) if maximum is not None else "unbounded"
-            issues.append(
-                Issue(
-                    "selector.parent_count_mismatch"
-                    if parent
-                    else "selector.count_mismatch",
-                    f"Selected {parent} count violates per-parent bounds"
-                    if parent is not None
-                    else "Selected matches violate aggregate bounds",
-                    where,
-                    expected=f"{minimum}..{upper}",
-                    actual=str(count),
-                )
-            )
 
     def traverse(
         starts: tuple[SourcePath, ...], steps: tuple[Step, ...]
@@ -203,11 +333,13 @@ def resolve_selection(
                     if isinstance(step, Property):
                         budget.consume("work", len(step.key))
                         budget.consume("bytes", 64 + 12 * len(step.key))
-                    count_matches(
+                    _count_matches(
                         len(children),
                         step.minimum,
                         step.maximum,
                         bounded_location(parent, budget),
+                        budget,
+                        issues,
                         parent=f"property {step.key!r}"
                         if isinstance(step, Property)
                         else "array members"
@@ -225,117 +357,22 @@ def resolve_selection(
     def source_paths(
         keys: set[EntityKey], include_references: bool
     ) -> tuple[SourcePath, ...]:
-        """Associate selected entities with actual describing source objects."""
+        """Associate selected entities through the shared original evidence walk."""
         nonlocal paths
-        budget.reserve_storage(320)
-        result: list[SourcePath] = []
-        established: set[EntityKey] = set()
+        matches = _SourceMatches(keys, include_references, budget, issues)
         if not keys:
             return ()
-
-        def walk(value: object, path: SourcePath) -> None:
-            """Skip contexts and opaque payloads while checking node identity."""
-            budget.consume("work")
-            if not isinstance(value, (list, dict)):
-                return
-            try:
-                usage = observe(path) if path else None
-            except LimitExceeded:
-                raise
-            except InputError:
-                return
-            if usage is not None and any(
-                item.traits.kind == "literal"
-                and isinstance(item.value, dict)
-                and "@value" in item.value
-                and item.value["@value"] == value
-                for item in usage.occurrences
-            ):
-                return
-            if isinstance(value, list):
-                for index, item in enumerate(value):
-                    budget.consume("states")
-                    budget.reserve_storage(64 + 8 * (len(path) + 1))
-                    walk(item, (*path, index))
-                return
-            node = cast(dict[str, object], value)
-            if "@value" in node:
-                return
-            budget.consume("work", len(node))
-            wrapper = bool(node) and all(
-                key
-                in {
-                    "@context",
-                    "@graph",
-                    "@included",
-                    "@list",
-                    "@set",
-                    "@index",
-                }
-                for key in node
-            )
-            if not wrapper:
-                try:
-                    binding = source_entity(node, path, observe, budget)
-                except LimitExceeded:
-                    raise
-                except InputError:
-                    binding = None
-                if binding is not None and binding.key in keys:
-                    if binding.described or include_references:
-                        budget.consume("states", 2)
-                        budget.reserve_storage(128)
-                        result.append(path)
-                        established.add(binding.key)
-                elif binding is None and usage is not None:
-                    # A finite excluded identity cannot make selected coverage
-                    # ambiguous. Only selected original contributions matter.
-                    relevant = any(
-                        subject_key(item) in keys or object_key(item) in keys
-                        for item in usage.occurrences
-                    )
-                    if usage.limitation and (relevant or not usage.occurrences):
-                        issues.append(
-                            Issue(
-                                "selector.binding_unverified",
-                                usage.limitation,
-                                bounded_location(path, budget),
-                                kind="unverified",
-                            )
-                        )
-            for key, item in node.items():
-                if key != "@context":
-                    budget.consume("states")
-                    budget.reserve_storage(64 + 8 * (len(path) + 1))
-                    walk(item, (*path, key))
-
         try:
-            walk(document, ())
+            for evidence in source_associations(document, observe, budget):
+                matches.adopt(evidence)
         except LimitExceeded:
             if not selector.steps:
-                paths = tuple(result)
+                paths = tuple(matches.paths)
             raise
         if not selector.steps:
-            paths = tuple(result)
-        budget.consume("states", len(keys) * 2)
-        budget.reserve_storage(256 + 128 * len(keys))
-        for key in sorted(
-            keys - established,
-            key=lambda item: (
-                item.identifier or "",
-                item.anonymous if item.anonymous is not None else -1,
-            ),
-        ):
-            budget.consume("work")
-            issues.append(
-                Issue(
-                    "selector.binding_unverified",
-                    "No describing source object could be associated with this entity",
-                    f"entity[{key.identifier}]",
-                    kind="unverified",
-                )
-            )
-        return tuple(result)
+            paths = tuple(matches.paths)
+        matches.finish()
+        return tuple(matches.paths)
 
     try:
         _selector_metadata(selector, budget)
@@ -349,28 +386,8 @@ def resolve_selection(
             where = bounded_location(selector.start, budget)
         elif isinstance(selector, EntitySelector):
             unit = selector.coverage_unit
-            budget.reserve_storage(256 + 64 * len(selector.types))
-            required_types = set(selector.types)
-            for entity in inventory.iter_entities(budget=budget):
-                budget.consume("work")
-                key = entity.key
-                if key.anonymous_graph or key.graph != selector.graph:
-                    continue
-                if selector.identifiers and key.identifier not in selector.identifiers:
-                    continue
-                budget.consume("states", len(entity.types))
-                budget.reserve_storage(256 + 64 * len(entity.types))
-                asserted = set(entity.types)
-                if (
-                    required_types != asserted
-                    if selector.exact_types
-                    else not required_types <= asserted
-                ):
-                    continue
-                if entity.described or selector.include_references:
-                    budget.consume("states")
-                    budget.reserve_storage(128)
-                    matching.append(key)
+            for key in _matching_entities(selector, inventory, budget):
+                matching.append(key)
             if unit == "rdf_entity":
                 entities = tuple(
                     sorted(
@@ -392,7 +409,7 @@ def resolve_selection(
         else:
             raise InputError("Expected a typed JSON-LD selector")
         count = len(paths) if unit == "source_occurrence" else len(entities)
-        count_matches(count, selector.minimum, selector.maximum, where)
+        _count_matches(count, selector.minimum, selector.maximum, where, budget, issues)
         if unit == "source_occurrence" and (
             require_usage
             or isinstance(selector, EntitySelector)
@@ -429,13 +446,84 @@ def resolve_selection(
         if unit == "rdf_entity":
             entities = tuple(matching)
         issues.exhausted(str(error))
-    count = len(paths) if unit == "source_occurrence" else len(entities)
-    report = Report(
-        f"jsonld-selection:{unit}",
-        count or int(bool(issues)),
-        tuple(issues),
-        allow_empty=selector.minimum == 0,
-        regime="jsonld:asserted",
-        families=("selection", unit),
+    return _selection(unit, paths, entities, selector.minimum, issues)
+
+
+def resolve_entity_associations(
+    selectors: tuple[EntitySelector, ...],
+    document: object,
+    inventory: EntityInventory,
+    observe: Callable[[SourcePath], ObservedUsage],
+    budget: Budget,
+) -> tuple[Selection, ...]:
+    """Resolve whole-entity source associations jointly, with per-request truth.
+
+    This is the association-only selector contract: no whole-contribution or
+    source-step guarantee is added. Completed paths survive an interrupted walk;
+    absent descriptions and aggregate counts require complete traversal.
+    """
+    if type(selectors) is not tuple:
+        raise InputError("Joint associations require a finite selector tuple")
+    budget.consume("states", len(selectors))
+    budget.reserve_storage(256 + 128 * len(selectors))
+    requests: list[_SourceMatches] = []
+    owners: dict[EntityKey, list[_SourceMatches]] = {}
+    for selector in selectors:
+        if (
+            not isinstance(selector, EntitySelector)
+            or selector.coverage_unit != "source_occurrence"
+            or selector.steps
+        ):
+            raise InputError("Joint associations require whole entity paths")
+        _selector_metadata(selector, budget)
+        matching = []
+        for key in _matching_entities(selector, inventory, budget):
+            matching.append(key)
+        budget.consume("states", len(matching))
+        budget.reserve_storage(256 + 64 * len(matching))
+        request = _SourceMatches(
+            set(matching), selector.include_references, budget, IssueCollector(budget)
+        )
+        requests.append(request)
+        for key in request.keys:
+            budget.consume("states")
+            budget.reserve_storage(128)
+            owners.setdefault(key, []).append(request)
+    stopped = None
+    try:
+        if owners:
+            for evidence in source_associations(document, observe, budget):
+                if isinstance(evidence, SourceEntity):
+                    for request in owners.get(evidence.key, ()):
+                        request.adopt(evidence)
+                else:
+                    for request in requests:
+                        request.adopt(evidence)
+    except LimitExceeded as error:
+        stopped = str(error)
+    for selector, request in zip(selectors, requests, strict=True):
+        if stopped is None:
+            try:
+                request.finish()
+                _count_matches(
+                    len(request.paths),
+                    selector.minimum,
+                    selector.maximum,
+                    f"graph[{selector.graph}]",
+                    budget,
+                    request.issues,
+                )
+            except LimitExceeded as error:
+                stopped = str(error)
+        if stopped is not None:
+            request.issues.exhausted(stopped)
+    return tuple(
+        _selection(
+            "source_occurrence",
+            tuple(request.paths),
+            (),
+            selector.minimum,
+            request.issues,
+        )
+        for selector, request in zip(selectors, requests, strict=True)
     )
-    return Selection(unit, paths, entities, report)

@@ -1,10 +1,7 @@
 """Context-preserving duplicate review using actual SSSOM production and checks."""
 
-import csv
-import io
 import json
-import time
-from collections.abc import Sequence
+from collections.abc import Iterator, Mapping, Sequence
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
@@ -21,7 +18,7 @@ from bijux_ontology.vocabulary.browsing.inspection import VocabularyView
 from bijux_ontology.vocabulary.mappings.admission import admit_mapping, decode_metadata
 from bijux_ontology.vocabulary.mappings.checking import check_mappings
 from bijux_ontology.vocabulary.mappings.composition.types import MappingOccurrence
-from bijux_ontology.vocabulary.mappings.interchange import read_sssom
+from bijux_ontology.vocabulary.mappings.production import produce_mapping_table
 from bijux_ontology.vocabulary.mappings.types import (
     MappingPolicy,
     MappingRead,
@@ -64,7 +61,7 @@ def _reserve(budget: Budget, count: int = 1) -> None:
     budget.consume("bytes", 8 * count)
 
 
-def _produce(
+def produce_selection(
     groups: tuple[MappingGroup, ...],
     mapping_set_id: str,
     license: str,
@@ -124,37 +121,25 @@ def _produce(
         "license": license,
         "curie_map": prefixes,
     }
-    header = (
-        "# " + json.dumps(metadata, ensure_ascii=False, separators=(",", ":")) + "\n"
-    )
-    bound_text(header, operation)
-    operation.consume("bytes", 4 * len(header))
-    body = io.StringIO()
-    writer = csv.writer(body, delimiter="\t", lineterminator="\n")
-    writer.writerow(columns)
-    for group in groups:
-        operation.consume("work")
-        row = dict(group.occurrences[0].row.cells)
-        values = []
-        for column in columns:
-            value = row.get(column, "")
-            bound_text(value, operation)
-            operation.consume("bytes", 4 * len(value) + 2)
-            _reserve(operation)
-            values.append(value)
-        writer.writerow(values)
-    text = header + body.getvalue()
-    bound_text(text, operation)
-    operation.consume("bytes", 4 * len(text))
-    operation.consume("work", 0)
-    return read_sssom(
-        text.encode(),
+    return produce_mapping_table(
+        columns,
+        _selected_cells(groups, operation),
+        metadata=metadata,
         mapping_set_id=mapping_set_id,
         license=license,
-        limits=operation.limits,
-        budget=operation,
-        timeout=max(0.001, operation.deadline - time.monotonic()),
+        prefixes=prefixes,
+        operation=operation,
+        framing="flow-map",
     )
+
+
+def _selected_cells(
+    groups: tuple[MappingGroup, ...], operation: Operation
+) -> Iterator[Mapping[str, str]]:
+    """Retain each selected original occurrence's lexical cells without rewriting."""
+    for group in groups:
+        operation.consume("work")
+        yield dict(group.occurrences[0].row.cells)
 
 
 class _ContextUnavailable(Exception):
@@ -281,7 +266,7 @@ def reconcile_mappings(
         groups = tuple(MappingGroup(tuple(items)) for items in occurrences)
         complete = True
         _reserve(operation)
-        production = _produce(
+        production = produce_selection(
             groups, mapping_set_id, license, operation, contexts=contexts
         )
         _check(

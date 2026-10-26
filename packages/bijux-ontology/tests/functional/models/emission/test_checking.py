@@ -795,3 +795,71 @@ def test_repeated_child_descriptions_keep_each_source_guarantee_and_all_conflict
         ],
     )
     assert "emission.binding_conflict" in {issue.code for issue in result.issues}
+
+
+def test_context_and_direction_share_one_actual_original_expansion() -> None:
+    """Count real compact-input work while retaining maintained RDF conversion."""
+    import sys
+    from types import FrameType
+
+    from pyld import jsonld  # type: ignore[import-untyped]
+    from rdflib import Graph, URIRef
+    from rdflib.namespace import OWL, RDF
+
+    from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
+
+    document = {
+        "@id": EX + "record",
+        "@type": EX + "Record",
+        "@context": {"label": EX + "label"},
+        "label": {"@value": "اسم", "@language": "ar", "@direction": "rtl"},
+    }
+    model = Model(
+        "record",
+        (EX + "Record",),
+        (
+            Field(
+                "label",
+                EX + "label",
+                (Value("literal", language="ar", direction="rtl"),),
+            ),
+        ),
+    )
+    vocabulary = (
+        Graph()
+        .add((URIRef(EX + "Record"), RDF.type, OWL.Class))
+        .add((URIRef(EX + "label"), RDF.type, RDF.Property))
+    )
+    original_calls = []
+    rdf_calls = []
+
+    def record(frame: FrameType, event: str, argument: object) -> None:
+        if event != "call":
+            return
+        if (
+            frame.f_code is jsonld.JsonLdProcessor.expand.__code__
+            and frame.f_locals.get("input_") == document
+        ):
+            original_calls.append(frame.f_code.co_name)
+        if frame.f_code is jsonld.JsonLdProcessor.to_rdf.__code__:
+            rdf_calls.append(frame.f_code.co_name)
+
+    previous = sys.getprofile()
+    sys.setprofile(record)
+    try:
+        report = check_emission(
+            document,
+            (model,),
+            (ModelUsage("record"),),
+            vocabulary=vocabulary,
+            rdf_direction="i18n-datatype",
+            context_expectations=(
+                ContextExpectation(
+                    ("label",), EX + "label", language="ar", direction="rtl"
+                ),
+            ),
+        )
+    finally:
+        sys.setprofile(previous)
+    assert report.verified, report.to_dict()
+    assert len(original_calls) == len(rdf_calls) == 1

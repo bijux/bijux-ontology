@@ -17,6 +17,7 @@ from bijux_ontology.owl.encoding.roles import (
     validate_regime,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
+from bijux_ontology.vocabulary.membership import membership_issue
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
@@ -220,26 +221,15 @@ def check_vocabulary(
             checked += 1
             inventory.add(term.iri)
             scope = "local" if term.iri.startswith(tuple(local_namespaces)) else "all"
-            kinds = declared_kinds(sources, term.iri, scope=scope, regime=regime)
-            if not kinds:
-                issues.append(
-                    Issue(
-                        "vocabulary.term_missing",
-                        "Used term has no explicit declaration",
-                        term.location or term.iri,
-                        actual=term.iri,
-                    )
-                )
-            elif not kind_matches(kinds, term.kinds, regime):
-                issues.append(
-                    Issue(
-                        "vocabulary.entity_kind_mismatch",
-                        "Term declaration has a different supported kind",
-                        term.location or term.iri,
-                        expected=", ".join(sorted(term.kinds)),
-                        actual=", ".join(sorted(kinds)),
-                    )
-                )
+            scopes = ("local",) if scope == "local" else ("local", "imports", "lookup")
+            issue = membership_issue(
+                term,
+                sources._declared(term.iri, scopes),
+                include_builtins=scope != "local",
+                regime=regime,
+            )
+            if issue is not None:
+                issues.append(issue)
         if require_coverage:
             if not local_namespaces and not coverage_terms and not coverage_kinds:
                 issues.append(

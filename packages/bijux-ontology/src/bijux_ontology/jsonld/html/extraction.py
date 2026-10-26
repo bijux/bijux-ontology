@@ -184,6 +184,7 @@ def extract_html_jsonld(
             document,
             max_bytes=operation.limits.max_bytes,
             max_depth=operation.limits.max_depth,
+            budget=operation,
         )
         _consume_work(document, operation)
         candidate = json.dumps(document, ensure_ascii=False, separators=(",", ":"))

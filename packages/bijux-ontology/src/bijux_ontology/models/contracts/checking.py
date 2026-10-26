@@ -21,15 +21,13 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
-from bijux_ontology.models.contracts.constraints import (
-    _emission_issues,
-    _field_issues,
-    _value_contract_issues,
-)
+from bijux_ontology.models.contracts.constraints.coemission import coemission_issues
+from bijux_ontology.models.contracts.constraints.fields import field_issues
+from bijux_ontology.models.contracts.constraints.values import value_contract_issues
+from bijux_ontology.models.contracts.matching import trait_matches
 from bijux_ontology.models.contracts.propagation import ModelContracts
 from bijux_ontology.models.contracts.registry import index_models
 from bijux_ontology.models.emission.direction import project_direction
-from bijux_ontology.models.emission.matching import trait_matches
 from bijux_ontology.models.value_constraints.checking import retain_enumeration_report
 from bijux_ontology.owl.obligations import (
     ObligationResult,
@@ -103,7 +101,7 @@ def check_models(
                         issues=issues,
                     )
                     branch_location = f"{location}[{index}]"
-                    issues.extend(_value_contract_issues(branch, branch_location))
+                    issues.extend(value_contract_issues(branch, branch_location))
                     for sample_index, sample in enumerate(branch.samples):
                         budget.consume("work")
                         sample_location = f"{branch_location}.samples[{sample_index}]"
@@ -264,8 +262,8 @@ def check_models(
                         kind="unverified",
                     )
                 )
-            issues.extend(_emission_issues(model, classes, contracts))
-            count, findings = _field_issues(
+            issues.extend(coemission_issues(model, classes, contracts))
+            count, findings = field_issues(
                 model,
                 registry,
                 classes,
@@ -290,7 +288,7 @@ def check_models(
                         actual=conflict,
                     )
                 )
-            count, findings = _field_issues(
+            count, findings = field_issues(
                 contextual,
                 registry,
                 classes,

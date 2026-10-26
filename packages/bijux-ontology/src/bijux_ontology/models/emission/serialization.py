@@ -5,26 +5,23 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from rdflib import Graph
 
 from bijux_ontology.absence import ABSENT, Absent
 from bijux_ontology.declarations.types import ModelDeclaration
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.diagnostics.reports import Issue, Report, combine_reports
+from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Report, combine_reports
 from bijux_ontology.execution.limits import Budget, Limits, bound_text
-from bijux_ontology.json.comparison import same_json
-from bijux_ontology.json.values import encode_json, own_json
+from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.jsonld.usages.checking import PreparedUsages
-from bijux_ontology.models.contracts.checking import check_models
-from bijux_ontology.models.emission.checking import check_emission
+from bijux_ontology.models.emission.samples import SampledOutput, serialization_failure
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry
-from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 if TYPE_CHECKING:
@@ -112,7 +109,9 @@ def check_instance(
             None,
             None,
             combine_reports(
-                "serialization.sample", *reports, _failure(error, operation)
+                "serialization.sample",
+                *reports,
+                serialization_failure(error, operation),
             ),
         )
     return check_serialized(
@@ -135,38 +134,6 @@ def _operation(limits: Limits | None, budget: Budget | None) -> Budget:
     if budget is not None and limits is not None and budget.limits != limits:
         raise InputError("Explicit limits conflict with the shared operation budget")
     return budget if budget is not None else Budget(limits)
-
-
-def _failure(error: Exception, operation: Budget) -> Report:
-    """Keep failure reporting bounded without invoking caller formatting hooks."""
-    exhausted = isinstance(error, (LimitExceeded, MemoryError))
-    message = "Serialization or its contract checks failed"
-    # Read the built-in exception storage, bypassing custom args/str properties.
-    arguments = cast(tuple[object, ...], BaseException.__dict__["args"].__get__(error))
-    if len(arguments) == 1 and type(arguments[0]) is str:
-        text = arguments[0]
-        try:
-            bound_text(text, operation)
-            if text.strip():
-                message = text
-        except LimitExceeded:
-            exhausted = True
-        except InputError:
-            pass
-    if exhausted and message == "Serialization or its contract checks failed":
-        message = "Serialization stopped within its resource limits"
-    return Report(
-        "serialization.sample",
-        requested=1,
-        complete=False,
-        issues=(
-            Issue(
-                "execution.limit_exceeded" if exhausted else "input.invalid",
-                message,
-                kind="exhausted" if exhausted else "input_error",
-            ),
-        ),
-    )
 
 
 def check_serialized(
@@ -197,95 +164,28 @@ def check_serialized(
     if declaration_report is not None and not isinstance(declaration_report, Report):
         raise InputError("declaration_report requires a Report")
     operation = _operation(limits, budget)
-    selected = operation.limits
-    reports = [declaration_report] if declaration_report is not None else []
-    output_json = document_json = None
+    sample = SampledOutput(operation)
     try:
-        output = own_json(
-            output,
-            max_bytes=selected.max_bytes,
-            max_depth=selected.max_depth,
-            budget=operation,
-        )
-        output_json = encode_json(output, budget=operation)
-        document = _contextualized_output(output, context, operation)
-        if document is output:
-            document_json = output_json
-        else:
-            document = own_json(
-                document,
-                max_bytes=selected.max_bytes,
-                max_depth=selected.max_depth,
-                budget=operation,
-            )
-            document_json = encode_json(document, budget=operation)
+        sample.capture_output(output)
+        sample.capture_context(context)
+        sample.apply_context()
         if _prepared is not None:
-            if (
-                not isinstance(_prepared, PreparedUsages)
-                or _prepared._budget is not operation
-            ):
-                raise InputError("Prepared output must share its originating Budget")
-            exact = encode_json(_prepared._document, budget=operation)
-            if exact != document_json:
-                raise InputError("Prepared output differs from the checked document")
-            document = _prepared._document
-        vocabulary = (
-            vocabulary
-            if isinstance(vocabulary, Vocabulary)
-            else load_vocabulary(vocabulary, budget=operation)
-        )
-        reports.append(
-            check_models(
-                models,
-                vocabulary,
-                budget=operation,
-                rdf_direction=rdf_direction,
-                datatype_registry=datatype_registry,
-            )
-        )
-        reports.append(
-            check_emission(
-                document,
-                models,
-                usages,
-                vocabulary=vocabulary,
-                base=base,
-                document_loader=document_loader,
-                budget=operation,
-                rdf_direction=rdf_direction,
-                _corpus=_corpus,
-                datatype_registry=datatype_registry,
-                context_expectations=context_expectations,
-                _prepared=_prepared,
-            )
+            sample.adopt_prepared(_prepared)
+        report = sample.check(
+            models,
+            usages,
+            vocabulary=vocabulary,
+            declaration_report=declaration_report,
+            base=base,
+            document_loader=document_loader,
+            rdf_direction=rdf_direction,
+            _corpus=_corpus,
+            datatype_registry=datatype_registry,
+            context_expectations=context_expectations,
         )
     except Exception as error:
-        reports.append(_failure(error, operation))
-    return InstanceCheck(
-        output_json, document_json, combine_reports("serialization.sample", *reports)
-    )
-
-
-def _contextualized_output(
-    output: object, context: object | Absent, operation: Budget
-) -> object:
-    """Apply the existing explicit context wrapper without processing a context."""
-    if context is ABSENT:
-        return output
-    owned_context = own_json(
-        context,
-        max_bytes=operation.limits.max_bytes,
-        max_depth=operation.limits.max_depth,
-        budget=operation,
-    )
-    if isinstance(output, dict):
-        if "@context" in output and not same_json(
-            output["@context"], owned_context, operation
-        ):
-            raise InputError("Supplied context conflicts with actual serializer output")
-        operation.reserve_storage(256 + 72 * (len(output) + 1))
-        return {**output, "@context": owned_context}
-    if isinstance(output, list):
-        operation.reserve_storage(256 + 72 * 2)
-        return {"@context": owned_context, "@graph": output}
-    raise InputError("An external context requires object or array output")
+        reports = () if declaration_report is None else (declaration_report,)
+        report = combine_reports(
+            "serialization.sample", *reports, serialization_failure(error, operation)
+        )
+    return InstanceCheck(sample.output_json, sample.document_json, report)

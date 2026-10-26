@@ -19,6 +19,9 @@ from bijux_ontology.jsonld.evidence.occurrences import ObservedOccurrence
 from bijux_ontology.jsonld.evidence.values import ValueTraits
 from bijux_ontology.jsonld.processing.conversion import DirectionPolicy
 from bijux_ontology.jsonld.usages.checking import PreparedUsages
+from bijux_ontology.models.contracts.matching import (
+    identity_matches as _identity_matches,
+)
 from bijux_ontology.models.emission.bindings import (
     candidate_paths,
     same_contribution,
@@ -26,9 +29,6 @@ from bijux_ontology.models.emission.bindings import (
     source_node_traits,
 )
 from bijux_ontology.models.emission.direction import DirectionCheck
-from bijux_ontology.models.emission.matching import (
-    identity_matches as _identity_matches,
-)
 from bijux_ontology.models.emission.types import ModelUsage
 from bijux_ontology.models.resource_roles.checking import _RoleChecks
 from bijux_ontology.rdf.datatype_evaluators.registry import DatatypeRegistry

@@ -1,7 +1,6 @@
 """Bounded original R5 JSON, maintained model parsing and explicit RDF identity."""
 
 import json
-from importlib import import_module
 from typing import Literal as Choice
 from typing import cast
 
@@ -15,8 +14,14 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.rdf.identifiers import absolute_iri, language_tag
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 
+from ..admission import (
+    NativeFidelityUnavailable,
+    NativeOutputLimit,
+    NativeVersionUnavailable,
+    admit_r5_json,
+)
 from ..identity import FhirCodeBinding, FhirCodeIdentity, capture_code_bindings
-from ..json import UnsupportedJsonNumber, decode_fhir_json, same_json
+from ..json import UnsupportedJsonNumber, decode_fhir_json
 from .types import (
     FhirCodeSystem,
     FhirConcept,
@@ -432,19 +437,16 @@ def read_code_system(
                 raise InputError(
                     "Complete CodeSystem count conflicts with its explicit inventory"
                 )
-        from fhir.resources import __fhir_version__
-
-        if __fhir_version__ != "5.0.0":
-            raise _Unsupported("The installed maintained model is not FHIR R5")
-        native_type = import_module("fhir.resources.codesystem").CodeSystem
-        native = native_type.model_validate_json(payload, strict=True)
-        produced = native.model_dump_json()
-        if len(produced) > operation.limits.max_bytes or not same_json(
-            raw, json.loads(produced), operation
-        ):
+        try:
+            admit_r5_json(payload, raw, "CodeSystem", operation)
+        except NativeVersionUnavailable as error:
+            raise _Unsupported(
+                "The installed maintained model is not FHIR R5"
+            ) from error
+        except (NativeFidelityUnavailable, NativeOutputLimit) as error:
             raise _Unsupported(
                 "Maintained model changes source values outside the qualified profile"
-            )
+            ) from error
         if state != "supplement":
             vocabulary = load_vocabulary(
                 _projection(concepts, language, operation), budget=operation

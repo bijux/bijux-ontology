@@ -71,7 +71,10 @@ def project_omissions(
     def owned(value: object) -> object:
         """Copy within the same input bounds before a processor probe mutates it."""
         return own_json(
-            value, max_bytes=budget.limits.max_bytes, max_depth=budget.limits.max_depth
+            value,
+            max_bytes=budget.limits.max_bytes,
+            max_depth=budget.limits.max_depth,
+            budget=budget,
         )
 
     def probe_index(source: object) -> UsageIndex:

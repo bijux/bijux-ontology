@@ -404,6 +404,22 @@ def test_nested_native_coercion_and_source_bounds_cannot_launder_fidelity() -> N
 
 def test_current_budget_owns_captured_payload_and_adopted_child_reports() -> None:
     """Rejected source capture/report adoption cannot reappear in returned evidence."""
+    minimal = json.dumps(
+        {
+            "resourceType": "CodeSystem",
+            "status": "active",
+            "url": "urn:fhir:source",
+            "content": "complete",
+            "count": 0,
+        },
+        separators=(",", ":"),
+    ).encode()
+    assert read_code_system(minimal, bindings=()).report.verified
+    native_budget = Budget(Limits(max_total_bytes=20_000))
+    native_refused = read_code_system(minimal, bindings=(), budget=native_budget)
+    assert native_refused.report.outcome == "exhausted"
+    assert native_refused.vocabulary is None
+    assert native_budget._counts["bytes"] <= 20_000
     source = _produced()
     refused = read_code_system(
         source.encode(), bindings=_bindings(source), limits=Limits(max_total_bytes=100)

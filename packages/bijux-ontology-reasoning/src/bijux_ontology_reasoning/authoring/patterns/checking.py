@@ -17,14 +17,15 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
-from bijux_ontology.rdf.queries import QueryScope
 from bijux_ontology.rdf.queries.capture import selected_graphs
+from bijux_ontology.rdf.queries.native.capture import capture_selected_input
+from bijux_ontology.rdf.queries.native.observation import observe_query
+from bijux_ontology.rdf.queries.native.types import EngineConfig, NativeQueryInput
+from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource, copy_graph
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
 from bijux_ontology.rdf.terms import bound_node
-from bijux_ontology.rdf.workloads.qualification import _engine, _plan
-from bijux_ontology.rdf.workloads.types import EngineConfig, WorkloadQuery
 from bijux_ontology.vocabulary.sources.imports import required_imports
 from bijux_ontology.vocabulary.sources.types import OwnedSource
 
@@ -63,7 +64,7 @@ def _closure(
     scope: QueryScope,
     imports: Mapping[str, RdfSource | Payload] | None,
     operation: Operation,
-) -> tuple[dict[str, object], tuple[SnapshotMetadata, ...]]:
+) -> tuple[NativeQueryInput, tuple[SnapshotMetadata, ...]]:
     """Reuse offline import resolution and one explicit selected physical root."""
     if scope.kind == "dataset":
         raise ResourceError(
@@ -108,7 +109,9 @@ def _closure(
         literal_fidelity=source.literal_fidelity,
         max_triples=operation.limits.max_triples,
     )
-    return _plan(combined, QueryScope("default"), operation), metadata
+    return capture_selected_input(
+        combined, QueryScope("default"), (), operation
+    ), metadata
 
 
 def _key(
@@ -325,12 +328,11 @@ def check_patterns(
                         "Selected DOSDP fields or constraints are unsupported"
                     )
                 query, identity = generate_query(backend, pattern, operation, heap_mb)
-                engine = _engine(
-                    WorkloadQuery(pattern.iri, query, "set"),
+                engine = observe_query(
+                    pattern.iri,
+                    query,
                     EngineConfig("rdflib"),
                     plan,
-                    [],
-                    scope,
                     max_rows,
                     operation,
                 )

@@ -9,8 +9,8 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.json.paths import SourcePath
 from bijux_ontology.jsonld.contracts.expectations import ContextExpectation
-from bijux_ontology.jsonld.processing.expansion import expand_document
-from bijux_ontology.jsonld.usages import checking
+from bijux_ontology.jsonld.processing import expansion
+from bijux_ontology.jsonld.processing.runtime import document_processor
 from bijux_ontology.jsonld.usages.checking import prepare_usages
 
 EX = "https://example.org/"
@@ -42,7 +42,9 @@ def test_batch_matches_original_observations_and_caches_growing_corpus(
     before = deepcopy(document)
     original = prepare_usages(document, base=EX)
     expected = tuple(original.observe(path) for path in paths)
-    with patch.object(checking, "expand_document", wraps=expand_document) as expand:
+    with patch.object(
+        expansion, "document_processor", wraps=document_processor
+    ) as expand:
         prepared = prepare_usages(document, base=EX)
         actual = prepared.observe_many(paths)
         assert expand.call_count == 4

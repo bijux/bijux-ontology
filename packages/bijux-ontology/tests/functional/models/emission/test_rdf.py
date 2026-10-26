@@ -1,6 +1,8 @@
 """Real RDF and JSON-LD serializers share native output contract outcomes."""
 
+import sys
 from dataclasses import dataclass, field, replace
+from types import FrameType
 
 import pytest
 from pydantic import BaseModel, FieldSerializationInfo, field_serializer
@@ -24,8 +26,9 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration as Value,
 )
 from bijux_ontology.diagnostics.errors import InputError
+from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.execution.limits import Limits
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.interfaces.adapters.contracts import RdfField
 from bijux_ontology.interfaces.adapters.dataclasses import model_declarations
 from bijux_ontology.models.emission.checking import check_emission
@@ -514,3 +517,92 @@ def test_native_observations_agree_across_selected_model_paths_and_projection(
                 issue.code == "emission.source_presence_unverified"
                 for issue in unknown.issues
             )
+
+
+@pytest.mark.parametrize("anonymous", [False, True])
+def test_recursive_native_bindings_drain_new_grandchildren_and_terminate_cycles(
+    anonymous: bool,
+) -> None:
+    """A child discovered while draining the queue has its own finite obligations."""
+    child = BNode("child") if anonymous else EX.child
+    grandchild = BNode("grandchild") if anonymous else EX.grandchild
+    graph = Graph()
+    for node in (EX.root, child, grandchild):
+        graph.add((node, RDF.type, EX.Node))
+        graph.add((node, EX.name, Literal("name")))
+    for left, right in ((EX.root, child), (child, grandchild), (grandchild, EX.root)):
+        graph.add((left, EX.next, right))
+    model = Model(
+        "node",
+        (str(EX.Node),),
+        (
+            Field("next", str(EX.next), (Value("object", model="node"),)),
+            Field(
+                "name",
+                str(EX.name),
+                (Value("literal", datatype=str(XSD.string)),),
+                emission="guaranteed",
+            ),
+        ),
+    )
+    source = prepare_source(graph)
+    result = check_rdf_emission(source, (model,), (RdfModelUsage("node", EX.root),))
+    assert result.verified and result.checked == 12
+    graph.remove((grandchild, EX.name, None))
+    missing = check_rdf_emission(
+        prepare_source(graph), (model,), (RdfModelUsage("node", EX.root),)
+    )
+    assert not missing.verified and missing.complete
+    assert [issue.code for issue in missing.issues] == [
+        "emission.required_entity_fact_missing"
+    ]
+    assert missing.checked == 11
+
+
+def test_native_paid_field_finding_survives_later_actual_work_exhaustion() -> None:
+    """Stopping the parent allowance preserves the exact completed finding object."""
+    graph = Graph().add((EX.root, RDF.type, EX.Record))
+    graph.add((EX.root, EX.values, Literal(7)))
+    graph.add((EX.root, EX.after, Literal("after")))
+    model = _model(Value("literal", datatype=str(XSD.string)))
+    model = replace(
+        model,
+        fields=(*model.fields, Field("after", str(EX.after), (Value("literal"),))),
+    )
+    budget = Budget()
+    paid: list[Issue] = []
+    append_code = IssueCollector.append.__code__
+
+    def observe_paid(frame: FrameType, event: str, value: object) -> None:
+        if event != "return" or frame.f_code is not append_code:
+            return
+        issue = frame.f_locals.get("issue")
+        if (
+            not isinstance(issue, Issue)
+            or issue.code != "emission.value_mismatch"
+            or paid
+        ):
+            return
+        paid.append(issue)
+        remaining = budget.remaining("work")
+        budget.consume("work", remaining)
+
+    previous = sys.getprofile()
+    sys.setprofile(observe_paid)
+    try:
+        result = check_rdf_emission(
+            prepare_source(graph),
+            (model,),
+            (RdfModelUsage("record", EX.root),),
+            budget=budget,
+        )
+    finally:
+        sys.setprofile(previous)
+    assert len(paid) == 1
+    assert not result.complete and result.outcome == "exhausted"
+    assert any(issue is paid[0] for issue in result.issues)
+    assert {issue.code for issue in result.issues} == {
+        "emission.value_mismatch",
+        "execution.limit_exceeded",
+    }
+    assert paid[0].location == f"entity[{EX.root}].values"

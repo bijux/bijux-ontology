@@ -14,6 +14,10 @@ from rdflib.term import Node
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, IssueCollector
+from bijux_ontology.rdf.queries.filters import (
+    capture_lone_filter,
+    require_filter_preservation,
+)
 from bijux_ontology.rdf.queries.literals import (
     LiteralScopeUnsupported,
     check_literal_scope,
@@ -104,21 +108,10 @@ def analyze_query(
         for part in _nodes(parsed, budget):
             if part.name == "pname":
                 referenced_prefixes.add(_prefix(part))
-            if require_execution and part.name == "GroupGraphPatternSub":
-                only = None
-                # The second argument to CompValue.get controls evaluation,
-                # not missing keys.
-                for child in part["part"] if "part" in part else ():  # noqa: SIM401
-                    budget.consume("work")
-                    if isinstance(child, CompValue) and child.name == "Filter":
-                        if only is not None:
-                            only = None
-                            break
-                        only = child
-                if only is not None:
-                    budget.consume("states")
-                    budget.reserve_storage(8)
-                    lone_filters.append(only)
+            if require_execution:
+                original = capture_lone_filter(part, budget)
+                if original is not None:
+                    lone_filters.append(original)
         algebra = translateQuery(
             parsed, initNs=dict(shape.sg.graph.namespaces())
         ).algebra
@@ -129,18 +122,7 @@ def analyze_query(
         raise InputError(
             "SHACL query context could not be resolved", location=str(node)
         ) from error
-    # RDFLib simplifies these original nodes in place. Its group translator
-    # drops a lone false-valued Literal through a Python truth-value test.
-    # Preserve the backend boundary instead of rewriting valid SPARQL or
-    # accepting its answer with a required filter silently omitted.
-    for original in lone_filters:
-        budget.consume("work")
-        expression = original["expr"]
-        if isinstance(expression, Literal) and not expression:
-            raise ResourceError(
-                "RDFLib cannot preserve a lone false-valued constant FILTER",
-                location=str(node),
-            )
+    require_filter_preservation(lone_filters, budget, location=node)
     result: list[FunctionCall] = []
     check_literal_scope(algebra, budget)
     for value in _nodes(algebra, budget):

@@ -1,7 +1,6 @@
 """Local original JSON and actual maintained R5 ValueSet interpretation."""
 
 import json
-from importlib import import_module
 from typing import cast
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
@@ -10,9 +9,14 @@ from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.values import array_value, object_value, text_value
 from bijux_ontology.rdf.identifiers import absolute_iri
 
+from ..admission import (
+    NativeFidelityUnavailable,
+    NativeVersionUnavailable,
+    admit_r5_json,
+)
 from ..code_system.reading import _operation as operation
 from ..identity import FhirCodeIdentity
-from ..json import UnsupportedJsonNumber, decode_fhir_json, same_json
+from ..json import UnsupportedJsonNumber, decode_fhir_json
 from .types import FhirExpansionEntry, FhirSelectionClause, FhirValueSet
 
 
@@ -214,17 +218,16 @@ def read_value_set(
                 if key in expansion and cast(int, expansion[key]) < 0:
                     raise InputError("Expansion counts cannot be negative")
             entries = _entries(expansion, owned_budget)
-        from fhir.resources import __fhir_version__
-
-        if __fhir_version__ != "5.0.0":
-            raise _Unsupported("The installed maintained model is not FHIR R5")
-        native_type = import_module("fhir.resources.valueset").ValueSet
-        native = native_type.model_validate_json(payload, strict=True)
-        produced = native.model_dump_json()
-        if len(produced) > owned_budget.limits.max_bytes:
-            raise LimitExceeded("Native ValueSet exceeds max_bytes")
-        if not same_json(decode_fhir_json(produced, owned_budget), raw, owned_budget):
-            raise _Unsupported("Native R5 production changes original source values")
+        try:
+            admit_r5_json(payload, raw, "ValueSet", owned_budget)
+        except NativeVersionUnavailable as error:
+            raise _Unsupported(
+                "The installed maintained model is not FHIR R5"
+            ) from error
+        except NativeFidelityUnavailable as error:
+            raise _Unsupported(
+                "Native R5 production changes original source values"
+            ) from error
         owned_budget.consume("work", 0)
         checked = 1
     except ModuleNotFoundError:

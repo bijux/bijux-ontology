@@ -3,6 +3,7 @@
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Literal as Kind
 
 import pytest
 import rdflib
@@ -17,6 +18,7 @@ from bijux_ontology.documents.export import write_export
 from bijux_ontology.documents.migrations import export_migration
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.models.path_fields import PathFieldUsage, check_path_fields
+from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.migrations.candidates import MigrationCandidate, MigrationCheck
 from bijux_ontology.rdf.query_transforms import (
     SparqlBinding,
@@ -469,3 +471,39 @@ def test_shared_limits_cancellation_and_paid_native_postcondition_prefix() -> No
     ).report.verified
     owned.consume("work", owned.remaining("work"))
     assert transform_sparql(source, program, budget=owned).report.outcome == "exhausted"
+
+
+@pytest.mark.parametrize("kind", ("CONSTRUCT", "UPDATE"))
+def test_false_filter_loss_cannot_publish_construct_or_update_output(
+    kind: Kind["CONSTRUCT", "UPDATE"],
+) -> None:
+    """Native program fidelity is required before any independent output check."""
+    source = _source()
+    original = frozenset(source.graph())
+    prefix = "CONSTRUCT" if kind == "CONSTRUCT" else "INSERT"
+    expected = prepare_rdf(Graph()) if kind == "CONSTRUCT" else source
+    observed: list[Report] = []
+
+    def actual(candidate: PreparedSource) -> Report:
+        """Compare actual RDF identity, including implicit xsd:string aliases."""
+        report = compare_rdf(candidate, expected)
+        observed.append(report)
+        return report
+
+    for expression in ("false", "1=2"):
+        observed.clear()
+        program = SparqlProgram(
+            kind,
+            prefix + " {<urn:transform:s> <urn:transform:filtered> true} "
+            f"WHERE {{FILTER({expression})}}",
+        )
+        result = transform_sparql(
+            source, program, after_checks=(MigrationCheck("filtered-output", actual),)
+        )
+        if expression == "false":
+            assert result.report.outcome == "unverified" and result.source is None
+            assert observed == []
+        else:
+            assert result.report.verified and result.source is not None
+            assert len(observed) == 1 and observed[0].verified
+        assert frozenset(source.graph()) == original

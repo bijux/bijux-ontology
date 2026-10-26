@@ -1,44 +1,29 @@
-"""One owned dataset plan, two native runs and reusable finite answer comparisons."""
+"""Two native observations and caller-selected finite bag/set comparison policy."""
 
-import json
 import time
-from dataclasses import asdict
 from threading import Event
 from typing import cast
 
-from rdflib import URIRef
-
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
 from bijux_ontology.diagnostics.reports import Issue, Report
-from bijux_ontology.execution.allowances import DelegatedAllowance
 from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import (
     Budget,
-    BudgetKind,
     IssueCollector,
     Limits,
     bound_text,
     retain_report,
 )
-from bijux_ontology.execution.protocol import json_bound
-from bijux_ontology.execution.workers import execute_worker
-from bijux_ontology.json.values import decode_json, object_value
 from bijux_ontology.rdf.answers.comparison import compare_answers
-from bijux_ontology.rdf.answers.reading import capture_answer
-from bijux_ontology.rdf.queries.capture import selected_graphs
-from bijux_ontology.rdf.queries.protocol import term_data
-from bijux_ontology.rdf.queries.results import adopt_result
+from bijux_ontology.rdf.queries.native.capture import capture_selected_input
+from bijux_ontology.rdf.queries.native.observation import observe_query
+from bijux_ontology.rdf.queries.native.types import EngineConfig, QueryBinding
 from bijux_ontology.rdf.queries.types import QueryScope
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
-from bijux_ontology.rdf.terms import bound_node, validate_triple
 
 from .types import (
-    EngineAnswer,
-    EngineConfig,
-    EngineStatus,
     QualificationStatus,
-    QueryBinding,
     QueryQualification,
     WorkloadQualification,
     WorkloadQuery,
@@ -46,240 +31,6 @@ from .types import (
 
 _RDFLIB = EngineConfig("rdflib")
 _PYOXIGRAPH = EngineConfig("pyoxigraph")
-
-_KINDS: tuple[BudgetKind, ...] = (
-    "bytes",
-    "resources",
-    "triples",
-    "work",
-    "issues",
-    "states",
-)
-
-
-def _plan(
-    source: PreparedSource, scope: QueryScope, operation: Operation
-) -> dict[str, object]:
-    """Capture selected physical graphs once, preserving empty named inventory."""
-    records = []
-    namespaces: dict[str, str] = {}
-    for name, graph in selected_graphs(source, scope, operation):
-        operation.consume("resources")
-        operation.consume("states")
-        operation.consume("bytes", 128)
-        if name is not None:
-            bound_node(name, operation)
-        rows = []
-        for triple in graph:
-            operation.consume("work")
-            operation.consume("triples")
-            operation.consume("states", 4)
-            operation.consume("bytes", 256)
-            validate_triple(*triple)
-            for term in triple:
-                bound_node(term, operation)
-            rows.append([term_data(term) for term in triple])
-        records.append([term_data(name), rows])
-        for prefix, iri in graph.namespaces():
-            operation.consume("work")
-            bound_text(prefix, operation)
-            bound_node(URIRef(iri), operation)
-            text = str(iri)
-            if prefix in namespaces and namespaces[prefix] != text:
-                raise InputError("Selected graphs have conflicting namespace bindings")
-            if prefix not in namespaces:
-                operation.consume("states")
-                operation.consume("bytes", 64)
-                namespaces[prefix] = text
-    operation.consume("states", len(namespaces))
-    operation.consume("bytes", len(namespaces) * 32)
-    return {
-        "graphs": records,
-        "namespaces": [list(pair) for pair in namespaces.items()],
-    }
-
-
-def _dispatch(request: dict[str, object], operation: Operation) -> dict[str, object]:
-    """Reserve host adoption and forfeit delegated quota without a valid receipt."""
-    request.update(
-        output_cap=1,
-        limits=asdict(operation.limits),
-        allowances=dict.fromkeys(_KINDS, 0),
-    )
-    size = json_bound(request, operation)
-    operation.consume("bytes", size * 3)
-    cap = min(
-        operation.limits.max_bytes,
-        operation.remaining("bytes") // 256,
-        16_384,
-        operation.remaining("work") // 16,
-    )
-    if cap < 1024:
-        raise LimitExceeded("Workload reply has no reserved adoption allowance")
-    operation.consume("bytes", 64 * cap)
-    operation.consume("states", 16)
-    operation.consume("work", 4 * cap)
-    allowances = {key: operation.remaining(key) // 4 for key in _KINDS}
-    delegated = DelegatedAllowance(operation, allowances)
-    request["allowances"] = delegated.to_data()
-    request["output_cap"] = cap
-    payload = json.dumps(request, ensure_ascii=True, separators=(",", ":")).encode()
-    received = dispatched = False
-    try:
-        operation.consume("work", 0)
-        dispatched = True
-        raw = execute_worker(
-            "bijux_ontology.rdf.workloads.worker",
-            payload,
-            cap=max(cap, len(payload)),
-            timeout=operation.deadline - time.monotonic(),
-            cancel=operation.cancel,
-        )
-        if len(raw) > cap:
-            raise ResourceError("Workload reply exceeds reserved response cap")
-        response = object_value(decode_json(raw, max_bytes=cap), location="workload")
-        if (
-            set(response)
-            != {
-                "protocol",
-                "status",
-                "version",
-                "python",
-                "result",
-                "message",
-                "controls",
-            }
-            or type(response["protocol"]) is not int
-            or response["protocol"] != 1
-        ):
-            raise ResourceError("Unsupported workload worker receipt")
-        if (
-            response["status"]
-            not in ("completed", "unsupported", "failed", "exhausted")
-            or type(response["message"]) is not str
-            or type(response["version"]) is not str
-            or type(response["python"]) is not str
-        ):
-            raise ResourceError("Invalid native workload identity or status")
-        delegated.settle(response["controls"])
-        received = True
-        operation.consume("work", 0)
-        return response
-    finally:
-        if dispatched and not received:
-            delegated.forfeit()
-
-
-def _engine(
-    query: WorkloadQuery,
-    config: EngineConfig,
-    plan: dict[str, object],
-    bindings: list[object],
-    scope: QueryScope,
-    max_rows: int,
-    operation: Operation,
-) -> EngineAnswer:
-    """Preserve one native outcome without turning unsupported work into answers."""
-    issues = IssueCollector(operation)
-    native_version = python_version = None
-    binding_policy = "rdflib-initBindings" if config.engine == "rdflib" else "SEP-0007"
-    status = "failed"
-    answer = None
-    try:
-        response = _dispatch(
-            {
-                "query": query.text,
-                "config": asdict(config),
-                "bindings": bindings,
-                "max_rows": max_rows,
-                **plan,
-            },
-            operation,
-        )
-        native_version = cast(str, response["version"])
-        bound_text(native_version, operation)
-        python_version = cast(str, response["python"])
-        bound_text(python_version, operation)
-        status = cast(str, response["status"])
-        if status != "completed":
-            message = cast(str, response["message"])
-            bound_text(message, operation)
-            if status == "exhausted":
-                raise LimitExceeded(message)
-            issues.append(
-                Issue(
-                    "workload.unsupported"
-                    if status == "unsupported"
-                    else "workload.engine_failed",
-                    message,
-                    query.identifier,
-                    kind="unverified" if status == "unsupported" else "input_error",
-                )
-            )
-        else:
-            native = object_value(response["result"], location="query")
-            size = json_bound(native, operation)
-            operation.consume("bytes", 3 * size)
-            raw = json.dumps(native, ensure_ascii=True, separators=(",", ":")).encode()
-            result = adopt_result(
-                raw, scope, operation.limits, max_rows, budget=operation
-            )
-            answer = capture_answer(
-                result,
-                budget=operation,
-                timeout=max(0.000001, operation.deadline - time.monotonic()),
-                cancel=operation.cancel,
-            )
-            retain_report(answer.report, operation, issues)
-            if answer.report.verified and answer.external_complete is True:
-                return EngineAnswer(
-                    config,
-                    native_version,
-                    python_version,
-                    binding_policy,
-                    "completed",
-                    answer,
-                    Report(
-                        "rdf.workload.engine", 1, requested=1, children=(answer.report,)
-                    ),
-                )
-            status = (
-                "exhausted"
-                if any(issue.kind == "exhausted" for issue in answer.report.issues)
-                else "failed"
-            )
-    except LimitExceeded as error:
-        if answer is not None:
-            issues.retain_completed(answer.report)
-        status = "exhausted"
-        issues.exhausted(str(error), location=query.identifier)
-    except InputError as error:
-        status = "failed"
-        try:
-            issues.append(
-                Issue(
-                    "workload.engine_failed",
-                    str(error),
-                    query.identifier,
-                    kind="unverified"
-                    if isinstance(error, ResourceError)
-                    else "input_error",
-                )
-            )
-        except LimitExceeded as exhausted:
-            status = "exhausted"
-            issues.exhausted(str(exhausted), location=query.identifier)
-    return EngineAnswer(
-        config,
-        native_version,
-        python_version,
-        binding_policy,
-        cast(EngineStatus, status),
-        None,
-        Report(
-            "rdf.workload.engine", requested=1, complete=False, issues=tuple(issues)
-        ),
-    )
 
 
 def qualify_workload(
@@ -329,8 +80,8 @@ def qualify_workload(
     current_reports: list[Report] = []
     metadata = None
     try:
-        operation.consume("states", len(queries) + len(bindings))
-        operation.consume("bytes", 128 * (len(queries) + len(bindings) + 1))
+        operation.consume("states", len(queries))
+        operation.consume("bytes", 128 * (len(queries) + 1))
         identifiers = set()
         for query in queries:
             bound_text(query.identifier, operation)
@@ -339,22 +90,9 @@ def qualify_workload(
                 raise InputError("Workload query identifiers must be distinct")
             identifiers.add(query.identifier)
         metadata = SnapshotMetadata.capture(source, operation)
-        if scope.kind == "dataset" and metadata.graph_fidelity != "complete":
-            raise ResourceError(
-                "Dataset workload requires complete named graph inventory"
-            )
-        plan = _plan(source, scope, operation)
-        if not metadata.same_scope(SnapshotMetadata.capture(source, operation)):
+        selected = capture_selected_input(source, scope, bindings, operation)
+        if not metadata.same_scope(selected.source_metadata):
             raise ResourceError("RDF source metadata changed during workload capture")
-        captured_bindings: list[object] = []
-        names = set()
-        for binding in bindings:
-            bound_text(binding.variable, operation)
-            bound_node(binding.value, operation)
-            if binding.variable in names:
-                raise InputError("Workload binding variables must be distinct")
-            names.add(binding.variable)
-            captured_bindings.append([binding.variable, term_data(binding.value)])
         if not queries:
             issues.append(
                 Issue(
@@ -370,8 +108,8 @@ def qualify_workload(
             engines_list = []
             local = IssueCollector(operation)
             for config in (left, right):
-                engine = _engine(
-                    query, config, plan, captured_bindings, scope, max_rows, operation
+                engine = observe_query(
+                    query.identifier, query.text, config, selected, max_rows, operation
                 )
                 current_reports.append(engine.report)
                 engines_list.append(engine)

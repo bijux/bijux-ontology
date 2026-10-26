@@ -10,9 +10,9 @@ from bijux_ontology.execution.limits import Budget
 from bijux_ontology.jsonld.evidence.values import ValueTraits
 from bijux_ontology.jsonld.processing.conversion import (
     DirectionPolicy,
-    _convert_to_rdf_dataset,
+    _convert_original_expansion,
 )
-from bijux_ontology.jsonld.processing.resources import DocumentLoader
+from bijux_ontology.jsonld.processing.expansion import OriginalExpansion
 from bijux_ontology.rdf.identifiers import language_tag
 
 _I18N = "https://www.w3.org/ns/i18n#"
@@ -116,10 +116,8 @@ class DirectionCheck:
 
     def check(
         self,
-        document: object,
+        original: OriginalExpansion,
         *,
-        base: str | None,
-        loader: DocumentLoader,
         budget: Budget,
     ) -> Report | None:
         """Reuse maintained conversion and the operation's owned resource cache."""
@@ -138,10 +136,8 @@ class DirectionCheck:
                     ),
                 ),
             )
-        return _convert_to_rdf_dataset(
-            document,
-            base=base,
-            document_loader=loader,
+        return _convert_original_expansion(
+            original,
             budget=budget,
             direction=self.policy,
         ).report

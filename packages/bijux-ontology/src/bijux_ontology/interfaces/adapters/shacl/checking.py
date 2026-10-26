@@ -26,10 +26,12 @@ from bijux_ontology.jsonld.processing.resources import DocumentLoader
 from bijux_ontology.jsonld.processing.runtime import processor
 from bijux_ontology.jsonld.usages.checking import prepare_usages
 from bijux_ontology.models.emission.bindings import source_entity
+from bijux_ontology.models.emission.samples import (
+    contextualize_output,
+    serialization_failure,
+)
 from bijux_ontology.models.emission.serialization import (
     InstanceCheck,
-    _contextualized_output,
-    _failure,
     check_serialized,
 )
 from bijux_ontology.models.emission.types import ModelUsage
@@ -102,7 +104,7 @@ def check_imported_output(
         )
         encoded = json.dumps(owned, ensure_ascii=False, allow_nan=False)
         bound_text(encoded, operation)
-        selected = _contextualized_output(owned, context, operation)
+        selected = contextualize_output(owned, context, operation)
         processor()
         prepared = prepare_usages(
             selected, base=base, document_loader=document_loader, budget=operation
@@ -269,7 +271,7 @@ def check_imported_output(
         issues.exhausted(str(error))
     except InputError as error:
         try:
-            retain_report(_failure(error, operation), operation, issues)
+            retain_report(serialization_failure(error, operation), operation, issues)
         except LimitExceeded as exhausted:
             issues.exhausted(str(exhausted))
     return InstanceCheck(

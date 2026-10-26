@@ -7,7 +7,6 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.json.paths import SourcePath, bound_path, bounded_location, location
-from bijux_ontology.json.values import own_json
 from bijux_ontology.jsonld.contracts.expectations import (
     ContextExpectation,
     compare_usage,
@@ -18,6 +17,7 @@ from bijux_ontology.jsonld.evidence.values import ValueTraits, value_traits
 from bijux_ontology.jsonld.processing.expansion import (
     _drop_issues,
     _validate_allowed_drops,
+    capture_original_expansion,
     expand_document,
 )
 from bijux_ontology.jsonld.processing.resources import (
@@ -60,20 +60,14 @@ class PreparedUsages:
         self._allowed_drops = allowed_drops
         self._loader = context_resources(document_loader, limits=limits, budget=budget)
         self._budget = self._loader.budget
-        self._document = own_json(
+        self._original_expansion = capture_original_expansion(
             document,
-            max_bytes=self._budget.limits.max_bytes,
-            max_depth=self._budget.limits.max_depth,
-            budget=self._budget,
-        )
-        self._base = base
-        dropped: list[str | None] = []
-        expanded = expand_document(
-            self._document,
             base=base,
             document_loader=self._loader,
-            on_property_dropped=dropped.append,
         )
+        self._document = self._original_expansion._document
+        self._base = self._original_expansion._base
+        expanded = self._original_expansion._expanded
         self._omissions: tuple[SourcePath, ...] = ()
         self._omission_issues: tuple[Issue, ...] = ()
         if allowed_omissions:
@@ -94,15 +88,14 @@ class PreparedUsages:
             self._omission_issues = projection.issues
             self._omissions = projection.paths
             if self._omissions:
-                self._document = projection.document
-                dropped.clear()
-                expanded = expand_document(
-                    self._document,
+                self._original_expansion = capture_original_expansion(
+                    projection.document,
                     base=base,
                     document_loader=self._loader,
-                    on_property_dropped=dropped.append,
                 )
-        self._dropped = tuple(dropped)
+                self._document = self._original_expansion._document
+                expanded = self._original_expansion._expanded
+        self._dropped = self._original_expansion._dropped
         self._root_nodes = tuple(value_traits(node, "") for node in expanded)
         self._entities = EntityInventory(expanded, self._budget)
         self._index = UsageIndex(

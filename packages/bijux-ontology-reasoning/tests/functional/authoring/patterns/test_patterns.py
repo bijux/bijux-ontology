@@ -297,6 +297,22 @@ def test_owned_local_import_closure_and_unrequested_exclusion(
         imports=imports,
     )
     assert result.report.verified and len(result.import_metadata) == 1
+    named = Dataset()
+    root = named.graph(URIRef("urn:pattern:root-selection"))
+    for triple in graph:
+        root.add(triple)
+    named_scope = QueryScope("named", "urn:pattern:root-selection")
+    named_result = check_patterns(
+        backend,
+        prepare_source(RdfSource(named, document_iri="urn:pattern:root")),
+        (_pattern(),),
+        (_expected(), _expected("A2")),
+        scope=named_scope,
+        imports=imports,
+    )
+    assert named_result.report.verified, named_result.report.to_dict()
+    assert named_result.scope == named_scope and len(named_result.import_metadata) == 1
+    assert set(named_result.queries[0].matches) == set(result.queries[0].matches)
     missing = check_patterns(
         backend, source, (_pattern(),), (_expected(),), scope=_SCOPE
     )

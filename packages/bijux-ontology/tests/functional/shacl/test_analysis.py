@@ -216,6 +216,38 @@ def test_signed_components_reuse_deactivation_and_malformed_metadata() -> None:
         )
 
 
+def test_logical_occurrences_require_each_connected_original_position() -> None:
+    """Duplicate targets retain distinct positions; source membership is not a path."""
+    profile = _profile(
+        "ex:R sh:and (_:A _:A); sh:or (_:A _:A). _:A sh:nodeKind sh:IRI.",
+        "R",
+    )
+    assert profile.source is not None
+    original = frozenset(profile.source.graph())
+    repeated = [d for d in profile.dependencies if d.parameter == SH["and"]]
+    assert [len(d.via) for d in repeated] == [3, 5]
+    assert repeated[0].dependency is repeated[1].dependency
+    assert isinstance(repeated[0].dependency, BNode)
+    assert analyze_shape_profile(profile).report.verified
+    last = repeated[1]
+    other = next(
+        d for d in profile.dependencies if d.parameter == SH["or"] and len(d.via) == 5
+    )
+    disconnected = replace(last, via=(last.via[0], *other.via[1:]))
+    assert all(triple in original for triple in disconnected.via)
+    for dependencies in (
+        tuple(d for d in profile.dependencies if d is not last),
+        tuple(disconnected if d is last else d for d in profile.dependencies),
+    ):
+        result = analyze_shape_profile(replace(profile, dependencies=dependencies))
+        assert result.report.outcome == "unverified"
+        assert result.satisfiability == "not_determined"
+        assert not (
+            result.local_conflicts or result.root_conflicts or result.components
+        )
+    assert frozenset(profile.source.graph()) == original
+
+
 def test_required_preparation_and_shared_limits_preserve_completed_evidence() -> None:
     """Incomplete preparation fails; later quota failure keeps an earlier proof."""
     profile = _profile(

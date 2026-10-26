@@ -1,7 +1,9 @@
 """Finite context qualification catches declared branch mutations through PyLD."""
 
+import sys
 from collections.abc import Iterator
 from copy import deepcopy
+from types import FrameType
 
 import pytest
 from rdflib import Literal
@@ -13,7 +15,8 @@ from bijux_ontology.declarations.types import (
     ValueDeclaration,
 )
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Limits
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.models.context_probes import (
     ContextProbe,
     ProbeSample,
@@ -285,7 +288,30 @@ def test_offline_resources_are_shared_and_limits_never_erase_prior_findings() ->
     assert probe_context(EX + "context", [probe], document_loader=loader).verified
     assert calls == [EX + "context"]
     context["title"] = EX + "wrong"
-    report = probe_context(context, [probe], limits=Limits(max_work=1000))
+    owner = Budget()
+    paid: list[Issue] = []
+
+    def stop_after_finding(frame: FrameType, event: str, argument: object) -> None:
+        if event != "return" or frame.f_code is not IssueCollector.append.__code__:
+            return
+        collector, issue = frame.f_locals.get("self"), frame.f_locals.get("issue")
+        if (
+            not paid
+            and isinstance(collector, IssueCollector)
+            and collector.budget is owner
+            and isinstance(issue, Issue)
+            and issue.code == "context.mapping_mismatch"
+        ):
+            paid.append(issue)
+            owner.consume("work", owner.remaining("work"))
+
+    previous_profile = sys.getprofile()
+    sys.setprofile(stop_after_finding)
+    try:
+        report = probe_context(context, [probe], budget=owner)
+    finally:
+        sys.setprofile(previous_profile)
+    assert paid and any(issue is paid[0] for issue in report.issues)
     assert not report.verified and not report.complete
     assert any(issue.kind == "exhausted" for issue in report.issues), report.to_dict()
     assert any(issue.code == "context.mapping_mismatch" for issue in report.issues), (

@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from collections.abc import Generator, Sequence
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -14,6 +15,8 @@ from rdflib.namespace import OWL, RDF, RDFS, XSD
 from bijux_ontology.documents.preparation import prepare_source
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.queries import QueryScope, query_rdf
+from bijux_ontology.rdf.stores.preparation import snapshot_rdf
+from bijux_ontology.rdf.stores.queries import query_snapshot
 
 EX = Namespace("https://queries.example/")
 
@@ -425,3 +428,39 @@ def test_query_annotation_and_transform_share_exact_physical_selection() -> None
         source, f"ASK {{ GRAPH <{EX.empty}> {{}} }}", scope=QueryScope("dataset")
     )
     assert empty.report.verified and empty.answer is True
+
+
+def test_required_filters_are_unknown_only_for_lossy_native_execution(
+    tmp_path: Path,
+) -> None:
+    """RDFLib limitations cannot prohibit valid queries in a capable native store."""
+    path = tmp_path / "input.nt"
+    path.write_text("<urn:filter:s> <urn:filter:p> <urn:filter:o> .\n")
+    stored = snapshot_rdf(path, tmp_path / "snapshot", format="nt")
+    assert stored.report.verified and stored.snapshot is not None
+    scope = QueryScope("default")
+    for query, answer, rows in (
+        ("ASK {FILTER(false)}", False, ()),
+        ("ASK {FILTER(0)}", False, ()),
+        ('ASK {FILTER("")}', False, ()),
+        ("ASK {{FILTER(false)} FILTER(1=1)}", False, ()),
+        (
+            "SELECT ?x WHERE {{BIND(1 AS ?x) FILTER(false)} UNION {BIND(2 AS ?x)}}",
+            None,
+            ((Literal(2),),),
+        ),
+    ):
+        limited = query_rdf(Graph(), query, scope=scope)
+        assert limited.report.outcome == "unverified"
+        assert limited.answer is None and limited.kind is None and limited.rows == ()
+        native = query_snapshot(stored.snapshot, query, scope=scope)
+        assert (
+            native.report.verified and native.answer is answer and native.rows == rows
+        )
+    for body, expected in (
+        ("FILTER(true)", True),
+        ("FILTER(1=2)", False),
+        ("FILTER(false) FILTER(true)", False),
+    ):
+        completed = query_rdf(Graph(), f"ASK {{{body}}}", scope=scope)
+        assert completed.report.verified and completed.answer is expected

@@ -237,6 +237,8 @@ def test_disk_vocabulary_uses_actual_sealed_targeted_declarations_and_scope(
     schema.write_text(
         f"<urn:stream:p> <{RDF.type}> <{OWL.DatatypeProperty}> _:schema .\n"
         f"<urn:stream:C> <{RDF.type}> <{OWL.Class}> _:schema .\n"
+        f"<{E.Custom}> <{RDF.type}> <{E.Kind}> _:schema .\n"
+        f'<{E.NotClass}> <{RDF.type}> "not a named kind" _:schema .\n'
     )
     limits = Limits(max_total_bytes=500000000, max_work=10000000, max_states=1000000)
     stored = snapshot_rdf(
@@ -285,6 +287,39 @@ def test_disk_vocabulary_uses_actual_sealed_targeted_declarations_and_scope(
         (f.statement.index, f.issue.code, f.issue.actual) for f in disk.findings
     ] == [(f.statement.index, f.issue.code, f.issue.actual) for f in memory.findings]
     assert [f.statement.index for f in disk.findings] == [3, 4, 5]
+
+    with source.open("a") as stream:
+        stream.write(
+            f"<{E.s}> <{RDF.type}> <{E.Custom}> .\n" * 2
+            + f"<{E.s}> <{RDF.type}> <{E.NotClass}> .\n"
+        )
+    explicit = (
+        _vocabulary()
+        .add((E.Custom, RDF.type, E.Kind))
+        .add((E.NotClass, RDF.type, Literal("not a named kind")))
+    )
+    disk = check_rdf_stream(
+        source, snapshot, vocabulary_scope=QueryScope("named", pin), limits=limits
+    )
+    memory = check_rdf_stream(source, explicit, limits=limits)
+    assert [row.issue.to_dict() for row in disk.findings] == [
+        row.issue.to_dict() for row in memory.findings
+    ]
+    assert [row.statement.index for row in disk.findings] == [3, 4, 5, 6, 7, 8]
+    assert [row.issue.code for row in disk.findings[-3:]] == [
+        "vocabulary.entity_kind_mismatch",
+        "vocabulary.entity_kind_mismatch",
+        "vocabulary.term_missing",
+    ]
+    excluded = check_rdf_stream(
+        source,
+        snapshot,
+        vocabulary_scope=QueryScope("named", pin),
+        check_literals=False,
+        exclude=tuple(map(str, (E.missing, E.MissingClass, E.Custom, E.NotClass))),
+        limits=limits,
+    )
+    assert excluded.report.verified and excluded.statements == 8
 
 
 def test_explicit_excluded_predicates_remain_in_checked_scope(tmp_path: Path) -> None:

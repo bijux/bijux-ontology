@@ -6,7 +6,7 @@ from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
 from bijux_ontology.vocabulary.mappings.types import MappingSet
 
-from .planning import _check, _ContextUnavailable, _produce, _reserve
+from .planning import _check, _ContextUnavailable, _reserve, produce_selection
 from .types import MappingReconciliation, MappingResolution, ReconciledMappings
 
 
@@ -78,7 +78,9 @@ def apply_mapping_resolution(
                         "Resolution requires actual source mapping occurrences"
                     )
         _reserve(operation)
-        production = _produce(tuple(chosen), mapping_set_id, license, operation)
+        production = produce_selection(
+            tuple(chosen), mapping_set_id, license, operation
+        )
         _check(
             production,
             reconciliation.subject_vocabulary,
