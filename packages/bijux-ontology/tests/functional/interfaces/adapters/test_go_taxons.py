@@ -250,6 +250,7 @@ def test_cumulative_budget_cuts_keep_paid_negative_evidence_and_cancel() -> None
     baseline = Budget()
     completed = check_go_taxa(release, annotation, policy=POLICY, budget=baseline)
     assert completed.report.outcome == "disagreement"
+
     class StopAfterFinding(Budget):
         """Exhaust subsequent work only after real negative evidence was paid."""
 
