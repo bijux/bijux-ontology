@@ -214,3 +214,40 @@ def test_terminal_receipts_preserve_actual_allowances_after_inherited_cancel() -
         nested.consume_completed("work", 1)
     with pytest.raises(InputError):
         nested.consume_completed("work", -1)
+
+
+@pytest.mark.parametrize("boundary", ("bytes", "states", "issues"))
+def test_nested_finding_checkpoints_transfer_only_their_paid_prefix(
+    boundary: str,
+) -> None:
+    from typing import cast
+
+    from bijux_ontology.execution.limits import BudgetKind
+
+    budget = Budget(Limits(max_issues=3))
+    previous, outer, inner, native = (IssueCollector(budget) for _ in range(4))
+    unrelated = Issue("example.parent", "Earlier parent finding")
+    first = Issue("example.first", "First child finding")
+    second = Issue("example.second", "Nested child finding")
+    previous.append(unrelated)
+    outer_checkpoint = outer.checkpoint()
+    native.append(first)
+    inner_checkpoint = inner.checkpoint()
+    native.append(second)
+    kind = cast(BudgetKind, boundary)
+    budget.consume(kind, budget.remaining(kind))
+    with pytest.raises(LimitExceeded):
+        budget.consume(kind)
+    before = dict(budget._counts)
+    inner.retain_since(inner_checkpoint)
+    inner.retain_since(inner_checkpoint)
+    outer.retain_since(outer_checkpoint)
+    outer.retain_since(outer_checkpoint)
+    assert len(inner) == 1 and inner[0] is second
+    assert len(outer) == 2 and outer[0] is first and outer[1] is second
+    assert unrelated not in outer and budget._counts == before
+    with pytest.raises(InputError, match="another collector"):
+        inner.retain_since(outer_checkpoint)
+    outer.exhausted("No further checking")
+    outer.exhausted("Still stopped")
+    assert [issue.kind for issue in outer] == ["finding", "finding", "exhausted"]

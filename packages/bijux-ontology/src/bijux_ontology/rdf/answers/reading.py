@@ -22,7 +22,12 @@ from bijux_ontology.execution.limits import (
 from bijux_ontology.execution.protocol import json_bound
 from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.json.values import decode_json, object_value
-from bijux_ontology.rdf.queries.protocol import QueryTerm, read_term, term_data
+from bijux_ontology.rdf.queries.protocol import (
+    QueryTerm,
+    read_term,
+    reserve_solution_row,
+    term_data,
+)
 from bijux_ontology.rdf.queries.types import QueryResult
 from bijux_ontology.rdf.terms import bound_node
 
@@ -73,8 +78,7 @@ def _capture(
     for raw in supplied:
         if not isinstance(raw, (tuple, list)) or len(raw) != len(variables):
             raise InputError("Answer row width differs from its variables")
-        operation.consume("states", len(raw) + 1)
-        operation.consume("bytes", 128 * (len(raw) + 1))
+        reserve_solution_row(len(raw), operation)
         row = []
         for cell in raw:
             operation.consume("work")

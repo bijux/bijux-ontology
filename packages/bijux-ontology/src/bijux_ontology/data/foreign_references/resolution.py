@@ -16,6 +16,7 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.sources.metadata import SnapshotMetadata
 from bijux_ontology.rdf.terms import bound_node, term_key
+from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 
 from .types import ForeignResolution, ForeignTargetIndex
 
@@ -107,6 +108,7 @@ def resolve_reference(
     resolutions: list[ForeignResolution],
     *,
     semantic: bool,
+    comparisons: ScalarComparisons,
 ) -> tuple[ForeignResolution, list[_Key]]:
     """Resolve one original source key and retain its known findings immediately."""
     contract = targets.contract
@@ -126,7 +128,9 @@ def resolve_reference(
     for target in candidates:
         operation.consume("work")
         _retain(target, operation)
-        relation, pending = compare_keys(key, target, contract.source, operation)
+        relation, pending = compare_keys(
+            key, target, contract.source, operation, comparisons=comparisons
+        )
         issues.extend(pending)
         if relation == "equal":
             operation.consume("states")

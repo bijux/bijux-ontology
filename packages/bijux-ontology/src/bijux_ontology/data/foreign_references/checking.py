@@ -16,6 +16,7 @@ from bijux_ontology.execution.limits import (
     bound_text,
     retain_report,
 )
+from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 from .obligations import TargetObligations
@@ -55,6 +56,7 @@ def check_foreign_references(
     semantic = any(c.equality != "rdf-term" for c in contract.source.components)
     obligations = TargetObligations(models, vocabulary, operation, issues)
     try:
+        comparisons = ScalarComparisons(operation)
         bound_text(contract.name, operation)
         anchor = contract.name
         bound_text(contract.source.name, operation)
@@ -71,7 +73,13 @@ def check_foreign_references(
         children.append(targets.report)
         for key in extraction:
             resolution, matches = resolve_reference(
-                key, targets, operation, issues, resolutions, semantic=semantic
+                key,
+                targets,
+                operation,
+                issues,
+                resolutions,
+                semantic=semantic,
+                comparisons=comparisons,
             )
             if resolution.status == "resolved" and contract.target_model is not None:
                 for target in matches:

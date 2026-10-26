@@ -1,5 +1,6 @@
 """Scoped maintained SPARQL preserves RDF terms, retrieval policy and bounds."""
 
+import json
 import subprocess
 import sys
 import threading
@@ -12,9 +13,12 @@ import pytest
 from rdflib import BNode, Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, XSD
 
+from bijux_ontology.diagnostics.errors import InputError, ResourceError
 from bijux_ontology.documents.preparation import prepare_source
-from bijux_ontology.execution.limits import Limits
+from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.rdf.queries import QueryScope, query_rdf
+from bijux_ontology.rdf.queries.protocol import term_data
+from bijux_ontology.rdf.queries.results import adopt_result
 from bijux_ontology.rdf.stores.preparation import snapshot_rdf
 from bijux_ontology.rdf.stores.queries import query_snapshot
 
@@ -464,3 +468,95 @@ def test_required_filters_are_unknown_only_for_lossy_native_execution(
     ):
         completed = query_rdf(Graph(), f"ASK {{{body}}}", scope=scope)
         assert completed.report.verified and completed.answer is expected
+
+
+@pytest.mark.parametrize("unbound", (False, True))
+def test_native_solution_bags_pay_rows_even_without_bound_cells(unbound: bool) -> None:
+    """Maintained SELECT bags retain empty rows and stop with a paid prefix."""
+    projection = "(?absent AS ?value)" if unbound else "*"
+    graph = Graph()
+    for index in range(256):
+        graph.add((EX[f"row{index}"], EX.value, EX.object))
+    query = f"SELECT {projection} WHERE {{[] <{EX.value}> <{EX.object}>}}"
+    scope = QueryScope("default")
+    complete = query_rdf(graph, query, scope=scope, max_rows=256)
+    expected = (None,) if unbound else ()
+    assert complete.report.verified and complete.rows == (expected,) * 256
+    stopped = query_rdf(
+        graph, query, scope=scope, max_rows=256, limits=Limits(max_states=200)
+    )
+    assert stopped.report.outcome == "exhausted" and not stopped.report.complete
+    assert 0 < len(stopped.rows) < 256
+    assert stopped.rows == (expected,) * len(stopped.rows)
+    assert stopped.variables == complete.variables
+    assert query_rdf(Graph(), "SELECT * WHERE {}", scope=scope).rows == ((),)
+
+
+def test_result_admission_keeps_only_paid_rows_and_exact_shared_terms() -> None:
+    """Native answers face the same row fee at independent host admission."""
+    scope = QueryScope("default")
+    for projection, states, expected in (
+        ("*", 1, ((),)),
+        ("(?absent AS ?x)", 5, ((None,),) * 2),
+    ):
+        actual = query_rdf(
+            Graph(),
+            f"SELECT {projection} WHERE {{ {{}} UNION {{}} UNION {{}} }}",
+            scope=scope,
+        )
+        assert actual.report.verified and len(actual.rows) == 3
+        response = {
+            "status": "result",
+            "kind": "SELECT",
+            "variables": list(actual.variables),
+            "rows": [[term_data(term) for term in row] for row in actual.rows],
+            "complete": True,
+            "message": "",
+        }
+        budget = Budget(Limits(max_states=states))
+        prefix = adopt_result(
+            json.dumps(response).encode(), scope, budget.limits, 3, budget=budget
+        )
+        assert prefix.rows == expected and prefix.report.outcome == "exhausted"
+        assert not prefix.report.complete and budget._counts["states"] == states
+    node = BNode("original")
+    graph = Graph()
+    for value in ("01", "02", "03"):
+        graph.add(
+            (node, EX.value, Literal(value, datatype=XSD.integer, normalize=False))
+        )
+    actual = query_rdf(
+        graph, f"SELECT ?s ?v WHERE {{?s <{EX.value}> ?v}} ORDER BY ?v", scope=scope
+    )
+    assert actual.report.verified and len(actual.rows) == 3
+    response = {
+        "status": "result",
+        "kind": "SELECT",
+        "variables": list(actual.variables),
+        "rows": [[term_data(term) for term in row] for row in actual.rows],
+        "complete": True,
+        "message": "",
+    }
+    budget = Budget(Limits(max_states=8))
+    prefix = adopt_result(
+        json.dumps(response).encode(), scope, budget.limits, 3, budget=budget
+    )
+    assert prefix.report.outcome == "exhausted" and len(prefix.rows) == 2
+    assert prefix.rows[0][0] is prefix.rows[1][0] and prefix.rows[0][0] is not node
+    assert tuple(str(row[1]) for row in prefix.rows) == ("01", "02")
+    response["rows"] = [[term_data(actual.rows[0][0])]]
+    with pytest.raises(ResourceError, match="row width"):
+        adopt_result(json.dumps(response).encode(), scope, Limits(), 3)
+    malformed = {
+        "kind": "literal",
+        "value": "01",
+        "datatype": str(XSD.integer),
+        "language": None,
+        "extra": "x" * 10000,
+    }
+    response["rows"] = [[malformed, None]]
+    with pytest.raises(InputError, match="literal query term fields"):
+        adopt_result(json.dumps(response).encode(), scope, Limits(max_bytes=64), 3)
+    malformed["kind"] = "unsupported"
+    with pytest.raises(InputError, match="Unsupported RDF query term kind"):
+        adopt_result(json.dumps(response).encode(), scope, Limits(max_bytes=64), 3)

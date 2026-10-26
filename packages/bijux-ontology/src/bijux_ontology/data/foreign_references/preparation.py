@@ -12,6 +12,7 @@ from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits, bound_text
+from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
 
 from .types import ForeignReferenceContract, ForeignTargetIndex
 
@@ -66,6 +67,7 @@ def prepare_foreign_targets(
     anchor = ""
     semantic = any(c.equality != "rdf-term" for c in contract.target.components)
     try:
+        comparisons = ScalarComparisons(operation)
         bound_text(contract.name, operation)
         anchor = contract.name
         bound_text(contract.target.name, operation)
@@ -78,7 +80,9 @@ def prepare_foreign_targets(
                 operation.consume("states", len(matches) + len(uncertain))
                 candidates = [*matches, *uncertain]
             for prior in candidates:
-                relation, pending = compare_keys(prior, key, contract.target, operation)
+                relation, pending = compare_keys(
+                    prior, key, contract.target, operation, comparisons=comparisons
+                )
                 issues.extend(pending)
                 if relation == "equal":
                     operation.consume("states")

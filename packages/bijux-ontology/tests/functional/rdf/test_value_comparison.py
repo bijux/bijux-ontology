@@ -263,7 +263,7 @@ def test_owned_bounds_and_input_contracts_cannot_yield_a_false_comparison(
         raise PackageNotFoundError(name)
 
     monkeypatch.setattr(
-        "bijux_ontology.rdf.value_comparison.comparing.version", unavailable_backend
+        "bijux_ontology.rdf.value_comparison.observations.version", unavailable_backend
     )
     spent = Budget(Limits(max_issues=1))
     spent.consume("issues")
@@ -272,3 +272,76 @@ def test_owned_bounds_and_input_contracts_cannot_yield_a_false_comparison(
         calendar, calendar, regime=SPARQL, budget=spent
     )
     assert unavailable.report.outcome == "exhausted"
+    invalid_calendar = compare_literal_values(
+        calendar, _literal("bad", "dateTime"), regime=SPARQL
+    )
+    assert invalid_calendar.report.outcome == "disagreement"
+    assert any(
+        issue.code == "literal.lexical_invalid" and issue.location == "right"
+        for issue in invalid_calendar.report.issues
+    )
+
+
+def test_operation_observations_keep_exact_metadata_and_fresh_obligations() -> None:
+    """Reuse completed builtin operands, preserving fresh pair and caller work."""
+    from threading import Event
+
+    from bijux_ontology.execution.budgets import Operation
+    from bijux_ontology.rdf.value_comparison.observations import ScalarComparisons
+
+    budget = Budget()
+    comparisons = ScalarComparisons(budget)
+    a, b, c = _literal("16777216"), _literal("16777216", "float"), _literal("16777217")
+    assert comparisons.compare(a, b, regime=SPARQL).relation == "equal"
+    assert comparisons.compare(b, c, regime=SPARQL).relation == "equal"
+    assert comparisons.compare(a, c, regime=SPARQL).relation == "different"
+    assert comparisons.compare(a, b, regime=OWL).relation == "different"
+    assert (
+        comparisons.compare(
+            _literal("-0", "float"), _literal("0", "float"), regime=OWL
+        ).relation
+        == "different"
+    )
+    original = _literal("1", "float")
+    counterpart = _literal("1", "float")
+    assert comparisons.compare(original, counterpart, regime=SPARQL).relation == "equal"
+    original._datatype = XSD.boolean
+    changed = comparisons.compare(original, counterpart, regime=SPARQL)
+    assert changed.relation == "indeterminate" and not changed.report.verified
+    assert changed.left is original
+    for _ in range(2):
+        invalid = comparisons.compare(_literal("bad"), a, regime=SPARQL)
+        assert any(
+            issue.code == "literal.lexical_invalid" and issue.location == "left"
+            for issue in invalid.report.issues
+        )
+    calls: list[str] = []
+
+    def validate(text: Literal) -> bool:
+        calls.append(str(text))
+        return True
+
+    custom = DatatypeRegistry(
+        (DatatypeEvaluator("urn:scalar:custom", validators=(validate,)),)
+    )
+    value = literal_term("x", datatype="urn:scalar:custom")
+    for _ in range(2):
+        result = comparisons.compare(
+            value, value, regime=SPARQL, datatype_registry=custom
+        )
+        assert result.relation == "indeterminate" and not result.report.verified
+    assert calls == ["x"] * 4
+    event = Event()
+    controlled = ScalarComparisons(Operation(None, Budget(), 30.0, event))
+    assert controlled.compare(a, b, regime=SPARQL).report.verified
+    event.set()
+    stopped = controlled.compare(a, b, regime=SPARQL)
+    assert stopped.report.outcome == "exhausted" and stopped.relation == "indeterminate"
+    event.clear()
+    assert controlled.compare(a, b, regime=SPARQL).report.verified
+    spent = Budget(Limits(max_work=1))
+    incomplete = ScalarComparisons(spent)
+    for _ in range(2):
+        assert incomplete.compare(a, b, regime=SPARQL).report.outcome == "exhausted"
+    # Independent ordinary calls keep public admission and fresh operation ownership.
+    assert compare_literal_values(a, b, regime=SPARQL).report.verified

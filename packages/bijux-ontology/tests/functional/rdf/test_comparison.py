@@ -8,6 +8,7 @@ from rdflib import BNode, Dataset, Graph, Literal, Namespace
 from rdflib.collection import Collection
 from rdflib.namespace import XSD
 
+from bijux_ontology.diagnostics.reports import Report
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.rdf.comparison import compare_rdf
 from bijux_ontology.rdf.sources.loading import prepare_rdf
@@ -228,3 +229,95 @@ def test_active_blank_comparison_cancels_before_its_worker_deadline() -> None:
         timer.join()
     assert report.outcome == "exhausted" and not report.complete
     assert time.monotonic() - start < 2
+
+
+def test_completed_native_reply_after_parent_deadline_cannot_verify(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import bijux_ontology.rdf.comparison as owner
+    from bijux_ontology.execution.budgets import Operation
+    from bijux_ontology.execution.limits import Budget
+
+    parent = Operation(None, Budget(), 3, None)
+    graph = Graph().add((EX.root, EX.p, BNode()))
+    original = owner._isomorphic
+    replies = []
+
+    def delayed(
+        payload: bytes,
+        timeout_seconds: float,
+        cancel: threading.Event | None,
+        *,
+        _owned_worker: bool = False,
+    ) -> bool:
+        answer = original(payload, timeout_seconds, cancel, _owned_worker=_owned_worker)
+        replies.append(answer)
+        # Delay only the arrival of a genuine maintained comparator reply.
+        time.sleep(max(0, parent.deadline - time.monotonic()) + 0.01)
+        return answer
+
+    monkeypatch.setattr(owner, "_isomorphic", delayed)
+    report = compare_rdf(graph, graph, budget=parent, timeout_seconds=10)
+    assert replies == [True]
+    assert report.outcome == "exhausted" and not report.verified
+    assert report.checked == 0 and report.requested == 1
+
+
+@pytest.mark.parametrize("operation", ("comparison", "canonical"))
+def test_parent_cancellation_owns_actual_rdf_worker_and_conflicts_are_rejected(
+    monkeypatch: pytest.MonkeyPatch, operation: str
+) -> None:
+    import subprocess
+    from typing import Any
+
+    import bijux_ontology.execution.processes.transport as transport
+    import bijux_ontology.rdf.canonical.export as canonical
+    import bijux_ontology.rdf.comparison as comparison
+    from bijux_ontology.diagnostics.errors import InputError
+    from bijux_ontology.execution.budgets import Operation
+    from bijux_ontology.execution.limits import Budget
+    from bijux_ontology.execution.processes.ownership import spawn_owned_process
+    from bijux_ontology.execution.workers import execute_worker
+
+    graph = Graph().add((EX.root, EX.p, BNode()))
+    cancel = threading.Event()
+    parent = Operation(None, Budget(), 3, cancel)
+    owner = comparison if operation == "comparison" else canonical
+    original_worker, original_spawn = execute_worker, spawn_owned_process
+    calls: list[dict[str, Any]] = []
+    children: list[subprocess.Popen[bytes]] = []
+
+    def spawn(*args: Any, **kwargs: Any) -> subprocess.Popen[bytes]:
+        child = original_spawn(*args, **kwargs)
+        children.append(child)
+        cancel.set()
+        return child
+
+    def execute(*args: Any, **kwargs: Any) -> bytes:
+        calls.append(kwargs)
+        return original_worker(*args, **kwargs)
+
+    def check(*, inherited: bool, event: threading.Event | None = None) -> Report:
+        budget = parent if inherited else None
+        if operation == "comparison":
+            return comparison.compare_rdf(
+                graph, graph, budget=budget, cancel=event, timeout_seconds=10
+            )
+        result = canonical.canonicalize_rdf(
+            graph, budget=budget, cancel=event, timeout_seconds=10
+        )
+        assert result.content is None or result.report.verified
+        return result.report
+
+    monkeypatch.setattr(transport, "spawn_owned_process", spawn)
+    monkeypatch.setattr(owner, "execute_worker", execute)
+    report = check(inherited=True)
+    assert report.outcome == "exhausted" and not report.complete
+    assert len(children) == 1 and children[0].poll() is not None
+    assert children[0].returncode != 0
+    assert calls[0]["cancel"] is cancel and 0 < calls[0]["timeout"] <= 3
+    with pytest.raises(InputError, match="same Event"):
+        check(inherited=True, event=threading.Event())
+    assert len(children) == 1
+    assert check(inherited=False).verified
+    assert all(child.poll() is not None for child in children)

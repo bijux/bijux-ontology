@@ -1,8 +1,10 @@
 """Real opt-in HTTP closures become ordinary portable offline project bundles."""
 
 import gzip
+import hashlib
 import importlib.util
 import json
+import os
 import socket
 import subprocess
 import sys
@@ -12,15 +14,22 @@ from collections.abc import Iterator
 from contextlib import contextmanager, suppress
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from rdflib import URIRef
 from rdflib.namespace import RDF, RDFS
 
-from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
-from bijux_ontology.execution.budgets import Operation
-from bijux_ontology.execution.limits import Limits
+from bijux_ontology.diagnostics.errors import (
+    InputError,
+    LimitExceeded,
+    ResourceError,
+)
+from bijux_ontology.execution.allowances import DelegatedAllowance
+from bijux_ontology.execution.budgets import ControlBudget, Operation
+from bijux_ontology.execution.limits import BUDGET_KINDS, Budget, Limits
+from bijux_ontology.execution.processes.ownership import spawn_owned_process
+from bijux_ontology.execution.workers import execute_worker
 from bijux_ontology.jsonld.processing.expansion import expand_document
 from bijux_ontology.workflows.projects.acquisition import (
     AcquisitionPolicy,
@@ -28,6 +37,11 @@ from bijux_ontology.workflows.projects.acquisition import (
     acquire_bundle,
 )
 from bijux_ontology.workflows.projects.acquisition.http import HttpAcquisition
+from bijux_ontology.workflows.projects.acquisition.http_transport import (
+    _FRAME,
+    _REQUEST,
+    _receipt,
+)
 from bijux_ontology.workflows.projects.bundles import load_bundle
 from bijux_ontology.workflows.projects.checking import check_project
 
@@ -524,3 +538,610 @@ def test_deadline_cancellation_runtime_and_fresh_operation(tmp_path: Path) -> No
         AcquisitionRequest("../outside", "http://localhost/root")
     with pytest.raises(InputError):
         AcquisitionPolicy(cast(tuple[str, ...], "http://localhost"))
+
+
+@contextmanager
+def drip_server() -> Iterator[tuple[str, list[str], threading.Event]]:
+    """Own real fragmented headers/body and a cooperative fixture shutdown."""
+    seen: list[str] = []
+    ready, finish = threading.Event(), threading.Event()
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, format: str, *args: object) -> None:
+            pass
+
+        def do_GET(self) -> None:
+            seen.append(self.path)
+            with suppress(BrokenPipeError, ConnectionResetError):
+                if self.path in ("/headers", "/redirect"):
+                    self.connection.sendall(
+                        b"HTTP/1.0 302 Found\r\nLocation: /next\r\nX-Drip: "
+                        if self.path == "/redirect"
+                        else b"HTTP/1.0 200 OK\r\nX-Drip: "
+                    )
+                    ready.set()
+                    for _ in range(40):
+                        self.connection.sendall(b"x")
+                        if finish.wait(0.03):
+                            return
+                    self.connection.sendall(b"\r\nContent-Length: 1\r\n\r\nx")
+                elif self.path == "/body":
+                    self.send_response(200)
+                    self.send_header("Content-Length", "40")
+                    self.end_headers()
+                    ready.set()
+                    for _ in range(40):
+                        self.wfile.write(b"x")
+                        self.wfile.flush()
+                        if finish.wait(0.03):
+                            return
+                elif self.path == "/blocked":
+                    self.send_response(200)
+                    self.send_header("Content-Length", "1")
+                    self.end_headers()
+                    ready.set()
+                    finish.wait(5)
+                    self.wfile.write(b"x")
+                else:
+                    self.send_response(200)
+                    self.send_header("Content-Length", "1")
+                    self.end_headers()
+                    self.wfile.write(b"x")
+
+    fixture = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    worker = threading.Thread(target=lambda: fixture.serve_forever(poll_interval=0.01))
+    worker.start()
+    try:
+        yield "http://127.0.0.1:" + str(fixture.server_port), seen, ready
+    finally:
+        finish.set()
+        fixture.shutdown()
+        worker.join(2)
+        fixture.server_close()
+        assert not worker.is_alive()
+
+
+@pytest.mark.parametrize("part", ("body", "headers", "redirect"))
+def test_drip_http_obeys_absolute_deadline_without_opening_late_redirect(
+    part: str,
+) -> None:
+    """Socket activity cannot extend connect/headers/body beyond the same owner."""
+    processes: list[subprocess.Popen[bytes]] = []
+    previous = sys.getprofile()
+
+    def observe(frame: Any, event: str, value: object) -> None:
+        if (
+            event == "return"
+            and frame.f_code is spawn_owned_process.__code__
+            and isinstance(value, subprocess.Popen)
+        ):
+            processes.append(value)
+
+    with drip_server() as (base, seen, ready):
+        operation = Operation(None, None, 0.75, None)
+        client = HttpAcquisition(AcquisitionPolicy((base,)), operation)
+        sys.setprofile(observe)
+        try:
+            start = time.monotonic()
+            with pytest.raises(LimitExceeded):
+                client.get(base + "/" + part)
+            elapsed = time.monotonic() - start
+            assert ready.is_set() and elapsed < 0.9
+            assert seen == ["/" + part] and len(processes) == 1
+            assert processes[0].poll() is not None
+            if os.name == "posix":
+                with pytest.raises(ProcessLookupError):
+                    os.kill(processes[0].pid, 0)
+            expired = Operation(None, None, 0.001, None)
+            threading.Event().wait(0.002)
+            with pytest.raises(LimitExceeded):
+                HttpAcquisition(AcquisitionPolicy((base,)), expired).get(base + "/ok")
+            assert len(processes) == 1
+        finally:
+            sys.setprofile(previous)
+
+
+def test_inherited_http_cancellation_reaps_blocked_hop_and_fresh_owner_recovers() -> (
+    None
+):
+    """Inherited cancellation stops socket work; an independent owner recovers."""
+    processes: list[subprocess.Popen[bytes]] = []
+    previous = sys.getprofile()
+    terminal_before: dict[str, int] = {}
+    expected: dict[str, int] = {}
+
+    def observe(frame: Any, event: str, value: object) -> None:
+        if (
+            event == "return"
+            and frame.f_code is spawn_owned_process.__code__
+            and isinstance(value, subprocess.Popen)
+        ):
+            processes.append(value)
+        if (
+            event == "call"
+            and frame.f_code is execute_worker.__code__
+            and not terminal_before
+        ):
+            assert frame.f_back is not None
+            owned = frame.f_back.f_locals
+            terminal_before.update(
+                {kind: original._counts.get(kind, 0) for kind in BUDGET_KINDS}
+            )
+            expected.update(
+                {
+                    kind: owned["native"][kind]
+                    + owned["pipe_grants"][kind]
+                    + owned["controls"].consumed()[kind]
+                    for kind in BUDGET_KINDS
+                }
+            )
+
+    with drip_server() as (base, seen, ready):
+        cancelled = threading.Event()
+        original = Budget()
+        parent = Operation(None, original, 5, cancelled)
+        child = Operation(None, parent, 30, None)
+        at: list[float] = []
+
+        def stop() -> None:
+            assert ready.wait(3)
+            threading.Event().wait(0.02)
+            at.append(time.monotonic())
+            cancelled.set()
+
+        stopper = threading.Thread(target=stop)
+        stopper.start()
+        sys.setprofile(observe)
+        try:
+            client = HttpAcquisition(AcquisitionPolicy((base,)), child)
+            with pytest.raises(LimitExceeded, match="cancelled"):
+                client.get(base + "/blocked")
+            assert at and time.monotonic() - at[0] < 0.15
+            stopper.join(1)
+            assert not stopper.is_alive() and len(processes) == 1
+            assert processes[0].poll() is not None and not client.responses
+            assert {
+                kind: original._counts.get(kind, 0) - terminal_before[kind]
+                for kind in BUDGET_KINDS
+            } == expected
+            if os.name == "posix":
+                with pytest.raises(ProcessLookupError):
+                    os.kill(processes[0].pid, 0)
+            fresh = HttpAcquisition(
+                AcquisitionPolicy((base,)), Operation(None, None, 5, None)
+            )
+            assert fresh.get(base + "/ok").payload == b"x"
+            assert len(processes) == 2 and processes[-1].pid != processes[0].pid
+            assert processes[-1].poll() == 0 and seen == ["/blocked", "/ok"]
+            assert cancelled.is_set()
+        finally:
+            sys.setprofile(previous)
+            stopper.join(4)
+
+
+@pytest.mark.parametrize("arrival", ("receipt", "hash"))
+def test_completed_http_receipt_does_not_renew_cache_publication(arrival: str) -> None:
+    """Already returned native costs settle; later stop forbids resource publication."""
+    seen: list[tuple[str, dict[str, str]]] = []
+    with server({"/ok": (200, {"Content-Type": "text/plain"}, b"ok")}, seen) as base:
+        cancelled = threading.Event()
+        original = Budget()
+        client = HttpAcquisition(
+            AcquisitionPolicy((base,)), Operation(None, original, 5, cancelled)
+        )
+        marked: list[bool] = []
+        previous = sys.getprofile()
+
+        def observe(frame: Any, event: str, value: object) -> None:
+            if (
+                arrival == "receipt"
+                and event == "return"
+                and frame.f_code is execute_worker.__code__
+                and isinstance(value, bytes)
+            ) or (
+                arrival == "hash" and event == "c_return" and value is hashlib.sha256
+            ):
+                marked.append(True)
+                cancelled.set()
+
+        sys.setprofile(observe)
+        try:
+            with pytest.raises(LimitExceeded, match="cancelled"):
+                client.get(base + "/ok")
+        finally:
+            sys.setprofile(previous)
+        assert marked and not client.responses and len(seen) == 1
+        assert original._counts["resources"] == 1
+        assert original._counts["bytes"] > 65536 and original._counts["work"] > 0
+
+
+def test_maximum_profile_body_keeps_funded_bytes_and_original_work() -> None:
+    """The default 5 MB body profile is not shrunk to a JSON decoder's source cap."""
+    seen: list[tuple[str, dict[str, str]]] = []
+    payload = b"x" * 5_000_000
+    with server(
+        {
+            "/large": (
+                200,
+                {"Content-Type": "text/plain", "Content-Length": str(len(payload))},
+                payload,
+            )
+        },
+        seen,
+    ) as base:
+        # Hashing already spends one work unit per byte; the same independent
+        # explicit work allowance applies before and after native I/O ownership.
+        original = Budget(Limits(max_work=6_000_000))
+        client = HttpAcquisition(
+            AcquisitionPolicy((base,)), Operation(None, original, 10, None)
+        )
+        response = client.get(base + "/large")
+        assert (
+            response.payload == payload
+            and response.resource.compressed_bytes == len(payload)
+        )
+        assert original._counts["bytes"] < original.limits.max_total_bytes
+        assert original._counts["resources"] == 1
+
+
+def test_outer_bundle_cancellation_terminates_nested_http_process(
+    tmp_path: Path,
+) -> None:
+    """An outer preparation exit cannot orphan its independent HTTP process group."""
+    outer: list[subprocess.Popen[bytes]] = []
+    nested: list[int] = []
+    cancelled = threading.Event()
+    previous = sys.getprofile()
+
+    def observe(frame: Any, event: str, value: object) -> None:
+        if (
+            event == "return"
+            and frame.f_code is spawn_owned_process.__code__
+            and isinstance(value, subprocess.Popen)
+        ):
+            outer.append(value)
+
+    with drip_server() as (base, seen, ready):
+        source = skeleton(tmp_path / "source", base)
+
+        def stop() -> None:
+            assert ready.wait(4)
+            assert outer
+            if os.name == "posix":
+                rows = subprocess.check_output(
+                    ["ps", "-ww", "-axo", "pid=,ppid=,command="], text=True
+                ).splitlines()
+                for row in rows:
+                    fields = row.strip().split(None, 2)
+                    if (
+                        len(fields) == 3
+                        and int(fields[1]) == outer[0].pid
+                        and "bijux_ontology.workflows.projects.acquisition.http_worker"
+                        in fields[2]
+                    ):
+                        nested.append(int(fields[0]))
+                assert len(nested) == 1
+            cancelled.set()
+
+        stopper = threading.Thread(target=stop)
+        stopper.start()
+        sys.setprofile(observe)
+        try:
+            result = acquire_bundle(
+                source,
+                requests=(AcquisitionRequest("root.ttl", base + "/blocked"),),
+                policy=AcquisitionPolicy((base,)),
+                destination=tmp_path / "cancelled.zip",
+                cancel=cancelled,
+                timeout=5,
+            )
+        finally:
+            sys.setprofile(previous)
+            stopper.join(5)
+        assert not stopper.is_alive() and cancelled.is_set()
+        assert (
+            result.report.outcome == "exhausted"
+            and not (tmp_path / "cancelled.zip").exists()
+        )
+        assert len(outer) == 1 and outer[0].poll() is not None and seen == ["/blocked"]
+        if os.name == "posix":
+            assert len(nested) == 1
+            end = time.monotonic() + 1
+            while True:
+                try:
+                    os.kill(nested[0], 0)
+                except ProcessLookupError:
+                    break
+                assert time.monotonic() < end, (
+                    "Nested HTTP process survived its original parent"
+                )
+                threading.Event().wait(0.01)
+
+
+def test_actual_hop_receipt_checks_lengths_counters_and_original_parent_before_io() -> (
+    None
+):
+    """Owned native bytes supply the adversarial wire controls, never fake HTTP."""
+    captured: dict[str, Any] = {}
+    previous = sys.getprofile()
+    seen: list[tuple[str, dict[str, str]]] = []
+
+    def observe(frame: Any, event: str, value: object) -> None:
+        if frame.f_code is execute_worker.__code__:
+            if event == "call":
+                captured["request"] = frame.f_locals["payload"]
+                assert frame.f_back is not None
+                captured["host"] = frame.f_back.f_locals["host"].copy()
+            elif event == "return" and isinstance(value, bytes):
+                captured["raw"] = value
+
+    with server({"/ok": (200, {"Content-Type": "text/plain"}, b"ok")}, seen) as base:
+        sys.setprofile(observe)
+        try:
+            client = HttpAcquisition(
+                AcquisitionPolicy((base,)), Operation(None, None, 5, None)
+            )
+            assert client.get(base + "/ok").payload == b"ok"
+        finally:
+            sys.setprofile(previous)
+        raw = captured["raw"]
+        size, parent, deadline = _REQUEST.unpack_from(captured["request"])
+        data = json.loads(captured["request"][_REQUEST.size :])
+        magic, kind, count_size, metadata_size, body_size = _FRAME.unpack_from(raw)
+        invalid_length = (
+            _FRAME.pack(magic, kind, count_size, metadata_size + 1, body_size)
+            + raw[_FRAME.size :]
+        )
+        owner = Budget()
+        with pytest.raises(ResourceError, match="envelope"):
+            _receipt(
+                invalid_length,
+                data["header_cap"],
+                data["body_cap"],
+                ControlBudget(Limits(), captured["host"]),
+            )
+        assert not owner._counts
+        counters = json.loads(raw[_FRAME.size : _FRAME.size + count_size])
+        counters["states"] = True
+        encoded = json.dumps(counters, separators=(",", ":")).encode()
+        invalid_counter = (
+            _FRAME.pack(magic, kind, len(encoded), metadata_size, body_size)
+            + encoded
+            + raw[_FRAME.size + count_size :]
+        )
+        _, actual = _receipt(
+            invalid_counter,
+            data["header_cap"],
+            data["body_cap"],
+            ControlBudget(Limits(), captured["host"]),
+        )
+        delegated = DelegatedAllowance(owner, data["grants"])
+        with pytest.raises(ResourceError, match="counters"):
+            delegated.settle(actual)
+        assert not owner._counts
+        if os.name == "posix":
+            wrong_parent = (
+                _REQUEST.pack(size, 0, time.monotonic_ns() + 2_000_000_000)
+                + captured["request"][_REQUEST.size :]
+            )
+            with pytest.raises(ResourceError, match="owner expired"):
+                execute_worker(
+                    "bijux_ontology.workflows.projects.acquisition.http_worker",
+                    wrong_parent,
+                    cap=max(4096, len(wrong_parent)),
+                    timeout=2,
+                )
+            assert len(seen) == 1
+
+
+@pytest.mark.parametrize("stop", ("insertion", "alias_state"))
+def test_failed_http_cache_publication_preserves_existing_entries(stop: str) -> None:
+    """Paid alias construction and a late stop cannot leave half-published cache."""
+    from bijux_ontology.workflows.projects.acquisition.types import AcquiredResource
+
+    seen: list[tuple[str, dict[str, str]]] = []
+    routes: dict[str, Route] = {
+        "/keep": (200, {"Content-Type": "text/plain"}, b"keep"),
+        "/alias": (302, {"Location": "/final"}, b""),
+        "/final": (200, {"Content-Type": "text/plain"}, b"final"),
+    }
+    with server(routes, seen) as base:
+        cancelled = threading.Event()
+        original = Budget()
+        client = HttpAcquisition(
+            AcquisitionPolicy((base,)), Operation(None, original, 10, cancelled)
+        )
+        existing = client.get(base + "/keep")
+        inserted: list[str] = []
+
+        class ObservedResponses(dict[str, Any]):
+            """Observe the actual insertion without replacing HTTP or result bytes."""
+
+            def __setitem__(self, key: str, value: Any) -> None:
+                super().__setitem__(key, value)
+                inserted.append(key)
+                if stop == "insertion":
+                    cancelled.set()
+
+        client.responses = ObservedResponses(client.responses)
+        previous = sys.getprofile()
+        depleted: list[bool] = []
+
+        def observe(frame: Any, event: str, value: object) -> None:
+            if (
+                stop == "alias_state"
+                and event == "return"
+                and frame.f_code is AcquiredResource.__init__.__code__
+                and frame.f_locals["self"].requested_url == base + "/alias"
+            ):
+                original.consume("states", original.remaining("states"))
+                depleted.append(True)
+
+        sys.setprofile(observe)
+        try:
+            with pytest.raises(LimitExceeded):
+                client.get(base + "/alias")
+        finally:
+            sys.setprofile(previous)
+        assert dict(client.responses) == {base + "/keep": existing}
+        assert bool(inserted) is (stop == "insertion")
+        assert bool(depleted) is (stop == "alias_state")
+        assert len(seen) == 3
+        fresh = HttpAcquisition(
+            AcquisitionPolicy((base,)), Operation(None, None, 5, None)
+        )
+        assert fresh.get(base + "/alias").payload == b"final"
+        assert len(seen) == 5
+
+
+@pytest.mark.parametrize(
+    "meaning", ("conflict", "equivalent", "irrelevant", "fresh", "ld", "multiple")
+)
+def test_http_alias_identity_includes_resolved_context_meaning(meaning: str) -> None:
+    """Actual alias admission compares context meaning and preserves fresh policy."""
+    if importlib.util.find_spec("pyld") is None:
+        pytest.skip("Context-link qualification requires the maintained JSON-LD extra")
+    seen: list[tuple[str, dict[str, str]]] = []
+    media = "application/ld+json" if meaning == "ld" else "application/json"
+    relation = 'rel="http://www.w3.org/ns/json-ld#context"'
+    routes: dict[str, Route] = {
+        "/a": (302, {"Location": "/final"}, b""),
+        "/b": (302, {"Location": "/final"}, b""),
+        "/final": (
+            200,
+            {"Content-Type": media, "Link": "<./first>; " + relation},
+            b'{"@context":{}}',
+        ),
+    }
+    with server(routes, seen) as base:
+        client = HttpAcquisition(
+            AcquisitionPolicy((base,)), Operation(None, None, 10, None)
+        )
+        original = client.get(base + "/a")
+        target = (
+            "/second"
+            if meaning in ("conflict", "fresh", "ld")
+            else "./first"
+            if meaning == "irrelevant"
+            else "/first"
+        )
+        routes["/final"] = (
+            200,
+            {
+                "Content-Type": media,
+                "Link": "<" + target + ">; " + relation,
+                "ETag": '"different"',
+                "X-Trace": "different",
+            },
+            b'{"@context":{}}',
+        )
+        if meaning == "multiple":
+            routes["/final"][1]["Link"] = (
+                "</first>; " + relation + ",</second>; " + relation
+            )
+            with pytest.raises(InputError, match="Multiple HTTP JSON-LD context links"):
+                client.get(base + "/b")
+            assert base + "/b" not in client.responses
+        elif meaning == "conflict":
+            with pytest.raises(
+                ResourceError, match="Conflicting acquired effective URL"
+            ):
+                client.get(base + "/b")
+            assert base + "/b" not in client.responses
+        elif meaning == "fresh":
+            observed = client.get(base + "/a", fresh=True)
+            assert observed.resource.context_url == base + "/second"
+            assert client.get(base + "/a") is original
+            assert (
+                client.responses[base + "/final"].resource.context_url
+                == base + "/first"
+            )
+        else:
+            observed = client.get(base + "/b")
+            assert observed.resource.context_url == (
+                None if meaning == "ld" else base + "/first"
+            )
+        assert original.resource.context_url == (
+            None if meaning == "ld" else base + "/first"
+        )
+        assert [path for path, _ in seen] == [
+            "/a",
+            "/final",
+            "/a" if meaning == "fresh" else "/b",
+            "/final",
+        ]
+
+
+def test_conflicting_context_aliases_fail_before_closure_expansion(
+    tmp_path: Path,
+) -> None:
+    """A real acquired bundle cannot retain conflicting effective context receipts."""
+    if importlib.util.find_spec("pyld") is None:
+        pytest.skip("Context-link qualification requires the maintained JSON-LD extra")
+    relation = 'rel="http://www.w3.org/ns/json-ld#context"'
+
+    class ChangingRoutes(dict[str, Route]):
+        """Serve different processing metadata on two actual alias retrievals."""
+
+        visits = 0
+
+        def get(self, key: str, default: Any = None) -> Any:
+            if key == "/final":
+                self.visits += 1
+                target = "/first" if self.visits == 1 else "/second"
+                return (
+                    200,
+                    {
+                        "Content-Type": "application/json",
+                        "Link": "<" + target + ">; " + relation,
+                    },
+                    b'{"@context":{}}',
+                )
+            return super().get(key, default)
+
+    routes = ChangingRoutes(
+        {
+            "/root": (200, {"Content-Type": "text/turtle"}, ROOT),
+            "/child": (200, {"Content-Type": "text/turtle"}, CHILD),
+            "/a": (302, {"Location": "/final"}, b""),
+            "/b": (302, {"Location": "/final"}, b""),
+            "/first": (
+                200,
+                {"Content-Type": "application/ld+json"},
+                b'{"@context":{}}',
+            ),
+            "/second": (
+                200,
+                {"Content-Type": "application/ld+json"},
+                b'{"@context":{}}',
+            ),
+        }
+    )
+    seen: list[tuple[str, dict[str, str]]] = []
+    with server(routes, seen) as base:
+        source = skeleton(tmp_path / "source", base)
+        manifest = json.loads((source / "project.json").read_text())
+        manifest["contexts"] = {base + "/a": "a.json", base + "/b": "b.json"}
+        (source / "project.json").write_text(json.dumps(manifest))
+        destination = tmp_path / "conflicting.zip"
+        result = acquire_bundle(
+            source,
+            requests=tuple(
+                AcquisitionRequest(path, base + target)
+                for path, target in (
+                    ("root.ttl", "/root"),
+                    ("a.json", "/a"),
+                    ("b.json", "/b"),
+                )
+            ),
+            policy=AcquisitionPolicy((base,)),
+            destination=destination,
+        )
+        assert not result.report.verified and result.archive is None
+        assert not destination.exists()
+        assert any(
+            "Conflicting acquired effective URL" in issue.message
+            for issue in result.report.issues
+        )
+        assert all(item.requested_url != base + "/b" for item in result.resources)
+        assert [path for path, _ in seen] == ["/root", "/a", "/final", "/b", "/final"]

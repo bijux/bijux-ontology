@@ -6,7 +6,7 @@ from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, Resourc
 from bijux_ontology.diagnostics.reports import Issue, Report
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.json.values import decode_json
-from bijux_ontology.rdf.queries.protocol import read_term
+from bijux_ontology.rdf.queries.protocol import read_term, reserve_solution_row
 
 from .types import QueryResult, QueryScope
 
@@ -98,18 +98,21 @@ def adopt_result(
     rows = []
     budget = budget if budget is not None else Budget(limits)
     budget.consume("states", len(variables))
-    for row in supplied:
-        budget.consume("states", len(variables))
-        if not isinstance(row, list) or len(row) != len(variables):
-            raise ResourceError("Invalid local SELECT row width")
-        rows.append(tuple(read_term(value, blanks) for value in row))
+    try:
+        for row in supplied:
+            if not isinstance(row, list) or len(row) != len(variables):
+                raise ResourceError("Invalid local SELECT row width")
+            reserve_solution_row(len(variables), budget)
+            rows.append(tuple(read_term(value, blanks, budget=budget) for value in row))
+    except LimitExceeded as error:
+        complete, message = False, str(error)
     issues = (
         ()
         if complete
         else (
             Issue(
                 "execution.limit_exceeded",
-                str(response.get("message", "SELECT result incomplete")),
+                message,
                 kind="exhausted",
             ),
         )

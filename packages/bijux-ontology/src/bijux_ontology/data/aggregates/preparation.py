@@ -7,8 +7,8 @@ from rdflib import Literal, URIRef
 from rdflib.namespace import XSD
 
 from bijux_ontology.declarations.aggregates import AggregateContract
-from bijux_ontology.diagnostics.errors import InputError, ResourceError
-from bijux_ontology.execution.limits import Budget, bound_text
+from bijux_ontology.diagnostics.errors import InputError, LimitExceeded, ResourceError
+from bijux_ontology.execution.limits import Budget, IssueCollector, bound_text
 from bijux_ontology.rdf.literals.checking import check_literal, datatype_relation
 from bijux_ontology.rdf.paths.types import capture_path
 from bijux_ontology.rdf.terms import bound_node, literal_term
@@ -77,7 +77,14 @@ def contract(value: AggregateContract, operation: Budget) -> AggregateContract:
     )
 
 
-def number(value: Literal, operation: Budget, *, count: bool = False) -> Fraction:
+def number(
+    value: Literal,
+    operation: Budget,
+    *,
+    count: bool = False,
+    issues: IssueCollector | None = None,
+    location: str = "",
+) -> Fraction:
     """Validate original RDF spelling, then use standard exact rational arithmetic.
 
     Supported decimal lexicals have no exponent and at most 4096 characters.
@@ -96,7 +103,13 @@ def number(value: Literal, operation: Budget, *, count: bool = False) -> Fractio
         raise ResourceError("Quantity requires an XSD integer or exact decimal")
     operation.consume("work", 16 * (size + 1) ** 2)
     operation.consume("bytes", 64 * (size + 1))
-    if not check_literal(value, budget=operation).verified:
+    validation = check_literal(value, location=location, budget=operation)
+    if issues is not None:
+        issues.retain_completed(validation)
+    for issue in validation.issues:
+        if issue.kind == "exhausted":
+            raise LimitExceeded(issue.message)
+    if not validation.verified:
         raise ResourceError("Quantity has an invalid or unqualified numeric lexical")
     result = Fraction(Decimal(raw))
     if count and result < 0:

@@ -468,3 +468,115 @@ def test_paid_target_failure_survives_later_parent_work_exhaustion() -> None:
         "emission.types_mismatch",
         "execution.limit_exceeded",
     }
+
+
+def test_mixed_repeated_operands_share_native_setup_without_skipping_pairs() -> None:
+    """A finite join pays every pair while admitting each builtin operand once."""
+    from importlib.metadata import version
+
+    import bijux_ontology.rdf.literals.checking as literals
+    import bijux_ontology.rdf.value_comparison.observations as scalar
+
+    def records(role: str) -> tuple[KeyRecord, ...]:
+        graph = Graph()
+        for index in range(8):
+            subject = EX[f"{role}{index}"]
+            graph.add(
+                (
+                    subject,
+                    EX.number,
+                    Literal("1.0", datatype=XSD.float, normalize=False),
+                )
+            )
+            graph.add(
+                (
+                    subject,
+                    EX.date,
+                    Literal(
+                        f"2020-01-{index + 1:02}T00:00:00Z",
+                        datatype=XSD.dateTime,
+                        normalize=False,
+                    ),
+                )
+            )
+        source = prepare_rdf(graph)
+        return tuple(
+            KeyRecord(f"{role}{index}", source, EX[f"{role}{index}"])
+            for index in range(8)
+        )
+
+    pytest.importorskip("elementpath")
+    key = KeyContract(
+        "mixed",
+        (
+            KeyComponent(EX.number, equality="sparql-1.1"),
+            KeyComponent(EX.date, equality="sparql-1.1"),
+        ),
+    )
+    contract = ForeignReferenceContract("mixed", key, key)
+    targets = records("target")
+    index = prepare_foreign_targets(targets, contract, complete=True)
+    assert index.complete, index.report.to_dict()
+    sources = records("source")
+    counts = {
+        "pairs": 0,
+        "queries": 0,
+        "stores": 0,
+        "calendars": 0,
+        "admissions": 0,
+        "release": 0,
+    }
+    original_profile = sys.getprofile()
+
+    def observed(
+        frame: FrameType,
+        event: Choice["call", "return", "c_call", "c_return", "c_exception"],
+        arg: object,
+    ) -> None:
+        if original_profile is not None:
+            original_profile(frame, event, arg)
+        if event != "call":
+            return
+        if frame.f_code is scalar.ScalarComparisons.compare.__code__:
+            counts["pairs"] += 1
+        elif frame.f_code is scalar.ScalarComparisons._promoted_equal.__code__:
+            counts["queries"] += 1
+            if frame.f_locals["self"]._store is None:
+                counts["stores"] += 1
+        elif frame.f_code is scalar.ScalarComparisons._calendar_value.__code__:
+            counts["calendars"] += 1
+        elif frame.f_code is literals.check_literal.__code__:
+            counts["admissions"] += 1
+        elif (
+            frame.f_code is version.__code__
+            and frame.f_back is not None
+            and frame.f_back.f_code
+            is scalar.ScalarComparisons._calendar_backend.__code__
+        ):
+            counts["release"] += 1
+
+    budget = Budget()
+    try:
+        sys.setprofile(observed)
+        result = check_foreign_references(
+            sources, index, source_complete=True, budget=budget
+        )
+    finally:
+        sys.setprofile(original_profile)
+    assert result.report.verified, result.report.to_dict()
+    assert [
+        (row.source.identifier, row.status, row.targets) for row in result.resolutions
+    ] == [(f"source{i}", "resolved", (targets[i],)) for i in range(8)]
+    assert counts == {
+        "pairs": 128,
+        "queries": 64,
+        "stores": 1,
+        "calendars": 8,
+        "admissions": 9,
+        "release": 1,
+    }
+    assert budget.remaining("resources") == budget.limits.max_resources - 3
+    # The prepared index retains no scalar context or authorization for a new call.
+    assert check_foreign_references(
+        sources, index, source_complete=True
+    ).report.verified

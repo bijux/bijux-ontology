@@ -13,6 +13,7 @@ from rdflib.term import Node
 
 from bijux_ontology.diagnostics.errors import InputError, LimitExceeded
 from bijux_ontology.diagnostics.reports import Issue, Report
+from bijux_ontology.execution.budgets import Operation
 from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.execution.processes.transport import checkpoint
 from bijux_ontology.execution.workers import execute_worker
@@ -232,12 +233,10 @@ def _compare_rdf(
         or timeout_seconds <= 0
     ):
         raise InputError("Comparison timeout must be a finite positive number")
-    if budget is not None and limits is not None and budget.limits != limits:
-        raise InputError("Explicit limits conflict with the shared operation budget")
     if cancel is not None and not isinstance(cancel, threading.Event):
         raise InputError("RDF cancellation requires a threading.Event")
-    deadline = time.monotonic() + timeout_seconds
-    operation = budget if budget is not None else Budget(limits)
+    operation = Operation(limits, budget, timeout_seconds, cancel)
+    deadline, cancel = operation.deadline, operation.cancel
     issues = IssueCollector(operation)
     complete = True
     checked = 0
