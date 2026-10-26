@@ -357,7 +357,7 @@ _CODES = {
         "conversion_unverified datatype_unverified "
         "lexical_invalid lexical_unverified value_unverified "
         "json_invalid json_mismatch json_unverified "
-        "json_schema_mismatch json_schema_unverified "
+        "json_schema_mismatch json_schema_invalid json_schema_unverified "
         "markup_invalid markup_unverified markup_value_changed".split()
     ),
     "models": frozenset(
@@ -1115,6 +1115,12 @@ _OVERRIDES: dict[str, tuple[str, str, str]] = {
         "Supply and check the exact required owner/path identity; aggregate "
         "comparison counts cannot substitute for that binding's evidence.",
         "ContractObligation(name, check, required_bindings=(identity,))",
+    ),
+    "literal.json_schema_invalid": (
+        "The supplied JSON Schema is invalid in the selected dialect.",
+        "Repair the schema before checking its JSON values; distinguish an "
+        "invalid schema from a valid schema's value mismatch.",
+        '{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"string"}',
     ),
     "shacl.query_unverified": (
         "A supplied SHACL SPARQL query could not be analysed in the supported scope.",
