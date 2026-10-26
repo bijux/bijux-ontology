@@ -17,8 +17,8 @@ from bijux_ontology.execution.limits import (
     retain_report,
 )
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.validation.contracts import ShaclConstraintRequirement
 
 EX = Namespace("https://example.org/")
 

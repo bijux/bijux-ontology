@@ -21,10 +21,8 @@ from bijux_ontology.jsonld.usages.comparison import (
 from bijux_ontology.models.emission.coverage import source_properties
 from bijux_ontology.models.resource_roles.types import RoleUse
 from bijux_ontology.rdf.comparison import compare_rdf
-from bijux_ontology.workflows.upgrades.assessment import (
-    ContractChange,
-    _contract_changes,
-)
+from bijux_ontology.workflows.upgrades.assessment.contracts import _contract_changes
+from bijux_ontology.workflows.upgrades.assessment.types import ContractChange
 
 from .preparation import _unknown, _VersionCheck
 from .types import (

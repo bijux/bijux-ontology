@@ -1,6 +1,8 @@
 """Foreign references correlate actual independent corpora without inventing scope."""
 
+import sys
 from dataclasses import replace
+from types import FrameType
 from typing import Any, cast
 from typing import Literal as Choice
 
@@ -17,7 +19,9 @@ from bijux_ontology.data.keys.types import KeyRecord
 from bijux_ontology.declarations.keys import KeyComponent, KeyContract
 from bijux_ontology.declarations.types import ModelDeclaration
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
+from bijux_ontology.models.emission.rdf import check_rdf_emission
 from bijux_ontology.rdf.paths.traversal import path_values
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.types import RdfSource
@@ -261,3 +265,206 @@ def test_late_limits_preserve_completed_source_failures_and_owned_index() -> Non
         len((issue.evidence_json or "").encode()) <= 10000
         for issue in duplicate.report.issues
     )
+
+
+def _repeated_sources(count: int = 4) -> tuple[KeyRecord, ...]:
+    """Select distinct real source subjects that reference one actual target key."""
+    graph = Graph()
+    for number in range(count):
+        subject = EX[f"submission/{number}"]
+        graph.add((subject, EX.maker, Literal("Acme")))
+        graph.add((subject, EX.serial, Literal("123")))
+    source = prepare_rdf(graph)
+    return tuple(
+        KeyRecord(f"submission/{number}", source, EX[f"submission/{number}"])
+        for number in range(count)
+    )
+
+
+def test_repeated_target_failure_retains_all_correlations_and_one_actual_check() -> (
+    None
+):
+    target_records = _targets(EX.instrument)
+    contract = _contract(target_model="instrument")
+    index = prepare_foreign_targets(target_records, contract, complete=True)
+    partial = prepare_foreign_targets(target_records, contract, complete=False)
+    records = _repeated_sources()
+    native_calls = []
+
+    def observe_native(frame: FrameType, event: str, value: object) -> None:
+        if event == "call" and frame.f_code is check_rdf_emission.__code__:
+            native_calls.append(frame.f_locals["usages"])
+
+    previous = sys.getprofile()
+    sys.setprofile(observe_native)
+    try:
+        failed = check_foreign_references(
+            records,
+            index,
+            source_complete=True,
+            models=(ModelDeclaration("instrument", (str(EX.Other),)),),
+        )
+        accepted = check_foreign_references(
+            records,
+            index,
+            source_complete=True,
+            models=(ModelDeclaration("instrument", (str(EX.Instrument),)),),
+        )
+        incomplete = check_foreign_references(
+            records,
+            partial,
+            source_complete=True,
+            models=(ModelDeclaration("instrument", (str(EX.Other),)),),
+        )
+    finally:
+        sys.setprofile(previous)
+    assert len(native_calls) == 2  # One check for each independent actual model policy.
+    assert accepted.report.verified
+    assert len(incomplete.resolutions) == len(records)
+    assert all(row.status == "unverified" for row in incomplete.resolutions)
+    assert not any(issue.code == "data.foreign_missing" for issue in incomplete.report)
+    assert [row.source for row in failed.resolutions] == list(records)
+    assert all(row.status == "resolved" for row in failed.resolutions)
+    reports = failed.report.children[1:]
+    assert len(reports) == len(records) and all(
+        child is reports[0] for child in reports
+    )
+    assert all(row.targets == target_records for row in failed.resolutions)
+    assert [issue.code for issue in failed.report.issues] == [
+        "emission.types_mismatch"
+    ] * len(records)
+    assert all(issue.location == str(EX.instrument) for issue in failed.report.issues)
+
+
+@pytest.mark.parametrize("selection", ["named", "blank-graphs", "blank-subjects"])
+def test_target_obligations_distinguish_physical_graphs_and_owned_blanks(
+    selection: str,
+) -> None:
+    records = []
+    if selection == "blank-subjects":
+        for number in range(2):
+            supplied = BNode("same-looking")
+            graph = Graph().add((supplied, EX.manufacturer, Literal("Acme")))
+            graph.add((supplied, EX.number, Literal("123")))
+            graph.add((supplied, RDF.type, EX.Instrument if number == 0 else EX.Other))
+            source = prepare_rdf(graph)
+            owned = next(source.graph().subjects(EX.manufacturer, Literal("Acme")))
+            assert isinstance(owned, BNode)
+            records.append(KeyRecord(f"target/{number}", source, owned))
+    else:
+        dataset = Dataset()
+        names = (EX.one, EX.two) if selection == "named" else (BNode(), BNode())
+        for number, name in enumerate(names):
+            graph = dataset.graph(name)
+            graph.add((EX.instrument, EX.manufacturer, Literal("Acme")))
+            graph.add((EX.instrument, EX.number, Literal("123")))
+            graph.add(
+                (EX.instrument, RDF.type, EX.Instrument if number == 0 else EX.Other)
+            )
+        source = prepare_rdf(dataset)
+        exported = source.dataset()
+        owned_names = tuple(
+            graph.identifier
+            for graph in exported.graphs()
+            if isinstance(graph.identifier, URIRef | BNode)
+            and (EX.instrument, EX.manufacturer, Literal("Acme")) in graph
+        )
+        records.extend(
+            KeyRecord(f"target/{number}", source, EX.instrument, graph_name=name)
+            for number, name in enumerate(owned_names)
+        )
+    index = prepare_foreign_targets(
+        tuple(records),
+        _contract(maximum_targets=2, target_model="instrument"),
+        complete=True,
+    )
+    assert index.complete
+    calls = []
+
+    def observe_native(frame: FrameType, event: str, value: object) -> None:
+        if event == "call" and frame.f_code is check_rdf_emission.__code__:
+            calls.append(frame.f_locals["source"])
+
+    previous = sys.getprofile()
+    sys.setprofile(observe_native)
+    try:
+        result = check_foreign_references(
+            _repeated_sources(2),
+            index,
+            source_complete=True,
+            models=(ModelDeclaration("instrument", (str(EX.Instrument),)),),
+        )
+    finally:
+        sys.setprofile(previous)
+    assert len(calls) == 2
+    assert len(result.resolutions) == 2
+    assert all(len(row.targets) == 2 for row in result.resolutions)
+    children = result.report.children[1:]
+    assert len(children) == 4
+    assert children[0] is children[2] and children[1] is children[3]
+    assert children[0] is not children[1]
+    assert sorted(child.verified for child in children[:2]) == [False, True]
+
+
+@pytest.mark.parametrize(
+    "attribute", ["document_iri", "literal_fidelity", "graph_name"]
+)
+def test_target_index_cannot_reuse_changed_origin_fidelity_or_declared_scope(
+    attribute: str,
+) -> None:
+    targets = _targets(EX.instrument)
+    index = prepare_foreign_targets(
+        targets, _contract(target_model="instrument"), complete=True
+    )
+    source = targets[0].source
+    setattr(source, attribute, "urn:changed")
+    with pytest.raises(InputError, match="changed"):
+        check_foreign_references(
+            _source(),
+            index,
+            source_complete=True,
+            models=(ModelDeclaration("instrument", (str(EX.Instrument),)),),
+        )
+
+
+def test_paid_target_failure_survives_later_parent_work_exhaustion() -> None:
+    index = prepare_foreign_targets(
+        _targets(EX.instrument), _contract(target_model="instrument"), complete=True
+    )
+    budget = Budget()
+    paid: list[Issue] = []
+
+    def observe_paid(frame: FrameType, event: str, value: object) -> None:
+        if event != "return" or frame.f_code is not IssueCollector.append.__code__:
+            return
+        issue = frame.f_locals.get("issue")
+        if (
+            not isinstance(issue, Issue)
+            or issue.code != "emission.types_mismatch"
+            or paid
+        ):
+            return
+        paid.append(issue)
+        budget.consume("work", budget.remaining("work"))
+
+    previous = sys.getprofile()
+    sys.setprofile(observe_paid)
+    try:
+        result = check_foreign_references(
+            _repeated_sources(3),
+            index,
+            source_complete=True,
+            models=(ModelDeclaration("instrument", (str(EX.Other),)),),
+            budget=budget,
+        )
+    finally:
+        sys.setprofile(previous)
+    assert len(paid) == 1
+    assert result.report.outcome == "exhausted"
+    assert any(issue is paid[0] for issue in result.report.issues)
+    assert len(result.resolutions) == 1
+    assert result.resolutions[0].source.identifier == "submission/0"
+    assert {issue.code for issue in result.report.issues} == {
+        "emission.types_mismatch",
+        "execution.limit_exceeded",
+    }

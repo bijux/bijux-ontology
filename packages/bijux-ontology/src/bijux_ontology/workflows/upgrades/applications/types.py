@@ -28,7 +28,10 @@ from bijux_ontology.rdf.identifiers import absolute_iri
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.vocabulary.comparison import VocabularyChanges
 from bijux_ontology.workflows.upgrades.anonymous import AnonymousAffectedUse
-from bijux_ontology.workflows.upgrades.assessment import AffectedUse, ContractChange
+from bijux_ontology.workflows.upgrades.assessment.types import (
+    AffectedUse,
+    ContractChange,
+)
 from bijux_ontology.workflows.upgrades.facts import FactAffectedUse
 from bijux_ontology.workflows.upgrades.uses import UseIndex
 

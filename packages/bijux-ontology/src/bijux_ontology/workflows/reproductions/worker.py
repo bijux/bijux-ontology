@@ -29,7 +29,7 @@ from bijux_ontology.rdf.records.types import PatchBlank
 from bijux_ontology.rdf.sources.loading import prepare_rdf
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import RdfSource
-from bijux_ontology.shacl.checking import validate_shapes
+from bijux_ontology.shacl.checking import _validate_shapes_owned
 from bijux_ontology.skos.checking import check_skos
 
 from .preparation import reserve
@@ -301,7 +301,7 @@ def _rdf_operation(
             format=_text(item["format"]),
             document_iri=cast(str | None, item["document_iri"]),
         )
-    result = validate_shapes(
+    result = _validate_shapes_owned(
         data,
         shapes,
         mode="pairs",
@@ -309,7 +309,6 @@ def _rdf_operation(
         use_shapes=roots,
         imports=imports,
         budget=budget,
-        _owned_worker=True,
     )
     aliases = {
         str(node): role + ":" + token

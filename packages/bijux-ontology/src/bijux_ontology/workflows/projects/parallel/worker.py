@@ -11,7 +11,7 @@ from bijux_ontology.execution.budgets import ControlBudget
 from bijux_ontology.execution.limits import IssueCollector, Limits, retain_report
 from bijux_ontology.json.values import decode_json
 from bijux_ontology.workflows.projects.jobs.decoding import check_kind
-from bijux_ontology.workflows.projects.operations import run_check
+from bijux_ontology.workflows.projects.operations import _run_owned_check
 from bijux_ontology.workflows.projects.resources import ProjectResources
 
 from .preparation import read_capture, supported
@@ -39,9 +39,7 @@ def execute(request: object) -> dict[str, object]:
         job.pop("depends_on", None)
         resources = ProjectResources(config, budget=budget, captured=captured)
         started = time.monotonic_ns()
-        report = run_check(
-            check_kind(job), job, resources, budget=budget, _owned_worker=True
-        )
+        report = _run_owned_check(check_kind(job), job, resources, budget=budget)
         finished = time.monotonic_ns()
         retain_report(report, budget, issues)
     except LimitExceeded:

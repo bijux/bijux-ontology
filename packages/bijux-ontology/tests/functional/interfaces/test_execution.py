@@ -449,3 +449,121 @@ def test_isolated_project_native_jobs_stay_owned_and_honor_timeout(
     )
     assert recovered.report.verified
     assert not list(runs.iterdir())
+
+
+def test_query_rules_direct_and_owned_project_keep_completed_answers_and_locations(
+    tmp_path: Path,
+) -> None:
+    """Compare real worker composition, including false, empty and failing answers."""
+    import json
+    from dataclasses import replace
+
+    from rdflib import URIRef
+
+    from bijux_ontology.data.query_rules.checking import run_query_rules
+    from bijux_ontology.data.query_rules.loading import load_query_rules
+    from bijux_ontology.documents.preparation import prepare_source
+
+    data = tmp_path / "data.ttl"
+    data.write_text('<urn:record> <urn:p> "value".')
+    rule_file = tmp_path / "rules.json"
+    rule_file.write_text(
+        json.dumps(
+            [
+                {
+                    "name": "false-answer",
+                    "query": "ASK {<urn:absent> ?p ?o}",
+                    "scope": {"kind": "default"},
+                    "expected": False,
+                },
+                {
+                    "name": "empty-answer",
+                    "query": "SELECT ?term WHERE {?term <urn:absent> ?v}",
+                    "scope": {"kind": "default"},
+                },
+                {
+                    "name": "actual-finding",
+                    "query": "SELECT ?term WHERE {?term <urn:p> ?v}",
+                    "scope": {"kind": "default"},
+                },
+            ]
+        )
+    )
+    direct = run_query_rules(prepare_source(data), load_query_rules(rule_file))
+    assert direct.results[0][1].answer is False
+    assert direct.results[1][1].rows == ()
+    assert direct.results[2][1].rows == ((URIRef("urn:record"),),)
+    assert direct.report.complete and direct.report.outcome == "disagreement"
+    configuration = {
+        "version": 1,
+        "rdf": {"data": {"path": "data.ttl"}},
+        "checks": [
+            {
+                "name": "rules",
+                "kind": "query-rules",
+                "source": "data",
+                "rules": "rules.json",
+                "timeout": 5.0,
+            }
+        ],
+    }
+    owned = WorkerExecutor(artifacts=tmp_path / "runs", timeout=6).run(
+        "project", {"configuration": configuration, "directory": str(tmp_path)}
+    )
+    assert owned.report.complete and owned.report.outcome == "disagreement"
+    assert owned.report.children == (replace(direct.report, scope="rules"),)
+    finding = next(
+        issue for issue in owned.report.issues if issue.code == "data.query_violation"
+    )
+    assert finding.details is not None
+    assert finding.details.source == str(rule_file)
+    assert finding.details.term == "urn:record"
+    assert not list((tmp_path / "runs").iterdir())
+
+
+@pytest.mark.parametrize("minimum", [1, 2])
+def test_shacl_direct_and_owned_project_preserve_named_findings(
+    tmp_path: Path, minimum: int
+) -> None:
+    """Only freshly allocated report identities differ across real execution routes."""
+    from dataclasses import replace
+
+    from bijux_ontology.workflows.projects.checking import check_project
+    from bijux_ontology.workflows.projects.configuration import ProjectConfig
+
+    (tmp_path / "data.ttl").write_text('<urn:record> <urn:p> "value".')
+    (tmp_path / "shapes.ttl").write_text(
+        "@prefix sh:<http://www.w3.org/ns/shacl#>. "
+        "<urn:Shape> a sh:NodeShape; sh:targetNode <urn:record>; "
+        "sh:property <urn:Property>. <urn:Property> sh:path <urn:p>; "
+        f"sh:minCount {minimum}."
+    )
+    configuration = {
+        "version": 1,
+        "rdf": {name: {"path": name + ".ttl"} for name in ("data", "shapes")},
+        "checks": [
+            {"name": "shapes", "kind": "shacl", "document": "data", "shapes": "shapes"}
+        ],
+    }
+    direct = check_project(ProjectConfig(configuration, directory=tmp_path))
+    owned = (
+        WorkerExecutor(artifacts=tmp_path / "runs")
+        .run("project", {"configuration": configuration, "directory": str(tmp_path)})
+        .report
+    )
+    assert direct.complete and owned.complete
+    assert direct.verified is (minimum == 1) and owned.verified is direct.verified
+    for report in (direct, owned):
+        assert len(report.issues) == minimum - 1
+    for before, after in zip(direct.issues, owned.issues, strict=True):
+        assert replace(before, evidence_json=None) == replace(after, evidence_json=None)
+        left, right = before.evidence, after.evidence
+        assert left is not None and right is not None
+        assert left["focus_node"] == {"kind": "iri", "value": "urn:record"}
+        assert left["source_shape"] == {"kind": "iri", "value": "urn:Property"}
+        assert cast(dict[str, object], left.pop("result"))["kind"] == "blank"
+        assert cast(dict[str, object], right.pop("result"))["kind"] == "blank"
+        assert left == right
+    if minimum == 1:
+        assert direct == owned
+    assert not list((tmp_path / "runs").iterdir())

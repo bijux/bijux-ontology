@@ -26,7 +26,7 @@ from bijux_ontology.jsonld.evidence.occurrences import ObservedUsage
 from bijux_ontology.jsonld.processing.resources import OfflineDocumentLoader
 from bijux_ontology.jsonld.usages.checking import PreparedUsages, prepare_usages
 from bijux_ontology.jsonld.usages.comparison import compare_context_usages
-from bijux_ontology.workflows.upgrades.assessment import assess_upgrade
+from bijux_ontology.workflows.upgrades.assessment.checking import assess_upgrade
 
 
 def upgrade(options: argparse.Namespace) -> CommandResult:

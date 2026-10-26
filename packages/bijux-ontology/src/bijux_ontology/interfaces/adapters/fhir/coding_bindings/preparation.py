@@ -27,11 +27,10 @@ from ..admission import (
     admit_r5_value,
     r5_models,
 )
-from ..code_system.reading import read_code_system
-from ..code_system.types import FhirCodeSystem
+from ..catalogue import CodeSystemCatalogue
 from ..identity import FhirCodeBinding
 from ..json import decode_fhir_json
-from ..value_set.composition import compile_value_set
+from ..value_set.composition import _compile_value_set
 from ..value_set.types import FhirValueSet, FhirValueSetPolicy, FhirValueSetSelection
 from .types import FhirCodingBinding, FhirDisplayPolicy
 
@@ -212,6 +211,7 @@ def occurrences(
     def walk(
         value: object, remaining: tuple[str, ...], where: SourcePath, depth: int
     ) -> Iterator[tuple[SourcePath, object]]:
+        """Retain concrete paths while descending selected repeated fields."""
         budget.consume("work")
         if depth > budget.limits.max_depth:
             raise LimitExceeded("Selected field traversal exceeds max_depth")
@@ -313,36 +313,14 @@ def binding_contract(binding: FhirCodingBinding, budget: Budget) -> None:
         raise InputError("Language preferences require language display mode")
 
 
-def local_systems(
-    systems: tuple[FhirCodeSystem, ...], budget: Budget, reports: list[Report]
-) -> tuple[FhirCodeSystem, ...]:
-    """Reacquire original native resources with their exact caller RDF identities."""
-    if type(systems) is not tuple:
-        raise InputError("Local CodeSystems require an immutable finite tuple")
-    reserve(budget, len(systems))
-    result = []
-    for system in systems:
-        if type(system) is not FhirCodeSystem:
-            raise InputError("Local terminology requires owned CodeSystems")
-        reserve(budget)
-        acquired = read_code_system(
-            system.payload,
-            bindings=system.bindings,
-            case_comparison=system.case_comparison,
-            budget=budget,
-        )
-        reports.append(acquired.report)
-        result.append(acquired)
-    return tuple(result)
-
-
 def selection(
     binding: FhirCodingBinding,
-    systems: tuple[FhirCodeSystem, ...],
+    catalogue: CodeSystemCatalogue,
     policy: FhirValueSetPolicy,
     budget: Budget,
 ) -> tuple[FhirValueSetSelection, bool]:
     """Use the actual178 compiler; never accept a caller asserted complete set."""
+    catalogue.require_owner(budget, catalogue.systems)
     parts = binding.value_set_reference.split("|")
     if len(parts) > 2 or any(not part for part in parts):
         raise InputError("ValueSet reference needs an unambiguous R5 canonical")
@@ -354,13 +332,14 @@ def selection(
         parts[1] if len(parts) == 2 else None
     )
     bindings: list[FhirCodeBinding] = []
-    for system in systems:
+    for system in catalogue.systems:
         reserve(budget, len(system.bindings))
         bindings.extend(system.bindings)
-    result = compile_value_set(
+    result = _compile_value_set(
         binding.value_set,
         mode=binding.mode,
-        systems=systems,
+        systems=catalogue.systems,
+        catalogue=catalogue,
         bindings=tuple(bindings),
         policy=policy,
         budget=budget,

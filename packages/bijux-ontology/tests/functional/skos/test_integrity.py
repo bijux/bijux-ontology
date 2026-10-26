@@ -1,15 +1,28 @@
 """Selected SKOS integrity conditions stay distinct from authoring policy."""
 
+import sys
+from types import FrameType
+
 import pytest
 from rdflib import BNode, Graph, Literal, Namespace, URIRef
 from rdflib.collection import Collection
 from rdflib.namespace import OWL, RDF, SKOS, XSD
 
 from bijux_ontology.diagnostics.errors import InputError
-from bijux_ontology.execution.limits import Budget, Limits
+from bijux_ontology.diagnostics.reports import Issue
+from bijux_ontology.execution.limits import Budget, IssueCollector, Limits
 from bijux_ontology.skos.checking import XL, check_skos
-from bijux_ontology.skos.xl import describe_xl_label, xl_labels
-from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
+from bijux_ontology.skos.resource_facts import ResourceFacts
+from bijux_ontology.skos.xl import (
+    describe_xl_label,
+    describe_xl_label_from_facts,
+    xl_labels,
+    xl_labels_from_facts,
+)
+from bijux_ontology.vocabulary.browsing.inspection import (
+    VocabularyView,
+    inspect_vocabulary,
+)
 from bijux_ontology.vocabulary.sources.view import Vocabulary
 
 EX = Namespace("https://example.org/")
@@ -408,3 +421,121 @@ def test_repeated_skos_checks_share_the_supplied_operation_budget() -> None:
     assert check_skos(view).verified
     with pytest.raises(InputError, match="matching limits"):
         check_skos(graph, limits=Limits(max_work=1), budget=Budget())
+
+
+def _shared_xl_resources() -> Graph:
+    """Two actual concept owners retain one label with distinct authored roles."""
+    graph = Graph()
+    for owner in (EX.A, EX.B):
+        graph.add((owner, RDF.type, SKOS.Concept))
+        graph.add((owner, XL.prefLabel, EX.Label))
+    graph.add((EX.A, XL.altLabel, EX.Label))
+    graph.add((EX.Label, RDF.type, XL.Label))
+    graph.add((EX.Label, XL.literalForm, Literal("Name", lang="en")))
+    return graph
+
+
+def test_shared_xl_forms_are_read_once_without_merging_roles_or_plain_evidence() -> (
+    None
+):
+    view = inspect_vocabulary(_shared_xl_resources())
+    reads = []
+    admitted: list[ResourceFacts] = []
+
+    def observe_read(frame: FrameType, event: str, value: object) -> None:
+        if (
+            event == "return"
+            and frame.f_code is ResourceFacts.label_statements.__code__
+        ):
+            facts = frame.f_locals.get("self")
+            if isinstance(facts, ResourceFacts) and not admitted:
+                admitted.append(facts)
+        if event != "call" or frame.f_code is not VocabularyView.statements.__code__:
+            return
+        if frame.f_locals.get("node") == EX.Label and not frame.f_locals.get(
+            "predicates"
+        ):
+            reads.append(frame.f_locals.get("budget"))
+
+    budget = Budget()
+    previous = sys.getprofile()
+    sys.setprofile(observe_read)
+    try:
+        report = check_skos(view, rules=("xl", "label-integrity"), budget=budget)
+    finally:
+        sys.setprofile(previous)
+    assert reads == [budget]
+    assert len(admitted) == 1
+    facts = admitted[0]
+    foreign = Budget()
+    for read in (
+        lambda: facts.label_statements(EX.Label, foreign),
+        lambda: describe_xl_label_from_facts(facts, EX.Label, budget=foreign),
+        lambda: xl_labels_from_facts(facts, EX.A, budget=foreign),
+    ):
+        with pytest.raises(InputError, match="originating budget"):
+            read()
+    assert foreign.remaining("work") == foreign.limits.max_work
+    assert [issue.code for issue in report.issues] == [
+        "skos.xl_role_overlap",
+        "skos.label_role_conflict",
+    ]
+    assert report.complete and not report.verified
+    # An independent interpretation never adopts derived plain labels implicitly.
+    assert check_skos(view, rules=("label-integrity",)).verified
+
+
+def test_resource_fact_admission_rejects_native_view_reinitialization() -> None:
+    view = inspect_vocabulary(_shared_xl_resources())
+    observed: list[object] = []
+
+    def observe_read(frame: FrameType, event: str, value: object) -> None:
+        if event != "return" or frame.f_code is not VocabularyView.statements.__code__:
+            return
+        if (
+            frame.f_locals.get("node") != EX.Label
+            or frame.f_locals.get("predicates")
+            or observed
+        ):
+            return
+        observed.append(value)
+        # Reinitialize through the actual native constructor after real admission.
+        VocabularyView.__init__(view, Graph().add((EX.Other, RDF.type, SKOS.Concept)))
+
+    previous = sys.getprofile()
+    sys.setprofile(observe_read)
+    try:
+        with pytest.raises(InputError, match="view changed"):
+            check_skos(view, rules=("xl", "label-integrity"))
+    finally:
+        sys.setprofile(previous)
+    assert len(observed) == 1
+
+
+def test_paid_xl_role_finding_survives_later_parent_work_exhaustion() -> None:
+    view = inspect_vocabulary(_shared_xl_resources())
+    budget = Budget()
+    paid: list[Issue] = []
+
+    def observe_paid(frame: FrameType, event: str, value: object) -> None:
+        if event != "return" or frame.f_code is not IssueCollector.append.__code__:
+            return
+        issue = frame.f_locals.get("issue")
+        if not isinstance(issue, Issue) or issue.code != "skos.xl_role_overlap" or paid:
+            return
+        paid.append(issue)
+        budget.consume("work", budget.remaining("work"))
+
+    previous = sys.getprofile()
+    sys.setprofile(observe_paid)
+    try:
+        result = check_skos(view, rules=("xl", "label-integrity"), budget=budget)
+    finally:
+        sys.setprofile(previous)
+    assert len(paid) == 1
+    assert result.outcome == "exhausted" and not result.complete
+    assert any(issue is paid[0] for issue in result.issues)
+    assert {issue.code for issue in result.issues} == {
+        "skos.xl_role_overlap",
+        "execution.limit_exceeded",
+    }

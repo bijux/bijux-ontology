@@ -15,13 +15,8 @@ from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.terms import bound_node
 from bijux_ontology.vocabulary.annotations.graphs.types import AnnotationStatement
 
-from .projection import (
-    ExportProjection,
-    UnsupportedProjection,
-    literals,
-    named,
-    statement,
-)
+from .projection.constructs import UnsupportedProjection, literals, named, statement
+from .projection.exporting import ExportProjection
 from .reading import _operation, _validate
 from .types import OboGraphsExport
 

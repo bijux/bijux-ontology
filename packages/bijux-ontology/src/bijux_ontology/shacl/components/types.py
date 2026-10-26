@@ -12,8 +12,8 @@ from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.shacl.authoring.parameters import ShaclParameter
 from bijux_ontology.shacl.evidence.results import ShaclResult
-from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.profiles.resources import _capture
+from bijux_ontology.shacl.validation.contracts import ShaclConstraintRequirement
 
 
 @dataclass(frozen=True)

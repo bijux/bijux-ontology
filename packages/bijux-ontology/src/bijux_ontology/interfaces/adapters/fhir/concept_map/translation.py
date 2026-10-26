@@ -17,12 +17,12 @@ from bijux_ontology.execution.limits import (
 )
 from bijux_ontology.rdf.identifiers import absolute_iri
 
+from ..catalogue import CodeSystemCatalogue, prepare_code_systems
 from ..code_system.checking import check_code_membership
-from ..code_system.reading import read_code_system
 from ..code_system.types import FhirCodeSystem
 from ..identity import FhirCodeBinding, FhirCodeIdentity
 from ..json import UnsupportedJsonNumber, decode_fhir_json, same_json
-from ..value_set.composition import compile_value_set
+from ..value_set.composition import _compile_value_set
 from ..value_set.types import FhirValueSet, FhirValueSetPolicy
 from .reading import canonical, failure, note, obj, read_concept_map, reserve
 from .types import (
@@ -59,6 +59,7 @@ class _Translation:
     systems: tuple[FhirCodeSystem, ...]
     value_sets: tuple[FhirMapValueSet, ...]
     policy: FhirValueSetPolicy
+    catalogue: CodeSystemCatalogue | None = None
     reports: list[Report] = field(default_factory=list)
     selections: dict[str, tuple[FhirCodeIdentity, ...] | None] = field(
         default_factory=dict
@@ -82,13 +83,12 @@ class _Translation:
                 path=path,
             )
             return None
-        self.operation.consume("work", len(self.systems) + 1)
-        candidates = [
-            s
-            for s in self.systems
-            if s.system == identity.system and s.version == identity.version
-        ]
-        if len(candidates) != 1:
+        if self.catalogue is None:
+            raise InputError("Translation terminology catalogue was not prepared")
+        resolved = self.catalogue.resolve(
+            identity.system, identity.version, budget=self.operation
+        )
+        if resolved.code_system is None:
             note(
                 self.issues,
                 "Exactly one supplied system/version must resolve the requested code",
@@ -96,7 +96,9 @@ class _Translation:
             )
             return None
         reserve(self.operation)
-        result = check_code_membership(candidates[0], identity, budget=self.operation)
+        result = check_code_membership(
+            resolved.code_system, identity, budget=self.operation
+        )
         self.adopt(result.report)
         if result.status == "unknown":
             return None
@@ -134,10 +136,11 @@ class _Translation:
                 reserve(self.operation, len(system.bindings))
                 bindings.extend(system.bindings)
             reserve(self.operation)
-            result = compile_value_set(
+            result = _compile_value_set(
                 candidates[0].value_set,
                 mode=candidates[0].mode,
                 systems=self.systems,
+                catalogue=self.catalogue,
                 bindings=tuple(bindings),
                 policy=self.policy,
                 budget=self.operation,
@@ -426,20 +429,20 @@ def translate_concept_map(
         state.adopt(captured.report)
         if not captured.report.verified:
             raise ResourceError("Original ConceptMap interpretation is not qualified")
-        captured_systems = []
-        for supplied_system in systems:
-            if type(supplied_system) is not FhirCodeSystem:
+
+        def original_system(system: FhirCodeSystem) -> None:
+            """Keep exact ordinary resources and the existing preparation allowance."""
+            if type(system) is not FhirCodeSystem:
                 raise InputError("Supply ordinary owned CodeSystem records")
             reserve(operation)
-            reacquired = read_code_system(
-                supplied_system.payload,
-                bindings=supplied_system.bindings,
-                case_comparison=supplied_system.case_comparison,
-                budget=operation,
-            )
-            captured_systems.append(reacquired)
-            state.adopt(reacquired.report)
-        state.systems = tuple(captured_systems)
+
+        state.catalogue = prepare_code_systems(
+            systems,
+            operation,
+            on_original=original_system,
+            on_captured=lambda captured: state.adopt(captured.report),
+        )
+        state.systems = state.catalogue.systems
         reserve(operation, len(value_sets))
         for supplied in value_sets:
             if (

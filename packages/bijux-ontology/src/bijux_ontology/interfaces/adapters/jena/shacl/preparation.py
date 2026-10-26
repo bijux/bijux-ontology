@@ -9,12 +9,15 @@ from bijux_ontology.diagnostics.reports import Issue
 from bijux_ontology.execution.limits import Budget, bound_text
 from bijux_ontology.rdf.sources.snapshots import PreparedSource
 from bijux_ontology.rdf.sources.types import Payload, RdfSource
-from bijux_ontology.shacl.execution.bindings import TermSelection, resolve_terms
-from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
-from bijux_ontology.shacl.execution.planning import _role, _ShapePlan
-from bijux_ontology.shacl.execution.session import _contract_metadata, _prepay_graph
 from bijux_ontology.shacl.sparql.functions import FunctionPlan
 from bijux_ontology.shacl.targets.coverage import ShaclCoverageContract
+from bijux_ontology.shacl.validation.bindings import TermSelection, resolve_terms
+from bijux_ontology.shacl.validation.contracts import (
+    ShaclConstraintRequirement,
+    ShaclPlan,
+    capture_contract,
+)
+from bijux_ontology.shacl.validation.roles import prepare_role, prepay_graph
 
 
 def prepare_plan(
@@ -29,7 +32,7 @@ def prepare_plan(
     coverage: ShaclCoverageContract | None,
     requirements: Sequence[ShaclConstraintRequirement],
     budget: Budget,
-) -> _ShapePlan:
+) -> ShaclPlan:
     """Capture the same public contract; native Jena discovers actual capabilities."""
     if any(
         type(value) is not bool for value in (trusted_sparql, preflight, allow_empty)
@@ -40,7 +43,7 @@ def prepare_plan(
     bound_text(mode, budget)
     if mode not in {"targets", "pairs"}:
         raise InputError("SHACL mode must be targets or pairs")
-    selected = _contract_metadata(coverage, requirements, None, budget)
+    selected = capture_contract(coverage, requirements, None, budget)
     budget.consume("bytes", 512 + 256 * len(selected))
     owned_requirements = tuple(
         ShaclConstraintRequirement(item.shape, item.parameter, item.component)
@@ -55,13 +58,13 @@ def prepare_plan(
         if source is not None:
             if not isinstance(source, Graph | PreparedSource):
                 raise InputError("SHACL roles require graphs or prepared sources")
-            _prepay_graph(
+            prepay_graph(
                 source._read(budget=budget)
                 if isinstance(source, PreparedSource)
                 else source,
                 budget,
             )
-    sg = _role(
+    sg = prepare_role(
         shapes,
         graph_name=None,
         union=False,
@@ -73,7 +76,7 @@ def prepare_plan(
     og = (
         None
         if ontology is None
-        else _role(
+        else prepare_role(
             ontology,
             graph_name=None,
             union=False,
@@ -108,7 +111,7 @@ def prepare_plan(
             ),
         )
     )
-    return _ShapePlan(
+    return ShaclPlan(
         sg,
         og,
         roots,

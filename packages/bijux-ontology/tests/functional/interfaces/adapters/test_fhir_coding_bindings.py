@@ -375,3 +375,87 @@ def test_core_optional_absence_is_actionable() -> None:
     assert not result.report.verified and any(
         "[fhir]" in i.message for i in result.report
     )
+
+
+@native
+def test_composed_consumers_prepare_each_system_once_without_merging_codings() -> None:
+    """Real native consumers share preparation within each operation only."""
+    import sys
+    from types import FrameType
+
+    from bijux_ontology.interfaces.adapters.fhir.concept_map import (
+        FhirMapValueSet,
+        read_concept_map,
+        translate_concept_map,
+    )
+    from bijux_ontology.interfaces.adapters.fhir.value_set import compile_value_set
+
+    system = _system()
+    value_set = _value_set()
+    contract = replace(_binding("Coding"), value_set=value_set)
+    contracts = (
+        replace(contract, path=("first",)),
+        replace(contract, path=("second",)),
+    )
+    record = {"first": [_coding(), _coding()], "second": _coding()}
+    raw = {
+        "resourceType": "ConceptMap",
+        "status": "active",
+        "sourceScopeCanonical": "urn:allowed|1",
+        "targetScopeCanonical": "urn:allowed|1",
+        "group": [
+            {
+                "source": "urn:one|1",
+                "target": "urn:one|1",
+                "element": [
+                    {
+                        "code": "A",
+                        "target": [{"code": "A", "relationship": "equivalent"}],
+                    }
+                ],
+            }
+        ],
+    }
+    producer = import_module("fhir.resources.conceptmap").ConceptMap.model_validate(raw)
+    mapping = read_concept_map(producer.model_dump_json(exclude_none=True).encode())
+    assert mapping.report.verified
+    reads = {"coding": 0, "selection": 0, "translation": 0}
+    selected = "coding"
+
+    def observe(frame: FrameType, event: str, argument: object) -> None:
+        if (
+            event == "call"
+            and frame.f_code.co_name == "read_code_system"
+            and frame.f_globals.get("__name__")
+            == "bijux_ontology.interfaces.adapters.fhir.code_system.reading"
+        ):
+            reads[selected] += 1
+
+    previous = sys.getprofile()
+    sys.setprofile(observe)
+    try:
+        checked = check_coding_bindings(record, contracts, systems=(system,))
+        selected = "selection"
+        allowed = compile_value_set(
+            value_set, mode="expansion", systems=(system,), bindings=system.bindings
+        )
+        selected = "translation"
+        translated = translate_concept_map(
+            mapping,
+            FhirCodeIdentity("urn:one", "1", "A"),
+            systems=(system,),
+            value_sets=(FhirMapValueSet(value_set, "expansion"),),
+        )
+    finally:
+        sys.setprofile(previous)
+    assert reads == {"coding": 1, "selection": 1, "translation": 1}
+    assert checked.report.verified and len(checked.occurrences) == 3
+    assert [item.path for item in checked.occurrences] == [
+        ("first", 0),
+        ("first", 1),
+        ("second",),
+    ]
+    identity = FhirCodeIdentity("urn:one", "1", "A")
+    assert allowed.report.verified and allowed.identities == (identity,)
+    assert translated.successful
+    assert [item.target for item in translated.matches] == [identity]

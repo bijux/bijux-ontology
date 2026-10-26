@@ -9,12 +9,12 @@ from rdflib.namespace import RDF, SH, XSD
 
 from bijux_ontology.execution.limits import Limits
 from bijux_ontology.shacl.checking import validate_shapes
-from bijux_ontology.shacl.execution.capabilities import ShaclConstraintRequirement
 from bijux_ontology.shacl.sparql.functions import (
     ShaclFunctionCatalog,
     ShaclFunctionParameter,
     ShaclSparqlFunction,
 )
+from bijux_ontology.shacl.validation.contracts import ShaclConstraintRequirement
 
 EX = Namespace("https://example.org/")
 
