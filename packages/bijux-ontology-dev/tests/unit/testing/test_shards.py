@@ -1,5 +1,6 @@
 """Test grouping covers the canonical inventory exactly once, including new files."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -12,16 +13,22 @@ def test_groups_cover_real_make_owners_and_remain_balanced() -> None:
     root = Path(__file__).resolve().parents[5]
     files = discover_test_files(root)
     weights = read_weights(root / "configs/test-groups.json")
-    groups = partition(files, weights)
-    assert len(groups) == 5 and all(groups)
+    matrix = json.loads((root / "configs/test-matrix.json").read_text())
+    assert matrix["python"] == ["3.11", "3.13"]
+    count = len(matrix["group"])
+    assert count > 0 and matrix["group"] == list(range(1, count + 1))
+    groups = partition(files, weights, count)
+    assert len(groups) == count and all(groups)
     assert sorted(path for group in groups for path in group) == list(files)
     assert any("/bijux-ontology/tests/" in path for path in files)
     assert any("/bijux-ontology-dev/tests/" in path for path in files)
-    assert groups == partition(tuple(reversed(files)), weights)
+    assert groups == partition(tuple(reversed(files)), weights, count)
     costs = [sum(weights.get(path, 1.0) for path in group) for group in groups]
     assert max(costs) - min(costs) <= max(weights.get(path, 1.0) for path in files)
     added = "packages/bijux-ontology/tests/functional/test_added.py"
-    assert sum(added in group for group in partition((*files, added), weights)) == 1
+    assert (
+        sum(added in group for group in partition((*files, added), weights, count)) == 1
+    )
 
 
 def test_inventory_uses_only_selected_package_owners(tmp_path: Path) -> None:
