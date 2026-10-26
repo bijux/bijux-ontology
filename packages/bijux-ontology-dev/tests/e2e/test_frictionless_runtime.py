@@ -84,6 +84,8 @@ def test_oak_host_uses_explicit_native_package_interpreter(
         identity = Path(located.stdout.strip())
         original = identity.read_bytes()
         try:
+            # Isolate this interpreter from shared installer cache hard links.
+            identity.unlink()
             identity.write_bytes(original + b'\n')
             mismatched = extract_package(description, resources, bindings,
                 work_directory=directory, backend=backend)
