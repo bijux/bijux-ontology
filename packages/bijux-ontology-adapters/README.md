@@ -26,3 +26,10 @@ and build directories. Pass the pin, Java executable, bundle and artifact paths 
 `prepare_jena_backend` from `bijux_ontology_adapters.jena`. Runtime operations do
 not compile or retrieve dependencies. The current native profile requires POSIX
 process ownership; JVM heap, wall time and bounded transport constrain execution.
+
+The optional `[oak]` extra retains OAK 0.7.4, whose `setuptools<82` requirement
+prevents adoption of the patched Setuptools releases. Its dependency graph
+therefore retains the known [manifest exclusion](https://github.com/advisories/GHSA-h35f-9h28-mq5c)
+and [legacy wheel installation](https://github.com/advisories/GHSA-xmj3-9gf7-h52w)
+issues. OAK remains available; this profile must not be described as having a
+clean dependency audit. Other integrations do not require the OAK extra.
