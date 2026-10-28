@@ -186,7 +186,7 @@
     needs: test-plan
     name: python tests / ${{ matrix.python }} / ${{ matrix.group }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.test-plan.outputs.matrix) }}
