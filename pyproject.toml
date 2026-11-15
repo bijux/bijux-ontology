@@ -2,6 +2,7 @@
 package = false
 constraint-dependencies = [
   "certifi>=2026.10.19",
+  "setuptools>=84.1.0",
 ]
 required-version = ">=0.13.1"
 conflicts = [

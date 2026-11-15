@@ -27,17 +27,18 @@ and build directories. Pass the pin, Java executable, bundle and artifact paths 
 not compile or retrieve dependencies. The current native profile requires POSIX
 process ownership; JVM heap, wall time and bounded transport constrain execution.
 
-The optional `[oak]` extra retains OAK 0.7.4, whose `setuptools<82` requirement
-prevents adoption of the patched Setuptools releases. Its dependency graph
-therefore retains the known [manifest exclusion](https://github.com/advisories/GHSA-h35f-9h28-mq5c)
-and [legacy wheel installation](https://github.com/advisories/GHSA-xmj3-9gf7-h52w)
-issues. OAK remains available; this profile must not be described as having a
-clean dependency audit. Other integrations do not require the OAK extra.
+The optional `[oak]` extra uses the published OAK 0.6.23 profile with
+EUtils >=0.6.1 and Setuptools >=84.1.0 on Python >=3.12,<3.15. Core Bijux
+retains Python 3.11 support. The existing OAK basic interface remains available,
+including scoped metadata, membership, relationship selection and bounded
+failures. No Git dependency or private package index is needed to install the
+extra from PyPI.
 
-Canonical OAK has [replaced its EUtils dependency](https://github.com/INCATools/ontology-access-kit/pull/926)
-and [removed the obsolete Setuptools requirement](https://github.com/INCATools/ontology-access-kit/pull/929).
-These changes are present in upstream commit
-[`235c93a830e8e6663e21cd017d62bf1a4e1c7194`](https://github.com/INCATools/ontology-access-kit/commit/235c93a830e8e6663e21cd017d62bf1a4e1c7194),
-but no fixed PyPI release, including a prerelease, was available when checked on
-2026-11-15. A fixed release must be resolved and qualified against the installed
-OAK integration tests before removing this security limitation.
+OAK 0.7.4 declares `setuptools<82`, which prevents the patched Setuptools
+releases required by the [manifest exclusion](https://github.com/advisories/GHSA-h35f-9h28-mq5c)
+and [legacy wheel installation](https://github.com/advisories/GHSA-xmj3-9gf7-h52w)
+advisories. OAK 0.6.23 has no such cap; EUtils 0.6.1 removes its legacy
+`pkg_resources` dependency and works with the patched Setuptools releases.
+The qualified published profile therefore preserves this integration without
+retaining that vulnerable dependency. Future OAK upgrades must preserve the
+security floors and pass the installed integration tests.

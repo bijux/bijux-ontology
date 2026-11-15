@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable
 from itertools import repeat
 from typing import TYPE_CHECKING, cast
@@ -20,6 +21,13 @@ from bijux_ontology.vocabulary.registry.types import (
 from bijux_ontology.vocabulary.restrictions import project_restrictions
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
 from bijux_ontology_adapters.oak import OakOperationError, as_oak
+
+runtime = sys.version_info[:2]
+if runtime < (3, 12):
+    pytest.skip(
+        "The published OAK security profile requires Python >=3.12",
+        allow_module_level=True,
+    )
 
 BasicOntologyInterface = pytest.importorskip("oaklib.interfaces").BasicOntologyInterface
 

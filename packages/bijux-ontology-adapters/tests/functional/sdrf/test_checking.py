@@ -2,13 +2,16 @@
 
 import io
 import socket
+from importlib.metadata import PackageNotFoundError
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import pytest
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import OWL, RDF, RDFS
 
+from bijux_ontology.diagnostics.errors import ResourceError
 from bijux_ontology.execution.limits import Budget, Limits
 from bijux_ontology.vocabulary.browsing.inspection import inspect_vocabulary
 from bijux_ontology.vocabulary.sources.loading import load_vocabulary
@@ -17,15 +20,11 @@ from bijux_ontology_adapters.sdrf import (
     SdrfOntology,
     SdrfTerminology,
     check_sdrf,
+    consumer,
     local_sdrf_client,
     prepare_sdrf_terminology,
 )
 
-sdrf = pytest.importorskip("sdrf_pipelines.sdrf.sdrf")
-models = pytest.importorskip("sdrf_pipelines.sdrf.schemas.models")
-registry_module = pytest.importorskip("sdrf_pipelines.sdrf.schemas.registry")
-validators = pytest.importorskip("sdrf_pipelines.sdrf.validators")
-ols = pytest.importorskip("sdrf_pipelines.ols.ols")
 E = Namespace("urn:sdrf:")
 OIO = Namespace("http://www.geneontology.org/formats/oboInOwl#")
 COLUMN = "characteristics[cell type]"
@@ -63,6 +62,7 @@ def _terminology(*, closed: bool = True, collision: bool = False) -> SdrfTermino
 
 def _schema() -> Any:
     """Build actual consumer schema objects with supported sentinel and parent rules."""
+    models = pytest.importorskip("sdrf_pipelines.sdrf.schemas.models")
     return models.SchemaDefinition(
         name="local",
         description="Local terminology",
@@ -89,6 +89,7 @@ def _schema() -> Any:
 
 def _table(value: str) -> Any:
     """The actual parser sees reordered original physical columns."""
+    sdrf = pytest.importorskip("sdrf_pipelines.sdrf.sdrf")
     return sdrf.read_sdrf(
         io.StringIO(
             "comment[batch]\tsource name\t" + COLUMN + "\nB\tsample\t" + value + "\n"
@@ -96,10 +97,13 @@ def _table(value: str) -> Any:
     )
 
 
+@pytest.mark.usefixtures("installed_sdrf_consumer")
 def test_original_validator_accepts_real_local_client_and_sentinels(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """No remote connection occurs and the maintained ontology class is unchanged."""
+    ols = pytest.importorskip("sdrf_pipelines.ols.ols")
+    validators = pytest.importorskip("sdrf_pipelines.sdrf.validators")
 
     def denied(*args: object, **kwargs: object) -> None:
         """Fail any actual attempted connection in this offline consumer test."""
@@ -136,6 +140,7 @@ def test_original_validator_accepts_real_local_client_and_sentinels(
     ).report.verified
 
 
+@pytest.mark.usefixtures("installed_sdrf_consumer")
 def test_wrong_pair_and_parent_are_located_at_actual_original_cell() -> None:
     """Consumer errors are retained with original case and physical coordinates."""
     terminology = _terminology()
@@ -152,6 +157,7 @@ def test_wrong_pair_and_parent_are_located_at_actual_original_cell() -> None:
         )
 
 
+@pytest.mark.usefixtures("installed_sdrf_consumer")
 def test_open_missing_accession_and_case_collisions_never_verify() -> None:
     """The consumer's lowercase and equal-parent shortcut cannot merge identifiers."""
     open_result = check_sdrf(
@@ -178,8 +184,11 @@ def test_open_missing_accession_and_case_collisions_never_verify() -> None:
     ).report.verified
 
 
+@pytest.mark.usefixtures("installed_sdrf_consumer")
 def test_actual_registry_combination_and_custom_coverage(tmp_path: Path) -> None:
     """Real schema composition keeps requirement and reordered cell locations."""
+    models = pytest.importorskip("sdrf_pipelines.sdrf.schemas.models")
+    registry_module = pytest.importorskip("sdrf_pipelines.sdrf.schemas.registry")
     base = _schema()
     (tmp_path / "base.yaml").write_text(
         "name: base\ndescription: base\nvalidators:\n"
@@ -229,6 +238,7 @@ def test_actual_registry_combination_and_custom_coverage(tmp_path: Path) -> None
     )
 
 
+@pytest.mark.usefixtures("installed_sdrf_consumer")
 def test_cumulative_bounds_and_required_prefixes() -> None:
     """Limited checks cannot certify partial cells or spend a fresh traversal budget."""
     terminology = _terminology()
@@ -273,6 +283,7 @@ def test_cumulative_bounds_and_required_prefixes() -> None:
         raise AssertionError("No partial-index cutoff was exercised")
 
 
+@pytest.mark.usefixtures("installed_sdrf_consumer")
 def test_unqualified_required_imports_cannot_establish_absence() -> None:
     """Raw imported vocabularies retain positives without claiming closed absence."""
     graph = Graph()
@@ -323,3 +334,48 @@ def test_unqualified_required_imports_cannot_establish_absence() -> None:
         ).report.outcome
         == "unverified"
     )
+
+
+@pytest.fixture
+def installed_sdrf_consumer() -> None:
+    """Require the external host only for tests that execute its real validators."""
+    for name in (
+        "sdrf_pipelines.sdrf.sdrf",
+        "sdrf_pipelines.sdrf.schemas.models",
+        "sdrf_pipelines.sdrf.schemas.registry",
+        "sdrf_pipelines.sdrf.validators",
+        "sdrf_pipelines.ols.ols",
+    ):
+        pytest.importorskip(name)
+
+
+def test_missing_consumer_distribution_requires_explicit_installation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    terminology = _terminology()
+    assert terminology.report.verified
+
+    def missing_distribution(name: str) -> str:
+        raise PackageNotFoundError(name)
+
+    monkeypatch.setattr(consumer, "version", missing_distribution)
+    with pytest.raises(ResourceError) as error:
+        local_sdrf_client(terminology)
+    assert str(error.value) == "Install separately: " + consumer.INSTALL_REQUIREMENT
+
+
+def test_missing_ontology_extra_cannot_admit_a_partial_consumer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempted = []
+
+    def missing_ontology(name: str) -> ModuleType:
+        attempted.append(name)
+        raise ImportError(name)
+
+    monkeypatch.setattr(consumer, "version", lambda name: consumer.SUPPORTED_VERSION)
+    monkeypatch.setattr(consumer, "import_module", missing_ontology)
+    with pytest.raises(ResourceError) as error:
+        local_sdrf_client(_terminology())
+    assert attempted == ["sdrf_pipelines.ols.ols"]
+    assert str(error.value) == "Install separately: " + consumer.INSTALL_REQUIREMENT

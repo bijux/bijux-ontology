@@ -27,7 +27,9 @@ uses the longest namespace in `.compact_iri(value)` without guessing intent.
 
 `bijux_ontology_adapters.oak.as_oak(view, registry=registry, language="en")` exposes
 an owned selected view through the maintained OAK `BasicOntologyInterface`.
-Install `[oak]` on Python <3.15 for OAK 0.7.4. Core imports need no OAK package.
+Install `[oak]` on Python >=3.12,<3.15 for the qualified OAK 0.6.23 profile, with
+EUtils >=0.6.1 and Setuptools >=84.1.0. Core imports need no OAK package and
+continue to support Python 3.11.
 Labels, aliases, definitions, asserted relationships and obsolescence retain
 their selected source meanings; the original `.view` keeps qualified evidence.
 Subset enumeration requires explicit `closed_subsets=True` for this finite

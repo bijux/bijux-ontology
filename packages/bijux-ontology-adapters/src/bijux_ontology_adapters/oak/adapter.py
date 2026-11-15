@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from types import MappingProxyType
 from typing import Any, NoReturn
 
-from oaklib.interfaces import BasicOntologyInterface  # type: ignore[import-untyped]
+from oaklib.interfaces import BasicOntologyInterface
 from rdflib import Literal, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
