@@ -26,9 +26,30 @@ members = [
     "bijux-ontology-adapters",
     "bijux-ontology-dev",
     "bijux-ontology-reasoning",
-    "bijux-ontology-workspace",
 ]
 constraints = [{ name = "certifi", specifier = ">=2026.10.19" }]
+
+[manifest.dependency-groups]
+dev = [
+    { name = "bijux-ontology", extras = ["analysis", "shex", "quantities", "jsonpatch", "jsonld", "shacl", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
+    { name = "bijux-ontology-adapters", extras = ["biolink", "biosamples", "csvw", "fhir", "linkml", "oak", "pydantic"], editable = "packages/bijux-ontology-adapters" },
+    { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
+    { name = "bijux-ontology-reasoning", editable = "packages/bijux-ontology-reasoning" },
+    { name = "build", specifier = ">=1.2,<2" },
+    { name = "codespell", specifier = ">=2.4,<3" },
+    { name = "deptry", specifier = ">=0.23,<1" },
+    { name = "hatchling", specifier = ">=1.27,<2" },
+    { name = "interrogate", specifier = ">=1.7,<2" },
+    { name = "mypy", specifier = ">=1.11,<3" },
+    { name = "pytest", specifier = ">=8.4,<10" },
+    { name = "pytest-cov", specifier = ">=6,<8" },
+    { name = "pytest-timeout", specifier = ">=2.3,<3" },
+    { name = "pytest-xdist", specifier = ">=3.8,<4" },
+    { name = "radon", specifier = ">=6,<7" },
+    { name = "ruff", specifier = ">=0.6,<1" },
+    { name = "twine", specifier = ">=6,<7" },
+    { name = "vulture", specifier = ">=2.13,<3" },
+]
 
 [[package]]
 name = "airium"
@@ -442,58 +463,6 @@ dependencies = [
 requires-dist = [
     { name = "bijux-ontology", editable = "packages/bijux-ontology" },
     { name = "rdflib", specifier = ">=7.6,<8" },
-]
-
-[[package]]
-name = "bijux-ontology-workspace"
-version = "0.0.0"
-source = { virtual = "." }
-
-[package.dev-dependencies]
-dev = [
-    { name = "bijux-ontology", extra = ["analysis", "checksums", "jsonld", "jsonpatch", "patterns", "quantities", "shacl", "shex", "sssom", "templates", "xsd"] },
-    { name = "bijux-ontology-adapters", extra = ["biolink", "biosamples", "csvw", "fhir", "linkml", "pydantic"] },
-    { name = "bijux-ontology-adapters", extra = ["oak"], marker = "extra == 'extra-23-bijux-ontology-adapters-oak'" },
-    { name = "bijux-ontology-dev" },
-    { name = "bijux-ontology-reasoning" },
-    { name = "build" },
-    { name = "codespell" },
-    { name = "deptry" },
-    { name = "hatchling" },
-    { name = "interrogate" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "pytest-timeout" },
-    { name = "pytest-xdist" },
-    { name = "radon" },
-    { name = "ruff" },
-    { name = "twine" },
-    { name = "vulture" },
-]
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "bijux-ontology", extras = ["analysis", "shex", "quantities", "jsonpatch", "jsonld", "shacl", "templates", "xsd", "patterns", "checksums", "sssom"], editable = "packages/bijux-ontology" },
-    { name = "bijux-ontology-adapters", extras = ["biolink", "biosamples", "csvw", "fhir", "linkml", "oak", "pydantic"], editable = "packages/bijux-ontology-adapters" },
-    { name = "bijux-ontology-dev", editable = "packages/bijux-ontology-dev" },
-    { name = "bijux-ontology-reasoning", editable = "packages/bijux-ontology-reasoning" },
-    { name = "build", specifier = ">=1.2,<2" },
-    { name = "codespell", specifier = ">=2.4,<3" },
-    { name = "deptry", specifier = ">=0.23,<1" },
-    { name = "hatchling", specifier = ">=1.27,<2" },
-    { name = "interrogate", specifier = ">=1.7,<2" },
-    { name = "mypy", specifier = ">=1.11,<3" },
-    { name = "pytest", specifier = ">=8.4,<10" },
-    { name = "pytest-cov", specifier = ">=6,<8" },
-    { name = "pytest-timeout", specifier = ">=2.3,<3" },
-    { name = "pytest-xdist", specifier = ">=3.8,<4" },
-    { name = "radon", specifier = ">=6,<7" },
-    { name = "ruff", specifier = ">=0.6,<1" },
-    { name = "twine", specifier = ">=6,<7" },
-    { name = "vulture", specifier = ">=2.13,<3" },
 ]
 
 [[package]]
