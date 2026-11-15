@@ -15,3 +15,7 @@
   core Bijux retains Python 3.11 support. Scoped OAK behavior, installed package
   isolation and separate Frictionless runtimes remain covered by real tests.
   [PR #82](https://github.com/bijux/bijux-ontology/pull/82)
+- Exercise SDRF missing-distribution and missing-ontology contracts without
+  requiring the separately installed consumer. Existing native consumer cases
+  retain explicit optional-host requirements.
+  [PR #82](https://github.com/bijux/bijux-ontology/pull/82)
