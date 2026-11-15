@@ -1,5 +1,7 @@
 """Unsupported OAK runtimes fail explicitly without importing an optional host."""
 
+import sys
+
 import pytest
 from rdflib import Graph
 
@@ -18,7 +20,7 @@ def test_unsupported_oak_runtime_keeps_core_available(
     def reject_import(name: str) -> None:
         raise AssertionError(f"Unsupported runtime imported {name}")
 
-    monkeypatch.setattr(preparation.sys, "version_info", (*runtime, 0, "final", 0))
+    monkeypatch.setattr(sys, "version_info", (*runtime, 0, "final", 0))
     monkeypatch.setattr(preparation, "import_module", reject_import)
     result = preparation.as_oak(view, registry=IdentifierRegistry(()))
     assert result.adapter is None

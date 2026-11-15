@@ -318,7 +318,8 @@ def installed_oak(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> tuple[Path, Path, dict[str, str]]:
     """Expose the qualified OAK integration on its supported Python runtimes."""
-    if sys.version_info < (3, 12):
+    runtime = sys.version_info[:2]
+    if runtime < (3, 12):
         pytest.skip("The published OAK security profile requires Python >=3.12")
     return _install_distribution(
         distribution,
