@@ -9,9 +9,9 @@
   interpreter discovery for shared checks. Declare Ontology's required root,
   standard, configuration and Make checks for the shared verification report.
   [PR #81](https://github.com/bijux/bijux-ontology/pull/81)
-- Record the remaining OAK dependency restriction: published OAK 0.7.4 requires
-  `setuptools<82`, while the two open Setuptools advisories require patched
-  releases at 83.0.0 and 84.1.0. Keep the PyPI-compatible OAK extra until a
-  fixed upstream release can be qualified. Both alerts remain blocked by that
-  release prerequisite; neither has been dismissed or claimed fixed.
-  [PR #81](https://github.com/bijux/bijux-ontology/pull/81)
+- Qualify published OAK 0.6.23 with EUtils >=0.6.1 and Setuptools >=84.1.0,
+  resolving the two Setuptools security advisories without a Git dependency or
+  metadata override. The optional OAK profile requires Python >=3.12,<3.15;
+  core Bijux retains Python 3.11 support. Scoped OAK behavior, installed package
+  isolation and separate Frictionless runtimes remain covered by real tests.
+  [PR #82](https://github.com/bijux/bijux-ontology/pull/82)

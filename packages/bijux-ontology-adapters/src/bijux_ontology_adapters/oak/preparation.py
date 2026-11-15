@@ -73,11 +73,11 @@ def as_oak(
             bound_text(prefix, operation)
             bound_text(namespace, operation)
         operation.consume("work")
-        if not (3, 10) <= sys.version_info[:2] < (3, 15):
+        if not (3, 12) <= sys.version_info[:2] < (3, 15):
             issues.append(
                 Issue(
                     "adapter.oak_python_unsupported",
-                    "Maintained OAK 0.7.4 requires Python >=3.10,<3.15; "
+                    "The qualified OAK profile requires Python >=3.12,<3.15; "
                     "core Bijux remains available",
                     kind="unverified",
                 )

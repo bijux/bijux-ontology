@@ -7,6 +7,31 @@ from textwrap import dedent
 import pytest
 
 
+def test_oak_host_imports_with_patched_packaging_dependencies(
+    installed_oak: tuple[Path, Path, dict[str, str]],
+) -> None:
+    python, work, environment = installed_oak
+    program = """
+        from importlib.metadata import version
+        from packaging.version import Version
+        from eutils import Client
+        from oaklib.interfaces import BasicOntologyInterface
+        assert version("oaklib") == "0.6.23"
+        assert Version(version("eutils")) >= Version("0.6.1")
+        assert Version(version("setuptools")) >= Version("84.1.0")
+        assert callable(Client) and isinstance(BasicOntologyInterface, type)
+    """
+    result = subprocess.run(
+        [str(python), "-I", "-B", "-c", dedent(program)],
+        cwd=work,
+        env=environment,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 @pytest.mark.timeout(300)
 def test_oak_host_uses_explicit_native_package_interpreter(
     installed_oak: tuple[Path, Path, dict[str, str]],
