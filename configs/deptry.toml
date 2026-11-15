@@ -1,3 +1,7 @@
 [tool.deptry]
 extend_exclude = ["artifacts", "docs", "examples", "\\.bijux"]
 package_module_name_map = { "pyld" = "pyld", "google-re2" = "re2", "python-stdnum" = "stdnum" }
+
+# OAK compatibility and security floors are declared for its transitive packages.
+[tool.deptry.per_rule_ignores]
+DEP002 = ["eutils", "setuptools"]
