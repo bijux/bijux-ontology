@@ -33,3 +33,11 @@ therefore retains the known [manifest exclusion](https://github.com/advisories/G
 and [legacy wheel installation](https://github.com/advisories/GHSA-xmj3-9gf7-h52w)
 issues. OAK remains available; this profile must not be described as having a
 clean dependency audit. Other integrations do not require the OAK extra.
+
+Canonical OAK has [replaced its EUtils dependency](https://github.com/INCATools/ontology-access-kit/pull/926)
+and [removed the obsolete Setuptools requirement](https://github.com/INCATools/ontology-access-kit/pull/929).
+These changes are present in upstream commit
+[`235c93a830e8e6663e21cd017d62bf1a4e1c7194`](https://github.com/INCATools/ontology-access-kit/commit/235c93a830e8e6663e21cd017d62bf1a4e1c7194),
+but no fixed PyPI release, including a prerelease, was available when checked on
+2026-11-15. A fixed release must be resolved and qualified against the installed
+OAK integration tests before removing this security limitation.
